@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, Clock3, MoreVertical, RotateCcw, ImagePlus } from "lucide-react";
 import { Player } from "@/lib/types";
-import Button from "./Button";
 
 interface SidePanelProps {
+  roomCode?: string;
   startedAt: number;
   solved: boolean;
   solvedAt: number | null;
@@ -24,6 +25,7 @@ function formatTime(ms: number) {
 }
 
 export default function SidePanel({
+  roomCode,
   startedAt,
   solved,
   solvedAt,
@@ -34,6 +36,8 @@ export default function SidePanel({
   onBack,
 }: SidePanelProps) {
   const [now, setNow] = useState(Date.now());
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (solved) return;
@@ -41,52 +45,103 @@ export default function SidePanel({
     return () => clearInterval(interval);
   }, [solved]);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
   const elapsed = (solved && solvedAt ? solvedAt : now) - startedAt;
 
   return (
-    <motion.aside
-      initial={{ opacity: 0, x: 16 }}
-      animate={{ opacity: 1, x: 0 }}
+    <motion.div
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="glass-panel flex w-full flex-col gap-5 rounded-xl3 p-5 sm:w-64"
+      className="glass-panel pointer-events-auto flex items-center gap-3 rounded-full px-3 py-2 sm:gap-4 sm:px-4"
     >
-      <div>
-        <p className="text-xs uppercase tracking-wide text-ink-soft">Tempo</p>
-        <p className="font-display text-2xl font-semibold text-ink">{formatTime(elapsed)}</p>
+      <button
+        onClick={onBack}
+        aria-label="Voltar para os jogos"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+      >
+        <ArrowLeft size={17} />
+      </button>
+
+      <div className="hidden h-5 w-px bg-ink/10 sm:block" />
+
+      {roomCode && (
+        <span className="hidden font-display text-xs font-medium tracking-[0.15em] text-ink-soft sm:inline">
+          {roomCode}
+        </span>
+      )}
+
+      <div className="hidden h-5 w-px bg-ink/10 sm:block" />
+
+      <div className="flex items-center gap-1.5 text-ink">
+        <Clock3 size={14} className="text-ink-soft" />
+        <span className="font-display text-sm font-semibold tabular-nums">{formatTime(elapsed)}</span>
       </div>
 
-      <div>
-        <p className="text-xs uppercase tracking-wide text-ink-soft">Movimentos</p>
-        <p className="font-display text-2xl font-semibold text-ink">{moves}</p>
+      <div className="flex items-center gap-1.5 text-ink">
+        <span className="text-xs text-ink-soft">Movs</span>
+        <span className="font-display text-sm font-semibold tabular-nums">{moves}</span>
       </div>
 
-      <div>
-        <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">Jogadores</p>
-        <div className="flex flex-col gap-2">
-          {players.map((p) => (
-            <div key={p.id} className="flex items-center gap-2 text-sm text-ink">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ background: p.connected ? p.color : "#D9D0D4" }}
-              />
-              {p.name}
-              {!p.connected && <span className="text-xs text-ink-soft">(saiu)</span>}
-            </div>
-          ))}
-        </div>
+      <div className="flex items-center -space-x-1.5">
+        {players.map((p) => (
+          <span
+            key={p.id}
+            title={p.name}
+            className="h-3 w-3 rounded-full ring-2 ring-white"
+            style={{ background: p.connected ? p.color : "#D9D0D4" }}
+          />
+        ))}
       </div>
 
-      <div className="mt-auto flex flex-col gap-2 pt-2">
-        <Button variant="secondary" onClick={onRestart} className="w-full text-sm">
-          Reiniciar
-        </Button>
-        <Button variant="secondary" onClick={onNewImage} className="w-full text-sm">
-          Nova imagem
-        </Button>
-        <Button variant="ghost" onClick={onBack} className="w-full text-sm">
-          Voltar
-        </Button>
+      <div className="relative" ref={menuRef}>
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label="Mais opções"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+        >
+          <MoreVertical size={17} />
+        </button>
+
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: -6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: -6 }}
+              transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              className="glass-panel absolute right-0 top-11 flex w-44 flex-col gap-1 rounded-xl2 p-1.5"
+            >
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onRestart();
+                }}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-ink transition-colors hover:bg-white/60"
+              >
+                <RotateCcw size={15} /> Reiniciar
+              </button>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onNewImage();
+                }}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-ink transition-colors hover:bg-white/60"
+              >
+                <ImagePlus size={15} /> Nova imagem
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </motion.aside>
+    </motion.div>
   );
 }

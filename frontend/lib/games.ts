@@ -11,15 +11,20 @@ export const GAMES: GameDefinition[] = [
     name: "Quebra-cabeça Cooperativo",
     description: "Montem juntos, peça por peça, em tempo real — não importa a distância.",
     emoji: "🧩",
-    image: "/images/puzzle/fravia.jpg",
+    image: "/images/puzzle/nuquidito.jpg",
     available: true,
   },
 ];
 
-export const PUZZLE_IMAGES = [
-  { id: "aurora", label: "Aurora", file: "/images/puzzle/aurora.jpg" },
-  { id: "jardim", label: "Jardim", file: "/images/puzzle/jardim.jpg" },
-  { id: "oceano", label: "Oceano", file: "/images/puzzle/oceano.jpg" },
-  { id: "por-do-sol", label: "Pôr do sol", file: "/images/puzzle/por-do-sol.jpg" },
-  { id: "fravia", label: "Fravia", file: "/images/puzzle/fravia.jpg" },
-] as const;
+/**
+ * Dificuldades disponíveis — precisa espelhar `backend/src/games/puzzle/puzzleImages.ts`.
+ * Só os rótulos/emoji importam aqui; a geração real (linhas, colunas, tamanho
+ * da peça) acontece inteiramente no servidor a partir de `targetPieces`.
+ */
+export const DIFFICULTIES = {
+  easy: { label: "Fácil", emoji: "🟢", targetPieces: 30 },
+  medium: { label: "Médio", emoji: "🟡", targetPieces: 70 },
+  hard: { label: "Difícil", emoji: "🔴", targetPieces: 150 },
+} as const;
+
+export type Difficulty = keyof typeof DIFFICULTIES;

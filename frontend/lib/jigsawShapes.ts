@@ -1,23 +1,29 @@
 /**
  * Geometria das peças do quebra-cabeça jigsaw.
  *
- * `PIECE_SIZE` precisa ser IGUAL à constante equivalente em
- * `backend/src/games/puzzle/PuzzleGame.ts` — é a unidade de medida do
- * "quadro virtual" compartilhado entre os dois jogadores.
+ * `pieceSize` vem do servidor (varia com a dificuldade/proporção da imagem —
+ * ver `backend/src/games/puzzle/PuzzleGame.ts`), então todas as funções aqui
+ * são parametrizadas por ele, sem nenhum valor fixo.
  *
  * As proporções da saliência/reentrância (AMP/CENTER/NECK/BULB) foram
  * validadas visualmente antes de entrar aqui; qualquer ajuste deve ser
  * conferido de novo visualmente.
  */
 
-export const PIECE_SIZE = 100;
-export const TAB_MARGIN = 34;
-export const PIECE_BOX = PIECE_SIZE + TAB_MARGIN * 2;
+export const TAB_MARGIN_RATIO = 0.34;
 
 const AMP_RATIO = 0.2;
 const CENTER = 0.5;
 const NECK = 0.055;
 const BULB = 0.115;
+
+export function getTabMargin(pieceSize: number): number {
+  return pieceSize * TAB_MARGIN_RATIO;
+}
+
+export function getPieceBox(pieceSize: number): number {
+  return pieceSize + getTabMargin(pieceSize) * 2;
+}
 
 type Point = [number, number];
 
@@ -73,30 +79,31 @@ export interface PieceSigns {
   left: number;
 }
 
-/** Deriva os 4 sinais (saliência/reentrância/reto) de uma peça a partir das arestas do grid. */
+/** Deriva os 4 sinais (saliência/reentrância/reto) de uma peça a partir das arestas do grid (rows x cols, não necessariamente quadrado). */
 export function getPieceSigns(
   pieceId: number,
-  gridSize: number,
+  rows: number,
+  cols: number,
   edgeSignsH: number[],
   edgeSignsV: number[]
 ): PieceSigns {
-  const row = Math.floor(pieceId / gridSize);
-  const col = pieceId % gridSize;
-  const hIndex = (r: number, c: number) => r * (gridSize - 1) + c;
-  const vIndex = (r: number, c: number) => r * gridSize + c;
+  const row = Math.floor(pieceId / cols);
+  const col = pieceId % cols;
+  const hIndex = (r: number, c: number) => r * (cols - 1) + c;
+  const vIndex = (r: number, c: number) => r * cols + c;
 
   return {
     top: row === 0 ? 0 : -edgeSignsV[vIndex(row - 1, col)],
-    bottom: row === gridSize - 1 ? 0 : edgeSignsV[vIndex(row, col)],
+    bottom: row === rows - 1 ? 0 : edgeSignsV[vIndex(row, col)],
     left: col === 0 ? 0 : -edgeSignsH[hIndex(row, col - 1)],
-    right: col === gridSize - 1 ? 0 : edgeSignsH[hIndex(row, col)],
+    right: col === cols - 1 ? 0 : edgeSignsH[hIndex(row, col)],
   };
 }
 
-/** Gera o path SVG local (dentro de uma caixa PIECE_BOX x PIECE_BOX) para a peça. */
-export function buildPiecePath(signs: PieceSigns): string {
-  const m = TAB_MARGIN;
-  const s = PIECE_SIZE;
+/** Gera o path SVG local (dentro de uma caixa PIECE_BOX x PIECE_BOX) para a peça, no tamanho pedido. */
+export function buildPiecePath(signs: PieceSigns, pieceSize: number): string {
+  const m = getTabMargin(pieceSize);
+  const s = pieceSize;
   const tl: Point = [m, m];
   const tr: Point = [m + s, m];
   const br: Point = [m + s, m + s];

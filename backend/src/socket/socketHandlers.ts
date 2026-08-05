@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { RoomManager } from "../rooms/RoomManager";
 import { GameId } from "../types";
-import { isValidImageId } from "../games/puzzle/puzzleImages";
+import { isValidImageId, isValidDifficulty } from "../games/puzzle/puzzleImages";
 
 interface SocketData {
   roomCode?: string;
@@ -10,6 +10,22 @@ interface SocketData {
 
 type AckCallback = (response: Record<string, unknown>) => void;
 
+interface StartPayload {
+  imageId?: string;
+  difficulty?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+}
+
+/** Extrai só os campos válidos de um payload de início/troca de imagem. */
+function sanitizeStartOptions(payload?: StartPayload) {
+  const options: { imageId?: string; difficulty?: string; imageWidth?: number; imageHeight?: number } = {};
+  if (payload?.imageId && isValidImageId(payload.imageId)) options.imageId = payload.imageId;
+  if (payload?.difficulty && isValidDifficulty(payload.difficulty)) options.difficulty = payload.difficulty;
+  if (typeof payload?.imageWidth === "number" && payload.imageWidth > 0) options.imageWidth = payload.imageWidth;
+  if (typeof payload?.imageHeight === "number" && payload.imageHeight > 0) options.imageHeight = payload.imageHeight;
+  return options;
+}
 
 function broadcastRoom(io: Server, roomCode: string, roomManager: RoomManager) {
   const room = roomManager.getRoom(roomCode);
@@ -78,7 +94,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       socket.data.roomCode = undefined;
     });
 
-    socket.on("game:start", (payload: { imageId?: string; gridSize?: number } | undefined, callback: AckCallback) => {
+    socket.on("game:start", (payload: StartPayload | undefined, callback: AckCallback) => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
       if (!room) {
@@ -89,8 +105,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         callback?.({ ok: false, error: "Espere os dois jogadores entrarem na sala." });
         return;
       }
-      const options = payload?.imageId && isValidImageId(payload.imageId) ? payload : undefined;
-      room.startGame(options);
+      room.startGame(sanitizeStartOptions(payload));
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);
       callback?.({ ok: true });
@@ -137,11 +152,11 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       broadcastGameState(io, code!, roomManager);
     });
 
-    socket.on("game:newImage", (payload: { imageId: string }) => {
+    socket.on("game:newImage", (payload: StartPayload) => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || !isValidImageId(payload.imageId)) return;
-      room.startGame({ imageId: payload.imageId });
+      if (!room || !payload?.imageId || !isValidImageId(payload.imageId)) return;
+      room.startGame(sanitizeStartOptions(payload));
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);
     });

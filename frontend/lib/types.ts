@@ -27,7 +27,15 @@ export interface PieceGroup {
 
 export interface PuzzleState {
   imageId: string;
-  gridSize: number;
+  imageWidth: number;
+  imageHeight: number;
+  cropX: number;
+  cropY: number;
+  cropWidth: number;
+  cropHeight: number;
+  difficulty: string;
+  rows: number;
+  cols: number;
   pieceCount: number;
   pieceSize: number;
   boardWidth: number;

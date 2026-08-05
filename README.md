@@ -107,15 +107,56 @@ reaproveitados por qualquer jogo novo.
 
 ---
 
+## Dificuldade, proporção e tamanho das peças
+
+Nada disso é fixo — tudo é calculado automaticamente a partir de dois números:
+a **proporção da imagem** (`largura/altura`) e a **quantidade de peças alvo** da
+dificuldade escolhida.
+
+- **Linhas x colunas**: `cols = round(√(peças × proporção))`, `rows = round(peças / cols)`.
+  Isso faz imagens largas gerarem mais colunas e imagens altas gerarem mais linhas,
+  mantendo cada peça aproximadamente quadrada.
+- **Tamanho da peça**: `130 × √(30 / peças_reais)`, com piso de 60 e teto de 140
+  unidades. Não há nenhum valor "por dificuldade" — o Fácil só parece ter peças
+  maiores porque tem menos peças; a mesma fórmula vale para 30 ou 500 peças.
+- **Tamanho do quadro**: calculado iterativamente (aumenta a margem ao redor da
+  moldura-guia até haver espaço suficiente para espalhar todas as peças sem
+  sobrepor) — nenhum tamanho de tabuleiro fixo.
+
+Dificuldades ficam em `DIFFICULTIES` (`backend/.../puzzleImages.ts` e
+`frontend/lib/games.ts`) — adicionar uma nova (200, 300, 500 peças...) é só
+acrescentar uma linha com o `targetPieces`; o resto do sistema já funciona.
+
+---
+
+## Câmera (pan/zoom)
+
+O quadro do quebra-cabeça é um canvas navegável, não uma área fixa:
+
+- **Zoom**: scroll do mouse, pinça de dois dedos, ou os botões +/-. Sempre "zoom no
+  cursor" (o ponto sob o mouse/dedos fica parado enquanto o resto escala).
+- **Mover**: botão do meio do mouse, `Espaço` + clique esquerdo, ou dois dedos no
+  celular (um dedo continua reservado para arrastar peças).
+- **Centralizar**: botão que anima suavemente de volta para a moldura-guia.
+- **100% local**: a câmera nunca é enviada pela rede — cada jogador navega o próprio
+  quadro de forma independente. Só as peças (posição, grupos, quem está segurando)
+  são sincronizadas.
+
+A matemática de zoom/limites fica isolada em `frontend/lib/camera.ts`.
+
+---
+
 ## Sobre as imagens do quebra-cabeça
 
 As 4 imagens em `frontend/public/images/puzzle/` são placeholders gerados
-proceduralmente (gradientes pastéis) só para o projeto já sair funcionando. Para usar
+proceduralmente (gradientes pastéis, em proporções propositalmente diferentes —
+quadrada, paisagem e retrato) só para o projeto já sair funcionando. Para usar
 fotos reais do casal:
 
 1. Coloque o arquivo `.jpg` em `frontend/public/images/puzzle/`.
 2. Adicione uma linha em `frontend/lib/games.ts` (array `PUZZLE_IMAGES`) e em
-   `backend/src/games/puzzle/puzzleImages.ts`.
+   `backend/src/games/puzzle/puzzleImages.ts`, **com a largura/altura reais da
+   imagem** — é a partir delas que a proporção do quebra-cabeça é calculada.
 
 ---
 

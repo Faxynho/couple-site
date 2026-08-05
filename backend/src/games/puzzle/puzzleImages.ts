@@ -1,18 +1,35 @@
 /**
- * Catálogo de imagens disponíveis para o quebra-cabeça.
- * Para adicionar uma nova imagem: solte o arquivo em
- * `frontend/public/images/puzzle/` e acrescente uma linha aqui.
+ * As imagens agora são descobertas dinamicamente pela pasta
+ * `frontend/public/images/puzzle/` (ver `frontend/app/api/puzzle-images/route.ts`)
+ * — não existe mais uma lista fixa aqui. O `imageId` que chega neste servidor
+ * já é o caminho completo do arquivo (ex.: "/images/puzzle/aurora.jpg"),
+ * então só validamos que ele parece um caminho seguro dessa pasta.
  */
-export const PUZZLE_IMAGES = [
-  { id: "aurora", label: "Aurora", file: "/images/puzzle/aurora.jpg" },
-  { id: "jardim", label: "Jardim", file: "/images/puzzle/jardim.jpg" },
-  { id: "oceano", label: "Oceano", file: "/images/puzzle/oceano.jpg" },
-  { id: "por-do-sol", label: "Pôr do sol", file: "/images/puzzle/por-do-sol.jpg" },
-  { id: "fravia", label: "Fravia", file: "/images/puzzle/fravia.jpg" },
-] as const;
+const SAFE_IMAGE_ID_PATTERN = /^\/images\/puzzle\/[a-zA-Z0-9 _.-]+\.(jpg|jpeg|png|webp)$/i;
 
-export type PuzzleImageId = (typeof PUZZLE_IMAGES)[number]["id"];
+export function isValidImageId(id: string): boolean {
+  return typeof id === "string" && id.length < 300 && SAFE_IMAGE_ID_PATTERN.test(id);
+}
 
-export function isValidImageId(id: string): id is PuzzleImageId {
-  return PUZZLE_IMAGES.some((img) => img.id === id);
+/** Fallback genérico, usado só se o cliente não enviar a dimensão real medida. */
+export function getFallbackDimensions(): { width: number; height: number } {
+  return { width: 1000, height: 1000 };
+}
+
+/**
+ * Dificuldades disponíveis. Cada uma é só uma META aproximada de peças — a
+ * combinação real de linhas x colunas é calculada por `computeGrid` em
+ * PuzzleGame.ts, respeitando a proporção de cada imagem. Para adicionar uma
+ * nova dificuldade (ex.: 300 peças), basta acrescentar uma entrada aqui.
+ */
+export const DIFFICULTIES = {
+  easy: { label: "Fácil", targetPieces: 30 },
+  medium: { label: "Médio", targetPieces: 70 },
+  hard: { label: "Difícil", targetPieces: 150 },
+} as const;
+
+export type Difficulty = keyof typeof DIFFICULTIES;
+
+export function isValidDifficulty(value: string): value is Difficulty {
+  return Object.prototype.hasOwnProperty.call(DIFFICULTIES, value);
 }

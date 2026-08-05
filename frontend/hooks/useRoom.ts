@@ -64,7 +64,7 @@ export function useRoom() {
     setRoom(null);
   }, []);
 
-  const startGame = useCallback((payload?: { imageId?: string; gridSize?: number }) => {
+  const startGame = useCallback((payload?: { imageId?: string; difficulty?: string; imageWidth?: number; imageHeight?: number }) => {
     return new Promise<CreateOrJoinResult>((resolve) => {
       getSocket().emit("game:start", payload, (res: CreateOrJoinResult) => {
         if (!res.ok) setError(res.error || "Não foi possível iniciar o jogo.");

@@ -110,8 +110,8 @@ export function usePuzzle(roomCode: string) {
     getSocket().emit("game:reset");
   }, []);
 
-  const newImage = useCallback((imageId: string) => {
-    getSocket().emit("game:newImage", { imageId });
+  const newImage = useCallback((imageId: string, difficulty?: string, imageWidth?: number, imageHeight?: number) => {
+    getSocket().emit("game:newImage", { imageId, difficulty, imageWidth, imageHeight });
   }, []);
 
   return { state, remoteDrags, pickup, drag, drop, resetGame, newImage };
