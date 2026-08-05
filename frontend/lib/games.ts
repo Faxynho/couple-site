@@ -11,7 +11,7 @@ export const GAMES: GameDefinition[] = [
     name: "Quebra-cabeça Cooperativo",
     description: "Montem juntos, peça por peça, em tempo real — não importa a distância.",
     emoji: "🧩",
-    image: "/images/puzzle/nuquidito.jpg",
+    image: "/images/puzzle/aurora.jpg",
     available: true,
   },
 ];

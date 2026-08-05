@@ -48,6 +48,20 @@ acessível pela internet (ex.: deploy em um serviço como Render/Railway/Fly.io)
 
 ---
 
+## Fluxo da sala e modo solo
+
+- **Host**: quem cria a sala vira o "anfitrião" — só ele escolhe a imagem e a
+  dificuldade, e só ele pode iniciar a partida. O outro jogador acompanha
+  essas escolhas em tempo real (`room:setConfig`, sincronizado via
+  `room:update`) enquanto ambos estão na sala de espera.
+- **Jogar sozinho**: o botão de iniciar não exige mais os dois conectados —
+  se só o host estiver na sala, o botão vira "Jogar sozinho". Se um amigo
+  entrar depois, ele cai direto na partida já em andamento.
+- **Tela de vitória**: pode ser fechada (X, "Continuar visualizando" ou
+  clicando fora) sem afetar o jogo — o quebra-cabeça completo continua do
+  jeito que foi montado. Um botão discreto ("Ver resultado") reabre o resumo
+  depois.
+
 ## Como funciona o tempo real
 
 O quebra-cabeça é um jigsaw de verdade: peças com formato de saliência/reentrância,

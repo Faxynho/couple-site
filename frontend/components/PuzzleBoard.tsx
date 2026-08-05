@@ -59,6 +59,12 @@ interface PieceLayerProps {
   edgeSignsV: number[];
   shapeVersion: number;
   imageSrc: string;
+  imageWidth: number;
+  imageHeight: number;
+  cropX: number;
+  cropY: number;
+  cropWidth: number;
+  cropHeight: number;
   solved: boolean;
   colorByPlayer: Record<string, string>;
   remoteDrags: Record<string, { x: number; y: number }>;
@@ -84,6 +90,12 @@ function PieceLayerImpl({
   edgeSignsV,
   shapeVersion,
   imageSrc,
+  imageWidth,
+  imageHeight,
+  cropX,
+  cropY,
+  cropWidth,
+  cropHeight,
   solved,
   colorByPlayer,
   remoteDrags,
@@ -117,6 +129,12 @@ function PieceLayerImpl({
               edgeSignsV={edgeSignsV}
               shapeVersion={shapeVersion}
               imageSrc={imageSrc}
+              imageWidth={imageWidth}
+              imageHeight={imageHeight}
+              cropX={cropX}
+              cropY={cropY}
+              cropWidth={cropWidth}
+              cropHeight={cropHeight}
               x={originX + col * pieceSize}
               y={originY + row * pieceSize}
               isHeld={isHeld}
@@ -319,6 +337,20 @@ export default function PuzzleBoard({
     }
   }, [onDrop]);
 
+  // Rede de segurança: se a janela perder o foco no meio de um arraste (peça
+  // ou câmera) — ex.: alt-tab, DevTools, ou o botão ser solto fora da janela —
+  // libera tudo em vez de deixar uma peça "presa" para sempre.
+  useEffect(() => {
+    const handleBlur = () => {
+      cancelActiveDrag();
+      panDragRef.current = null;
+      pinchRef.current = null;
+      touchPointsRef.current.clear();
+    };
+    window.addEventListener("blur", handleBlur);
+    return () => window.removeEventListener("blur", handleBlur);
+  }, [cancelActiveDrag]);
+
   // Fase de captura: registra TODOS os toques (mesmo os que caem em cima de uma peça)
   // antes que o handler da própria peça decida se deve iniciar um arraste — é isso
   // que permite diferenciar com segurança "1 dedo = arrastar peça" de "2 dedos = câmera".
@@ -432,6 +464,7 @@ export default function PuzzleBoard({
     (groupId: string, e: React.PointerEvent<HTMLDivElement>) => {
       const current = stateRef.current;
       if (current.solved) return;
+      if (e.pointerType !== "touch" && e.button !== 0) return; // só botão esquerdo inicia arraste de peça
       if (e.pointerType === "touch" && touchPointsRef.current.size > 1) return; // gesto de 2 dedos em andamento
       if (e.pointerType !== "touch" && spacePressedRef.current) return; // espaço = modo câmera
       const group = current.groups[groupId];
@@ -566,6 +599,12 @@ export default function PuzzleBoard({
           edgeSignsV={state.edgeSignsV}
           shapeVersion={state.startedAt}
           imageSrc={imageSrc}
+          imageWidth={state.imageWidth}
+          imageHeight={state.imageHeight}
+          cropX={state.cropX}
+          cropY={state.cropY}
+          cropWidth={state.cropWidth}
+          cropHeight={state.cropHeight}
           solved={state.solved}
           colorByPlayer={colorByPlayer}
           remoteDrags={remoteDrags}

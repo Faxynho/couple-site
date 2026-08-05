@@ -16,6 +16,14 @@ interface PuzzlePieceProps {
    *  o cache do path saber quando realmente precisa recalcular a forma. */
   shapeVersion: number;
   imageSrc: string;
+  /** Dimensão real da imagem original e o retângulo (nela) usado no quebra-cabeça —
+   *  igual à imagem inteira, a menos que um corte mínimo tenha sido necessário. */
+  imageWidth: number;
+  imageHeight: number;
+  cropX: number;
+  cropY: number;
+  cropWidth: number;
+  cropHeight: number;
   /** Posição absoluta (unidades do quadro) do canto superior esquerdo do quadrado-núcleo da peça. */
   x: number;
   y: number;
@@ -38,6 +46,12 @@ function PuzzlePieceImpl({
   edgeSignsV,
   shapeVersion,
   imageSrc,
+  imageWidth,
+  imageHeight,
+  cropX,
+  cropY,
+  cropWidth,
+  cropHeight,
   x,
   y,
   isHeld,
@@ -62,10 +76,15 @@ function PuzzlePieceImpl({
 
   const tabMargin = getTabMargin(pieceSize);
   const pieceBox = getPieceBox(pieceSize);
-  const fullImageWidth = cols * pieceSize;
-  const fullImageHeight = rows * pieceSize;
-  const bgX = tabMargin - col * pieceSize;
-  const bgY = tabMargin - row * pieceSize;
+
+  // A imagem inteira é escalada de forma que só a região cortada (cropWidth x
+  // cropHeight, igual à imagem inteira quando não há corte) preencha a grade —
+  // é assim que a proporção real da imagem nunca é esticada, com ou sem corte.
+  const scale = (cols * pieceSize) / cropWidth;
+  const bgFullWidth = imageWidth * scale;
+  const bgFullHeight = imageHeight * scale;
+  const bgX = tabMargin - (cropX * scale + col * pieceSize);
+  const bgY = tabMargin - (cropY * scale + row * pieceSize);
 
   // Identidade estável por peça: permite que React.memo funcione de verdade
   // (senão o componente pai recriaria uma função nova a cada render e a
@@ -123,7 +142,7 @@ function PuzzlePieceImpl({
           inset: 0,
           backgroundImage: `linear-gradient(160deg, rgba(255,255,255,0.32), rgba(255,255,255,0) 45%, rgba(74,63,69,0.05) 100%), url(${imageSrc})`,
           backgroundBlendMode: "overlay, normal",
-          backgroundSize: `100% 100%, ${fullImageWidth}px ${fullImageHeight}px`,
+          backgroundSize: `100% 100%, ${bgFullWidth}px ${bgFullHeight}px`,
           backgroundPosition: `0 0, ${bgX}px ${bgY}px`,
           backgroundRepeat: "no-repeat, no-repeat",
           clipPath: `path('${path}')`,

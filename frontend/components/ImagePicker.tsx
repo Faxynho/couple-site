@@ -9,9 +9,10 @@ interface ImagePickerProps {
   loading: boolean;
   selected: PuzzleImageOption | null;
   onSelect: (image: PuzzleImageOption) => void;
+  readOnly?: boolean;
 }
 
-export default function ImagePicker({ images, loading, selected, onSelect }: ImagePickerProps) {
+export default function ImagePicker({ images, loading, selected, onSelect, readOnly = false }: ImagePickerProps) {
   if (loading) {
     return (
       <div className="flex min-h-[30vh] items-center justify-center">
@@ -45,15 +46,16 @@ export default function ImagePicker({ images, loading, selected, onSelect }: Ima
           <motion.button
             key={img.file}
             type="button"
-            onClick={() => onSelect(img)}
+            disabled={readOnly}
+            onClick={() => !readOnly && onSelect(img)}
             initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ opacity: readOnly && !isSelected ? 0.45 : 1, y: 0 }}
             transition={{ delay: i * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            whileHover={{ y: -3 }}
-            whileTap={{ scale: 0.96 }}
+            whileHover={readOnly ? undefined : { y: -3 }}
+            whileTap={readOnly ? undefined : { scale: 0.96 }}
             className={`group relative overflow-hidden rounded-xl2 border-2 text-left transition-colors ${
-              isSelected ? "border-rose shadow-glow" : "border-white/60 hover:border-white"
-            }`}
+              readOnly ? "cursor-default" : ""
+            } ${isSelected ? "border-rose shadow-glow" : "border-white/60 hover:border-white"}`}
           >
             <div className="aspect-square w-full overflow-hidden bg-beige">
               <img

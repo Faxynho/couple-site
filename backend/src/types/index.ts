@@ -22,6 +22,13 @@ export interface RoomSnapshot {
   status: RoomStatus;
   players: Player[];
   maxPlayers: number;
+  /** socket.id de quem criou a sala — só ele pode mudar a configuração e iniciar. */
+  hostId: string | null;
+  /** Configuração escolhida pelo host, sincronizada em tempo real com o outro jogador. */
+  pendingImageId: string | null;
+  pendingImageWidth: number | null;
+  pendingImageHeight: number | null;
+  pendingDifficulty: string;
 }
 
 /**

@@ -15,6 +15,11 @@ export interface RoomSnapshot {
   status: RoomStatus;
   players: Player[];
   maxPlayers: number;
+  hostId: string | null;
+  pendingImageId: string | null;
+  pendingImageWidth: number | null;
+  pendingImageHeight: number | null;
+  pendingDifficulty: string;
 }
 
 export interface PieceGroup {

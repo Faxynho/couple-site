@@ -94,6 +94,17 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       socket.data.roomCode = undefined;
     });
 
+    // Só o host pode mudar a configuração da partida (imagem/dificuldade)
+    // enquanto os dois estão na sala de espera — o outro jogador só acompanha,
+    // recebendo a atualização em tempo real via room:update.
+    socket.on("room:setConfig", (payload: StartPayload) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || !room.isHost(socket.id)) return;
+      room.setPendingConfig(sanitizeStartOptions(payload));
+      broadcastRoom(io, code!, roomManager);
+    });
+
     socket.on("game:start", (payload: StartPayload | undefined, callback: AckCallback) => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
@@ -101,10 +112,18 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         callback?.({ ok: false, error: "Sala inválida." });
         return;
       }
-      if (!room.bothConnected()) {
-        callback?.({ ok: false, error: "Espere os dois jogadores entrarem na sala." });
+      if (!room.isHost(socket.id)) {
+        callback?.({ ok: false, error: "Só o anfitrião da sala pode iniciar a partida." });
         return;
       }
+      if (!room.pendingImageId) {
+        callback?.({ ok: false, error: "Escolha uma imagem antes de começar." });
+        return;
+      }
+      // Sem exigência de "os dois conectados": o host pode jogar sozinho —
+      // se o par ainda entrar depois, ele acompanha a partida já em andamento.
+      // Usa a configuração já sincronizada da sala; um payload aqui (se vier)
+      // só serve como um ajuste de última hora, nunca como fonte principal.
       room.startGame(sanitizeStartOptions(payload));
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);

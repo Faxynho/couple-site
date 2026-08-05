@@ -64,14 +64,20 @@ export function useRoom() {
     setRoom(null);
   }, []);
 
-  const startGame = useCallback((payload?: { imageId?: string; difficulty?: string; imageWidth?: number; imageHeight?: number }) => {
+  const startGame = useCallback(() => {
     return new Promise<CreateOrJoinResult>((resolve) => {
-      getSocket().emit("game:start", payload, (res: CreateOrJoinResult) => {
+      getSocket().emit("game:start", {}, (res: CreateOrJoinResult) => {
         if (!res.ok) setError(res.error || "Não foi possível iniciar o jogo.");
         resolve(res);
       });
     });
   }, []);
 
-  return { room, selfId, error, loading, createRoom, joinRoom, leaveRoom, startGame };
+  /** Só o host deve chamar isso — atualiza a configuração da sala em tempo
+   *  real para o outro jogador (a UI já deve esconder isso de quem não é host). */
+  const setConfig = useCallback((payload: { imageId?: string; difficulty?: string; imageWidth?: number; imageHeight?: number }) => {
+    getSocket().emit("room:setConfig", payload);
+  }, []);
+
+  return { room, selfId, error, loading, createRoom, joinRoom, leaveRoom, startGame, setConfig };
 }
