@@ -11,6 +11,10 @@ export default function HomePage() {
   const router = useRouter();
 
   const handlePlay = (game: GameDefinition) => {
+    if (game.id === "sudoku") {
+      router.push("/room-sudoku");
+      return;
+    }
     router.push(`/room?game=${game.id}`);
   };
 

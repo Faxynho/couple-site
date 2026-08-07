@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { RoomManager } from "../rooms/RoomManager";
 import { GameId } from "../types";
 import { isValidImageId, isValidDifficulty } from "../games/puzzle/puzzleImages";
+import { isValidSudokuDifficulty } from "../games/sudoku/sudokuGenerator";
 
 interface SocketData {
   roomCode?: string;
@@ -116,7 +117,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         callback?.({ ok: false, error: "Só o anfitrião da sala pode iniciar a partida." });
         return;
       }
-      if (!room.pendingImageId) {
+      if (room.gameId === "puzzle" && !room.pendingImageId) {
         callback?.({ ok: false, error: "Escolha uma imagem antes de começar." });
         return;
       }
@@ -176,6 +177,41 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       const room = code ? roomManager.getRoom(code) : undefined;
       if (!room || !payload?.imageId || !isValidImageId(payload.imageId)) return;
       room.startGame(sanitizeStartOptions(payload));
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
+    // ---- Eventos exclusivos do Sudoku (lógica própria, nada compartilhado com o quebra-cabeça) ----
+
+    socket.on("sudoku:setCell", (payload: { index: number; value: number }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "sudoku") return;
+      room.applyAction({ type: "setCell", index: payload.index, value: payload.value }, socket.id);
+      broadcastGameState(io, code!, roomManager);
+      if (room.status === "finished") {
+        broadcastRoom(io, code!, roomManager);
+      }
+    });
+
+    // "Novo Sudoku" e "Trocar dificuldade" são a mesma ação: gera um desafio
+    // novo (na dificuldade enviada, ou mantendo a atual se omitida).
+    socket.on("sudoku:newPuzzle", (payload: { difficulty?: string } | undefined) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "sudoku") return;
+
+      const options: Record<string, unknown> = {};
+      if (payload?.difficulty && isValidSudokuDifficulty(payload.difficulty)) {
+        options.difficulty = payload.difficulty;
+      } else {
+        // Sem dificuldade explícita: mantém a da partida ATUAL (não a config
+        // de antes do jogo começar, que pode estar desatualizada).
+        const currentDifficulty = (room.gameState as { difficulty?: string } | null)?.difficulty;
+        if (currentDifficulty) options.difficulty = currentDifficulty;
+      }
+
+      room.startGame(options);
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);
     });

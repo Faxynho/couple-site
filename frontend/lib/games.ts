@@ -11,7 +11,15 @@ export const GAMES: GameDefinition[] = [
     name: "Quebra-cabeça Cooperativo",
     description: "Montem juntos, peça por peça, em tempo real — não importa a distância.",
     emoji: "🧩",
-    image: "/images/puzzle/aurora.jpg",
+    image: "/images/puzzle/nuquidito.jpg",
+    available: true,
+  },
+  {
+    id: "sudoku",
+    name: "Sudoku",
+    description: "Clássico 9x9, sozinho ou a dois — cada jogada aparece na hora para o outro.",
+    emoji: "🔢",
+    image: "/images/sudoku-card.svg",
     available: true,
   },
 ];

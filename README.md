@@ -1,16 +1,52 @@
 # Nós Dois 💞 — Jogos Cooperativos para Casal
 
 Uma plataforma privada onde só duas pessoas jogam juntas, em tempo real, pela internet.
-O primeiro jogo é um **Quebra-cabeça Cooperativo**, mas toda a arquitetura foi pensada
-para receber outros jogos (Jogo da Velha, Forca, Memória, Sudoku a dois...) sem
-retrabalho.
+Hoje tem dois jogos — **Quebra-cabeça Cooperativo** e **Sudoku** —, cada um com sua
+própria lógica, mas compartilhando a mesma infraestrutura de salas/multiplayer.
+Toda a arquitetura foi pensada para receber outros jogos (Jogo da Velha, Forca,
+Memória...) sem retrabalho.
 
 ```
 casal-jogos/
-├── backend/     servidor Node + Express + Socket.IO (tempo real, salas, regras do jogo)
+├── backend/     servidor Node + Express + Socket.IO (tempo real, salas, regras dos jogos)
 ├── frontend/    Next.js + TypeScript + Tailwind + Framer Motion (interface)
 └── scripts/     script auxiliar que gerou as imagens de exemplo do quebra-cabeça
 ```
+
+---
+
+## Jogo 2: Sudoku
+
+Segundo jogo da plataforma — **implementação 100% independente** do quebra-cabeça
+(nenhum componente, hook ou lógica compartilhada além da infraestrutura genérica
+de salas/multiplayer). Vive inteiramente em `backend/src/games/sudoku/` e
+`frontend/components/sudoku/` + `frontend/app/room-sudoku/` e
+`frontend/app/game/sudoku/[code]/`.
+
+- **Geração**: uma grade 9x9 completa é gerada embaralhando bandas/pilhas de um
+  padrão base e reetiquetando os dígitos (rápido, sem backtracking) — depois,
+  células são removidas em ordem aleatória, uma a uma, cada remoção só é aceita
+  se a grade resultante **continuar tendo exatamente uma solução** (verificado
+  de verdade a cada passo com um solver próprio). Isso garante que nenhum
+  Sudoku gerado é impossível ou ambíguo.
+- **Dificuldade real, não só "menos números"**: no modo Difícil, depois do
+  corte o servidor roda um segundo solver que usa *apenas* as técnicas lógicas
+  básicas (single nu/oculto — as mesmas que um humano tenta primeiro). Se esse
+  solver conseguir terminar o Sudoku sozinho, o resultado "ficou fácil demais"
+  e o corte é refeito (até 6 tentativas) — só aceita quando o puzzle realmente
+  exige ir além do básico.
+- **Multiplayer**: os dois jogadores preenchem o mesmo tabuleiro em tempo real
+  (`sudoku:setCell`); cada célula guarda quem a preencheu (`filledBy`), exibido
+  como uma bolinha colorida com a cor do jogador. A vitória é detectada no
+  servidor (grade completa e sem violações de regra) e aparece para os dois ao
+  mesmo tempo, não importa quem colocou o último número.
+- **Reiniciar vs. Novo Sudoku**: "Reiniciar" limpa só o que foi digitado,
+  mantendo os números originais; "Novo Sudoku"/"Trocar dificuldade" geram um
+  desafio novo do zero.
+
+---
+
+## Jogo 1: Quebra-cabeça Cooperativo
 
 ---
 

@@ -1,4 +1,4 @@
-export type GameId = "puzzle";
+export type GameId = "puzzle" | "sudoku";
 
 export interface Player {
   id: string;
