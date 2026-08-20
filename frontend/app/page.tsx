@@ -15,6 +15,10 @@ export default function HomePage() {
       router.push("/room-sudoku");
       return;
     }
+    if (game.id === "colors") {
+      router.push("/room-colors");
+      return;
+    }
     router.push(`/room?game=${game.id}`);
   };
 

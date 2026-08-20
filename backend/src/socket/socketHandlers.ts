@@ -3,6 +3,7 @@ import { RoomManager } from "../rooms/RoomManager";
 import { GameId } from "../types";
 import { isValidImageId, isValidDifficulty } from "../games/puzzle/puzzleImages";
 import { isValidSudokuDifficulty } from "../games/sudoku/sudokuGenerator";
+import { isValidColorDifficulty } from "../games/colors/ColorMemoryGame";
 
 interface SocketData {
   roomCode?: string;
@@ -207,6 +208,68 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       } else {
         // Sem dificuldade explícita: mantém a da partida ATUAL (não a config
         // de antes do jogo começar, que pode estar desatualizada).
+        const currentDifficulty = (room.gameState as { difficulty?: string } | null)?.difficulty;
+        if (currentDifficulty) options.difficulty = currentDifficulty;
+      }
+
+      room.startGame(options);
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
+    // ---- Eventos exclusivos da Memória de Cores (independentes do quebra-cabeça e do sudoku) ----
+
+    // Envia o palpite (H/S/B) do jogador para a rodada atual. Ignorado se a
+    // rodada já foi respondida por esse jogador ou não é mais a rodada corrente.
+    socket.on("colors:submitGuess", (payload: { round: number; h: number; s: number; v: number }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "colors") return;
+      room.applyAction(
+        { type: "submitGuess", round: payload.round, h: payload.h, s: payload.s, v: payload.v },
+        socket.id
+      );
+      broadcastGameState(io, code!, roomManager);
+    });
+
+    // Avança para a próxima rodada (ou finaliza, na última) — só é aplicado
+    // quando todos os jogadores conectados já enviaram o palpite da rodada atual,
+    // para que ninguém pule a comparação de resultado do outro.
+    socket.on("colors:nextRound", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "colors" || !room.gameState) return;
+
+      const state = room.gameState as {
+        currentRound: number;
+        rounds: { guesses: Record<string, unknown> }[];
+        finished: boolean;
+      };
+      if (state.finished) return;
+
+      const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+      const currentGuesses = state.rounds[state.currentRound]?.guesses ?? {};
+      const allSubmitted = connectedIds.length > 0 && connectedIds.every((id) => currentGuesses[id]);
+      if (!allSubmitted) return;
+
+      room.applyAction({ type: "nextRound" }, socket.id);
+      broadcastGameState(io, code!, roomManager);
+      if (room.status === "finished") {
+        broadcastRoom(io, code!, roomManager);
+      }
+    });
+
+    // "Jogar de novo" — gera uma nova sequência de cores (na dificuldade enviada,
+    // ou mantendo a atual da partida se omitida).
+    socket.on("colors:newGame", (payload: { difficulty?: string } | undefined) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "colors") return;
+
+      const options: Record<string, unknown> = {};
+      if (payload?.difficulty && isValidColorDifficulty(payload.difficulty)) {
+        options.difficulty = payload.difficulty;
+      } else {
         const currentDifficulty = (room.gameState as { difficulty?: string } | null)?.difficulty;
         if (currentDifficulty) options.difficulty = currentDifficulty;
       }

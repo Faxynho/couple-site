@@ -1,6 +1,7 @@
 import { GameEngine, GameId } from "../types";
 import { PuzzleGame } from "./puzzle/PuzzleGame";
 import { SudokuGame } from "./sudoku/SudokuGame";
+import { ColorMemoryGame } from "./colors/ColorMemoryGame";
 
 /**
  * Ponto único de registro dos jogos disponíveis na plataforma.
@@ -12,6 +13,7 @@ import { SudokuGame } from "./sudoku/SudokuGame";
 export const GameRegistry: Record<GameId, GameEngine<unknown, unknown>> = {
   puzzle: new PuzzleGame() as unknown as GameEngine<unknown, unknown>,
   sudoku: new SudokuGame() as unknown as GameEngine<unknown, unknown>,
+  colors: new ColorMemoryGame() as unknown as GameEngine<unknown, unknown>,
 };
 
 export function getGameEngine(gameId: GameId): GameEngine<unknown, unknown> {

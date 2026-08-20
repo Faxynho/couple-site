@@ -5,7 +5,7 @@
  * cooperativo for adicionado à plataforma (Jogo da Velha, Forca, Sudoku...).
  */
 
-export type GameId = "puzzle" | "sudoku"; // adicione novos ids aqui: "puzzle" | "sudoku" | "tictactoe" | ...
+export type GameId = "puzzle" | "sudoku" | "colors"; // adicione novos ids aqui: "puzzle" | "sudoku" | "colors" | "tictactoe" | ...
 
 export interface Player {
   id: string; // socket.id

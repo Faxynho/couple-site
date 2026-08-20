@@ -1,0 +1,82 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
+import { COLOR_DIFFICULTIES, ColorDifficulty } from "@/lib/colorTypes";
+import { Player } from "@/lib/types";
+
+interface ColorsControlsProps {
+  roomCode: string;
+  difficulty: string;
+  currentRound: number;
+  totalRounds: number;
+  players: Player[];
+  selfId: string | null;
+  scores: Record<string, number>;
+  onBack: () => void;
+}
+
+export default function ColorsControls({
+  roomCode,
+  difficulty,
+  currentRound,
+  totalRounds,
+  players,
+  selfId,
+  scores,
+  onBack,
+}: ColorsControlsProps) {
+  const difficultyLabel = COLOR_DIFFICULTIES[difficulty as ColorDifficulty]?.label ?? difficulty;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className="glass-panel flex w-full max-w-[min(92vw,540px)] flex-col gap-3 rounded-xl3 p-4"
+    >
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+          aria-label="Voltar"
+        >
+          <ArrowLeft size={18} />
+        </button>
+
+        <span className="font-display text-xs font-medium tracking-[0.15em] text-ink-soft">Sala {roomCode}</span>
+
+        <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-ink">{difficultyLabel}</span>
+      </div>
+
+      <div className="flex items-center justify-center gap-1.5">
+        {Array.from({ length: totalRounds }, (_, i) => (
+          <span
+            key={i}
+            className="h-2 flex-1 rounded-full transition-colors"
+            style={{ background: i < currentRound ? "#E893AA" : i === currentRound ? "#F2A6B8" : "rgba(122,108,114,0.2)" }}
+          />
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {players.map((p) => (
+            <span
+              key={p.id}
+              className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
+              style={{ opacity: p.connected ? 1 : 0.5 }}
+            >
+              <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
+              {p.id === selfId ? "Você" : p.name}
+              <span className="font-display font-semibold tabular-nums">{(scores[p.id] ?? 0).toFixed(1)}</span>
+            </span>
+          ))}
+        </div>
+        <span className="text-xs text-ink-soft">
+          Rodada {currentRound + 1}/{totalRounds}
+        </span>
+      </div>
+    </motion.div>
+  );
+}

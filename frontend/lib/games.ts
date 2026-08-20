@@ -22,6 +22,14 @@ export const GAMES: GameDefinition[] = [
     image: "/images/sudoku-card.svg",
     available: true,
   },
+  {
+    id: "colors",
+    name: "Memória de Cores",
+    description: "Memorizem a cor, recriem de olho na memória e comparem o resultado — sozinho ou a dois.",
+    emoji: "🎨",
+    image: "/images/colors-card.svg",
+    available: true,
+  },
 ];
 
 /**
