@@ -8,6 +8,9 @@ import { Player } from "@/lib/types";
 interface ColorsControlsProps {
   roomCode: string;
   difficulty: string;
+  mode: string;
+  seerId: string | null;
+  guesserId: string | null;
   currentRound: number;
   totalRounds: number;
   players: Player[];
@@ -19,6 +22,9 @@ interface ColorsControlsProps {
 export default function ColorsControls({
   roomCode,
   difficulty,
+  mode,
+  seerId,
+  guesserId,
   currentRound,
   totalRounds,
   players,
@@ -27,6 +33,14 @@ export default function ColorsControls({
   onBack,
 }: ColorsControlsProps) {
   const difficultyLabel = COLOR_DIFFICULTIES[difficulty as ColorDifficulty]?.label ?? difficulty;
+  const isCooperative = mode === "cooperative";
+
+  function roleTag(playerId: string): string | null {
+    if (!isCooperative) return null;
+    if (playerId === seerId) return "👁️";
+    if (playerId === guesserId) return "🎯";
+    return null;
+  }
 
   return (
     <motion.div
@@ -46,7 +60,12 @@ export default function ColorsControls({
 
         <span className="font-display text-xs font-medium tracking-[0.15em] text-ink-soft">Sala {roomCode}</span>
 
-        <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-ink">{difficultyLabel}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-ink">
+            {isCooperative ? "🤝 Juntos" : "⚔️ Um contra o outro"}
+          </span>
+          <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-ink">{difficultyLabel}</span>
+        </div>
       </div>
 
       <div className="flex items-center justify-center gap-1.5">
@@ -61,17 +80,31 @@ export default function ColorsControls({
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {players.map((p) => (
-            <span
-              key={p.id}
-              className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
-              style={{ opacity: p.connected ? 1 : 0.5 }}
-            >
-              <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
-              {p.id === selfId ? "Você" : p.name}
-              <span className="font-display font-semibold tabular-nums">{(scores[p.id] ?? 0).toFixed(1)}</span>
+          {players.map((p) => {
+            const tag = roleTag(p.id);
+            return (
+              <span
+                key={p.id}
+                className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
+                style={{ opacity: p.connected ? 1 : 0.5 }}
+              >
+                <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
+                {tag && <span>{tag}</span>}
+                {p.id === selfId ? "Você" : p.name}
+                {!isCooperative && (
+                  <span className="font-display font-semibold tabular-nums">{(scores[p.id] ?? 0).toFixed(1)}</span>
+                )}
+              </span>
+            );
+          })}
+          {isCooperative && (
+            <span className="flex items-center gap-1 rounded-full bg-rose/15 px-2.5 py-1 text-xs font-medium text-ink">
+              Pontuação da dupla
+              <span className="font-display font-semibold tabular-nums">
+                {(scores[players[0]?.id] ?? 0).toFixed(1)}
+              </span>
             </span>
-          ))}
+          )}
         </div>
         <span className="text-xs text-ink-soft">
           Rodada {currentRound + 1}/{totalRounds}

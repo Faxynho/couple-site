@@ -8,6 +8,11 @@ interface ColorPickerProps {
   round: number;
   totalRounds: number;
   onSubmit: (h: number, s: number, v: number) => void;
+  /** Chamado a cada ajuste de slider — usado no modo cooperativo para
+   *  transmitir o progresso ao vivo para quem está vendo a cor. */
+  onChange?: (h: number, s: number, v: number) => void;
+  /** Texto de contexto opcional (ex.: instrução do modo cooperativo). */
+  hint?: string;
 }
 
 interface SliderProps {
@@ -45,10 +50,23 @@ function Slider({ label, value, max, trackBackground, onChange }: SliderProps) {
   );
 }
 
-export default function ColorPicker({ round, totalRounds, onSubmit }: ColorPickerProps) {
-  const [h, setH] = useState(180);
-  const [s, setS] = useState(50);
-  const [v, setV] = useState(50);
+export default function ColorPicker({ round, totalRounds, onSubmit, onChange, hint }: ColorPickerProps) {
+  const [h, setHRaw] = useState(180);
+  const [s, setSRaw] = useState(50);
+  const [v, setVRaw] = useState(50);
+
+  const setH = (next: number) => {
+    setHRaw(next);
+    onChange?.(next, s, v);
+  };
+  const setS = (next: number) => {
+    setSRaw(next);
+    onChange?.(h, next, v);
+  };
+  const setV = (next: number) => {
+    setVRaw(next);
+    onChange?.(h, s, next);
+  };
 
   const preview = hsvToHex(h, s, v);
   const hueRainbow =
@@ -67,7 +85,7 @@ export default function ColorPicker({ round, totalRounds, onSubmit }: ColorPicke
         <p className="text-xs uppercase tracking-wide text-ink-soft">
           Rodada {round + 1} de {totalRounds}
         </p>
-        <p className="text-xs font-medium text-ink-soft">Recriem de memória</p>
+        <p className="text-xs font-medium text-ink-soft">{hint ?? "Recriem de memória"}</p>
       </div>
 
       <div

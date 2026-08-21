@@ -20,6 +20,8 @@ export interface RoomSnapshot {
   pendingImageWidth: number | null;
   pendingImageHeight: number | null;
   pendingDifficulty: string;
+  pendingColorMode: string;
+  pendingSeerId: string | null;
 }
 
 export interface PieceGroup {

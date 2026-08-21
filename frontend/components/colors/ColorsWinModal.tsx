@@ -13,6 +13,7 @@ interface ColorsWinModalProps {
   scores: Record<string, number>;
   maxScore: number;
   difficultyLabel: string;
+  mode?: "competitive" | "cooperative";
   onNewGame: () => void;
   onBack: () => void;
   onClose: () => void;
@@ -33,14 +34,17 @@ export default function ColorsWinModal({
   scores,
   maxScore,
   difficultyLabel,
+  mode = "competitive",
   onNewGame,
   onBack,
   onClose,
 }: ColorsWinModalProps) {
+  const isCooperative = mode === "cooperative";
   const ranked = [...players].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0));
-  const isMultiplayer = players.length > 1;
+  const isMultiplayer = players.length > 1 && !isCooperative;
   const topScore = ranked[0] ? scores[ranked[0].id] ?? 0 : 0;
   const isTie = isMultiplayer && ranked.length > 1 && (scores[ranked[1].id] ?? 0) === topScore;
+  const sharedScore = scores[players[0]?.id] ?? 0;
 
   return (
     <AnimatePresence>
@@ -69,36 +73,53 @@ export default function ColorsWinModal({
               <X size={18} />
             </button>
 
-            <div className="mx-auto mb-3 text-5xl animate-pop-in">🎨</div>
+            <div className="mx-auto mb-3 text-5xl animate-pop-in">{isCooperative ? "🤝" : "🎨"}</div>
             <h2 className="font-display text-2xl font-semibold text-ink">
-              {isMultiplayer ? (isTie ? "Empate de olho afiado!" : `${ranked[0].name} venceu esta rodada!`) : "Resultado final"}
+              {isCooperative
+                ? "Boa dupla!"
+                : isMultiplayer
+                  ? isTie
+                    ? "Empate de olho afiado!"
+                    : `${ranked[0].name} venceu esta rodada!`
+                  : "Resultado final"}
             </h2>
             <p className="mt-1 text-sm text-ink-soft">Dificuldade {difficultyLabel} — 5 rodadas concluídas.</p>
 
-            <div className="mt-6 flex flex-col gap-2.5">
-              {ranked.map((player, i) => {
-                const score = scores[player.id] ?? 0;
-                const isSelf = player.id === selfId;
-                return (
-                  <div
-                    key={player.id}
-                    className={`flex items-center gap-3 rounded-xl2 border px-4 py-3 ${
-                      isMultiplayer && i === 0 ? "border-rose bg-rose/10" : "border-white/70 bg-white/60"
-                    }`}
-                  >
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: player.color }} />
-                    <div className="flex-1 text-left">
-                      <p className="text-sm font-medium text-ink">{isSelf ? "Você" : player.name}</p>
-                      <p className="text-[11px] text-ink-soft">{feedbackFor(score, maxScore)}</p>
+            {isCooperative ? (
+              <div className="mt-6 rounded-xl2 border border-rose bg-rose/10 px-4 py-5">
+                <p className="text-xs uppercase tracking-wide text-ink-soft">Pontuação da dupla</p>
+                <p className="font-display text-4xl font-semibold text-ink tabular-nums">
+                  {sharedScore.toFixed(1)}
+                  <span className="text-base font-normal text-ink-soft">/{maxScore}</span>
+                </p>
+                <p className="mt-1 text-xs text-ink-soft">{feedbackFor(sharedScore, maxScore)}</p>
+              </div>
+            ) : (
+              <div className="mt-6 flex flex-col gap-2.5">
+                {ranked.map((player, i) => {
+                  const score = scores[player.id] ?? 0;
+                  const isSelf = player.id === selfId;
+                  return (
+                    <div
+                      key={player.id}
+                      className={`flex items-center gap-3 rounded-xl2 border px-4 py-3 ${
+                        isMultiplayer && i === 0 ? "border-rose bg-rose/10" : "border-white/70 bg-white/60"
+                      }`}
+                    >
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: player.color }} />
+                      <div className="flex-1 text-left">
+                        <p className="text-sm font-medium text-ink">{isSelf ? "Você" : player.name}</p>
+                        <p className="text-[11px] text-ink-soft">{feedbackFor(score, maxScore)}</p>
+                      </div>
+                      <p className="font-display text-xl font-semibold text-ink tabular-nums">
+                        {score.toFixed(1)}
+                        <span className="text-xs font-normal text-ink-soft">/{maxScore}</span>
+                      </p>
                     </div>
-                    <p className="font-display text-xl font-semibold text-ink tabular-nums">
-                      {score.toFixed(1)}
-                      <span className="text-xs font-normal text-ink-soft">/{maxScore}</span>
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="mt-7 flex flex-col gap-2">
               <Button onClick={onClose} className="w-full">

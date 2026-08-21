@@ -22,6 +22,9 @@ export class Room {
   pendingImageWidth: number | null = null;
   pendingImageHeight: number | null = null;
   pendingDifficulty = DEFAULT_PENDING_DIFFICULTY;
+  /** Específico da Memória de Cores. */
+  pendingColorMode = "competitive";
+  pendingSeerId: string | null = null;
 
   constructor(code: string, gameId: GameId) {
     this.code = code;
@@ -80,20 +83,47 @@ export class Room {
   }
 
   /** Só o host chama isso — atualiza a configuração pendente e é transmitido via room:update. */
-  setPendingConfig(config: { imageId?: string; imageWidth?: number; imageHeight?: number; difficulty?: string }) {
+  setPendingConfig(config: {
+    imageId?: string;
+    imageWidth?: number;
+    imageHeight?: number;
+    difficulty?: string;
+    colorMode?: string;
+    seerId?: string | null;
+  }) {
     if (config.imageId !== undefined) this.pendingImageId = config.imageId;
     if (config.imageWidth !== undefined) this.pendingImageWidth = config.imageWidth;
     if (config.imageHeight !== undefined) this.pendingImageHeight = config.imageHeight;
     if (config.difficulty !== undefined) this.pendingDifficulty = config.difficulty;
+    if (config.colorMode !== undefined) this.pendingColorMode = config.colorMode;
+    if (config.seerId !== undefined) this.pendingSeerId = config.seerId;
   }
 
   startGame(overrides?: Record<string, unknown>) {
     const engine = getGameEngine(this.gameId);
+
+    // Modo cooperativo da Memória de Cores exige dois jogadores com papéis
+    // fixos; sem o segundo jogador conectado, cai automaticamente para o
+    // modo competitivo (que já funciona sozinho).
+    const connectedIds = [...this.players.values()].filter((p) => p.connected).map((p) => p.id);
+    let colorMode = this.pendingColorMode;
+    let seerId: string | null = null;
+    let guesserId: string | null = null;
+    if (colorMode === "cooperative" && connectedIds.length >= 2) {
+      seerId = this.pendingSeerId && connectedIds.includes(this.pendingSeerId) ? this.pendingSeerId : connectedIds[0];
+      guesserId = connectedIds.find((id) => id !== seerId) ?? null;
+    } else {
+      colorMode = "competitive";
+    }
+
     const options = {
       imageId: this.pendingImageId ?? undefined,
       imageWidth: this.pendingImageWidth ?? undefined,
       imageHeight: this.pendingImageHeight ?? undefined,
       difficulty: this.pendingDifficulty,
+      mode: colorMode,
+      seerId: seerId ?? undefined,
+      guesserId: guesserId ?? undefined,
       ...overrides,
     };
     this.gameState = engine.createInitialState(options);
@@ -129,6 +159,8 @@ export class Room {
       pendingImageWidth: this.pendingImageWidth,
       pendingImageHeight: this.pendingImageHeight,
       pendingDifficulty: this.pendingDifficulty,
+      pendingColorMode: this.pendingColorMode,
+      pendingSeerId: this.pendingSeerId,
     };
   }
 }

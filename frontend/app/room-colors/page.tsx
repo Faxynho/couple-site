@@ -7,13 +7,13 @@ import Logo from "@/components/Logo";
 import Button from "@/components/Button";
 import ConnectionThread from "@/components/ConnectionThread";
 import { useRoom } from "@/hooks/useRoom";
-import { COLOR_DIFFICULTIES, ColorDifficulty } from "@/lib/colorTypes";
+import { COLOR_DIFFICULTIES, COLOR_MODES, ColorDifficulty, ColorMode } from "@/lib/colorTypes";
 
 export default function ColorsLobbyPage() {
   const router = useRouter();
   const { room, selfId, error, loading, createRoom, joinRoom, startGame, setConfig } = useRoom();
 
-  const [mode, setMode] = useState<"choose" | "join">("choose");
+  const [screen, setScreen] = useState<"choose" | "join">("choose");
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
 
@@ -33,12 +33,26 @@ export default function ColorsLobbyPage() {
   };
 
   const isHost = Boolean(room && selfId && room.hostId === selfId);
-  const bothConnected = room ? room.players.filter((p) => p.connected).length === room.maxPlayers : false;
+  const connectedPlayers = room ? room.players.filter((p) => p.connected) : [];
+  const bothConnected = room ? connectedPlayers.length === room.maxPlayers : false;
   const selectedDifficulty = (room?.pendingDifficulty as ColorDifficulty) ?? "easy";
+  const selectedMode = (room?.pendingColorMode as ColorMode) ?? "competitive";
+  const isCooperativeSelected = selectedMode === "cooperative";
+  const selectedSeerId = room?.pendingSeerId ?? null;
 
   const handleSelectDifficulty = (key: ColorDifficulty) => {
     if (!isHost) return;
     setConfig({ difficulty: key });
+  };
+
+  const handleSelectMode = (key: ColorMode) => {
+    if (!isHost) return;
+    setConfig({ colorMode: key });
+  };
+
+  const handleSelectSeer = (playerId: string) => {
+    if (!isHost) return;
+    setConfig({ seerId: playerId });
   };
 
   return (
@@ -71,12 +85,12 @@ export default function ColorsLobbyPage() {
               className="mt-2 w-full rounded-full border border-white/70 bg-white/60 px-5 py-3 text-ink placeholder:text-ink-soft/70 outline-none focus:border-rose"
             />
 
-            {mode === "choose" ? (
+            {screen === "choose" ? (
               <div className="mt-6 flex flex-col gap-3">
                 <Button onClick={handleCreate} disabled={!name.trim() || loading} className="w-full">
                   Criar uma sala nova
                 </Button>
-                <Button onClick={() => setMode("join")} variant="secondary" className="w-full">
+                <Button onClick={() => setScreen("join")} variant="secondary" className="w-full">
                   Entrar com um código
                 </Button>
               </div>
@@ -92,7 +106,7 @@ export default function ColorsLobbyPage() {
                 <Button onClick={handleJoin} disabled={!name.trim() || !code.trim() || loading} className="w-full">
                   Entrar na sala
                 </Button>
-                <Button onClick={() => setMode("choose")} variant="ghost" className="w-full">
+                <Button onClick={() => setScreen("choose")} variant="ghost" className="w-full">
                   Voltar
                 </Button>
               </div>
@@ -115,6 +129,64 @@ export default function ColorsLobbyPage() {
             <ConnectionThread players={room.players} maxPlayers={room.maxPlayers} selfId={selfId} />
 
             <div className="mt-2 text-left">
+              <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">
+                {isHost ? "Como vocês querem jogar?" : "Modo escolhido pelo anfitrião"}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.entries(COLOR_MODES) as [ColorMode, (typeof COLOR_MODES)[ColorMode]][]).map(([key, info]) => {
+                  const isSelected = selectedMode === key;
+                  return (
+                    <button
+                      key={key}
+                      disabled={!isHost}
+                      onClick={() => handleSelectMode(key)}
+                      className={`flex flex-col items-center gap-1 rounded-xl2 border px-2 py-2.5 transition-colors ${
+                        isSelected ? "border-rose bg-rose/10 text-ink" : "border-white/70 bg-white/50 text-ink-soft"
+                      } ${isHost ? "hover:bg-white/70" : "cursor-default opacity-90"}`}
+                    >
+                      <span className="text-lg leading-none">{info.emoji}</span>
+                      <span className="text-xs font-medium">{info.label}</span>
+                      <span className="text-center text-[10px] text-ink-soft">{info.hint}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isCooperativeSelected && !bothConnected && (
+                <p className="mt-2 text-center text-[11px] text-rose-deep">
+                  O modo Juntos precisa dos dois conectados — sem o seu par, a partida começa no modo Um contra o outro.
+                </p>
+              )}
+
+              {isCooperativeSelected && bothConnected && (
+                <div className="mt-3">
+                  <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">
+                    {isHost ? "Quem vai ver a cor primeiro?" : "Escolha de papéis do anfitrião"}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {connectedPlayers.map((player) => {
+                      const isSeer = (selectedSeerId ?? connectedPlayers[0]?.id) === player.id;
+                      return (
+                        <button
+                          key={player.id}
+                          disabled={!isHost}
+                          onClick={() => handleSelectSeer(player.id)}
+                          className={`flex flex-col items-center gap-1 rounded-xl2 border px-2 py-2.5 transition-colors ${
+                            isSeer ? "border-rose bg-rose/10 text-ink" : "border-white/70 bg-white/50 text-ink-soft"
+                          } ${isHost ? "hover:bg-white/70" : "cursor-default opacity-90"}`}
+                        >
+                          <span className="text-lg leading-none">{isSeer ? "👁️" : "🎯"}</span>
+                          <span className="text-xs font-medium">{player.id === selfId ? "Você" : player.name}</span>
+                          <span className="text-center text-[10px] text-ink-soft">{isSeer ? "vê a cor" : "adivinha"}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 text-left">
               <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">
                 {isHost ? "Dificuldade" : "Dificuldade escolhida pelo anfitrião"}
               </p>

@@ -36,6 +36,9 @@ function makeTarget(seed: number) {
 function freshState(gameNum: number): ColorMemoryState {
   return {
     difficulty: "easy",
+    mode: "competitive",
+    seerId: null,
+    guesserId: null,
     totalRounds: 5,
     currentRound: 0,
     rounds: Array.from({ length: 5 }, (_, i) => ({ target: makeTarget(gameNum * 10 + i), guesses: {} })),
@@ -56,6 +59,8 @@ const room: RoomSnapshot = {
   pendingImageWidth: null,
   pendingImageHeight: null,
   pendingDifficulty: "easy",
+  pendingColorMode: "competitive",
+  pendingSeerId: null,
 };
 
 describe("ColorsGamePage - fluxo de jogar de novo", () => {

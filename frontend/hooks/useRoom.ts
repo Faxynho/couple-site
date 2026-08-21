@@ -75,9 +75,19 @@ export function useRoom() {
 
   /** Só o host deve chamar isso — atualiza a configuração da sala em tempo
    *  real para o outro jogador (a UI já deve esconder isso de quem não é host). */
-  const setConfig = useCallback((payload: { imageId?: string; difficulty?: string; imageWidth?: number; imageHeight?: number }) => {
-    getSocket().emit("room:setConfig", payload);
-  }, []);
+  const setConfig = useCallback(
+    (payload: {
+      imageId?: string;
+      difficulty?: string;
+      imageWidth?: number;
+      imageHeight?: number;
+      colorMode?: string;
+      seerId?: string | null;
+    }) => {
+      getSocket().emit("room:setConfig", payload);
+    },
+    []
+  );
 
   return { room, selfId, error, loading, createRoom, joinRoom, leaveRoom, startGame, setConfig };
 }

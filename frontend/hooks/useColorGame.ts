@@ -1,11 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import { ColorMemoryState } from "@/lib/colorTypes";
 
+export interface LiveColorPreview {
+  h: number;
+  s: number;
+  v: number;
+}
+
 export function useColorGame(roomCode: string) {
   const [state, setState] = useState<ColorMemoryState | null>(null);
+  const [livePreview, setLivePreview] = useState<LiveColorPreview | null>(null);
 
   useEffect(() => {
     const socket = getSocket();
@@ -14,10 +21,19 @@ export function useColorGame(roomCode: string) {
       if (res.ok && res.gameState) setState(res.gameState);
     });
 
-    const onState = (next: ColorMemoryState | null) => setState(next);
+    const onState = (next: ColorMemoryState | null) => {
+      setState(next);
+      // Uma vez que a rodada muda (ou termina), o preview ao vivo antigo não
+      // faz mais sentido — evita mostrar a última cor da rodada anterior.
+      setLivePreview(null);
+    };
+    const onLivePreview = (preview: LiveColorPreview) => setLivePreview(preview);
+
     socket.on("game:state", onState);
+    socket.on("colors:livePreview", onLivePreview);
     return () => {
       socket.off("game:state", onState);
+      socket.off("colors:livePreview", onLivePreview);
     };
   }, [roomCode]);
 
@@ -33,5 +49,16 @@ export function useColorGame(roomCode: string) {
     getSocket().emit("colors:newGame", { difficulty });
   }, []);
 
-  return { state, submitGuess, nextRound, newGame };
+  // Emite a posição atual dos sliders para quem está vendo a cor acompanhar
+  // em tempo real — limitado a ~12x/s para não sobrecarregar o socket.
+  const lastSentRef = useRef(0);
+  const sendLivePreview = useCallback((h: number, s: number, v: number) => {
+    const now = Date.now();
+    if (now - lastSentRef.current < 80) return;
+    lastSentRef.current = now;
+    getSocket().emit("colors:liveGuess", { h, s, v });
+  }, []);
+
+  return { state, livePreview, submitGuess, nextRound, newGame, sendLivePreview };
 }
+

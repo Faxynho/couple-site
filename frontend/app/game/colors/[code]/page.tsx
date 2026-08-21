@@ -9,6 +9,7 @@ import { useColorGame } from "@/hooks/useColorGame";
 import ColorMemorizeView from "@/components/colors/ColorMemorizeView";
 import ColorPicker from "@/components/colors/ColorPicker";
 import ColorRoundResult from "@/components/colors/ColorRoundResult";
+import SeerLiveView from "@/components/colors/SeerLiveView";
 import ColorsControls from "@/components/colors/ColorsControls";
 import ColorsWinModal from "@/components/colors/ColorsWinModal";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -21,7 +22,7 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
   const code = params.code.toUpperCase();
 
   const { room, selfId, notFound } = useGameRoom(code);
-  const { state, submitGuess, nextRound, newGame } = useColorGame(code);
+  const { state, livePreview, submitGuess, nextRound, newGame, sendLivePreview } = useColorGame(code);
 
   const [localPhase, setLocalPhase] = useState<"memorize" | "guess">("memorize");
   const [showWinModal, setShowWinModal] = useState(false);
@@ -52,16 +53,28 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
     return <LoadingScreen label="Preparando as cores..." />;
   }
 
+  const isCooperative = state.mode === "cooperative";
+  const isSeer = isCooperative && selfId === state.seerId;
+  const isGuesser = isCooperative && selfId === state.guesserId;
+  const seerName = room.players.find((p) => p.id === state.seerId)?.name ?? "seu par";
+  const guesserName = room.players.find((p) => p.id === state.guesserId)?.name ?? "seu par";
+
   const connectedPlayers = room.players.filter((p) => p.connected);
   const currentRoundState = state.rounds[state.currentRound];
   const currentGuesses = currentRoundState?.guesses ?? {};
   const myGuess = selfId ? currentGuesses[selfId] : undefined;
-  const allSubmitted =
-    connectedPlayers.length > 0 && connectedPlayers.every((p) => currentGuesses[p.id]);
+  const allSubmitted = isCooperative
+    ? Boolean(state.guesserId && currentGuesses[state.guesserId])
+    : connectedPlayers.length > 0 && connectedPlayers.every((p) => currentGuesses[p.id]);
 
   const scores: Record<string, number> = {};
-  for (const player of room.players) {
-    scores[player.id] = state.rounds.reduce((sum, r) => sum + (r.guesses[player.id]?.score ?? 0), 0);
+  if (isCooperative && state.guesserId) {
+    const sharedTotal = state.rounds.reduce((sum, r) => sum + (r.guesses[state.guesserId as string]?.score ?? 0), 0);
+    for (const player of room.players) scores[player.id] = sharedTotal;
+  } else {
+    for (const player of room.players) {
+      scores[player.id] = state.rounds.reduce((sum, r) => sum + (r.guesses[player.id]?.score ?? 0), 0);
+    }
   }
   const maxScore = state.totalRounds * 10;
 
@@ -77,6 +90,9 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
       <ColorsControls
         roomCode={room.code}
         difficulty={state.difficulty}
+        mode={state.mode}
+        seerId={state.seerId}
+        guesserId={state.guesserId}
         currentRound={state.currentRound}
         totalRounds={state.totalRounds}
         players={room.players}
@@ -108,7 +124,37 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
             players={room.players}
             selfId={selfId}
             onNext={nextRound}
+            mode={state.mode}
+            guesserId={state.guesserId}
           />
+        ) : isCooperative && isSeer && currentRoundState ? (
+          <SeerLiveView
+            key={`seer-${state.currentRound}`}
+            hex={currentRoundState.target.hex}
+            round={state.currentRound}
+            totalRounds={state.totalRounds}
+            guesserName={guesserName}
+            livePreview={livePreview}
+          />
+        ) : isCooperative && isGuesser ? (
+          <ColorPicker
+            key={`guess-coop-${state.currentRound}`}
+            round={state.currentRound}
+            totalRounds={state.totalRounds}
+            hint={`${seerName} está vendo a cor e vai te guiar`}
+            onChange={sendLivePreview}
+            onSubmit={handleSubmitGuess}
+          />
+        ) : isCooperative ? (
+          <motion.div
+            key="sync"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="glass-panel flex w-full max-w-sm flex-col items-center gap-2 rounded-xl3 p-7 text-center"
+          >
+            <p className="text-sm text-ink-soft">Sincronizando papéis da dupla...</p>
+          </motion.div>
         ) : myGuess ? (
           <motion.div
             key="waiting"
@@ -172,6 +218,7 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
         scores={scores}
         maxScore={maxScore}
         difficultyLabel={difficultyLabel}
+        mode={state.mode}
         onNewGame={() => {
           setShowWinModal(false);
           newGame(state.difficulty);

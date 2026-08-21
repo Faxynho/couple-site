@@ -29,6 +29,11 @@ export interface RoomSnapshot {
   pendingImageWidth: number | null;
   pendingImageHeight: number | null;
   pendingDifficulty: string;
+  /** Específico da Memória de Cores: "competitive" (cada um palpita e comparam)
+   *  ou "cooperative" (um vê a cor e guia o outro, pontuando juntos). */
+  pendingColorMode: string;
+  /** Específico da Memória de Cores no modo cooperativo: id de quem vê a cor. */
+  pendingSeerId: string | null;
 }
 
 /**

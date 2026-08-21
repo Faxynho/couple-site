@@ -3,6 +3,9 @@ export interface ColorTarget {
   s: number;
   v: number;
   hex: string;
+  /** Verdadeiro quando o valor real foi ocultado (modo cooperativo, para quem
+   *  está adivinhando, antes de enviar o palpite) — nunca mostrar como se fosse a cor real. */
+  hidden?: boolean;
 }
 
 export interface ColorGuess {
@@ -19,8 +22,13 @@ export interface ColorRoundState {
   guesses: Record<string, ColorGuess>; // playerId -> palpite
 }
 
+export type ColorMode = "competitive" | "cooperative";
+
 export interface ColorMemoryState {
   difficulty: string;
+  mode: ColorMode;
+  seerId: string | null;
+  guesserId: string | null;
   totalRounds: number;
   currentRound: number;
   rounds: ColorRoundState[];
@@ -39,6 +47,19 @@ export const COLOR_DIFFICULTIES = {
 } as const;
 
 export type ColorDifficulty = keyof typeof COLOR_DIFFICULTIES;
+
+export const COLOR_MODES = {
+  competitive: {
+    label: "Um contra o outro",
+    emoji: "⚔️",
+    hint: "cada um vê a cor e tenta adivinhar — compare as notas",
+  },
+  cooperative: {
+    label: "Juntos",
+    emoji: "🤝",
+    hint: "um vê a cor e guia o outro, que ajusta sem ver — pontuam juntos",
+  },
+} as const;
 
 /** Converte HSB/HSV para hex — usado no navegador para a prévia ao vivo do slider. */
 export function hsvToHex(h: number, s: number, v: number): string {

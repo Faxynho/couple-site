@@ -3,7 +3,7 @@ import { RoomManager } from "../rooms/RoomManager";
 import { GameId } from "../types";
 import { isValidImageId, isValidDifficulty } from "../games/puzzle/puzzleImages";
 import { isValidSudokuDifficulty } from "../games/sudoku/sudokuGenerator";
-import { isValidColorDifficulty } from "../games/colors/ColorMemoryGame";
+import { isValidColorDifficulty, isValidColorMode } from "../games/colors/ColorMemoryGame";
 
 interface SocketData {
   roomCode?: string;
@@ -35,10 +35,49 @@ function broadcastRoom(io: Server, roomCode: string, roomManager: RoomManager) {
   io.to(roomCode).emit("room:update", room.toSnapshot());
 }
 
+interface ColorsStateShape {
+  mode?: string;
+  seerId?: string | null;
+  guesserId?: string | null;
+  currentRound: number;
+  finished: boolean;
+  rounds: { target: unknown; guesses: Record<string, unknown> }[];
+}
+
+/**
+ * No modo cooperativo da Memória de Cores, quem está adivinhando não pode
+ * receber a cor-alvo da rodada atual — senão bastaria abrir o DevTools para
+ * "trapacear". Cada jogador recebe sua própria versão do estado; assim que
+ * ele envia o palpite (ou a partida termina), a cor real é revelada dos dois lados.
+ */
+function getColorsStateForPlayer(state: unknown, playerId: string): unknown {
+  const s = state as ColorsStateShape | null;
+  if (!s || s.mode !== "cooperative" || playerId !== s.guesserId) return state;
+
+  const currentRoundState = s.rounds[s.currentRound];
+  const alreadyGuessed = Boolean(currentRoundState?.guesses[playerId]);
+  if (s.finished || !currentRoundState || alreadyGuessed) return state;
+
+  const clone = structuredClone(s);
+  clone.rounds[s.currentRound] = {
+    ...clone.rounds[s.currentRound],
+    target: { h: 0, s: 0, v: 0, hex: "#e5e5e5", hidden: true },
+  };
+  return clone;
+}
+
+/** Envia o estado do jogo — no caso da Memória de Cores cooperativa, cada
+ *  jogador recebe uma versão personalizada (ver getColorsStateForPlayer). */
 function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManager) {
   const room = roomManager.getRoom(roomCode);
   if (!room) return;
-  io.to(roomCode).emit("game:state", room.gameState);
+  if (room.gameId === "colors") {
+    for (const player of room.players.values()) {
+      io.to(player.id).emit("game:state", getColorsStateForPlayer(room.gameState, player.id));
+    }
+  } else {
+    io.to(roomCode).emit("game:state", room.gameState);
+  }
 }
 
 export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
@@ -81,7 +120,9 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
       socket.data.roomCode = room.code;
       socket.join(room.code);
-      callback?.({ ok: true, room: room.toSnapshot(), gameState: room.gameState });
+      const gameState =
+        room.gameId === "colors" ? getColorsStateForPlayer(room.gameState, socket.id) : room.gameState;
+      callback?.({ ok: true, room: room.toSnapshot(), gameState });
     });
 
     socket.on("room:leave", () => {
@@ -96,16 +137,26 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       socket.data.roomCode = undefined;
     });
 
-    // Só o host pode mudar a configuração da partida (imagem/dificuldade)
+    // Só o host pode mudar a configuração da partida (imagem/dificuldade/modo)
     // enquanto os dois estão na sala de espera — o outro jogador só acompanha,
     // recebendo a atualização em tempo real via room:update.
-    socket.on("room:setConfig", (payload: StartPayload) => {
-      const code = socket.data.roomCode;
-      const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || !room.isHost(socket.id)) return;
-      room.setPendingConfig(sanitizeStartOptions(payload));
-      broadcastRoom(io, code!, roomManager);
-    });
+    socket.on(
+      "room:setConfig",
+      (payload: StartPayload & { colorMode?: string; seerId?: string | null }) => {
+        const code = socket.data.roomCode;
+        const room = code ? roomManager.getRoom(code) : undefined;
+        if (!room || !room.isHost(socket.id)) return;
+
+        const options: { colorMode?: string; seerId?: string | null } = {};
+        if (payload?.colorMode && isValidColorMode(payload.colorMode)) options.colorMode = payload.colorMode;
+        if (payload?.seerId === null || (payload?.seerId && room.players.has(payload.seerId))) {
+          options.seerId = payload.seerId;
+        }
+
+        room.setPendingConfig({ ...sanitizeStartOptions(payload), ...options });
+        broadcastRoom(io, code!, roomManager);
+      }
+    );
 
     socket.on("game:start", (payload: StartPayload | undefined, callback: AckCallback) => {
       const code = socket.data.roomCode;
@@ -232,24 +283,33 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       broadcastGameState(io, code!, roomManager);
     });
 
-    // Avança para a próxima rodada (ou finaliza, na última) — só é aplicado
-    // quando todos os jogadores conectados já enviaram o palpite da rodada atual,
-    // para que ninguém pule a comparação de resultado do outro.
+    // Avança para a próxima rodada (ou finaliza, na última). No competitivo,
+    // só é aplicado quando todos os jogadores conectados já enviaram o
+    // palpite da rodada; no cooperativo, basta o palpite de quem adivinha
+    // (só existe um palpite por rodada).
     socket.on("colors:nextRound", () => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
       if (!room || room.gameId !== "colors" || !room.gameState) return;
 
       const state = room.gameState as {
+        mode?: string;
+        seerId?: string | null;
+        guesserId?: string | null;
         currentRound: number;
         rounds: { guesses: Record<string, unknown> }[];
         finished: boolean;
       };
       if (state.finished) return;
 
-      const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
       const currentGuesses = state.rounds[state.currentRound]?.guesses ?? {};
-      const allSubmitted = connectedIds.length > 0 && connectedIds.every((id) => currentGuesses[id]);
+      const allSubmitted =
+        state.mode === "cooperative"
+          ? Boolean(state.guesserId && currentGuesses[state.guesserId])
+          : (() => {
+              const connectedIds = [...room.players.values()].filter((p) => p.connected).map((p) => p.id);
+              return connectedIds.length > 0 && connectedIds.every((id) => currentGuesses[id]);
+            })();
       if (!allSubmitted) return;
 
       room.applyAction({ type: "nextRound" }, socket.id);
@@ -259,24 +319,48 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
     });
 
-    // "Jogar de novo" — gera uma nova sequência de cores (na dificuldade enviada,
-    // ou mantendo a atual da partida se omitida).
+    // "Jogar de novo" — gera uma nova sequência de cores (na dificuldade
+    // enviada, ou mantendo a atual), preservando o modo e os papéis
+    // (vidente/adivinhador) da partida que acabou de terminar.
     socket.on("colors:newGame", (payload: { difficulty?: string } | undefined) => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
       if (!room || room.gameId !== "colors") return;
 
+      const current = room.gameState as {
+        difficulty?: string;
+        mode?: string;
+        seerId?: string | null;
+        guesserId?: string | null;
+      } | null;
+
       const options: Record<string, unknown> = {};
       if (payload?.difficulty && isValidColorDifficulty(payload.difficulty)) {
         options.difficulty = payload.difficulty;
-      } else {
-        const currentDifficulty = (room.gameState as { difficulty?: string } | null)?.difficulty;
-        if (currentDifficulty) options.difficulty = currentDifficulty;
+      } else if (current?.difficulty) {
+        options.difficulty = current.difficulty;
       }
+      if (current?.mode) options.mode = current.mode;
+      if (current?.seerId) options.seerId = current.seerId;
+      if (current?.guesserId) options.guesserId = current.guesserId;
 
       room.startGame(options);
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);
+    });
+
+    // Repassa em tempo real, só no cooperativo e só de quem está adivinhando
+    // para quem está vendo a cor — permite acompanhar o ajuste dos sliders
+    // sem persistir nada no estado (é só um preview visual, não uma jogada).
+    socket.on("colors:liveGuess", (payload: { h: number; s: number; v: number }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "colors" || !room.gameState) return;
+
+      const state = room.gameState as { mode?: string; guesserId?: string | null; finished: boolean };
+      if (state.mode !== "cooperative" || state.finished || state.guesserId !== socket.id) return;
+
+      socket.to(code!).emit("colors:livePreview", { h: payload.h, s: payload.s, v: payload.v });
     });
 
     socket.on("disconnect", () => {

@@ -13,6 +13,9 @@ interface ColorRoundResultProps {
   players: Player[];
   selfId: string | null;
   onNext: () => void;
+  /** No cooperativo, mostra um único palpite compartilhado em vez da lista por jogador. */
+  mode?: "competitive" | "cooperative";
+  guesserId?: string | null;
 }
 
 function scoreLabel(score: number) {
@@ -45,8 +48,57 @@ export default function ColorRoundResult({
   players,
   selfId,
   onNext,
+  mode = "competitive",
+  guesserId,
 }: ColorRoundResultProps) {
   const isLastRound = round === totalRounds - 1;
+
+  if (mode === "cooperative") {
+    const sharedGuess = guesserId ? guesses[guesserId] : undefined;
+    const guesserName = players.find((p) => p.id === guesserId)?.name ?? "quem adivinhou";
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        className="flex w-full max-w-md flex-col items-center gap-4"
+      >
+        <p className="text-xs uppercase tracking-wide text-ink-soft">
+          Rodada {round + 1} de {totalRounds}
+        </p>
+
+        {sharedGuess && (
+          <div className="relative w-full">
+            <SplitCompare
+              target={target.hex}
+              guess={sharedGuess.hex}
+              label={guesserId === selfId ? "Seu palpite" : `Palpite de ${guesserName}`}
+            />
+            <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-4 border-white bg-ink shadow-glow">
+              <span className="font-display text-xl font-semibold leading-none text-white">
+                {sharedGuess.score.toFixed(1)}
+              </span>
+              <span className="text-[9px] leading-none text-white/70">/10</span>
+            </div>
+          </div>
+        )}
+
+        <div className="glass-panel flex w-full items-center justify-center gap-2 rounded-xl2 px-4 py-3 text-center">
+          <span className="text-lg leading-none">🤝</span>
+          <p className="text-sm text-ink">
+            <span className="font-medium">{sharedGuess ? scoreLabel(sharedGuess.score) : "Sem palpite"}</span> — vocês
+            pontuam juntos nessa rodada.
+          </p>
+        </div>
+
+        <Button onClick={onNext} className="w-full">
+          {isLastRound ? "Ver resultado final" : "Próxima rodada"}
+        </Button>
+      </motion.div>
+    );
+  }
+
   const orderedPlayers = [...players].sort((a) => (a.id === selfId ? -1 : 1));
   const [primaryPlayer, ...otherPlayers] = orderedPlayers;
   const primaryGuess = primaryPlayer ? guesses[primaryPlayer.id] : undefined;
