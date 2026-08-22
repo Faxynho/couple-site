@@ -30,6 +30,22 @@ export const GAMES: GameDefinition[] = [
     image: "/images/colors-card.svg",
     available: true,
   },
+  {
+    id: "crossword",
+    name: "Palavras Cruzadas",
+    description: "Preencham a grade com as dicas — juntos numa só cópia ou em duelo pra ver quem termina primeiro.",
+    emoji: "📝",
+    image: "/images/crossword-card.svg",
+    available: true,
+  },
+  {
+    id: "wordsearch",
+    name: "Caça-Palavras",
+    description: "Encontrem as palavras escondidas na grade em todas as direções — em equipe ou em duelo.",
+    emoji: "🔍",
+    image: "/images/wordsearch-card.svg",
+    available: true,
+  },
 ];
 
 /**

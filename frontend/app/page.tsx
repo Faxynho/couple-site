@@ -19,6 +19,14 @@ export default function HomePage() {
       router.push("/room-colors");
       return;
     }
+    if (game.id === "crossword") {
+      router.push("/room-crossword");
+      return;
+    }
+    if (game.id === "wordsearch") {
+      router.push("/room-wordsearch");
+      return;
+    }
     router.push(`/room?game=${game.id}`);
   };
 

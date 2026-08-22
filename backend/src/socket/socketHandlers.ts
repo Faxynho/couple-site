@@ -4,6 +4,10 @@ import { GameId } from "../types";
 import { isValidImageId, isValidDifficulty } from "../games/puzzle/puzzleImages";
 import { isValidSudokuDifficulty } from "../games/sudoku/sudokuGenerator";
 import { isValidColorDifficulty, isValidColorMode } from "../games/colors/ColorMemoryGame";
+import { isValidCrosswordDifficulty } from "../games/crossword/crosswordGenerator";
+import { isValidCrosswordMode } from "../games/crossword/CrosswordGame";
+import { isValidWordSearchDifficulty } from "../games/wordsearch/wordsearchGenerator";
+import { isValidWordSearchMode } from "../games/wordsearch/WordSearchGame";
 
 interface SocketData {
   roomCode?: string;
@@ -75,9 +79,150 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     for (const player of room.players.values()) {
       io.to(player.id).emit("game:state", getColorsStateForPlayer(room.gameState, player.id));
     }
+  } else if (room.gameId === "crossword") {
+    for (const player of room.players.values()) {
+      io.to(player.id).emit("game:state", getCrosswordStateForPlayer(room.gameState, player.id));
+    }
+  } else if (room.gameId === "wordsearch") {
+    for (const player of room.players.values()) {
+      io.to(player.id).emit("game:state", getWordSearchStateForPlayer(room.gameState, player.id));
+    }
   } else {
     io.to(roomCode).emit("game:state", room.gameState);
   }
+}
+
+/** Retorna a versão pública (sem `game.gameState` cru) do estado de acordo com o jogo/jogador. */
+function getMaskedStateForPlayer(room: { gameId: GameId; gameState: unknown }, playerId: string): unknown {
+  if (room.gameId === "colors") return getColorsStateForPlayer(room.gameState, playerId);
+  if (room.gameId === "crossword") return getCrosswordStateForPlayer(room.gameState, playerId);
+  if (room.gameId === "wordsearch") return getWordSearchStateForPlayer(room.gameState, playerId);
+  return room.gameState;
+}
+
+interface CrosswordCellShape {
+  block: boolean;
+  solution: string | null;
+  number: number | null;
+}
+interface CrosswordWordShape {
+  id: string;
+  number: number;
+  direction: string;
+  row: number;
+  col: number;
+  length: number;
+  clue: string;
+  answer: string;
+}
+interface CrosswordProgressShape {
+  values: (string | null)[];
+  completedWordIds: string[];
+  finished: boolean;
+  finishedAt: number | null;
+  timeMs: number | null;
+}
+interface CrosswordStateShape {
+  mode?: string;
+  cells: CrosswordCellShape[];
+  words: CrosswordWordShape[];
+  progress: Record<string, CrosswordProgressShape>;
+}
+
+/**
+ * Nunca envia `cell.solution` nem `word.answer` ao cliente — o front só
+ * precisa saber quais células são bloco/número e qual a dica de cada palavra,
+ * nunca a resposta. No modo Duelo, cada jogador só recebe as LETRAS que ele
+ * mesmo digitou; o progresso do adversário chega só como um resumo (quantas
+ * palavras já completou), impedindo qualquer tipo de "cola" via DevTools.
+ */
+function getCrosswordStateForPlayer(state: unknown, playerId: string): unknown {
+  const s = state as CrosswordStateShape | null;
+  if (!s) return state;
+
+  const publicCells = s.cells.map((c) => ({ block: c.block, number: c.number }));
+  const publicWords = s.words.map((w) => ({
+    id: w.id,
+    number: w.number,
+    direction: w.direction,
+    row: w.row,
+    col: w.col,
+    length: w.length,
+    clue: w.clue,
+  }));
+
+  const progress: Record<string, unknown> = {};
+  for (const [pid, prog] of Object.entries(s.progress)) {
+    if (s.mode !== "duel" || pid === playerId) {
+      progress[pid] = prog;
+    } else {
+      progress[pid] = {
+        finished: prog.finished,
+        finishedAt: prog.finishedAt,
+        timeMs: prog.timeMs,
+        wordsCompleted: prog.completedWordIds.length,
+      };
+    }
+  }
+
+  return { ...s, cells: publicCells, words: publicWords, progress };
+}
+
+interface WordSearchWordShape {
+  id: string;
+  word: string;
+  row: number;
+  col: number;
+  dr: number;
+  dc: number;
+}
+interface WordSearchProgressShape {
+  found: Record<string, { row: number; col: number }[]>;
+  mistakes: number;
+  finished: boolean;
+  finishedAt: number | null;
+  timeMs: number | null;
+}
+interface WordSearchStateShape {
+  mode?: string;
+  words: WordSearchWordShape[];
+  progress: Record<string, WordSearchProgressShape>;
+}
+
+/**
+ * A palavra em si sempre aparece na lista (é o que o jogador precisa achar);
+ * só a localização exata na grade fica escondida até ser encontrada. No modo
+ * Duelo, cada jogador só vê as próprias palavras encontradas — o progresso do
+ * adversário chega como resumo (quantas encontrou), sem revelar quais nem onde.
+ */
+function getWordSearchStateForPlayer(state: unknown, playerId: string): unknown {
+  const s = state as WordSearchStateShape | null;
+  if (!s) return state;
+
+  const isDuel = s.mode === "duel";
+  const ownProgress = s.progress[playerId];
+
+  const publicWords = s.words.map((w) => {
+    const found = ownProgress?.found?.[w.id];
+    return found ? { id: w.id, word: w.word, cells: found } : { id: w.id, word: w.word };
+  });
+
+  const progress: Record<string, unknown> = {};
+  for (const [pid, prog] of Object.entries(s.progress)) {
+    if (!isDuel || pid === playerId) {
+      progress[pid] = prog;
+    } else {
+      progress[pid] = {
+        finished: prog.finished,
+        finishedAt: prog.finishedAt,
+        timeMs: prog.timeMs,
+        mistakes: prog.mistakes,
+        wordsFound: Object.keys(prog.found).length,
+      };
+    }
+  }
+
+  return { ...s, words: publicWords, progress };
 }
 
 export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
@@ -120,8 +265,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
       socket.data.roomCode = room.code;
       socket.join(room.code);
-      const gameState =
-        room.gameId === "colors" ? getColorsStateForPlayer(room.gameState, socket.id) : room.gameState;
+      const gameState = getMaskedStateForPlayer(room, socket.id);
       callback?.({ ok: true, room: room.toSnapshot(), gameState });
     });
 
@@ -142,15 +286,18 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     // recebendo a atualização em tempo real via room:update.
     socket.on(
       "room:setConfig",
-      (payload: StartPayload & { colorMode?: string; seerId?: string | null }) => {
+      (payload: StartPayload & { colorMode?: string; seerId?: string | null; matchMode?: string }) => {
         const code = socket.data.roomCode;
         const room = code ? roomManager.getRoom(code) : undefined;
         if (!room || !room.isHost(socket.id)) return;
 
-        const options: { colorMode?: string; seerId?: string | null } = {};
+        const options: { colorMode?: string; seerId?: string | null; matchMode?: string } = {};
         if (payload?.colorMode && isValidColorMode(payload.colorMode)) options.colorMode = payload.colorMode;
         if (payload?.seerId === null || (payload?.seerId && room.players.has(payload.seerId))) {
           options.seerId = payload.seerId;
+        }
+        if (payload?.matchMode && (isValidCrosswordMode(payload.matchMode) || isValidWordSearchMode(payload.matchMode))) {
+          options.matchMode = payload.matchMode;
         }
 
         room.setPendingConfig({ ...sanitizeStartOptions(payload), ...options });
@@ -361,6 +508,92 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (state.mode !== "cooperative" || state.finished || state.guesserId !== socket.id) return;
 
       socket.to(code!).emit("colors:livePreview", { h: payload.h, s: payload.s, v: payload.v });
+    });
+
+    // ---- Eventos exclusivos do Palavras Cruzadas ----
+
+    // Preenche (ou apaga, se letter === "") uma célula. No modo "together" a
+    // jogada é espelhada para os dois; no modo "duel" só afeta o progresso de
+    // quem jogou. Toda validação de acerto acontece no backend (CrosswordGame).
+    socket.on("crossword:setCell", (payload: { row: number; col: number; letter: string }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "crossword") return;
+      room.applyAction({ type: "setCell", row: payload.row, col: payload.col, letter: payload.letter }, socket.id);
+      broadcastGameState(io, code!, roomManager);
+      if (room.status === "finished") {
+        broadcastRoom(io, code!, roomManager);
+      }
+    });
+
+    // "Jogar de novo" — gera uma grade nova (na dificuldade enviada, ou
+    // mantendo a atual), preservando o modo (Juntos/Duelo) da partida anterior.
+    socket.on("crossword:newPuzzle", (payload: { difficulty?: string } | undefined) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "crossword") return;
+
+      const current = room.gameState as { difficulty?: string; mode?: string } | null;
+      const options: Record<string, unknown> = {};
+      if (payload?.difficulty && isValidCrosswordDifficulty(payload.difficulty)) {
+        options.difficulty = payload.difficulty;
+      } else if (current?.difficulty) {
+        options.difficulty = current.difficulty;
+      }
+      if (current?.mode) options.mode = current.mode;
+
+      room.startGame(options);
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
+    // ---- Eventos exclusivos do Caça-Palavras ----
+
+    // Recebe o início e o fim de um arrasto sobre a grade e verifica no
+    // backend se as letras nesse trajeto formam (para a frente ou de trás
+    // para frente) alguma palavra da lista ainda não encontrada.
+    socket.on(
+      "wordsearch:submitSelection",
+      (payload: { startRow: number; startCol: number; endRow: number; endCol: number }) => {
+        const code = socket.data.roomCode;
+        const room = code ? roomManager.getRoom(code) : undefined;
+        if (!room || room.gameId !== "wordsearch") return;
+        room.applyAction(
+          {
+            type: "submitSelection",
+            startRow: payload.startRow,
+            startCol: payload.startCol,
+            endRow: payload.endRow,
+            endCol: payload.endCol,
+          },
+          socket.id
+        );
+        broadcastGameState(io, code!, roomManager);
+        if (room.status === "finished") {
+          broadcastRoom(io, code!, roomManager);
+        }
+      }
+    );
+
+    // "Jogar de novo" — gera uma grade nova (na dificuldade enviada, ou
+    // mantendo a atual), preservando o modo (Juntos/Duelo) da partida anterior.
+    socket.on("wordsearch:newPuzzle", (payload: { difficulty?: string } | undefined) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "wordsearch") return;
+
+      const current = room.gameState as { difficulty?: string; mode?: string } | null;
+      const options: Record<string, unknown> = {};
+      if (payload?.difficulty && isValidWordSearchDifficulty(payload.difficulty)) {
+        options.difficulty = payload.difficulty;
+      } else if (current?.difficulty) {
+        options.difficulty = current.difficulty;
+      }
+      if (current?.mode) options.mode = current.mode;
+
+      room.startGame(options);
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
     });
 
     socket.on("disconnect", () => {

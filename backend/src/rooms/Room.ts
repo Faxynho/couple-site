@@ -25,6 +25,8 @@ export class Room {
   /** Específico da Memória de Cores. */
   pendingColorMode = "competitive";
   pendingSeerId: string | null = null;
+  /** Específico do Palavras Cruzadas e do Caça-Palavras: "together" ou "duel". */
+  pendingMatchMode = "together";
 
   constructor(code: string, gameId: GameId) {
     this.code = code;
@@ -90,6 +92,7 @@ export class Room {
     difficulty?: string;
     colorMode?: string;
     seerId?: string | null;
+    matchMode?: string;
   }) {
     if (config.imageId !== undefined) this.pendingImageId = config.imageId;
     if (config.imageWidth !== undefined) this.pendingImageWidth = config.imageWidth;
@@ -97,6 +100,7 @@ export class Room {
     if (config.difficulty !== undefined) this.pendingDifficulty = config.difficulty;
     if (config.colorMode !== undefined) this.pendingColorMode = config.colorMode;
     if (config.seerId !== undefined) this.pendingSeerId = config.seerId;
+    if (config.matchMode !== undefined) this.pendingMatchMode = config.matchMode;
   }
 
   startGame(overrides?: Record<string, unknown>) {
@@ -116,14 +120,21 @@ export class Room {
       colorMode = "competitive";
     }
 
+    // Palavras Cruzadas e Caça-Palavras usam um modo genérico "together"/"duel"
+    // (independente do `colorMode`, que é específico da Memória de Cores).
+    const matchMode = this.gameId === "crossword" || this.gameId === "wordsearch" ? this.pendingMatchMode : undefined;
+
     const options = {
       imageId: this.pendingImageId ?? undefined,
       imageWidth: this.pendingImageWidth ?? undefined,
       imageHeight: this.pendingImageHeight ?? undefined,
       difficulty: this.pendingDifficulty,
-      mode: colorMode,
+      mode: matchMode ?? colorMode,
       seerId: seerId ?? undefined,
       guesserId: guesserId ?? undefined,
+      // Fixado no início da partida — usado pelo Palavras Cruzadas/Caça-Palavras
+      // para saber quantos jogadores precisam terminar antes de encerrar o duelo.
+      playerIds: connectedIds,
       ...overrides,
     };
     this.gameState = engine.createInitialState(options);
@@ -161,6 +172,7 @@ export class Room {
       pendingDifficulty: this.pendingDifficulty,
       pendingColorMode: this.pendingColorMode,
       pendingSeerId: this.pendingSeerId,
+      pendingMatchMode: this.pendingMatchMode,
     };
   }
 }

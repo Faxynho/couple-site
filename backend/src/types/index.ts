@@ -5,7 +5,7 @@
  * cooperativo for adicionado à plataforma (Jogo da Velha, Forca, Sudoku...).
  */
 
-export type GameId = "puzzle" | "sudoku" | "colors"; // adicione novos ids aqui: "puzzle" | "sudoku" | "colors" | "tictactoe" | ...
+export type GameId = "puzzle" | "sudoku" | "colors" | "crossword" | "wordsearch"; // adicione novos ids aqui
 
 export interface Player {
   id: string; // socket.id
@@ -34,6 +34,9 @@ export interface RoomSnapshot {
   pendingColorMode: string;
   /** Específico da Memória de Cores no modo cooperativo: id de quem vê a cor. */
   pendingSeerId: string | null;
+  /** Específico do Palavras Cruzadas e do Caça-Palavras: "together" (juntos)
+   *  ou "duel" (um contra o outro), escolhido pelo host na sala de espera. */
+  pendingMatchMode: string;
 }
 
 /**

@@ -1,4 +1,4 @@
-export type GameId = "puzzle" | "sudoku" | "colors";
+export type GameId = "puzzle" | "sudoku" | "colors" | "crossword" | "wordsearch";
 
 export interface Player {
   id: string;
@@ -22,6 +22,7 @@ export interface RoomSnapshot {
   pendingDifficulty: string;
   pendingColorMode: string;
   pendingSeerId: string | null;
+  pendingMatchMode: string;
 }
 
 export interface PieceGroup {

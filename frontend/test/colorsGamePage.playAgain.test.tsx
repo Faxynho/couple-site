@@ -61,6 +61,7 @@ const room: RoomSnapshot = {
   pendingDifficulty: "easy",
   pendingColorMode: "competitive",
   pendingSeerId: null,
+  pendingMatchMode: "together",
 };
 
 describe("ColorsGamePage - fluxo de jogar de novo", () => {

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg-wordsearch" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FDF6EE" />
+      <stop offset="100%" stop-color="#DFE3F2" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg-wordsearch)" />
+
+  <g transform="translate(64,64)">
+    <rect width="272" height="272" rx="24" fill="#FFFFFF" fill-opacity="0.55" />
+
+    <g transform="translate(20,20)" font-family="ui-monospace, monospace" font-size="26" font-weight="700" fill="#7A6C72">
+      <text x="0" y="26">A</text><text x="38" y="26">M</text><text x="76" y="26">O</text><text x="114" y="26">R</text><text x="152" y="26">Q</text><text x="190" y="26">Z</text>
+      <text x="0" y="64">T</text><text x="38" y="64">C</text><text x="76" y="64">A</text><text x="114" y="64">S</text><text x="152" y="64">A</text><text x="190" y="64">L</text>
+      <text x="0" y="102">R</text><text x="38" y="102">B</text><text x="76" y="102">M</text><text x="114" y="102">O</text><text x="152" y="102">R</text><text x="190" y="102">B</text>
+      <text x="0" y="140">F</text><text x="38" y="140">E</text><text x="76" y="140">L</text><text x="114" y="140">I</text><text x="152" y="140">Z</text><text x="190" y="140">D</text>
+      <text x="0" y="178">P</text><text x="38" y="178">R</text><text x="76" y="178">A</text><text x="114" y="178">I</text><text x="152" y="178">A</text><text x="190" y="178">K</text>
+      <text x="0" y="216">J</text><text x="38" y="216">U</text><text x="76" y="216">N</text><text x="114" y="216">T</text><text x="152" y="216">O</text><text x="190" y="216">S</text>
+    </g>
+
+    <!-- destaques de palavras encontradas, estilo "marca-texto" -->
+    <rect x="38" y="4" width="188" height="34" rx="17" fill="#D9758F" opacity="0.32" />
+    <rect x="18" y="118" width="34" height="150" rx="17" fill="#8FB0DE" opacity="0.32" />
+    <rect x="18" y="194" width="226" height="34" rx="17" fill="#9CC7A6" opacity="0.32" />
+  </g>
+</svg>

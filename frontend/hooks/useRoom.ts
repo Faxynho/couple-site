@@ -83,6 +83,7 @@ export function useRoom() {
       imageHeight?: number;
       colorMode?: string;
       seerId?: string | null;
+      matchMode?: string;
     }) => {
       getSocket().emit("room:setConfig", payload);
     },
