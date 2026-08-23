@@ -214,28 +214,33 @@ export default function CrosswordGrid({
           const isWordDone =
             (entry?.across && completedSet.has(entry.across.id)) || (entry?.down && completedSet.has(entry.down.id));
           return (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleSelect(idx)}
-              disabled={locked}
-              className={`relative aspect-square rounded-[3px] border text-center font-display text-sm font-semibold uppercase transition-colors sm:text-base ${
-                isSelected
-                  ? "border-rose bg-rose/25 text-ink"
-                  : isWordDone
-                  ? "border-sage/60 bg-sage/20 text-ink"
-                  : isInActiveWord
-                  ? "border-rose/40 bg-rose/10 text-ink"
-                  : "border-white/70 bg-white/85 text-ink hover:bg-white"
-              }`}
-            >
-              {cell.number !== null && (
-                <span className="absolute left-0.5 top-0 text-[8px] font-medium leading-none text-ink-soft">
-                  {cell.number}
-                </span>
-              )}
-              {value}
-            </button>
+            // O wrapper (não o botão) define o tamanho do quadrado no grid.
+            // O botão fica "absolute inset-0" preenchendo o wrapper, então o
+            // texto da letra digitada nunca influencia a altura da célula —
+            // sem isso, a linha esticava e a grade ficava torta ao digitar.
+            <div key={idx} className="relative aspect-square">
+              <button
+                type="button"
+                onClick={() => handleSelect(idx)}
+                disabled={locked}
+                className={`absolute inset-0 flex items-center justify-center rounded-[3px] border font-display text-sm font-semibold uppercase leading-none transition-colors sm:text-base ${
+                  isSelected
+                    ? "border-rose bg-rose/25 text-ink"
+                    : isWordDone
+                    ? "border-sage/60 bg-sage/20 text-ink"
+                    : isInActiveWord
+                    ? "border-rose/40 bg-rose/10 text-ink"
+                    : "border-white/70 bg-white/85 text-ink hover:bg-white"
+                }`}
+              >
+                {cell.number !== null && (
+                  <span className="absolute left-0.5 top-0 text-[8px] font-medium leading-none text-ink-soft">
+                    {cell.number}
+                  </span>
+                )}
+                {value}
+              </button>
+            </div>
           );
         })}
       </div>

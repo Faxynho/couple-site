@@ -66,6 +66,8 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
         foundCount={foundCount}
         totalCount={state.words.length}
         players={room.players}
+        progress={state.progress}
+        selfId={selfId}
         onNewPuzzle={(difficulty) => newPuzzle(difficulty)}
         onBack={() => router.push("/")}
       />

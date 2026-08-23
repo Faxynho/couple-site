@@ -11,9 +11,17 @@ interface QuizQuestionCardProps {
   ownAnswer: QuizAnswerRecord | null;
   revealed: boolean;
   onAnswer: (optionIndex: number) => void;
+  /** Só preenchido no modo Duelo: nome e resposta do adversário na pergunta atual. */
+  opponent?: { name: string; answer: QuizAnswerRecord | null } | null;
 }
 
-export default function QuizQuestionCard({ question, ownAnswer, revealed, onAnswer }: QuizQuestionCardProps) {
+export default function QuizQuestionCard({
+  question,
+  ownAnswer,
+  revealed,
+  onAnswer,
+  opponent,
+}: QuizQuestionCardProps) {
   const locked = Boolean(ownAnswer) || revealed;
   const missedQuestion = revealed && !ownAnswer;
 
@@ -86,6 +94,19 @@ export default function QuizQuestionCard({ question, ownAnswer, revealed, onAnsw
         {missedQuestion && (
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 text-center text-xs text-ink-soft">
             Você não respondeu a tempo.
+          </motion.p>
+        )}
+        {revealed && opponent && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-3 text-center text-xs text-ink-soft"
+          >
+            {!opponent.answer || opponent.answer.optionIndex === null
+              ? `${opponent.name} não respondeu a tempo.`
+              : opponent.answer.correct
+              ? `${opponent.name} acertou! ✅`
+              : `${opponent.name} errou. ❌`}
           </motion.p>
         )}
       </AnimatePresence>

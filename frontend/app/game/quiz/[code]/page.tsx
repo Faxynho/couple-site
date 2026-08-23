@@ -56,6 +56,13 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
     hasAnswered[p.id] = Boolean(state.players[p.id]?.answers[state.currentIndex]);
   }
 
+  // Só no modo Duelo: identifica o adversário e sua resposta na pergunta
+  // atual, para avisar se ele acertou ou errou depois da revelação.
+  const opponentPlayer = state.mode === "duel" ? players.find((p) => p.id !== selfId) ?? null : null;
+  const opponentResult = opponentPlayer
+    ? { name: opponentPlayer.name, answer: state.players[opponentPlayer.id]?.answers[state.currentIndex] ?? null }
+    : null;
+
   return (
     <main className="flex min-h-screen flex-col items-center gap-5 bg-cozy-gradient px-4 py-6 sm:py-8">
       <QuizControls
@@ -81,6 +88,7 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
             ownAnswer={ownAnswer}
             revealed={revealed}
             onAnswer={(optionIndex) => submitAnswer(state.currentIndex, optionIndex)}
+            opponent={opponentResult}
           />
         )}
       </AnimatePresence>

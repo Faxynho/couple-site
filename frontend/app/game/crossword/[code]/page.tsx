@@ -72,6 +72,8 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
         startedAt={state.startedAt}
         finished={state.finished}
         players={room.players}
+        progress={state.progress}
+        selfId={selfId}
         onNewPuzzle={(difficulty) => newPuzzle(difficulty)}
         onBack={() => router.push("/")}
       />

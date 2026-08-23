@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Clock3, RotateCw, SlidersHorizontal } from "lucide-react";
-import { WORDSEARCH_DIFFICULTIES, WordSearchDifficulty } from "@/lib/wordsearchTypes";
+import { ArrowLeft, Check, Clock3, RotateCw, SlidersHorizontal } from "lucide-react";
+import { WORDSEARCH_DIFFICULTIES, WordSearchDifficulty, WordSearchProgress } from "@/lib/wordsearchTypes";
 import { MATCH_MODES, MatchMode } from "@/lib/matchModes";
 
 interface Player {
@@ -22,6 +22,8 @@ interface WordSearchControlsProps {
   foundCount: number;
   totalCount: number;
   players: Player[];
+  progress: Record<string, WordSearchProgress>;
+  selfId: string | null;
   onNewPuzzle: (difficulty?: string) => void;
   onBack: () => void;
 }
@@ -42,6 +44,8 @@ export default function WordSearchControls({
   foundCount,
   totalCount,
   players,
+  progress,
+  selfId,
   onNewPuzzle,
   onBack,
 }: WordSearchControlsProps) {
@@ -82,16 +86,25 @@ export default function WordSearchControls({
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {players.map((p) => (
-            <span
-              key={p.id}
-              className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
-              style={{ opacity: p.connected ? 1 : 0.5 }}
-            >
-              <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
-              {p.name}
-            </span>
-          ))}
+          {players.map((p) => {
+            const playerFinished = Boolean(progress[p.id]?.finished);
+            return (
+              <span
+                key={p.id}
+                className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
+                style={{ opacity: p.connected ? 1 : 0.5 }}
+              >
+                <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
+                {p.name}
+                {mode === "duel" &&
+                  (playerFinished ? (
+                    <Check size={12} className="text-sage" />
+                  ) : (
+                    <span className="h-1.5 w-1.5 rounded-full bg-rose/70" />
+                  ))}
+              </span>
+            );
+          })}
         </div>
         <span className="flex items-center gap-2 text-xs text-ink-soft">
           <span>
@@ -102,6 +115,18 @@ export default function WordSearchControls({
           </span>
         </span>
       </div>
+
+      {mode === "duel" &&
+        players.length > 1 &&
+        players.map((p) => {
+          if (p.id === selfId) return null;
+          const opponentFinished = Boolean(progress[p.id]?.finished);
+          return (
+            <p key={p.id} className="text-center text-xs text-ink-soft">
+              {opponentFinished ? `${p.name} já terminou! 🎉` : `${p.name} ainda está jogando...`}
+            </p>
+          );
+        })}
 
       <div className="flex items-center gap-2">
         <button
