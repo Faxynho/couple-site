@@ -27,6 +27,10 @@ export default function HomePage() {
       router.push("/room-wordsearch");
       return;
     }
+    if (game.id === "quiz") {
+      router.push("/room-quiz");
+      return;
+    }
     router.push(`/room?game=${game.id}`);
   };
 

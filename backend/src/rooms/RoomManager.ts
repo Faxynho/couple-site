@@ -28,6 +28,11 @@ export class RoomManager {
     return this.rooms.get(code.toUpperCase());
   }
 
+  /** Usada pelo relógio do servidor do Quiz para varrer salas ativas em busca de timeouts. */
+  getAllRooms(): Room[] {
+    return [...this.rooms.values()];
+  }
+
   removeRoom(code: string) {
     this.rooms.delete(code.toUpperCase());
   }

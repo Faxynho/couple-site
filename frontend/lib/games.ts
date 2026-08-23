@@ -46,6 +46,14 @@ export const GAMES: GameDefinition[] = [
     image: "/images/wordsearch-card.svg",
     available: true,
   },
+  {
+    id: "quiz",
+    name: "Quiz",
+    description: "Perguntas de conhecimentos gerais com tempo — sozinho, em equipe ou em duelo pontuado.",
+    emoji: "❓",
+    image: "/images/quiz-card.svg",
+    available: true,
+  },
 ];
 
 /**

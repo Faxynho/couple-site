@@ -4,6 +4,7 @@ import { SudokuGame } from "./sudoku/SudokuGame";
 import { ColorMemoryGame } from "./colors/ColorMemoryGame";
 import { CrosswordGame } from "./crossword/CrosswordGame";
 import { WordSearchGame } from "./wordsearch/WordSearchGame";
+import { QuizGame } from "./quiz/QuizGame";
 
 /**
  * Ponto único de registro dos jogos disponíveis na plataforma.
@@ -18,6 +19,7 @@ export const GameRegistry: Record<GameId, GameEngine<unknown, unknown>> = {
   colors: new ColorMemoryGame() as unknown as GameEngine<unknown, unknown>,
   crossword: new CrosswordGame() as unknown as GameEngine<unknown, unknown>,
   wordsearch: new WordSearchGame() as unknown as GameEngine<unknown, unknown>,
+  quiz: new QuizGame() as unknown as GameEngine<unknown, unknown>,
 };
 
 export function getGameEngine(gameId: GameId): GameEngine<unknown, unknown> {

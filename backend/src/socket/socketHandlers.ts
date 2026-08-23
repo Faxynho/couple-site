@@ -8,6 +8,8 @@ import { isValidCrosswordDifficulty } from "../games/crossword/crosswordGenerato
 import { isValidCrosswordMode } from "../games/crossword/CrosswordGame";
 import { isValidWordSearchDifficulty } from "../games/wordsearch/wordsearchGenerator";
 import { isValidWordSearchMode } from "../games/wordsearch/WordSearchGame";
+import { isValidQuizDifficulty } from "../games/quiz/questionBank";
+import { isValidQuizMode, QUIZ_REVEAL_DURATION_MS } from "../games/quiz/QuizGame";
 
 interface SocketData {
   roomCode?: string;
@@ -87,6 +89,10 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     for (const player of room.players.values()) {
       io.to(player.id).emit("game:state", getWordSearchStateForPlayer(room.gameState, player.id));
     }
+  } else if (room.gameId === "quiz") {
+    for (const player of room.players.values()) {
+      io.to(player.id).emit("game:state", getQuizStateForPlayer(room.gameState, player.id));
+    }
   } else {
     io.to(roomCode).emit("game:state", room.gameState);
   }
@@ -97,6 +103,7 @@ function getMaskedStateForPlayer(room: { gameId: GameId; gameState: unknown }, p
   if (room.gameId === "colors") return getColorsStateForPlayer(room.gameState, playerId);
   if (room.gameId === "crossword") return getCrosswordStateForPlayer(room.gameState, playerId);
   if (room.gameId === "wordsearch") return getWordSearchStateForPlayer(room.gameState, playerId);
+  if (room.gameId === "quiz") return getQuizStateForPlayer(room.gameState, playerId);
   return room.gameState;
 }
 
@@ -225,6 +232,73 @@ function getWordSearchStateForPlayer(state: unknown, playerId: string): unknown 
   return { ...s, words: publicWords, progress };
 }
 
+interface QuizQuestionShape {
+  id: string;
+  category: string;
+  difficulty: string;
+  question: string;
+  options: string[];
+  correctIndex?: number;
+  explanation?: string;
+}
+interface QuizAnswerShape {
+  optionIndex: number | null;
+  correct: boolean;
+  points: number;
+  timeMs: number;
+}
+interface QuizPlayerShape {
+  score: number;
+  answers: (QuizAnswerShape | null)[];
+}
+interface QuizStateShape {
+  mode?: string;
+  currentIndex: number;
+  phase: "active" | "revealed";
+  questions: QuizQuestionShape[];
+  players: Record<string, QuizPlayerShape>;
+  finished: boolean;
+  questionStartedAt: number;
+  revealedAt: number | null;
+  timeLimitMs: number;
+}
+
+/**
+ * Nunca envia `correctIndex`/`explanation` da pergunta atual enquanto ela
+ * ainda está "active" (só depois que vira "revealed", quando todos já
+ * responderam ou o tempo acabou). Perguntas futuras (ainda não chegou a vez)
+ * vêm sem texto/alternativas — evita qualquer tipo de "olhada adiante". A
+ * alternativa escolhida por CADA OUTRO jogador na pergunta atual também fica
+ * oculta até a revelação — só a própria resposta de quem está vendo aparece,
+ * para ele saber que já respondeu e está esperando o par.
+ */
+function getQuizStateForPlayer(state: unknown, playerId: string): unknown {
+  const s = state as QuizStateShape | null;
+  if (!s) return state;
+
+  const questions = s.questions.map((q, i) => {
+    if (i > s.currentIndex) {
+      return { id: q.id, category: q.category, difficulty: q.difficulty, question: "", options: [] };
+    }
+    const revealed = i < s.currentIndex || s.phase === "revealed";
+    if (revealed) return q;
+    const { correctIndex, explanation, ...publicQuestion } = q;
+    return publicQuestion;
+  });
+
+  const players: Record<string, QuizPlayerShape> = {};
+  for (const [pid, p] of Object.entries(s.players)) {
+    const answers = p.answers.map((a, i) => {
+      if (!a) return a;
+      if (i === s.currentIndex && s.phase === "active" && pid !== playerId) return null;
+      return a;
+    });
+    players[pid] = { ...p, answers };
+  }
+
+  return { ...s, questions, players };
+}
+
 export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
   io.on("connection", (socket: Socket<any, any, any, SocketData>) => {
     socket.on("room:create", (payload: { gameId: GameId; playerName: string }, callback: AckCallback) => {
@@ -296,7 +370,12 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         if (payload?.seerId === null || (payload?.seerId && room.players.has(payload.seerId))) {
           options.seerId = payload.seerId;
         }
-        if (payload?.matchMode && (isValidCrosswordMode(payload.matchMode) || isValidWordSearchMode(payload.matchMode))) {
+        if (
+          payload?.matchMode &&
+          (isValidCrosswordMode(payload.matchMode) ||
+            isValidWordSearchMode(payload.matchMode) ||
+            isValidQuizMode(payload.matchMode))
+        ) {
           options.matchMode = payload.matchMode;
         }
 
@@ -596,6 +675,47 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       broadcastGameState(io, code!, roomManager);
     });
 
+    // ---- Eventos exclusivos do Quiz ----
+
+    // Envia a alternativa escolhida para a pergunta atual. Ignorado se não for
+    // mais a pergunta corrente, se a pergunta já foi revelada, ou se esse
+    // jogador já respondeu — toda a validação de acerto/pontuação acontece
+    // dentro do QuizGame, nunca confiando em nada vindo do cliente.
+    socket.on("quiz:submitAnswer", (payload: { questionIndex: number; optionIndex: number }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "quiz") return;
+      room.applyAction(
+        { type: "submitAnswer", questionIndex: payload.questionIndex, optionIndex: payload.optionIndex },
+        socket.id
+      );
+      broadcastGameState(io, code!, roomManager);
+      if (room.status === "finished") {
+        broadcastRoom(io, code!, roomManager);
+      }
+    });
+
+    // "Jogar de novo" — sorteia um novo conjunto de perguntas (na dificuldade
+    // enviada, ou mantendo a atual), preservando o modo (Solo/Juntos/Duelo).
+    socket.on("quiz:newGame", (payload: { difficulty?: string } | undefined) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "quiz") return;
+
+      const current = room.gameState as { difficulty?: string; mode?: string } | null;
+      const options: Record<string, unknown> = {};
+      if (payload?.difficulty && isValidQuizDifficulty(payload.difficulty)) {
+        options.difficulty = payload.difficulty;
+      } else if (current?.difficulty) {
+        options.difficulty = current.difficulty;
+      }
+      if (current?.mode) options.mode = current.mode;
+
+      room.startGame(options);
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
     socket.on("disconnect", () => {
       const code = socket.data.roomCode;
       if (!code) return;
@@ -606,4 +726,36 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
     });
   });
+
+  // ---- Relógio do servidor do Quiz ----
+  // Varre periodicamente as salas com uma partida de Quiz em andamento para
+  // forçar o avanço da pergunta quando o tempo acaba (mesmo que um jogador
+  // fique sem responder) e para avançar automaticamente depois da breve
+  // janela de revelação — mantendo os dois lados sempre sincronizados sem
+  // depender de nenhum timer no cliente.
+  setInterval(() => {
+    const now = Date.now();
+    for (const room of roomManager.getAllRooms()) {
+      if (room.gameId !== "quiz" || room.status !== "playing" || !room.gameState) continue;
+      const state = room.gameState as QuizStateShape;
+      if (state.finished) continue;
+
+      if (state.phase === "active" && now - state.questionStartedAt >= state.timeLimitMs) {
+        room.applyAction({ type: "timeUp" }, "system");
+      } else if (
+        state.phase === "revealed" &&
+        state.revealedAt !== null &&
+        now - state.revealedAt >= QUIZ_REVEAL_DURATION_MS
+      ) {
+        room.applyAction({ type: "nextQuestion" }, "system");
+      } else {
+        continue;
+      }
+
+      broadcastGameState(io, room.code, roomManager);
+      if ((room.status as string) === "finished") {
+        broadcastRoom(io, room.code, roomManager);
+      }
+    }
+  }, 500);
 }
