@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { CrosswordCell, CrosswordDirection, CrosswordWordDef } from "@/lib/crosswordTypes";
 
 interface CrosswordGridProps {
@@ -19,8 +19,11 @@ interface CrosswordGridProps {
   onActiveWordChange: (wordId: string | null) => void;
 }
 
-/** Grade de Palavras Cruzadas: clique para selecionar/alternar direção,
- *  teclado físico para digitar, apagar e navegar entre as células. */
+/** Grade de Palavras Cruzadas: clique para selecionar/alternar direção.
+ *  Um input de texto invisível fica sempre focado na célula selecionada —
+ *  é ele que faz o teclado (físico ou virtual, no celular) aparecer e
+ *  captura o que foi digitado; Backspace/setas/Tab continuam sendo
+ *  tratados via evento de teclado, que também funciona com o input focado. */
 export default function CrosswordGrid({
   rows,
   cols,
@@ -36,6 +39,7 @@ export default function CrosswordGrid({
   onDirectionChange,
   onActiveWordChange,
 }: CrosswordGridProps) {
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
   const wordsByCell = useMemo(() => {
     const map = new Map<number, { across?: CrosswordWordDef; down?: CrosswordWordDef }>();
     for (const w of words) {
@@ -94,14 +98,46 @@ export default function CrosswordGrid({
     if (selected === idx) {
       const entry = wordsByCell.get(idx);
       if (entry?.across && entry?.down) onDirectionChange(direction === "across" ? "down" : "across");
-      return;
+    } else {
+      onSelectedChange(idx);
+      const entry = wordsByCell.get(idx);
+      if (entry) {
+        if (direction === "across" && !entry.across && entry.down) onDirectionChange("down");
+        if (direction === "down" && !entry.down && entry.across) onDirectionChange("across");
+      }
     }
-    onSelectedChange(idx);
-    const entry = wordsByCell.get(idx);
-    if (entry) {
-      if (direction === "across" && !entry.across && entry.down) onDirectionChange("down");
-      if (direction === "down" && !entry.down && entry.across) onDirectionChange("across");
-    }
+    // Foca o input invisível para abrir o teclado do celular (e manter o
+    // foco funcional no desktop). Precisa ser síncrono ao clique/toque —
+    // é o próprio gesto do usuário que autoriza o navegador a abrir o teclado.
+    hiddenInputRef.current?.focus({ preventScroll: true });
+  };
+
+  // Sempre que a célula selecionada mudar (inclusive por navegação com
+  // as setas), garante que o input invisível continue focado — é o que
+  // mantém o teclado do celular aberto enquanto a pessoa preenche a grade.
+  useEffect(() => {
+    if (locked || selected === null) return;
+    hiddenInputRef.current?.focus({ preventScroll: true });
+  }, [selected, locked]);
+
+  /** Captura o que foi digitado (teclado físico ou virtual) através do
+   *  input invisível — mais confiável em celulares do que ler `keydown`,
+   *  já que muitos teclados virtuais não disparam eventos de tecla
+   *  completos para cada letra. */
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    e.target.value = "";
+    if (locked || selected === null) return;
+    const letters = raw.replace(/[^a-zA-ZÀ-ú]/g, "");
+    if (!letters) return;
+    const letter = letters[letters.length - 1].toUpperCase();
+    const row = Math.floor(selected / cols);
+    const col = selected % cols;
+    onSetValue(row, col, letter);
+    const dRow = direction === "down" ? 1 : 0;
+    const dCol = direction === "across" ? 1 : 0;
+    const next = step(selected, dRow, dCol);
+    if (next !== null) onSelectedChange(next);
   };
 
   useEffect(() => {
@@ -111,13 +147,7 @@ export default function CrosswordGrid({
       const row = Math.floor(selected / cols);
       const col = selected % cols;
 
-      if (/^[a-zA-ZÀ-ú]$/.test(e.key) && e.key.length === 1) {
-        onSetValue(row, col, e.key.toUpperCase());
-        const dRow = direction === "down" ? 1 : 0;
-        const dCol = direction === "across" ? 1 : 0;
-        const next = step(selected, dRow, dCol);
-        if (next !== null) onSelectedChange(next);
-      } else if (e.key === "Backspace" || e.key === "Delete") {
+      if (e.key === "Backspace" || e.key === "Delete") {
         if (values[selected]) {
           onSetValue(row, col, "");
         } else {
@@ -149,7 +179,26 @@ export default function CrosswordGrid({
   }, [selected, direction, cols, step, onSetValue, onSelectedChange, onDirectionChange, values, locked]);
 
   return (
-    <div className="glass-panel w-full max-w-[min(94vw,560px)] overflow-auto rounded-xl2 p-3">
+    <div className="glass-panel relative w-full max-w-[min(94vw,560px)] overflow-auto rounded-xl2 p-3">
+      {/* Input invisível, sempre focado na célula ativa. É o que faz o
+          teclado do celular (e o do desktop) aparecer — sem ele, os
+          quadradinhos são só botões e nenhum navegador abre teclado algum. */}
+      <input
+        ref={hiddenInputRef}
+        type="text"
+        inputMode="text"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="characters"
+        spellCheck={false}
+        aria-label="Digite a letra da célula selecionada"
+        value=""
+        onChange={handleInputChange}
+        disabled={locked}
+        className="absolute left-0 top-0 h-px w-px overflow-hidden opacity-0"
+        style={{ pointerEvents: "none" }}
+      />
+
       <div
         className="mx-auto grid select-none gap-[2px]"
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))`, maxWidth: `${Math.min(cols * 42, 520)}px` }}
