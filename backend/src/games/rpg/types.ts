@@ -89,6 +89,7 @@ export interface RPGCombatant {
   isBot: boolean;
   team: "a" | "b";
   classId: RPGClassId;
+  displayName?: string;
   maxHp: number;
   hp: number;
   atk: number;
