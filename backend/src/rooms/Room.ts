@@ -123,8 +123,9 @@ export class Room {
     // Palavras Cruzadas e Caça-Palavras usam um modo genérico "together"/"duel"
     // (independente do `colorMode`, que é específico da Memória de Cores).
     // O Quiz reaproveita o mesmo campo com valores "solo" | "together" | "duel".
+    // O Mini RPG reaproveita o mesmo campo com valores "1v1" | "soloBot" | "duoBot".
     const matchMode =
-      this.gameId === "crossword" || this.gameId === "wordsearch" || this.gameId === "quiz"
+      this.gameId === "crossword" || this.gameId === "wordsearch" || this.gameId === "quiz" || this.gameId === "rpg"
         ? this.pendingMatchMode
         : undefined;
 

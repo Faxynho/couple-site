@@ -10,6 +10,7 @@ import { isValidWordSearchDifficulty } from "../games/wordsearch/wordsearchGener
 import { isValidWordSearchMode } from "../games/wordsearch/WordSearchGame";
 import { isValidQuizDifficulty } from "../games/quiz/questionBank";
 import { isValidQuizMode, QUIZ_REVEAL_DURATION_MS } from "../games/quiz/QuizGame";
+import { isValidRPGMode, RPG_INTRO_DURATION_MS, RPG_RESOLVE_PAUSE_MS } from "../games/rpg/RPGGame";
 
 interface SocketData {
   roomCode?: string;
@@ -93,6 +94,10 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     for (const player of room.players.values()) {
       io.to(player.id).emit("game:state", getQuizStateForPlayer(room.gameState, player.id));
     }
+  } else if (room.gameId === "rpg") {
+    for (const player of room.players.values()) {
+      io.to(player.id).emit("game:state", getRPGStateForPlayer(room.gameState, player.id));
+    }
   } else {
     io.to(roomCode).emit("game:state", room.gameState);
   }
@@ -104,6 +109,7 @@ function getMaskedStateForPlayer(room: { gameId: GameId; gameState: unknown }, p
   if (room.gameId === "crossword") return getCrosswordStateForPlayer(room.gameState, playerId);
   if (room.gameId === "wordsearch") return getWordSearchStateForPlayer(room.gameState, playerId);
   if (room.gameId === "quiz") return getQuizStateForPlayer(room.gameState, playerId);
+  if (room.gameId === "rpg") return getRPGStateForPlayer(room.gameState, playerId);
   return room.gameState;
 }
 
@@ -299,6 +305,53 @@ function getQuizStateForPlayer(state: unknown, playerId: string): unknown {
   return { ...s, questions, players };
 }
 
+interface RPGCombatantShape {
+  id: string;
+  isBot: boolean;
+  team: "a" | "b";
+  classId: string;
+  maxHp: number;
+  hp: number;
+  atk: number;
+  def: number;
+  alive: boolean;
+  stunnedRounds: number;
+  skippingThisRound: boolean;
+  hand: unknown[];
+  chosenCardId: string | null;
+}
+interface RPGStateShape {
+  phase: "intro" | "choosing" | "resolved" | "finished";
+  introStartedAt: number;
+  resolvedAt: number | null;
+  combatants: Record<string, RPGCombatantShape>;
+}
+
+/**
+ * Enquanto a fase for "choosing" (escolhendo cartas), cada jogador só vê a
+ * própria mão e a própria carta escolhida — a mão e a escolha de qualquer
+ * outro combatente (adversário humano OU o BOT) ficam ocultas, só com um
+ * `hasChosen` (já escolheu ou não) para dar feedback visual sem entregar
+ * qual carta foi. Fora dessa fase (resolvida/terminada) tudo fica visível
+ * para todos, já que o resultado da rodada precisa ser visto por todos.
+ */
+function getRPGStateForPlayer(state: unknown, playerId: string): unknown {
+  const s = state as RPGStateShape | null;
+  if (!s) return state;
+
+  const combatants: Record<string, unknown> = {};
+  for (const [id, c] of Object.entries(s.combatants)) {
+    const hasChosen = Boolean(c.chosenCardId);
+    if (id === playerId || s.phase !== "choosing") {
+      combatants[id] = { ...c, hasChosen };
+    } else {
+      combatants[id] = { ...c, hand: [], chosenCardId: null, hasChosen };
+    }
+  }
+
+  return { ...s, combatants };
+}
+
 export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
   io.on("connection", (socket: Socket<any, any, any, SocketData>) => {
     socket.on("room:create", (payload: { gameId: GameId; playerName: string }, callback: AckCallback) => {
@@ -374,7 +427,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
           payload?.matchMode &&
           (isValidCrosswordMode(payload.matchMode) ||
             isValidWordSearchMode(payload.matchMode) ||
-            isValidQuizMode(payload.matchMode))
+            isValidQuizMode(payload.matchMode) ||
+            isValidRPGMode(payload.matchMode))
         ) {
           options.matchMode = payload.matchMode;
         }
@@ -716,6 +770,38 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       broadcastGameState(io, code!, roomManager);
     });
 
+    // ---- Eventos exclusivos do Mini RPG: Duelo ----
+
+    // Escolhe uma das 3 cartas da mão para a rodada atual. Ignorado se não for
+    // a fase de escolha, se esse combatente já escolheu, se está atordoado ou
+    // se é o BOT (o BOT nunca recebe jogadas do cliente) — toda a resolução
+    // de dano/cura/status acontece dentro do RPGGame, nunca no cliente.
+    socket.on("rpg:selectCard", (payload: { cardInstanceId: string }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "rpg") return;
+      room.applyAction({ type: "selectCard", cardInstanceId: payload.cardInstanceId }, socket.id);
+      broadcastGameState(io, code!, roomManager);
+      if (room.status === "finished") {
+        broadcastRoom(io, code!, roomManager);
+      }
+    });
+
+    // "Jogar de novo" — sorteia classes novas e reinicia a batalha, preservando o modo (1v1/Solo vs BOT/2 vs BOT).
+    socket.on("rpg:newGame", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "rpg") return;
+
+      const current = room.gameState as { mode?: string } | null;
+      const options: Record<string, unknown> = {};
+      if (current?.mode) options.mode = current.mode;
+
+      room.startGame(options);
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
     socket.on("disconnect", () => {
       const code = socket.data.roomCode;
       if (!code) return;
@@ -758,4 +844,35 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
     }
   }, 500);
+
+  // ---- Relógio do servidor do Mini RPG: Duelo ----
+  // Faz a batalha andar sozinha nos momentos em que não depende de uma
+  // escolha do jogador: sai da introdução (classes reveladas) para a
+  // primeira rodada, e sai da rodada resolvida (dano já aplicado, animações
+  // rodando no cliente) para a próxima — sempre no mesmo ritmo para todo
+  // mundo na sala, sem depender de nenhum timer do lado do cliente.
+  setInterval(() => {
+    const now = Date.now();
+    for (const room of roomManager.getAllRooms()) {
+      if (room.gameId !== "rpg" || room.status !== "playing" || !room.gameState) continue;
+      const state = room.gameState as RPGStateShape;
+
+      if (state.phase === "intro" && now - state.introStartedAt >= RPG_INTRO_DURATION_MS) {
+        room.applyAction({ type: "beginRound" }, "system");
+      } else if (
+        state.phase === "resolved" &&
+        state.resolvedAt !== null &&
+        now - state.resolvedAt >= RPG_RESOLVE_PAUSE_MS
+      ) {
+        room.applyAction({ type: "advanceRound" }, "system");
+      } else {
+        continue;
+      }
+
+      broadcastGameState(io, room.code, roomManager);
+      if ((room.status as string) === "finished") {
+        broadcastRoom(io, room.code, roomManager);
+      }
+    }
+  }, 400);
 }

@@ -54,6 +54,14 @@ export const GAMES: GameDefinition[] = [
     image: "/images/quiz-card.svg",
     available: true,
   },
+  {
+    id: "rpg",
+    name: "Mini RPG: Duelo",
+    description: "Sorteie sua classe e batalhe com cartas aleatórias — 1x1, ou em dupla contra o BOT.",
+    emoji: "🗡️",
+    image: "/images/rpg-card.svg",
+    available: true,
+  },
 ];
 
 /**

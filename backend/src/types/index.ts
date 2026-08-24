@@ -5,7 +5,7 @@
  * cooperativo for adicionado à plataforma (Jogo da Velha, Forca, Sudoku...).
  */
 
-export type GameId = "puzzle" | "sudoku" | "colors" | "crossword" | "wordsearch" | "quiz"; // adicione novos ids aqui
+export type GameId = "puzzle" | "sudoku" | "colors" | "crossword" | "wordsearch" | "quiz" | "rpg"; // adicione novos ids aqui
 
 export interface Player {
   id: string; // socket.id
@@ -36,7 +36,8 @@ export interface RoomSnapshot {
   pendingSeerId: string | null;
   /** Específico do Palavras Cruzadas e do Caça-Palavras: "together" (juntos)
    *  ou "duel" (um contra o outro), escolhido pelo host na sala de espera.
-   *  O Quiz reaproveita o mesmo campo com valores "solo" | "together" | "duel". */
+   *  O Quiz reaproveita o mesmo campo com valores "solo" | "together" | "duel".
+   *  O Mini RPG reaproveita o mesmo campo com valores "1v1" | "soloBot" | "duoBot". */
   pendingMatchMode: string;
 }
 
