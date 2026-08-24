@@ -36,6 +36,11 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
   useEffect(() => {
     if (state?.solved && !wasSolvedRef.current) {
       setShowWinModal(true);
+    } else if (!state?.solved && wasSolvedRef.current) {
+      // O estado é sincronizado pelo servidor: quando qualquer um dos dois
+      // clica em "Jogar de novo", os dois recebem `solved: false` de volta —
+      // o modal precisa fechar nos dois clientes, não só em quem clicou.
+      setShowWinModal(false);
     }
     wasSolvedRef.current = Boolean(state?.solved);
   }, [state?.solved, state?.solvedAt]);

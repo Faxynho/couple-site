@@ -61,7 +61,7 @@ export default function CrosswordControls({
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="glass-panel flex w-full max-w-[min(94vw,560px)] flex-col gap-3 rounded-xl3 p-4"
+      className="glass-panel relative z-20 flex w-full max-w-[min(94vw,560px)] flex-col gap-3 rounded-xl3 p-4"
     >
       <div className="flex items-center justify-between">
         <button

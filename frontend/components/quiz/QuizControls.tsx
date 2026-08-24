@@ -43,22 +43,23 @@ export default function QuizControls({
   const [difficultyMenuOpen, setDifficultyMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (phase !== "active") return;
+    if (phase !== "active" || mode === "together") return;
     const interval = setInterval(() => setNow(Date.now()), 150);
     return () => clearInterval(interval);
-  }, [phase, questionStartedAt]);
+  }, [phase, questionStartedAt, mode]);
 
   const remainingMs = phase === "active" ? Math.max(0, timeLimitMs - (now - questionStartedAt)) : 0;
   const remainingSeconds = Math.ceil(remainingMs / 1000);
   const progress = phase === "active" ? remainingMs / timeLimitMs : 0;
   const urgent = phase === "active" && remainingSeconds <= 5;
+  const untimed = mode === "together";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="glass-panel flex w-full max-w-[min(94vw,560px)] flex-col gap-3 rounded-xl3 p-4"
+      className="glass-panel relative z-20 flex w-full max-w-[min(94vw,560px)] flex-col gap-3 rounded-xl3 p-4"
     >
       <div className="flex items-center justify-between">
         <button
@@ -74,20 +75,26 @@ export default function QuizControls({
         </span>
 
         <div className={`flex items-center gap-1.5 ${urgent ? "text-rose-deep" : "text-ink"}`}>
-          <Clock3 size={15} className={urgent ? "text-rose-deep" : "text-ink-soft"} />
-          <span className="font-display text-sm font-semibold tabular-nums">
-            {phase === "active" ? `${remainingSeconds}s` : "—"}
-          </span>
+          {!untimed && (
+            <>
+              <Clock3 size={15} className={urgent ? "text-rose-deep" : "text-ink-soft"} />
+              <span className="font-display text-sm font-semibold tabular-nums">
+                {phase === "active" ? `${remainingSeconds}s` : "—"}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/60">
-        <motion.div
-          className={`h-full rounded-full ${urgent ? "bg-rose-deep" : "bg-rose"}`}
-          animate={{ width: `${Math.max(0, Math.min(100, progress * 100))}%` }}
-          transition={{ ease: "linear", duration: 0.15 }}
-        />
-      </div>
+      {!untimed && (
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/60">
+          <motion.div
+            className={`h-full rounded-full ${urgent ? "bg-rose-deep" : "bg-rose"}`}
+            animate={{ width: `${Math.max(0, Math.min(100, progress * 100))}%` }}
+            transition={{ ease: "linear", duration: 0.15 }}
+          />
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

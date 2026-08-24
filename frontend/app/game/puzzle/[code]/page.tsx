@@ -37,6 +37,11 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
   useEffect(() => {
     if (state?.solved && !wasSolvedRef.current) {
       setShowWinModal(true);
+    } else if (!state?.solved && wasSolvedRef.current) {
+      // O estado é sincronizado pelo servidor: quando qualquer um dos dois
+      // clica em "Novo quebra-cabeça", os dois recebem `solved: false` de
+      // volta — o modal precisa fechar nos dois clientes, não só em quem clicou.
+      setShowWinModal(false);
     }
     wasSolvedRef.current = Boolean(state?.solved);
     // eslint-disable-next-line react-hooks/exhaustive-deps

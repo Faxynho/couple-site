@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
+import { getPlayerId } from "@/lib/playerId";
 import { ColorMemoryState } from "@/lib/colorTypes";
 
 export interface LiveColorPreview {
@@ -17,9 +18,17 @@ export function useColorGame(roomCode: string) {
   useEffect(() => {
     const socket = getSocket();
 
-    socket.emit("room:sync", roomCode, (res: { ok: boolean; gameState?: ColorMemoryState }) => {
-      if (res.ok && res.gameState) setState(res.gameState);
-    });
+    const sync = () => {
+      socket.emit(
+        "room:sync",
+        { code: roomCode, playerId: getPlayerId() },
+        (res: { ok: boolean; gameState?: ColorMemoryState }) => {
+          if (res.ok && res.gameState) setState(res.gameState);
+        }
+      );
+    };
+
+    sync();
 
     const onState = (next: ColorMemoryState | null) => {
       setState(next);
@@ -31,9 +40,11 @@ export function useColorGame(roomCode: string) {
 
     socket.on("game:state", onState);
     socket.on("colors:livePreview", onLivePreview);
+    socket.on("connect", sync);
     return () => {
       socket.off("game:state", onState);
       socket.off("colors:livePreview", onLivePreview);
+      socket.off("connect", sync);
     };
   }, [roomCode]);
 

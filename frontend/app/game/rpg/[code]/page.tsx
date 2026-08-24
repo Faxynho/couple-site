@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useGameRoom } from "@/hooks/useGameRoom";
@@ -9,6 +10,7 @@ import RPGClassIntro from "@/components/rpg/RPGClassIntro";
 import RPGCombatantPanel from "@/components/rpg/RPGCombatantPanel";
 import RPGHand from "@/components/rpg/RPGHand";
 import RPGResultModal from "@/components/rpg/RPGResultModal";
+import RPGTutorialModal from "@/components/rpg/RPGTutorialModal";
 import LoadingScreen from "@/components/LoadingScreen";
 import Button from "@/components/Button";
 import Logo from "@/components/Logo";
@@ -22,6 +24,7 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
   const { state, selectCard, rerollHand, newGame } = useRPGGame(code);
 
   const [showResultModal, setShowResultModal] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     if (state?.phase !== "finished") {
@@ -161,9 +164,32 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
         />
       )}
 
+      {isChoosingPhase && (
+        <motion.button
+          type="button"
+          onClick={() => setShowTutorial(true)}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          className="
+            flex items-center gap-2 rounded-full
+            border border-white/80 bg-white/60 px-4 py-2
+            text-xs font-bold text-ink-soft shadow-sm
+            backdrop-blur-sm transition hover:bg-white/85 hover:text-ink
+          "
+        >
+          <span className="text-base">❔</span>
+          Como jogar
+        </motion.button>
+      )}
+
       {isChoosingPhase && alreadyChosen && (
         <p className="text-center text-xs text-ink-soft">Carta escolhida — aguardando os outros combatentes...</p>
       )}
+
+      <RPGTutorialModal
+        open={showTutorial}
+        onClose={() => setShowTutorial(false)}
+      />
 
       <RPGResultModal
         open={showResultModal}

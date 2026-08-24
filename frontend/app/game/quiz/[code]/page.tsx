@@ -26,6 +26,12 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
   useEffect(() => {
     if (state?.finished && !wasFinishedRef.current) {
       setShowResultModal(true);
+    } else if (!state?.finished && wasFinishedRef.current) {
+      // O estado do quiz é sincronizado pelo servidor: quando qualquer um dos
+      // dois clica em "Jogar novamente" (ou troca a dificuldade), os dois
+      // recebem `finished: false` de volta — então o modal precisa fechar
+      // nos dois clientes, não só em quem clicou.
+      setShowResultModal(false);
     }
     wasFinishedRef.current = Boolean(state?.finished);
   }, [state?.finished, state?.finishedAt]);
@@ -45,15 +51,26 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
   }
 
   const currentQuestion = state.questions[state.currentIndex];
-  const ownAnswer = selfId ? state.players[selfId]?.answers[state.currentIndex] ?? null : null;
+  const isTogether = state.mode === "together";
+
+  // No modo "Juntos" a resposta é da dupla (a mesma pra os dois); no Solo/Duelo
+  // é individual. `computeQuizStats`/pontuação individual não fazem sentido em
+  // "Juntos" — lá tudo vem de `teamScore`/`teamAnswers`, compartilhados.
+  const ownAnswer = isTogether
+    ? state.teamAnswers?.[state.currentIndex] ?? null
+    : selfId
+    ? state.players[selfId]?.answers[state.currentIndex] ?? null
+    : null;
   const revealed = state.phase === "revealed";
 
   const players = room.players.filter((p) => state.expectedPlayers.includes(p.id));
   const scores: Record<string, number> = {};
   const hasAnswered: Record<string, boolean> = {};
   for (const p of players) {
-    scores[p.id] = state.players[p.id]?.score ?? 0;
-    hasAnswered[p.id] = Boolean(state.players[p.id]?.answers[state.currentIndex]);
+    scores[p.id] = isTogether ? state.teamScore ?? 0 : state.players[p.id]?.score ?? 0;
+    hasAnswered[p.id] = isTogether
+      ? state.pendingSelections?.[p.id] != null
+      : Boolean(state.players[p.id]?.answers[state.currentIndex]);
   }
 
   // Só no modo Duelo: identifica o adversário e sua resposta na pergunta
@@ -61,6 +78,17 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
   const opponentPlayer = state.mode === "duel" ? players.find((p) => p.id !== selfId) ?? null : null;
   const opponentResult = opponentPlayer
     ? { name: opponentPlayer.name, answer: state.players[opponentPlayer.id]?.answers[state.currentIndex] ?? null }
+    : null;
+
+  // Só no "Juntos": quem é o par, e em qual alternativa cada um está com o
+  // dedo em cima agora (antes de confirmar) — pra ajudar a bater a resposta.
+  const partnerPlayer = isTogether ? players.find((p) => p.id !== selfId) ?? null : null;
+  const togetherPicks = isTogether
+    ? {
+        selfPick: selfId ? state.pendingSelections?.[selfId] ?? null : null,
+        partnerPick: partnerPlayer ? state.pendingSelections?.[partnerPlayer.id] ?? null : null,
+        partnerName: partnerPlayer?.name ?? null,
+      }
     : null;
 
   return (
@@ -88,7 +116,9 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
             ownAnswer={ownAnswer}
             revealed={revealed}
             onAnswer={(optionIndex) => submitAnswer(state.currentIndex, optionIndex)}
+            mode={state.mode}
             opponent={opponentResult}
+            together={togetherPicks}
           />
         )}
       </AnimatePresence>

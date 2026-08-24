@@ -32,6 +32,11 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
   useEffect(() => {
     if (state?.finished && !wasMatchFinishedRef.current) {
       setShowResultModal(true);
+    } else if (!state?.finished && wasMatchFinishedRef.current) {
+      // O estado é sincronizado pelo servidor: quando qualquer um dos dois
+      // clica em "Jogar de novo", os dois recebem `finished: false` de
+      // volta — o modal precisa fechar nos dois clientes, não só em quem clicou.
+      setShowResultModal(false);
     }
     wasMatchFinishedRef.current = Boolean(state?.finished);
   }, [state?.finished, state?.finishedAt]);

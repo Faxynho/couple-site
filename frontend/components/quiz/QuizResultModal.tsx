@@ -1,9 +1,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trophy, Target, Clock3, RotateCw, ArrowLeft } from "lucide-react";
+import { X, Trophy, Target, Clock3, RotateCw, ArrowLeft, Users } from "lucide-react";
 import Button from "@/components/Button";
-import { QuizMode, QuizState, computeQuizStats } from "@/lib/quizTypes";
+import { QuizMode, QuizState, computeQuizStats, computeTeamQuizStats } from "@/lib/quizTypes";
 
 interface Player {
   id: string;
@@ -40,11 +40,13 @@ export default function QuizResultModal({
   mode,
 }: QuizResultModalProps) {
   const totalQuestions = state.questions.length;
+  const isTogether = mode === "together";
 
   const rows = players.map((p) => ({
     player: p,
     stats: computeQuizStats(state, p.id),
   }));
+  const teamStats = isTogether ? computeTeamQuizStats(state) : null;
 
   const winner =
     mode === "duel" && rows.length === 2
@@ -57,7 +59,7 @@ export default function QuizResultModal({
   return (
     <>
       <AnimatePresence>
-        {!open && (
+        {!open && state.finished && (
           <motion.button
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -104,51 +106,81 @@ export default function QuizResultModal({
               </div>
 
               <div className="mt-5 flex flex-col gap-3">
-                {rows.map(({ player, stats }) => (
-                  <div key={player.id} className="rounded-xl2 bg-white/60 p-4">
+                {isTogether && teamStats && (
+                  <div className="rounded-xl2 bg-white/60 p-4">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-2 font-display text-base font-semibold text-ink">
-                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: player.color }} />
-                        {player.name}
-                        {player.id === selfId ? " (você)" : ""}
-                        {winner?.player.id === player.id && <Trophy size={15} className="text-rose-deep" />}
+                        <Users size={16} className="text-ink-soft" />
+                        Vocês dois
                       </span>
-                      <span className="font-display text-lg font-bold tabular-nums text-ink">{stats.score} pts</span>
+                      <span className="font-display text-lg font-bold tabular-nums text-ink">
+                        {teamStats.score} pts
+                      </span>
                     </div>
 
                     <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-ink-soft">
                       <div>
-                        <p className="font-display text-sm font-semibold text-ink">{stats.correct}</p>
+                        <p className="font-display text-sm font-semibold text-ink">{teamStats.correct}</p>
                         <p>Acertos</p>
                       </div>
                       <div>
-                        <p className="font-display text-sm font-semibold text-ink">{stats.wrong}</p>
+                        <p className="font-display text-sm font-semibold text-ink">{teamStats.wrong}</p>
                         <p>Erros</p>
                       </div>
                       <div>
-                        <p className="font-display text-sm font-semibold text-ink">{stats.unanswered}</p>
-                        <p>Sem resposta</p>
+                        <p className="font-display text-sm font-semibold text-ink">{teamStats.unanswered}</p>
+                        <p>Não confirmadas</p>
                       </div>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between text-xs text-ink-soft">
-                      <span className="flex items-center gap-1">
-                        <Clock3 size={13} /> Tempo médio: {formatTime(stats.avgTimeMs)}
-                      </span>
-                      {stats.bestCategory && (
-                        <span className="flex items-center gap-1">
-                          <Target size={13} /> {stats.bestCategory}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {mode === "together" && rows.length === 2 && (
-                  <div className="rounded-xl2 bg-rose/10 p-3 text-center text-sm font-medium text-ink">
-                    Pontuação em equipe: {rows[0].stats.score + rows[1].stats.score} pts
+                    {teamStats.bestCategory && (
+                      <div className="mt-3 flex items-center justify-center gap-1 text-xs text-ink-soft">
+                        <Target size={13} /> Melhor tema: {teamStats.bestCategory}
+                      </div>
+                    )}
                   </div>
                 )}
+
+                {!isTogether &&
+                  rows.map(({ player, stats }) => (
+                    <div key={player.id} className="rounded-xl2 bg-white/60 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 font-display text-base font-semibold text-ink">
+                          <span className="h-2.5 w-2.5 rounded-full" style={{ background: player.color }} />
+                          {player.name}
+                          {player.id === selfId ? " (você)" : ""}
+                          {winner?.player.id === player.id && <Trophy size={15} className="text-rose-deep" />}
+                        </span>
+                        <span className="font-display text-lg font-bold tabular-nums text-ink">{stats.score} pts</span>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-ink-soft">
+                        <div>
+                          <p className="font-display text-sm font-semibold text-ink">{stats.correct}</p>
+                          <p>Acertos</p>
+                        </div>
+                        <div>
+                          <p className="font-display text-sm font-semibold text-ink">{stats.wrong}</p>
+                          <p>Erros</p>
+                        </div>
+                        <div>
+                          <p className="font-display text-sm font-semibold text-ink">{stats.unanswered}</p>
+                          <p>Sem resposta</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between text-xs text-ink-soft">
+                        <span className="flex items-center gap-1">
+                          <Clock3 size={13} /> Tempo médio: {formatTime(stats.avgTimeMs)}
+                        </span>
+                        {stats.bestCategory && (
+                          <span className="flex items-center gap-1">
+                            <Target size={13} /> {stats.bestCategory}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
 
                 {mode === "duel" && rows.length === 2 && (
                   <p className="text-center text-xs text-ink-soft">

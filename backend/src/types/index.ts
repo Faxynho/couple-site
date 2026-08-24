@@ -8,7 +8,12 @@
 export type GameId = "puzzle" | "sudoku" | "colors" | "crossword" | "wordsearch" | "quiz" | "rpg"; // adicione novos ids aqui
 
 export interface Player {
-  id: string; // socket.id
+  // Identidade PERSISTENTE do jogador (gerada uma vez pelo cliente e salva no
+  // navegador) — NÃO é o socket.id. O socket.id muda a cada reconexão de
+  // WebSocket; usar isso como identidade de jogador é o que fazia a sala
+  // "esquecer" quem era quem depois de uma queda de conexão. A conexão atual
+  // de cada jogador é rastreada à parte, em Room.socketIds.
+  id: string;
   name: string;
   color: string; // cor de identificação do jogador na UI (avatar/cursor)
   connected: boolean;

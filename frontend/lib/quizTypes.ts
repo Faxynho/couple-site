@@ -36,12 +36,23 @@ export interface QuizState {
   phase: QuizPhase;
   questionStartedAt: number;
   revealedAt: number | null;
+  /** Sem efeito no modo "together" — não há cronômetro nesse modo. */
   timeLimitMs: number;
   players: Record<string, QuizPlayerState>;
   expectedPlayers: string[];
   startedAt: number;
   finished: boolean;
   finishedAt: number | null;
+  // ---- Exclusivo do modo "together" ----
+  /** Pontuação única, de equipe (em vez de `players[id].score`). */
+  teamScore: number;
+  /** Resposta confirmada da dupla, alinhada a `questions` — só existe depois
+   *  que os dois clicaram na mesma alternativa. */
+  teamAnswers: (QuizAnswerRecord | null)[];
+  /** Alternativa que cada jogador está com o dedo em cima agora, na pergunta
+   *  atual (ainda não confirmada) — visível para os dois, para ajudar a
+   *  combinar a resposta. */
+  pendingSelections: Record<string, number | null>;
 }
 
 export const QUIZ_DIFFICULTIES = {
@@ -52,9 +63,53 @@ export const QUIZ_DIFFICULTIES = {
 
 export const QUIZ_MODES = {
   solo: { label: "Solo", emoji: "🙋", hint: "só você, no seu ritmo" },
-  together: { label: "Juntos", emoji: "🤝", hint: "mesmas perguntas, pontuação em equipe" },
+  together: { label: "Juntos", emoji: "🤝", hint: "sem tempo — só conta quando os dois combinarem a resposta" },
   duel: { label: "Duelo", emoji: "⚔️", hint: "1x1 — quem pontua mais vence" },
 } as const;
+
+/** Estatísticas da equipe no modo "together" — equivalente ao `computeQuizStats`
+ *  individual, mas a partir de `teamAnswers`/`teamScore`, compartilhados. */
+export function computeTeamQuizStats(state: QuizState) {
+  const answers = state.teamAnswers ?? [];
+
+  let correct = 0;
+  let wrong = 0;
+  let unanswered = 0;
+  const byCategory = new Map<string, { correct: number; total: number }>();
+
+  answers.forEach((a, i) => {
+    const question = state.questions[i];
+    if (!a) {
+      unanswered++;
+      return;
+    }
+    if (a.correct) correct++;
+    else wrong++;
+    if (question?.category) {
+      const entry = byCategory.get(question.category) ?? { correct: 0, total: 0 };
+      entry.total += 1;
+      if (a.correct) entry.correct += 1;
+      byCategory.set(question.category, entry);
+    }
+  });
+
+  let bestCategory: string | null = null;
+  let bestScore = -1;
+  for (const [category, entry] of byCategory.entries()) {
+    if (entry.correct > bestScore) {
+      bestScore = entry.correct;
+      bestCategory = category;
+    }
+  }
+
+  return {
+    score: state.teamScore ?? 0,
+    correct,
+    wrong,
+    unanswered,
+    bestCategory: bestScore > 0 ? bestCategory : null,
+  };
+}
 
 export function computeQuizStats(state: QuizState, playerId: string) {
   const player = state.players[playerId];

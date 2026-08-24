@@ -7,15 +7,18 @@ import { QuizDifficulty, QuizQuestion } from "./questions/types";
  * - "solo": um jogador só, sem necessidade de par (a sala existe por baixo
  *   dos panos apenas para validar a pontuação no servidor, mas a UI não
  *   exige compartilhar código com ninguém).
- * - "together" (Juntos): cooperativo — os dois recebem as mesmas perguntas e
- *   respondem de forma independente; a pergunta só avança quando os dois
- *   responderem (ou o tempo acabar). Pontuação individual + conjunta.
+ * - "together" (Juntos): cooperativo — os dois recebem a mesma pergunta e
+ *   pontuam JUNTOS, numa pontuação única de equipe. Não há tempo limite.
+ *   Cada um clica na alternativa que acha certa livremente, podendo trocar
+ *   de ideia quantas vezes quiser — só quando os DOIS estiverem com a MESMA
+ *   alternativa selecionada ao mesmo tempo é que a resposta é confirmada e a
+ *   pergunta avança.
  * - "duel" (1v1): competitivo — mesmas perguntas, cada um com sua própria
- *   pontuação. A partida sempre percorre todas as perguntas (não termina no
- *   primeiro acerto) e o vencedor é definido pela pontuação total ao final,
- *   incluindo um pequeno bônus de velocidade. Isso também cobre o "Modo
- *   Duelo por Pontuação" pedido — não há necessidade de um quarto modo
- *   separado, a mecânica já é a mesma.
+ *   pontuação, com tempo limite por pergunta. A partida sempre percorre
+ *   todas as perguntas (não termina no primeiro acerto) e o vencedor é
+ *   definido pela pontuação total ao final, incluindo um pequeno bônus de
+ *   velocidade. Isso também cobre o "Modo Duelo por Pontuação" pedido — não
+ *   há necessidade de um quarto modo separado, a mecânica já é a mesma.
  *
  * Toda a lógica de tempo, avanço de pergunta e pontuação vive aqui e é
  * validada inteiramente no servidor: o cliente só manda qual alternativa
@@ -42,7 +45,7 @@ const MAX_SPEED_BONUS = 50;
 export type QuizPhase = "active" | "revealed";
 
 export interface QuizAnswerRecord {
-  optionIndex: number | null; // null = não respondeu a tempo
+  optionIndex: number | null; // null = não respondeu a tempo (só acontece no Duelo)
   correct: boolean;
   points: number;
   timeMs: number; // tempo de resposta (ou o tempo total, se não respondeu)
@@ -61,12 +64,24 @@ export interface QuizState {
   phase: QuizPhase;
   questionStartedAt: number;
   revealedAt: number | null;
+  /** Sem efeito no modo "together" (não tem cronômetro) — mantido só para
+   *  não quebrar o formato compartilhado com o Duelo. */
   timeLimitMs: number;
   players: Record<string, QuizPlayerState>;
   expectedPlayers: string[];
   startedAt: number;
   finished: boolean;
   finishedAt: number | null;
+  // ---- Exclusivo do modo "together" ----
+  /** Pontuação única, de equipe — usada em vez de `players[id].score`. */
+  teamScore: number;
+  /** Respostas confirmadas (só depois que os dois bateram na mesma
+   *  alternativa), alinhado a `questions` — equivalente ao `answers` de
+   *  `players`, mas único para a dupla. */
+  teamAnswers: (QuizAnswerRecord | null)[];
+  /** Alternativa que cada jogador está com o dedo em cima AGORA na pergunta
+   *  atual (ainda não confirmada) — some assim que a pergunta avança. */
+  pendingSelections: Record<string, number | null>;
 }
 
 export type QuizAction =
@@ -105,6 +120,12 @@ function fillMissingAnswers(state: QuizState) {
   }
 }
 
+function blankPendingSelections(playerIds: string[]): Record<string, number | null> {
+  const map: Record<string, number | null> = {};
+  for (const id of playerIds) map[id] = null;
+  return map;
+}
+
 export class QuizGame implements GameEngine<QuizState, QuizAction> {
   readonly id = "quiz" as const;
 
@@ -136,6 +157,9 @@ export class QuizGame implements GameEngine<QuizState, QuizAction> {
       startedAt: Date.now(),
       finished: false,
       finishedAt: null,
+      teamScore: 0,
+      teamAnswers: new Array(questions.length).fill(null),
+      pendingSelections: blankPendingSelections(playerIds),
     };
   }
 
@@ -147,15 +171,47 @@ export class QuizGame implements GameEngine<QuizState, QuizAction> {
       if (!state.expectedPlayers.includes(playerId)) return state;
       if (action.questionIndex !== state.currentIndex) return state;
 
-      const player = state.players[playerId];
-      if (!player) return state;
-      if (player.answers[state.currentIndex]) return state; // já respondeu esta pergunta
-
       const question = state.questions[state.currentIndex];
       if (!question) return state;
 
       const optionIndex = Number.isInteger(action.optionIndex) ? action.optionIndex : -1;
       if (optionIndex < 0 || optionIndex >= question.options.length) return state;
+
+      if (state.mode === "together") {
+        // Cooperativo: cada clique só registra a intenção de quem clicou.
+        // Nada é confirmado até os dois estarem com a MESMA alternativa
+        // marcada ao mesmo tempo — até lá, cada jogador pode trocar de ideia
+        // livremente (inclusive voltar atrás depois de já ter batido com o
+        // outro numa alternativa errada, antes de a resposta ser fechada).
+        if (state.teamAnswers[state.currentIndex]) return state; // pergunta já confirmada
+        const next = structuredClone(state);
+        next.pendingSelections[playerId] = optionIndex;
+
+        const others = next.expectedPlayers.filter((id) => id !== playerId);
+        const everyoneMatches =
+          others.length > 0 && others.every((id) => next.pendingSelections[id] === optionIndex);
+
+        if (everyoneMatches) {
+          const now = Date.now();
+          const timeMs = Math.max(0, now - next.questionStartedAt);
+          const correct = optionIndex === question.correctIndex;
+          const points = correct ? POINTS_CORRECT : 0;
+
+          next.teamAnswers[next.currentIndex] = { optionIndex, correct, points, timeMs };
+          next.teamScore += points;
+          next.phase = "revealed";
+          next.revealedAt = now;
+          // Limpa os palpites pendentes — a próxima pergunta começa "zerada".
+          for (const id of next.expectedPlayers) next.pendingSelections[id] = null;
+        }
+
+        return next;
+      }
+
+      // Solo / Duelo: pontuação individual, como antes.
+      const player = state.players[playerId];
+      if (!player) return state;
+      if (player.answers[state.currentIndex]) return state; // já respondeu esta pergunta
 
       const now = Date.now();
       const timeMs = Math.max(0, Math.min(state.timeLimitMs, now - state.questionStartedAt));
@@ -184,7 +240,9 @@ export class QuizGame implements GameEngine<QuizState, QuizAction> {
     }
 
     if (action.type === "timeUp") {
-      if (state.phase !== "active") return state;
+      // O modo "together" nunca tem tempo limite — essa ação só chega até
+      // aqui para solo/duelo (ver o filtro no relógio do servidor).
+      if (state.phase !== "active" || state.mode === "together") return state;
       const next = structuredClone(state);
       fillMissingAnswers(next);
       next.phase = "revealed";
@@ -232,6 +290,9 @@ export class QuizGame implements GameEngine<QuizState, QuizAction> {
       startedAt: Date.now(),
       finished: false,
       finishedAt: null,
+      teamScore: 0,
+      teamAnswers: new Array(questions.length).fill(null),
+      pendingSelections: blankPendingSelections(state.expectedPlayers),
     };
   }
 }

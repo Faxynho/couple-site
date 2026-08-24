@@ -35,6 +35,11 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
   useEffect(() => {
     if (state?.finished && !wasFinishedRef.current) {
       setShowWinModal(true);
+    } else if (!state?.finished && wasFinishedRef.current) {
+      // O estado é sincronizado pelo servidor: quando qualquer um dos dois
+      // clica em "Jogar de novo", os dois recebem `finished: false` de
+      // volta — o modal precisa fechar nos dois clientes, não só em quem clicou.
+      setShowWinModal(false);
     }
     wasFinishedRef.current = Boolean(state?.finished);
   }, [state?.finished, state?.finishedAt]);

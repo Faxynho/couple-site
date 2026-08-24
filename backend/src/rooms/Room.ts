@@ -13,6 +13,13 @@ export class Room {
   gameState: unknown = null;
   createdAt = Date.now();
 
+  /** Mapeia a identidade PERSISTENTE de cada jogador (Player.id, gerada uma
+   *  vez pelo cliente e guardada no navegador) para o socket.id da conexão
+   *  ATUAL desse jogador — que muda a cada reconexão de WebSocket (queda de
+   *  wifi, app em segundo plano no celular, etc). É assim que sabemos para
+   *  qual conexão enviar os eventos direcionados a um jogador específico. */
+  private socketIds: Map<string, string> = new Map();
+
   /** O primeiro jogador a entrar vira o host — só ele configura e inicia a partida. */
   hostId: string | null = null;
 
@@ -34,7 +41,21 @@ export class Room {
   }
 
   addPlayer(id: string, name: string): Player | null {
-    if (this.players.size >= this.maxPlayers && !this.players.has(id)) {
+    // Mesma identidade persistente já presente na sala: é uma RECONEXÃO
+    // (refresh, nova aba, ou o WebSocket caiu e reabriu com um socket.id
+    // novo por baixo dos panos), não um terceiro jogador entrando — nunca
+    // cria uma segunda entrada nem conta contra o limite de jogadores.
+    const existing = this.players.get(id);
+    if (existing) {
+      existing.connected = true;
+      if (name?.trim()) existing.name = name.trim();
+      if (this.status === "waiting" || this.status === "ready") {
+        this.status = this.bothConnected() ? "ready" : "waiting";
+      }
+      return existing;
+    }
+
+    if (this.players.size >= this.maxPlayers) {
       return null;
     }
     if (this.hostId === null) {
@@ -54,6 +75,19 @@ export class Room {
       this.status = this.players.size === this.maxPlayers ? "ready" : "waiting";
     }
     return player;
+  }
+
+  /** Associa a identidade persistente de um jogador ao socket.id da conexão
+   *  atual — chamado em todo room:create/room:join/room:sync bem-sucedido. */
+  setSocketId(playerId: string, socketId: string) {
+    this.socketIds.set(playerId, socketId);
+  }
+
+  /** socket.id atual de um jogador (para eventos direcionados a ele), ou
+   *  undefined se ele nunca se conectou ou já foi substituído por uma
+   *  reconexão mais nova. */
+  getSocketId(playerId: string): string | undefined {
+    return this.socketIds.get(playerId);
   }
 
   markDisconnected(id: string) {

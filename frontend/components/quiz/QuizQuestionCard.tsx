@@ -2,17 +2,23 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, X } from "lucide-react";
-import { QuizAnswerRecord, QuizQuestion } from "@/lib/quizTypes";
+import { QuizAnswerRecord, QuizMode, QuizQuestion } from "@/lib/quizTypes";
 
 const OPTION_LETTERS = ["A", "B", "C", "D"];
 
 interface QuizQuestionCardProps {
   question: QuizQuestion;
+  /** Resposta final CONFIRMADA — individual no Solo/Duelo; da dupla (a mesma
+   *  para os dois) no modo "Juntos", só depois que os dois baterem a mesma alternativa. */
   ownAnswer: QuizAnswerRecord | null;
   revealed: boolean;
   onAnswer: (optionIndex: number) => void;
-  /** Só preenchido no modo Duelo: nome e resposta do adversário na pergunta atual. */
+  mode: QuizMode;
+  /** Só no Duelo: nome e resposta do adversário na pergunta atual. */
   opponent?: { name: string; answer: QuizAnswerRecord | null } | null;
+  /** Só no "Juntos": em qual alternativa cada um está com o dedo em cima
+   *  AGORA, antes de confirmar — pra ajudar a bater a resposta com o par. */
+  together?: { selfPick: number | null; partnerPick: number | null; partnerName: string | null } | null;
 }
 
 export default function QuizQuestionCard({
@@ -20,10 +26,18 @@ export default function QuizQuestionCard({
   ownAnswer,
   revealed,
   onAnswer,
+  mode,
   opponent,
+  together,
 }: QuizQuestionCardProps) {
-  const locked = Boolean(ownAnswer) || revealed;
-  const missedQuestion = revealed && !ownAnswer;
+  const isTogether = mode === "together";
+  // No "Juntos" dá pra trocar de escolha livremente até os dois combinarem —
+  // só trava de fato depois que a resposta é confirmada (revealed).
+  const locked = isTogether ? revealed : Boolean(ownAnswer) || revealed;
+  const missedQuestion = !isTogether && revealed && !ownAnswer;
+
+  const selfPick = isTogether ? together?.selfPick ?? null : ownAnswer?.optionIndex ?? null;
+  const partnerPick = isTogether && !revealed ? together?.partnerPick ?? null : null;
 
   return (
     <motion.div
@@ -44,7 +58,8 @@ export default function QuizQuestionCard({
 
       <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         {question.options.map((option, index) => {
-          const isChosen = ownAnswer?.optionIndex === index;
+          const isChosen = revealed ? ownAnswer?.optionIndex === index : selfPick === index;
+          const isPartnerPick = partnerPick === index && partnerPick !== selfPick;
           const isCorrectOption = revealed && question.correctIndex === index;
           const isWrongChoice = revealed && isChosen && !isCorrectOption;
 
@@ -52,6 +67,7 @@ export default function QuizQuestionCard({
           if (isCorrectOption) stateClasses = "border-sage bg-sage/40 text-ink";
           else if (isWrongChoice) stateClasses = "border-rose-deep bg-rose/20 text-ink";
           else if (isChosen) stateClasses = "border-rose bg-rose/10 text-ink";
+          else if (isPartnerPick) stateClasses = "border-dashed border-ink-soft/50 bg-white/60 text-ink";
 
           return (
             <button
@@ -64,6 +80,9 @@ export default function QuizQuestionCard({
                 {OPTION_LETTERS[index]}
               </span>
               <span className="flex-1">{option}</span>
+              {isPartnerPick && (
+                <span className="shrink-0 text-xs text-ink-soft">👉 {together?.partnerName}</span>
+              )}
               {isCorrectOption && <Check size={18} className="shrink-0 text-ink" />}
               {isWrongChoice && <X size={18} className="shrink-0 text-rose-deep" />}
             </button>
@@ -72,7 +91,22 @@ export default function QuizQuestionCard({
       </div>
 
       <AnimatePresence>
-        {ownAnswer && !revealed && (
+        {isTogether && !revealed && (selfPick !== null || partnerPick !== null) && (
+          <motion.p
+            key="together-status"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="mt-4 text-center text-xs text-ink-soft"
+          >
+            {selfPick !== null && partnerPick !== null
+              ? "Alternativas diferentes — cliquem na mesma para confirmar."
+              : selfPick !== null
+              ? `Você escolheu — esperando ${together?.partnerName ?? "o par"} escolher.`
+              : `${together?.partnerName ?? "Seu par"} escolheu — clique na mesma alternativa para confirmar.`}
+          </motion.p>
+        )}
+        {!isTogether && ownAnswer && !revealed && (
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
+import { getPlayerId } from "@/lib/playerId";
 import { PuzzleState } from "@/lib/types";
 
 /** Toca um "pop" curto e suave via Web Audio API — sem depender de arquivos de áudio. */
@@ -68,12 +69,16 @@ export function usePuzzle(roomCode: string) {
     };
 
     // Estado inicial (a página do jogo é montada depois que o game:start já foi disparado).
-    socket.emit("room:sync", roomCode, (res: { ok: boolean; gameState?: PuzzleState }) => {
-      if (res.ok && res.gameState) {
-        prevGroupCount.current = Object.keys(res.gameState.groups).length;
-        applyState(res.gameState);
-      }
-    });
+    const sync = () => {
+      socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (res: { ok: boolean; gameState?: PuzzleState }) => {
+        if (res.ok && res.gameState) {
+          prevGroupCount.current = Object.keys(res.gameState.groups).length;
+          applyState(res.gameState);
+        }
+      });
+    };
+
+    sync();
 
     const onState = (next: PuzzleState | null) => applyState(next);
     const onDragRelay = (payload: { groupId: string; x: number; y: number }) => {
@@ -82,9 +87,11 @@ export function usePuzzle(roomCode: string) {
 
     socket.on("game:state", onState);
     socket.on("game:dragRelay", onDragRelay);
+    socket.on("connect", sync);
     return () => {
       socket.off("game:state", onState);
       socket.off("game:dragRelay", onDragRelay);
+      socket.off("connect", sync);
     };
   }, [roomCode]);
 

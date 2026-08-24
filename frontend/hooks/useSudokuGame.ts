@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
+import { getPlayerId } from "@/lib/playerId";
 import { SudokuState } from "@/lib/sudokuTypes";
 
 export function useSudokuGame(roomCode: string) {
@@ -10,14 +11,20 @@ export function useSudokuGame(roomCode: string) {
   useEffect(() => {
     const socket = getSocket();
 
-    socket.emit("room:sync", roomCode, (res: { ok: boolean; gameState?: SudokuState }) => {
-      if (res.ok && res.gameState) setState(res.gameState);
-    });
+    const sync = () => {
+      socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (res: { ok: boolean; gameState?: SudokuState }) => {
+        if (res.ok && res.gameState) setState(res.gameState);
+      });
+    };
+
+    sync();
 
     const onState = (next: SudokuState | null) => setState(next);
     socket.on("game:state", onState);
+    socket.on("connect", sync);
     return () => {
       socket.off("game:state", onState);
+      socket.off("connect", sync);
     };
   }, [roomCode]);
 
