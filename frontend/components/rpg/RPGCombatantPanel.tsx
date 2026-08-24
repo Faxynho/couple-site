@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RPGCombatant,
+  RPGClassId,
   RPGRoundEvent,
   RPG_CLASSES,
 } from "@/lib/rpgTypes";
@@ -445,7 +446,7 @@ function ClassBackground({
           repeat: Infinity,
         }}
       >
-        {RPG_CLASSES[classId]?.emoji ?? "⚔️"}
+        {RPG_CLASSES[classId as RPGClassId]?.emoji ?? "⚔️"}
       </motion.div>
     </div>
   );
