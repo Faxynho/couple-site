@@ -89,25 +89,46 @@ export interface RPGCombatant {
   isBot: boolean;
   team: "a" | "b";
   classId: RPGClassId;
-  displayName?: string;
   maxHp: number;
   hp: number;
   atk: number;
   def: number;
   alive: boolean;
+
   stunnedRounds: number;
   skippingThisRound: boolean;
+
+  // Proteção contra o próximo golpe.
   immuneNextHit: boolean;
+
+  // Imunidade a TODOS os golpes durante o round atual.
+  immuneThisRound: boolean;
+
+  // Bônus temporários de esquiva/crítico.
   evadeBonusNextHit: number;
   permanentCritBonus: number;
   permanentEvadeBonus: number;
+
+  // Sistema de sorte.
   luckBonus: number;
+
+  // Sistema de veneno.
   poisonRoundsRemaining: number;
   poisonDamage: number;
+
+  // Sistema de Rolagem.
   rerollCharges: number;
+
+  // Cartas Únicas já utilizadas por este jogador.
   usedUniqueCardIds: string[];
+
   hand: RPGCard[];
   chosenCardId: string | null;
+
+  /** Verdadeiro assim que o combatente escolheu,
+   * mesmo quando a carta ainda está oculta
+   * para o adversário.
+   */
   hasChosen: boolean;
 }
 
