@@ -6,7 +6,8 @@ export type RPGClassId =
   | "assassin"
   | "archer"
   | "paladin"
-  | "warlock";
+  | "warlock"
+  | "boss";
 
 export type RPGRarity =
   | "common"
@@ -30,7 +31,16 @@ export type RPGCardKind =
   | "fullHeal"
   | "domination"
   | "critSupreme"
-  | "evadeSupreme";
+  | "evadeSupreme"
+  | "healEvade"
+  | "doubleMagic"
+  | "tripleMagic"
+  | "superHeal"
+  | "poison"
+  | "lifeSteal"
+  | "swapHp"
+  | "reroll"
+  | "luck";
 
 export interface RPGCard {
   id: string;
@@ -61,6 +71,13 @@ export interface RPGCombatant {
   hand: RPGCard[];
   chosenCardId: string | null;
   hasChosen: boolean;
+  displayName?: string;
+  immuneThisRound: boolean;
+  luckBonus: number;
+  poisonRoundsRemaining: number;
+  poisonDamage: number;
+  rerollCharges: number;
+  usedUniqueCardIds: string[];
 }
 
 export type RPGRoundEventType =
@@ -70,7 +87,10 @@ export type RPGRoundEventType =
   | "immuneBlock"
   | "stunSkip"
   | "domination"
-  | "buff";
+  | "buff"
+  | "poison"
+  | "swap"
+  | "reroll";
 
 export interface RPGRoundEvent {
   actorId: string;
@@ -175,6 +195,13 @@ export const RPG_CLASSES: Record<
     emoji: "🔮",
     passiveName: "Pacto Sombrio",
     passiveDescription: "Curas e efeitos especiais são 25% mais fortes.",
+  },
+
+  boss: {
+    name: "Boss",
+    emoji: "👹",
+    passiveName: "Senhor da Arena",
+    passiveDescription: "Chefe especial — mais vida, ataque e resistência.",
   },
 };
 

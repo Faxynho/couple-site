@@ -247,27 +247,27 @@ const RARITY_VISUALS: Record<
 
   unique: {
     background:
-      "linear-gradient(135deg, #ffeef8 0%, #f1eaff 26%, #e7f3ff 55%, #fff4d9 80%, #fff0f7 100%)",
+      "linear-gradient(120deg, #ff6b9d 0%, #ff9f68 16%, #ffe66d 32%, #8ee3a8 48%, #6dd5ed 64%, #9b8cff 80%, #ed7aff 100%)",
 
     glow:
-      "radial-gradient(circle at 50% 8%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.40) 32%, transparent 70%)",
+      "radial-gradient(circle at 50% 8%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.45) 28%, transparent 68%)",
 
     topGlow:
-      "radial-gradient(circle, rgba(242,108,182,0.38) 0%, rgba(148,113,231,0.22) 40%, transparent 72%)",
+      "radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,180,220,0.25) 38%, transparent 72%)",
 
     bottomGlow:
-      "radial-gradient(circle, rgba(95,176,235,0.23) 0%, rgba(249,174,75,0.16) 48%, transparent 72%)",
+      "radial-gradient(circle, rgba(100,210,255,0.35) 0%, rgba(190,120,255,0.25) 45%, transparent 72%)",
 
-    line: "rgba(174, 102, 211, 0.28)",
+    line: "rgba(255,255,255,0.48)",
 
     orb:
-      "rgba(224, 119, 208, 0.14)",
+      "rgba(255,255,255,0.22)",
 
     corner:
-      "rgba(165, 87, 207, 0.34)",
+      "rgba(255,255,255,0.75)",
 
     sparkle:
-      "rgba(190, 92, 224, 0.66)",
+      "rgba(255,255,255,0.95)",
   },
 };
 
@@ -656,6 +656,34 @@ export default function RPGCard({
 
       {isUnique && (
         <>
+          <motion.div
+            className="
+              pointer-events-none
+              absolute
+              inset-0
+              z-10
+              rounded-2xl
+              opacity-40
+            "
+            style={{
+              backgroundImage: `
+                radial-gradient(circle at 15% 20%, white 0 1px, transparent 2px),
+                radial-gradient(circle at 80% 18%, white 0 1px, transparent 2px),
+                radial-gradient(circle at 30% 72%, white 0 1px, transparent 2px),
+                radial-gradient(circle at 75% 78%, white 0 1px, transparent 2px),
+                radial-gradient(circle at 52% 35%, white 0 1px, transparent 2px)
+              `,
+            }}
+            animate={{
+              opacity: [0.25, 0.6, 0.25],
+            }}
+            transition={{
+              duration: 2.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          
           <motion.div
             className="
               pointer-events-none

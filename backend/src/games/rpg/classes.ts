@@ -72,6 +72,17 @@ export const RPG_CLASSES: Record<RPGClassId, RPGClassDef> = {
     passiveDescription: "Curas e efeitos especiais são 25% mais fortes.",
     passives: { specialEffectMult: 1.25 },
   },
+  boss: {
+    id: "boss",
+    name: "Boss",
+    emoji: "👹",
+    maxHp: 340,
+    atk: 27,
+    def: 16,
+    passiveName: "Senhor da Arena",
+    passiveDescription: "Chefe especial equilibrado para enfrentar dois jogadores.",
+    passives: { physDamageTakenMult: 0.92 },
+  },
 };
 
-export const RPG_CLASS_IDS = Object.keys(RPG_CLASSES) as RPGClassId[];
+export const RPG_CLASS_IDS: RPGClassId[] = ["warrior", "mage", "assassin", "archer", "paladin", "warlock"];

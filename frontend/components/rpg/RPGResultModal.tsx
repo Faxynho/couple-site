@@ -88,7 +88,7 @@ export default function RPGResultModal({
                 {state.order.map((id) => {
                   const c = state.combatants[id];
                   const def = RPG_CLASSES[c.classId];
-                  const name = id === "BOT" ? "BOT" : namesById[id] ?? "Jogador";
+                  const name = c.displayName ?? (id === "BOT" ? "BOT" : namesById[id] ?? "Jogador");
                   const won = state.winnerTeam === c.team;
                   return (
                     <div key={id} className="rounded-xl2 bg-white/60 p-3.5">

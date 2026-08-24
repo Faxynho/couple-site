@@ -25,9 +25,13 @@ export function useRPGGame(roomCode: string) {
     getSocket().emit("rpg:selectCard", { cardInstanceId });
   }, []);
 
+  const rerollHand = useCallback(() => {
+    getSocket().emit("rpg:rerollHand");
+  }, []);
+
   const newGame = useCallback(() => {
     getSocket().emit("rpg:newGame");
   }, []);
 
-  return { state, selectCard, newGame };
+  return { state, selectCard, rerollHand, newGame };
 }

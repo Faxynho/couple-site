@@ -787,6 +787,15 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
     });
 
+    // "Rolar novamente" consome uma carga da carta Lendária "Rolagem".
+    socket.on("rpg:rerollHand", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "rpg") return;
+      room.applyAction({ type: "rerollHand" }, socket.id);
+      broadcastGameState(io, code!, roomManager);
+    });
+
     // "Jogar de novo" — sorteia classes novas e reinicia a batalha, preservando o modo (1v1/Solo vs BOT/2 vs BOT).
     socket.on("rpg:newGame", () => {
       const code = socket.data.roomCode;

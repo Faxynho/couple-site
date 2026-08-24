@@ -19,18 +19,19 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
   const code = params.code.toUpperCase();
 
   const { room, selfId, notFound } = useGameRoom(code);
-  const { state, selectCard, newGame } = useRPGGame(code);
+  const { state, selectCard, rerollHand, newGame } = useRPGGame(code);
 
   const [showResultModal, setShowResultModal] = useState(false);
 
   useEffect(() => {
     if (state?.phase !== "finished") {
+      // O estado da batalha é sincronizado pelo servidor. Quando qualquer
+      // jogador clica em "Jogar novamente", os dois recebem a nova fase.
+      // Portanto o modal também precisa fechar nos dois clientes.
+      setShowResultModal(false);
       return;
     }
 
-    // Dá tempo para a barra chegar a zero,
-    // executar a animação de morte e mostrar
-    // "VOCÊ MORREU" / "SEU OPONENTE MORREU".
     const timer = window.setTimeout(() => {
       setShowResultModal(true);
     }, 1600);
@@ -118,7 +119,7 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
           <RPGCombatantPanel
             key={id}
             combatant={state.combatants[id]}
-            name={namesById[id] ?? "Jogador"}
+            name={state.combatants[id].displayName ?? namesById[id] ?? "Jogador"}
             color={colorsById[id]}
             events={eventsFor(id)}
             eventsKey={eventsKey}
@@ -134,7 +135,7 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
           <RPGCombatantPanel
             key={id}
             combatant={state.combatants[id]}
-            name={namesById[id] ?? "Jogador"}
+            name={state.combatants[id].displayName ?? namesById[id] ?? "Jogador"}
             color={colorsById[id]}
             isSelf={id === selfId}
             events={eventsFor(id)}
@@ -155,6 +156,8 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
           disabled={handDisabled}
           dealKey={state.round}
           onSelect={(instanceId) => selectCard(instanceId)}
+          rerollCharges={selfCombatant.rerollCharges}
+          onReroll={() => rerollHand()}
         />
       )}
 

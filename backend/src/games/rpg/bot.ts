@@ -6,13 +6,26 @@ import { RPGCard, RPGCardKind, RPGCombatant } from "./types";
  * ataques fortes quando está com bastante vida, e no resto escolhe à toa
  * entre as três cartas da mão.
  */
-const HEAL_KINDS: RPGCardKind[] = ["fullHeal", "physicalDrainLight", "physicalDrainFull"];
+const HEAL_KINDS: RPGCardKind[] = [
+  "fullHeal",
+  "physicalDrainLight",
+  "physicalDrainFull",
+  "healEvade",
+  "superHeal",
+  "lifeSteal",
+];
 const STRONG_KINDS: RPGCardKind[] = [
   "tripleAttack",
   "superMagic",
   "doubleAttack",
   "physicalMagicCombo",
   "physicalCritBoost",
+  "doubleMagic",
+  "tripleMagic",
+  "superMagic",
+  "reroll",
+  "poison",
+  "lifeSteal",
 ];
 
 function pickRandom<T>(items: T[]): T {
@@ -39,8 +52,5 @@ export function botChooseCard(bot: RPGCombatant, hand: RPGCard[]): RPGCard {
  *  tem uma leve preferência por bater em quem está com menos vida. */
 export function botChooseTarget(aliveAllies: RPGCombatant[]): RPGCombatant {
   if (aliveAllies.length === 1) return aliveAllies[0];
-  if (Math.random() < 0.6) {
-    return aliveAllies.reduce((lowest, c) => (c.hp / c.maxHp < lowest.hp / lowest.maxHp ? c : lowest));
-  }
   return pickRandom(aliveAllies);
 }
