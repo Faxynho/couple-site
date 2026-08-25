@@ -10,6 +10,8 @@ export interface WordSearchWordEntry {
   id: string;
   word: string;
   cells?: WordSearchCellPos[];
+  /** Jogador(es) que já encontraram esta palavra. Em Duelo os dois podem encontrar a mesma palavra. */
+  foundBy?: string[];
 }
 
 export interface WordSearchFullProgress {

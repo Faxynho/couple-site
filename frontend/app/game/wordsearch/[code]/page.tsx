@@ -81,11 +81,13 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
         size={state.size}
         letters={state.letters}
         words={state.words}
+        players={room.players}
+        selfId={selfId}
         onSubmitSelection={submitSelection}
         locked={ownProgress.finished}
       />
 
-      <WordSearchWordList words={state.words} />
+      <WordSearchWordList words={state.words} players={room.players} selfId={selfId} />
 
       <AnimatePresence>
         {selfFinishedWaitingForOthers && (

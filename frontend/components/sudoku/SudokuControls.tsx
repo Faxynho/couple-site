@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, Clock3, RotateCcw, Shuffle, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Check, Clock3, Lightbulb, RotateCcw, Shuffle, SlidersHorizontal } from "lucide-react";
 import { SUDOKU_DIFFICULTIES, SudokuDifficulty, SudokuProgress } from "@/lib/sudokuTypes";
 import { MATCH_MODES, MatchMode } from "@/lib/matchModes";
 
@@ -22,9 +22,11 @@ interface SudokuControlsProps {
   moves: number;
   players: Player[];
   progress: Record<string, SudokuProgress>;
+  hintsUsedByPlayer: Record<string, number>;
   selfId: string | null;
   onNewPuzzle: (difficulty?: string) => void;
   onRestart: () => void;
+  onHint: () => void;
   onBack: () => void;
 }
 
@@ -44,9 +46,11 @@ export default function SudokuControls({
   moves,
   players,
   progress,
+  hintsUsedByPlayer,
   selfId,
   onNewPuzzle,
   onRestart,
+  onHint,
   onBack,
 }: SudokuControlsProps) {
   const [now, setNow] = useState(Date.now());
@@ -126,20 +130,43 @@ export default function SudokuControls({
           );
         })}
 
-      <div className="flex items-center gap-2">
+      {mode === "duel" && players.some((p) => (hintsUsedByPlayer[p.id] ?? 0) > 0) && (
+        <div className="rounded-lg bg-white/55 px-3 py-2 text-center text-xs text-ink-soft">
+          {players
+            .filter((p) => (hintsUsedByPlayer[p.id] ?? 0) > 0)
+            .map((p) => {
+              const count = hintsUsedByPlayer[p.id] ?? 0;
+              return (
+                <span key={p.id} className="mx-1.5 inline-flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
+                  <strong style={{ color: p.color }}>{p.name}</strong> usou {count} {count === 1 ? "dica" : "dicas"}
+                </span>
+              );
+            })}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={onHint}
+          disabled={finished}
+          className="flex min-w-[92px] flex-1 items-center justify-center gap-1.5 rounded-full bg-rose/20 px-3 py-2 text-xs font-semibold text-ink transition-colors hover:bg-rose/30 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Lightbulb size={14} /> Dica
+        </button>
         <button
           onClick={() => onNewPuzzle()}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
+          className="flex min-w-[92px] flex-1 items-center justify-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
         >
           <Shuffle size={14} /> Novo Sudoku
         </button>
         <button
           onClick={onRestart}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
+          className="flex min-w-[92px] flex-1 items-center justify-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
         >
           <RotateCcw size={14} /> Reiniciar
         </button>
-        <div className="relative flex-1">
+        <div className="relative min-w-[120px] flex-1">
           <button
             onClick={() => setDifficultyMenuOpen((v) => !v)}
             className="flex w-full items-center justify-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"

@@ -57,6 +57,8 @@ export interface CrosswordState {
   finished: boolean;
   finishedAt: number | null;
   results: CrosswordResultEntry[];
+  /** Jogadores que já acertaram cada palavra. Em Duelo, ambos podem acertar a mesma. */
+  completedWordBy: Record<string, string[]>;
 }
 
 export type CrosswordAction = { type: "setCell"; row: number; col: number; letter: string };
@@ -122,6 +124,7 @@ export class CrosswordGame implements GameEngine<CrosswordState, CrosswordAction
       finished: false,
       finishedAt: null,
       results: [],
+      completedWordBy: {},
     };
   }
 
@@ -148,7 +151,19 @@ export class CrosswordGame implements GameEngine<CrosswordState, CrosswordAction
       const prog = next.progress[targetId];
       if (prog.finished) continue; // já concluiu — não altera mais
       prog.values[idx] = letter;
+      const previousCompleted = new Set(prog.completedWordIds);
       prog.completedWordIds = computeCompletedWordIds(prog.values, next.words, next.cols);
+
+      // Registra quem acabou de completar cada palavra. Isso é separado do
+      // progresso individual porque, no modo Juntos, os dois compartilham a grade.
+      for (const wordId of prog.completedWordIds) {
+        if (previousCompleted.has(wordId)) continue;
+        const currentOwners = next.completedWordBy[wordId] ?? [];
+        if (!currentOwners.includes(playerId)) {
+          next.completedWordBy[wordId] = [...currentOwners, playerId];
+        }
+      }
+
       const allDone = prog.completedWordIds.length === next.words.length && next.words.length > 0;
       if (allDone && !prog.finished) {
         prog.finished = true;
@@ -192,6 +207,7 @@ export class CrosswordGame implements GameEngine<CrosswordState, CrosswordAction
       finished: false,
       finishedAt: null,
       results: [],
+      completedWordBy: {},
     };
   }
 }

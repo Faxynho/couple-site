@@ -1,6 +1,6 @@
 import { GameEngine } from "../../types";
 import { generateSudoku, isValidSudokuDifficulty, SudokuDifficulty } from "./sudokuGenerator";
-import { isValidCompleteGrid } from "./sudokuSolver";
+import { isValidCompleteGrid, solveComplete } from "./sudokuSolver";
 
 /**
  * Sudoku — dois modos, no mesmo padrão do Palavras Cruzadas/Caça-Palavras:
@@ -53,9 +53,15 @@ export interface SudokuState {
   finished: boolean;
   finishedAt: number | null;
   results: SudokuResultEntry[];
+  /** Solução fica exclusivamente no backend e nunca é enviada ao cliente. */
+  solution: number[];
+  /** Contador visível para os dois jogadores. */
+  hintsUsedByPlayer: Record<string, number>;
 }
 
-export type SudokuAction = { type: "setCell"; index: number; value: number };
+export type SudokuAction =
+  | { type: "setCell"; index: number; value: number }
+  | { type: "hint" };
 
 function buildCells(puzzle: number[]): SudokuCellState[] {
   return puzzle.map((value) => ({ value, isGiven: value !== 0 }));
@@ -90,10 +96,17 @@ export class SudokuGame implements GameEngine<SudokuState, SudokuAction> {
     const playerIds = Array.isArray(options?.playerIds) ? (options!.playerIds as string[]) : [];
 
     const { puzzle, clues } = generateSudoku(difficulty);
+    const solution = solveComplete(puzzle);
+    if (!solution) throw new Error("Não foi possível resolver o Sudoku gerado.");
+
     const baseCells = buildCells(puzzle);
 
     const progress: Record<string, SudokuPlayerProgress> = {};
-    for (const id of playerIds) progress[id] = blankProgress(baseCells);
+    const hintsUsedByPlayer: Record<string, number> = {};
+    for (const id of playerIds) {
+      progress[id] = blankProgress(baseCells);
+      hintsUsedByPlayer[id] = 0;
+    }
 
     return {
       difficulty,
@@ -105,11 +118,68 @@ export class SudokuGame implements GameEngine<SudokuState, SudokuAction> {
       finished: false,
       finishedAt: null,
       results: [],
+      solution,
+      hintsUsedByPlayer,
     };
   }
 
   applyAction(state: SudokuState, action: SudokuAction, playerId: string): SudokuState {
     if (state.finished) return state;
+
+    if (action.type === "hint") {
+      const next = structuredClone(state);
+      const targets = next.mode === "together" ? next.expectedPlayers : [playerId];
+
+      // Cada clique revela UMA única casa. No modo Juntos, a mesma casa é
+      // aplicada às duas cópias para manter a grade realmente compartilhada.
+      const sourceProgress = targets
+        .map((id) => next.progress[id])
+        .find((prog) => prog && !prog.finished);
+
+      if (!sourceProgress) return next;
+
+      const candidates = sourceProgress.cells
+        .map((cell, idx) => ({ cell, idx }))
+        .filter(({ cell, idx }) => !cell.isGiven && cell.value !== next.solution[idx]);
+
+      if (candidates.length === 0) return next;
+
+      const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+      const correctValue = next.solution[chosen.idx];
+
+      for (const targetId of targets) {
+        const prog = next.progress[targetId];
+        if (!prog || prog.finished) continue;
+
+        prog.cells[chosen.idx] = {
+          value: correctValue,
+          isGiven: false,
+          filledBy: playerId,
+        };
+
+        if (isBoardSolved(prog.cells)) {
+          prog.finished = true;
+          prog.finishedAt = Date.now();
+          prog.timeMs = prog.finishedAt - next.startedAt;
+          next.results.push({
+            playerId: targetId,
+            place: next.results.length + 1,
+            finishedAt: prog.finishedAt,
+            timeMs: prog.timeMs,
+          });
+        }
+      }
+
+      next.hintsUsedByPlayer[playerId] = (next.hintsUsedByPlayer[playerId] ?? 0) + 1;
+
+      if (next.expectedPlayers.length > 0 && next.expectedPlayers.every((id) => next.progress[id]?.finished)) {
+        next.finished = true;
+        next.finishedAt = Date.now();
+      }
+
+      return next;
+    }
+
     if (action.type !== "setCell") return state;
 
     const { index, value } = action;
@@ -164,7 +234,11 @@ export class SudokuGame implements GameEngine<SudokuState, SudokuAction> {
     );
 
     const progress: Record<string, SudokuPlayerProgress> = {};
-    for (const id of state.expectedPlayers) progress[id] = blankProgress(baseCells);
+    const hintsUsedByPlayer: Record<string, number> = {};
+    for (const id of state.expectedPlayers) {
+      progress[id] = blankProgress(baseCells);
+      hintsUsedByPlayer[id] = 0;
+    }
 
     return {
       ...state,
@@ -173,6 +247,7 @@ export class SudokuGame implements GameEngine<SudokuState, SudokuAction> {
       finished: false,
       finishedAt: null,
       results: [],
+      hintsUsedByPlayer,
     };
   }
 }

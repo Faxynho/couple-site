@@ -33,6 +33,7 @@ export interface CrosswordSummaryProgress {
   finishedAt: number | null;
   timeMs: number | null;
   wordsCompleted: number;
+  completedWordIds: string[];
 }
 
 export type CrosswordProgress = CrosswordFullProgress | CrosswordSummaryProgress;
@@ -61,6 +62,8 @@ export interface CrosswordState {
   finished: boolean;
   finishedAt: number | null;
   results: CrosswordResultEntry[];
+  /** Jogadores que já acertaram cada palavra. */
+  completedWordBy: Record<string, string[]>;
 }
 
 export const CROSSWORD_DIFFICULTIES = {

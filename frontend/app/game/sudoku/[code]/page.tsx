@@ -28,7 +28,7 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
   const code = params.code.toUpperCase();
 
   const { room, selfId, notFound } = useGameRoom(code);
-  const { state, setCell, newPuzzle, resetGame } = useSudokuGame(code);
+  const { state, setCell, hint, newPuzzle, resetGame } = useSudokuGame(code);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showWinModal, setShowWinModal] = useState(false);
@@ -88,9 +88,11 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
         moves={ownProgress.moves}
         players={room.players}
         progress={state.progress}
+        hintsUsedByPlayer={state.hintsUsedByPlayer}
         selfId={selfId}
         onNewPuzzle={(difficulty) => newPuzzle(difficulty)}
         onRestart={resetGame}
+        onHint={hint}
         onBack={() => router.push("/")}
       />
 

@@ -32,6 +32,10 @@ export function useSudokuGame(roomCode: string) {
     getSocket().emit("sudoku:setCell", { index, value });
   }, []);
 
+  const hint = useCallback(() => {
+    getSocket().emit("sudoku:hint");
+  }, []);
+
   const newPuzzle = useCallback((difficulty?: string) => {
     getSocket().emit("sudoku:newPuzzle", { difficulty });
   }, []);
@@ -40,5 +44,5 @@ export function useSudokuGame(roomCode: string) {
     getSocket().emit("game:reset");
   }, []);
 
-  return { state, setCell, newPuzzle, resetGame };
+  return { state, setCell, hint, newPuzzle, resetGame };
 }

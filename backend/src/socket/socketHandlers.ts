@@ -160,6 +160,7 @@ interface CrosswordStateShape {
   cells: CrosswordCellShape[];
   words: CrosswordWordShape[];
   progress: Record<string, CrosswordProgressShape>;
+  completedWordBy?: Record<string, string[]>;
 }
 
 /**
@@ -194,6 +195,7 @@ function getCrosswordStateForPlayer(state: unknown, playerId: string): unknown {
         finishedAt: prog.finishedAt,
         timeMs: prog.timeMs,
         wordsCompleted: prog.completedWordIds.length,
+        completedWordIds: prog.completedWordIds,
       };
     }
   }
@@ -216,6 +218,7 @@ interface SudokuProgressShape {
 interface SudokuStateShape {
   mode?: string;
   progress: Record<string, SudokuProgressShape>;
+  solution?: number[];
 }
 
 /**
@@ -229,6 +232,10 @@ function getSudokuStateForPlayer(state: unknown, playerId: string): unknown {
   const s = state as SudokuStateShape | null;
   if (!s) return state;
 
+  // A solução é segredo do servidor. O restante do estado é público,
+  // incluindo o contador de dicas, para que o Duelo seja transparente.
+  const { solution: _solution, ...publicState } = s;
+
   const progress: Record<string, unknown> = {};
   for (const [pid, prog] of Object.entries(s.progress)) {
     if (s.mode !== "duel" || pid === playerId) {
@@ -239,7 +246,7 @@ function getSudokuStateForPlayer(state: unknown, playerId: string): unknown {
     }
   }
 
-  return { ...s, progress };
+  return { ...publicState, progress };
 }
 
 interface WordSearchWordShape {
@@ -252,6 +259,7 @@ interface WordSearchWordShape {
 }
 interface WordSearchProgressShape {
   found: Record<string, { row: number; col: number }[]>;
+  foundBy?: Record<string, string[]>;
   mistakes: number;
   finished: boolean;
   finishedAt: number | null;
@@ -274,11 +282,48 @@ function getWordSearchStateForPlayer(state: unknown, playerId: string): unknown 
   if (!s) return state;
 
   const isDuel = s.mode === "duel";
-  const ownProgress = s.progress[playerId];
 
   const publicWords = s.words.map((w) => {
-    const found = ownProgress?.found?.[w.id];
-    return found ? { id: w.id, word: w.word, cells: found } : { id: w.id, word: w.word };
+    // Junta todas as pessoas que encontraram esta palavra.
+    const foundEntries = Object.entries(s.progress)
+      .flatMap(([pid, prog]) => {
+        const cells = prog.found?.[w.id];
+        const foundBy = prog.foundBy?.[w.id] ?? (cells ? [pid] : []);
+        if (!foundBy.length) return [];
+        return [{ pid, cells, foundBy }];
+      });
+
+    if (foundEntries.length === 0) {
+      return { id: w.id, word: w.word };
+    }
+
+    const foundBy = Array.from(
+      new Set(foundEntries.flatMap((entry) => entry.foundBy))
+    );
+
+    if (!isDuel) {
+      // Modo Juntos: a descoberta é compartilhada. Os dois recebem a
+      // localização e a marcação da palavra na grade.
+      const cells = foundEntries.find((entry) => entry.cells)?.cells;
+      return {
+        id: w.id,
+        word: w.word,
+        ...(cells ? { cells } : {}),
+        foundBy,
+      };
+    }
+
+    // Modo Duelo: cada jogador só recebe a localização se ELE encontrou.
+    // Porém, todos recebem foundBy para que a lista inferior mostre quem
+    // encontrou a palavra. Assim, saber que o oponente achou não revela
+    // onde a palavra está na grade.
+    const ownEntry = foundEntries.find((entry) => entry.pid === playerId);
+    return {
+      id: w.id,
+      word: w.word,
+      ...(ownEntry?.cells ? { cells: ownEntry.cells } : {}),
+      foundBy,
+    };
   });
 
   const progress: Record<string, unknown> = {};
@@ -619,6 +664,17 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         { type: "setCell", index: payload.index, value: payload.value },
         socket.data.playerId ?? socket.id
       );
+      broadcastGameState(io, code!, roomManager);
+      if (room.status === "finished") {
+        broadcastRoom(io, code!, roomManager);
+      }
+    });
+
+    socket.on("sudoku:hint", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "sudoku") return;
+      room.applyAction({ type: "hint" }, socket.data.playerId ?? socket.id);
       broadcastGameState(io, code!, roomManager);
       if (room.status === "finished") {
         broadcastRoom(io, code!, roomManager);

@@ -49,6 +49,8 @@ export interface SudokuState {
   finished: boolean;
   finishedAt: number | null;
   results: SudokuResultEntry[];
+  /** Quantas dicas cada jogador usou nesta partida. */
+  hintsUsedByPlayer: Record<string, number>;
 }
 
 /**

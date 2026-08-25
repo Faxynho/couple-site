@@ -102,7 +102,10 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
       <CluesList
         words={state.words}
         completedWordIds={ownProgress.completedWordIds}
+        completedWordBy={state.completedWordBy}
         activeWordId={activeWordId}
+        players={room.players}
+        selfId={selfId}
         onSelectWord={(word) => {
           setDirection(word.direction);
           setSelected(word.row * state.cols + word.col);

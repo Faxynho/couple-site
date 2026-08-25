@@ -37,6 +37,8 @@ export interface WordSearchFoundCell {
 
 export interface WordSearchPlayerProgress {
   found: Record<string, WordSearchFoundCell[]>; // wordId -> células encontradas
+  /** Quem encontrou cada palavra. Em Duelo, os dois podem encontrar a mesma palavra. */
+  foundBy: Record<string, string[]>;
   mistakes: number;
   finished: boolean;
   finishedAt: number | null;
@@ -74,7 +76,7 @@ export type WordSearchAction = {
 };
 
 function blankProgress(): WordSearchPlayerProgress {
-  return { found: {}, mistakes: 0, finished: false, finishedAt: null, timeMs: null };
+  return { found: {}, foundBy: {}, mistakes: 0, finished: false, finishedAt: null, timeMs: null };
 }
 
 function sign(n: number): number {
@@ -158,6 +160,7 @@ export class WordSearchGame implements GameEngine<WordSearchState, WordSearchAct
 
       if (match) {
         prog.found[match.id] = cells;
+        prog.foundBy[match.id] = Array.from(new Set([...(prog.foundBy[match.id] ?? []), playerId]));
       } else {
         prog.mistakes += 1;
       }
