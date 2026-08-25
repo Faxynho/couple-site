@@ -1,4 +1,4 @@
-import { RPGCard, RPGCardTemplate, RPGRarity } from "./types";
+import { RPGCard, RPGCardTemplate, RPGClassId, RPGRarity } from "./types";
 
 /**
  * Banco de cartas do Mini RPG.
@@ -34,7 +34,7 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       name: "Cura + Esquiva",
       emoji: "❤️💨",
       description: "Recupera um pouco de vida e aumenta sua chance de esquiva no próximo golpe.",
-      healPercent: 0.08,
+      healPercent: 0.10,
       evadeChanceGrant: 0.35,
     },
   ],
@@ -67,7 +67,7 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       name: "Magia Dupla",
       emoji: "🔮🔮",
       description: "Dois ataques mágicos consecutivos.",
-      dmgMultiplier: 0.58,
+      dmgMultiplier: 0.95,
       hits: 2,
     },
     {
@@ -78,7 +78,7 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       emoji: "🩸",
       description: "Causa dano e rouba parte do dano causado para recuperar sua vida.",
       dmgMultiplier: 0.9,
-      healPercent: 0.65,
+      healPercent: 0.75,
     },
   ],
 
@@ -90,8 +90,8 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       name: "Ataque + Magia",
       emoji: "⚔️🔮",
       description: "Ataque físico acompanhado de dano mágico adicional.",
-      dmgMultiplier: 0.8,
-      secondaryDmgMultiplier: 0.5,
+      dmgMultiplier: 1,
+      secondaryDmgMultiplier: 0.85,
     },
     {
       id: "epic_double_attack",
@@ -100,7 +100,7 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       name: "Dois Ataques",
       emoji: "⚔️⚔️",
       description: "Dois ataques consecutivos, com o dano dividido entre eles.",
-      dmgMultiplier: 0.55,
+      dmgMultiplier: 1,
       hits: 2,
     },
     {
@@ -111,7 +111,7 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       emoji: "⚔️❤️",
       description: "Dano cheio, e ainda recupera uma parte da sua vida.",
       dmgMultiplier: 1,
-      healPercent: 0.15,
+      healPercent: 0.25,
     },
     {
       id: "epic_atk_crit",
@@ -121,7 +121,7 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       emoji: "⚔️🎯",
       description: "Ataque com chance de crítico bem maior que o normal.",
       dmgMultiplier: 1,
-      critChanceBonus: 0.35,
+      critChanceBonus: 0.45,
     },
     {
       id: "epic_poison",
@@ -131,7 +131,7 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       emoji: "☠️",
       description: "Causa dano agora e aplica veneno por mais 2 rodadas.",
       dmgMultiplier: 0.75,
-      poisonDamageMultiplier: 0.28,
+      poisonDamageMultiplier: 0.75,
       poisonRounds: 2,
     },
   ],
@@ -144,18 +144,8 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       name: "Triplo Ataque",
       emoji: "⚔️⚔️⚔️",
       description: "Três ataques consecutivos contra o inimigo.",
-      dmgMultiplier: 0.4,
+      dmgMultiplier: 1,
       hits: 3,
-    },
-    {
-      id: "legendary_super_magic",
-      rarity: "legendary",
-      kind: "superMagic",
-      name: "Super Magia",
-      emoji: "☄️",
-      description: "Um ataque mágico devastador que ignora esquivas.",
-      dmgMultiplier: 1.8,
-      ignoreEvade: true,
     },
     {
       id: "legendary_atk_immunity",
@@ -173,7 +163,7 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       name: "Magia Tripla",
       emoji: "🔮🔮🔮",
       description: "Três ataques mágicos consecutivos.",
-      dmgMultiplier: 0.52,
+      dmgMultiplier: 0.95,
       hits: 3,
     },
     {
@@ -206,6 +196,72 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
   ],
 
   unique: [
+    {
+      id: "unique_super_magic",
+      rarity: "unique",
+      kind: "superMagic",
+      name: "Super Magia",
+      emoji: "☄️",
+      description: "Um ataque mágico devastador que ignora esquivas. Exclusiva para magos.",
+      dmgMultiplier: 2,
+      ignoreEvade: true,
+      classRestriction: "mage",
+    },
+    {
+      id: "unique_curse",
+      rarity: "unique",
+      kind: "curse",
+      name: "Maldição",
+      emoji: "🕯️",
+      description: "Causa dano contínuo de multiplicador 0,75 por 5 rodadas. Exclusiva para bruxos.",
+      curseDamageMultiplier: 0.75,
+      curseRounds: 5,
+      classRestriction: "warlock",
+    },
+    {
+      id: "unique_arrow_rain",
+      rarity: "unique",
+      kind: "arrowRain",
+      name: "Chuva de Flechas",
+      emoji: "🏹🏹🏹",
+      description: "Realiza 5 ataques com dano padrão. Exclusiva para arqueiros.",
+      dmgMultiplier: 1,
+      hits: 5,
+      classRestriction: "archer",
+    },
+    {
+      id: "unique_hammer_smash",
+      rarity: "unique",
+      kind: "hammerSmash",
+      name: "Marretada",
+      emoji: "🔨",
+      description: "Um golpe poderoso com o mesmo multiplicador da Super Magia. Exclusiva para guerreiros.",
+      dmgMultiplier: 2,
+      classRestriction: "warrior",
+    },
+    {
+      id: "unique_assassinate",
+      rarity: "unique",
+      kind: "assassinate",
+      name: "Assassinar",
+      emoji: "🗡️",
+      description: "Golpe de 3x o dano base e causa sangramento por 3 rodadas. Exclusiva para assassinos.",
+      dmgMultiplier: 3,
+      bleedDamageMultiplier: 1,
+      bleedRounds: 3,
+      classRestriction: "assassin",
+    },
+    {
+      id: "unique_divine_shield",
+      rarity: "unique",
+      kind: "divineShield",
+      name: "Escudo Divino",
+      emoji: "🛡️✨",
+      description: "Aumenta sua defesa em 50% pelos próximos 3 rounds. Exclusiva para paladinos.",
+      defenseMultiplier: 1.5,
+      defenseRounds: 3,
+      classRestriction: "paladin",
+    },
     {
       id: "unique_full_heal",
       rarity: "unique",
@@ -250,31 +306,45 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
 };
 
 /**
- * Sorte aumenta as chances de raridades maiores sem alterar a chance fixa
- * de ÚNICO (1%). O bônus é retirado principalmente da faixa COMUM.
+ * Sem Sorte: 35% comum, 25% raro, 20% épico, 15% lendário, 5% único.
+ * Com Sorte: 25% comum, 25% raro, 25% épico, 15% lendário, 10% único.
  */
 function rollRarity(luckBonus = 0): RPGRarity {
   const roll = Math.random() * 100;
-  const luck = Math.max(0, Math.min(0.25, luckBonus));
-  const commonEnd = 70 - luck * 100;
-  const rareEnd = 85 - luck * 50;
+  const hasLuck = luckBonus > 0;
 
-  if (roll < commonEnd) return "common";
-  if (roll < rareEnd) return "rare";
-  if (roll < 95) return "epic";
-  if (roll < 99) return "legendary";
+  // Sem Sorte: 35% comum, 25% raro, 20% épico, 15% lendário, 5% único.
+  // Com Sorte: 25% comum, 25% raro, 25% épico, 15% lendário, 10% único.
+  if (!hasLuck) {
+    if (roll < 35) return "common";
+    if (roll < 60) return "rare";
+    if (roll < 80) return "epic";
+    if (roll < 95) return "legendary";
+    return "unique";
+  }
+
+  if (roll < 25) return "common";
+  if (roll < 50) return "rare";
+  if (roll < 75) return "epic";
+  if (roll < 90) return "legendary";
   return "unique";
 }
 
 export function rollCardTemplate(
   usedUniqueIds: string[],
+  classId: RPGClassId,
   luckBonus = 0
 ): RPGCardTemplate {
   let rarity = rollRarity(luckBonus);
   let pool = CARD_TEMPLATES[rarity];
 
   if (rarity === "unique") {
-    const available = pool.filter((c) => !usedUniqueIds.includes(c.id));
+    const available = pool.filter(
+      (c) =>
+        !usedUniqueIds.includes(c.id) &&
+        (!c.classRestriction || c.classRestriction === classId)
+    );
+
     if (available.length === 0) {
       rarity = "legendary";
       pool = CARD_TEMPLATES.legendary;
@@ -290,12 +360,13 @@ export function rollHand(
   round: number,
   combatantId: string,
   usedUniqueIds: string[],
+  classId: RPGClassId,
   luckBonus = 0
 ): RPGCard[] {
   const hand: RPGCard[] = [];
 
   for (let slot = 0; slot < 3; slot++) {
-    const template = rollCardTemplate(usedUniqueIds, luckBonus);
+    const template = rollCardTemplate(usedUniqueIds, classId, luckBonus);
 
     if (template.rarity === "unique") {
       usedUniqueIds.push(template.id);

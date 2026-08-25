@@ -99,6 +99,13 @@ function createCombatant(
     luckBonus: 0,
     poisonRoundsRemaining: 0,
     poisonDamage: 0,
+    bleedRoundsRemaining: 0,
+    bleedDamage: 0,
+    curseRoundsRemaining: 0,
+    curseDamage: 0,
+    defenseMultiplier: 1,
+    defenseBuffStartRound: 0,
+    defenseBuffUntilRound: 0,
     rerollCharges: 0,
     usedUniqueCardIds: [],
     hand: [],
@@ -171,6 +178,7 @@ function dealHandsForRound(state: RPGState) {
       state.round,
       id,
       c.usedUniqueCardIds,
+      c.classId,
       c.luckBonus
     );
   }
@@ -218,6 +226,7 @@ function performHit(
   cardId: string,
   dmgMultiplier: number,
   damageType: "physical" | "magic",
+  currentRound: number,
   extraCritChance: number,
   events: RPGRoundEvent[],
   ignoreEvade = false
@@ -273,9 +282,18 @@ function performHit(
     base *= actorPassives.magicDamageDealtMult ?? 1;
   }
 
+  const defenseBuffActive =
+    target.defenseBuffStartRound > 0 &&
+    currentRound > target.defenseBuffStartRound &&
+    currentRound <= target.defenseBuffUntilRound;
+
+  const effectiveDefense = defenseBuffActive
+    ? target.def * target.defenseMultiplier
+    : target.def;
+
   let dmg =
     base -
-    target.def * 0.5 -
+    effectiveDefense * 0.5 -
     (targetPassives.flatDamageReduction ?? 0);
 
   if (damageType === "physical") {
@@ -320,30 +338,58 @@ function applyPoisonTicks(
 ) {
   for (const id of state.order) {
     const c = state.combatants[id];
+    if (!c.alive) continue;
 
-    if (!c.alive || c.poisonRoundsRemaining <= 0) {
-      continue;
+    if (c.poisonRoundsRemaining > 0) {
+      const amount = Math.max(MIN_DAMAGE, Math.round(c.poisonDamage));
+      c.hp = Math.max(0, c.hp - amount);
+      c.poisonRoundsRemaining -= 1;
+
+      if (c.hp <= 0) c.alive = false;
+
+      events.push({
+        actorId: "POISON",
+        targetId: c.id,
+        type: "statusTick",
+        status: "poison",
+        cardId: "poison",
+        amount,
+      });
     }
 
-    const amount = Math.max(
-      MIN_DAMAGE,
-      Math.round(c.poisonDamage)
-    );
+    if (c.alive && c.bleedRoundsRemaining > 0) {
+      const amount = Math.max(MIN_DAMAGE, Math.round(c.bleedDamage));
+      c.hp = Math.max(0, c.hp - amount);
+      c.bleedRoundsRemaining -= 1;
 
-    c.hp = Math.max(0, c.hp - amount);
-    c.poisonRoundsRemaining -= 1;
+      if (c.hp <= 0) c.alive = false;
 
-    if (c.hp <= 0) {
-      c.alive = false;
+      events.push({
+        actorId: "BLEED",
+        targetId: c.id,
+        type: "statusTick",
+        status: "bleed",
+        cardId: "bleeding",
+        amount,
+      });
     }
 
-    events.push({
-      actorId: "POISON",
-      targetId: c.id,
-      type: "poison",
-      cardId: "poison",
-      amount,
-    });
+    if (c.alive && c.curseRoundsRemaining > 0) {
+      const amount = Math.max(MIN_DAMAGE, Math.round(c.curseDamage));
+      c.hp = Math.max(0, c.hp - amount);
+      c.curseRoundsRemaining -= 1;
+
+      if (c.hp <= 0) c.alive = false;
+
+      events.push({
+        actorId: "CURSE",
+        targetId: c.id,
+        type: "statusTick",
+        status: "curse",
+        cardId: "curse",
+        amount,
+      });
+    }
   }
 }
 
@@ -475,12 +521,65 @@ function applyCard(
       return;
     }
 
+    case "divineShield": {
+      actor.defenseMultiplier = Math.max(
+        actor.defenseMultiplier,
+        card.defenseMultiplier ?? 1.5
+      );
+      const buffRounds = card.defenseRounds ?? 3;
+      actor.defenseBuffStartRound = state.round;
+      actor.defenseBuffUntilRound = Math.max(
+        actor.defenseBuffUntilRound,
+        state.round + buffRounds
+      );
+
+      events.push({
+        actorId: actor.id,
+        targetId: actor.id,
+        type: "buff",
+        cardId: card.id,
+      });
+      return;
+    }
+
     default:
       break;
   }
 
   const target = pickTarget(actor, state, enemyIds);
   if (!target) return;
+
+  if (card.kind === "curse") {
+    const curseMultiplier = card.curseDamageMultiplier ?? 0.75;
+    const dealt = performHit(
+      actor,
+      target,
+      card.id,
+      curseMultiplier,
+      "magic",
+      state.round,
+      0,
+      events
+    );
+
+    if (target.alive && dealt > 0) {
+      const futureRounds = Math.max(
+        0,
+        (card.curseRounds ?? 5) - 1
+      );
+      if (futureRounds > 0) {
+        target.curseRoundsRemaining = Math.max(
+          target.curseRoundsRemaining,
+          futureRounds
+        );
+        target.curseDamage = Math.max(
+          target.curseDamage,
+          actor.atk * curseMultiplier
+        );
+      }
+    }
+    return;
+  }
 
   const mult = card.dmgMultiplier ?? 1;
 
@@ -491,6 +590,7 @@ function applyCard(
       card.id,
       mult,
       "physical",
+      state.round,
       0,
       events
     );
@@ -502,6 +602,7 @@ function applyCard(
         card.id,
         card.secondaryDmgMultiplier ?? 0.5,
         "magic",
+        state.round,
         0,
         events
       );
@@ -513,7 +614,8 @@ function applyCard(
     card.kind === "doubleAttack" ||
     card.kind === "tripleAttack" ||
     card.kind === "doubleMagic" ||
-    card.kind === "tripleMagic"
+    card.kind === "tripleMagic" ||
+    card.kind === "arrowRain"
   ) {
     const hits = card.hits ?? 2;
     const isMagic =
@@ -527,6 +629,7 @@ function applyCard(
         card.id,
         mult,
         isMagic ? "magic" : "physical",
+        state.round,
         0,
         events,
         Boolean(card.ignoreEvade)
@@ -549,6 +652,7 @@ function applyCard(
     card.id,
     mult,
     damageType,
+    state.round,
     critBonus,
     events,
     Boolean(card.ignoreEvade)
@@ -661,6 +765,21 @@ function applyCard(
       target.poisonDamage,
       actor.atk *
         (card.poisonDamageMultiplier ?? 0.28)
+    );
+  }
+
+  if (
+    card.kind === "assassinate" &&
+    target.alive &&
+    dealt > 0
+  ) {
+    target.bleedRoundsRemaining = Math.max(
+      target.bleedRoundsRemaining,
+      card.bleedRounds ?? 3
+    );
+    target.bleedDamage = Math.max(
+      target.bleedDamage,
+      actor.atk * (card.bleedDamageMultiplier ?? 1)
     );
   }
 
@@ -942,6 +1061,7 @@ export class RPGGame
         next.round,
         playerId,
         c.usedUniqueCardIds,
+        c.classId,
         c.luckBonus
       );
 

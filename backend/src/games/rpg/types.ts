@@ -46,6 +46,11 @@ export type RPGCardKind =
   | "physicalCritBoost"
   | "tripleAttack"
   | "superMagic"
+  | "curse"
+  | "arrowRain"
+  | "hammerSmash"
+  | "assassinate"
+  | "divineShield"
   | "physicalImmuneBuff"
   | "fullHeal"
   | "domination"
@@ -78,6 +83,13 @@ export interface RPGCardTemplate {
   poisonDamageMultiplier?: number;
   poisonRounds?: number;
   rerollCharges?: number;
+  classRestriction?: RPGClassId;
+  bleedDamageMultiplier?: number;
+  bleedRounds?: number;
+  curseDamageMultiplier?: number;
+  curseRounds?: number;
+  defenseMultiplier?: number;
+  defenseRounds?: number;
 }
 
 export interface RPGCard extends RPGCardTemplate {
@@ -117,6 +129,19 @@ export interface RPGCombatant {
   poisonRoundsRemaining: number;
   poisonDamage: number;
 
+  // Sangramento causado por cartas especiais.
+  bleedRoundsRemaining: number;
+  bleedDamage: number;
+
+  // Maldição causada pela carta de Bruxo.
+  curseRoundsRemaining: number;
+  curseDamage: number;
+
+  // Bônus temporário de defesa causado por cartas especiais.
+  defenseMultiplier: number;
+  defenseBuffStartRound: number;
+  defenseBuffUntilRound: number;
+
   // Sistema de Rolagem.
   rerollCharges: number;
 
@@ -142,6 +167,7 @@ export type RPGRoundEventType =
   | "domination"
   | "buff"
   | "poison"
+  | "statusTick"
   | "swap"
   | "reroll";
 
@@ -152,6 +178,7 @@ export interface RPGRoundEvent {
   cardId: string;
   amount?: number;
   isCrit?: boolean;
+  status?: "poison" | "bleed" | "curse";
 }
 
 export type RPGPhase = "intro" | "choosing" | "resolved" | "finished";

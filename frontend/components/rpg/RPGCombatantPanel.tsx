@@ -15,6 +15,7 @@ interface RPGCombatantPanelProps {
   isSelf?: boolean;
   events: RPGRoundEvent[];
   eventsKey: number;
+  currentRound: number;
   showChosenBadge?: boolean;
 }
 
@@ -84,6 +85,41 @@ const TONE_CLASSES = {
   info: "text-slate-700",
 };
 
+type StatusKind = "poison" | "bleed" | "curse";
+
+const STATUS_VISUALS: Record<
+  StatusKind,
+  {
+    label: string;
+    emoji: string;
+    text: string;
+    bg: string;
+    flash: string;
+  }
+> = {
+  poison: {
+    label: "Envenenamento",
+    emoji: "☠️",
+    text: "text-emerald-700",
+    bg: "bg-emerald-600",
+    flash: "bg-emerald-500",
+  },
+  bleed: {
+    label: "Sangramento",
+    emoji: "🩸",
+    text: "text-red-700",
+    bg: "bg-red-600",
+    flash: "bg-red-700",
+  },
+  curse: {
+    label: "Maldição",
+    emoji: "🕯️",
+    text: "text-slate-950",
+    bg: "bg-slate-950",
+    flash: "bg-slate-950",
+  },
+};
+
 /* =========================================================
    FUNDO ESPECÍFICO DE CADA CLASSE
    ========================================================= */
@@ -111,7 +147,7 @@ function ClassBackground({
             top-1/2
             -translate-y-1/2
             text-6xl
-            opacity-[0.045]
+            opacity-[0.18]
             grayscale
           "
           animate={
@@ -134,7 +170,7 @@ function ClassBackground({
             right-16
             bottom-2
             text-4xl
-            opacity-[0.035]
+            opacity-[0.10]
           "
           animate={{
             rotate: [-4, 4, -4],
@@ -153,7 +189,7 @@ function ClassBackground({
           right-0
           w-1/3
           bg-gradient-to-l
-          from-slate-500/[0.05]
+          from-slate-500/[0.14]
           to-transparent
         " />
       </div>
@@ -176,7 +212,7 @@ function ClassBackground({
             top-1/2
             -translate-y-1/2
             text-6xl
-            opacity-[0.055]
+            opacity-[0.14]
           "
           animate={
             dead
@@ -204,7 +240,7 @@ function ClassBackground({
             right-20
             top-4
             text-2xl
-            opacity-[0.06]
+            opacity-[0.14]
           "
           animate={{
             x: [-8, 15],
@@ -225,7 +261,7 @@ function ClassBackground({
             right-12
             bottom-4
             text-xl
-            opacity-[0.045]
+            opacity-[0.18]
           "
           animate={{
             x: [0, 8, 0],
@@ -244,7 +280,7 @@ function ClassBackground({
           right-0
           w-2/5
           bg-gradient-to-l
-          from-amber-500/[0.035]
+          from-amber-500/[0.12]
           to-transparent
         " />
       </div>
@@ -268,7 +304,7 @@ function ClassBackground({
             top-1/2
             -translate-y-1/2
             text-6xl
-            opacity-[0.055]
+            opacity-[0.14]
           "
           animate={
             dead
@@ -296,7 +332,7 @@ function ClassBackground({
             right-20
             top-3
             text-lg
-            opacity-[0.12]
+            opacity-[0.18]
           "
           animate={{
             y: [-4, 4, -4],
@@ -317,7 +353,7 @@ function ClassBackground({
             right-10
             bottom-3
             text-xl
-            opacity-[0.08]
+            opacity-[0.16]
           "
           animate={{
             y: [3, -4, 3],
@@ -358,7 +394,7 @@ function ClassBackground({
           right-0
           w-2/5
           bg-gradient-to-l
-          from-purple-500/[0.045]
+          from-purple-500/[0.14]
           to-transparent
         " />
       </div>
@@ -383,7 +419,7 @@ function ClassBackground({
             top-1/2
             -translate-y-1/2
             text-6xl
-            opacity-[0.045]
+            opacity-[0.18]
           "
           animate={
             dead
@@ -410,7 +446,7 @@ function ClassBackground({
           right-0
           w-1/3
           bg-gradient-to-l
-          from-slate-800/[0.04]
+          from-slate-800/[0.12]
           to-transparent
         " />
       </div>
@@ -435,7 +471,7 @@ function ClassBackground({
           top-1/2
           -translate-y-1/2
           text-6xl
-          opacity-[0.035]
+          opacity-[0.10]
         "
         animate={{
           scale: [1, 1.06, 1],
@@ -463,6 +499,7 @@ export default function RPGCombatantPanel({
   isSelf,
   events,
   eventsKey,
+  currentRound,
   showChosenBadge,
 }: RPGCombatantPanelProps) {
   const classDef = RPG_CLASSES[combatant.classId];
@@ -532,6 +569,125 @@ export default function RPGCombatantPanel({
         event.type === "immuneBlock"
     );
 
+  const statusTickEvents = events.filter(
+    (event) =>
+      event.type === "statusTick" &&
+      typeof event.amount === "number" &&
+      event.amount > 0
+  );
+
+  const activeDefenseBuff =
+    combatant.defenseBuffStartRound > 0 &&
+    currentRound > combatant.defenseBuffStartRound &&
+    currentRound <= combatant.defenseBuffUntilRound;
+
+  const activeStatuses: {
+    key: string;
+    label: string;
+    emoji: string;
+    className: string;
+  }[] = [];
+
+  if (combatant.stunnedRounds > 0) {
+    activeStatuses.push({
+      key: "stunned",
+      label: `Atordoado${combatant.stunnedRounds > 1 ? ` (${combatant.stunnedRounds})` : ""}`,
+      emoji: "💫",
+      className: "bg-slate-200/90 text-slate-700",
+    });
+  }
+
+  if (combatant.immuneThisRound) {
+    activeStatuses.push({
+      key: "immune-round",
+      label: "Imunidade total neste round",
+      emoji: "🛡️",
+      className: "bg-sky-100/95 text-sky-700",
+    });
+  }
+
+  if (combatant.immuneNextHit) {
+    activeStatuses.push({
+      key: "immune-next",
+      label: "Proteção no próximo golpe",
+      emoji: "🛡️",
+      className: "bg-cyan-100/95 text-cyan-700",
+    });
+  }
+
+  if (combatant.permanentCritBonus > 0) {
+    activeStatuses.push({
+      key: "crit-supreme",
+      label: "Crítico Supremo",
+      emoji: "🎯",
+      className: "bg-red-100/95 text-red-700",
+    });
+  }
+
+  if (combatant.permanentEvadeBonus > 0) {
+    activeStatuses.push({
+      key: "evade-supreme",
+      label: "Evasão Suprema",
+      emoji: "👻",
+      className: "bg-violet-100/95 text-violet-700",
+    });
+  }
+
+  if (combatant.evadeBonusNextHit > 0) {
+    activeStatuses.push({
+      key: "evade-next",
+      label: "Esquiva reforçada no próximo golpe",
+      emoji: "💨",
+      className: "bg-blue-100/95 text-blue-700",
+    });
+  }
+
+  if (combatant.luckBonus > 0) {
+    activeStatuses.push({
+      key: "luck",
+      label: "Sorte ativa",
+      emoji: "🍀",
+      className: "bg-emerald-100/95 text-emerald-700",
+    });
+  }
+
+  if (combatant.poisonRoundsRemaining > 0) {
+    activeStatuses.push({
+      key: "poison",
+      label: `Envenenado (${combatant.poisonRoundsRemaining})`,
+      emoji: "☠️",
+      className: "bg-emerald-100/95 text-emerald-700",
+    });
+  }
+
+  if (combatant.bleedRoundsRemaining > 0) {
+    activeStatuses.push({
+      key: "bleed",
+      label: `Sangrando (${combatant.bleedRoundsRemaining})`,
+      emoji: "🩸",
+      className: "bg-red-100/95 text-red-700",
+    });
+  }
+
+  if (combatant.curseRoundsRemaining > 0) {
+    activeStatuses.push({
+      key: "curse",
+      label: `Amaldiçoado (${combatant.curseRoundsRemaining})`,
+      emoji: "🕯️",
+      className: "bg-slate-200/95 text-slate-900",
+    });
+  }
+
+  if (activeDefenseBuff) {
+    const roundsLeft = Math.max(0, combatant.defenseBuffUntilRound - currentRound + 1);
+    activeStatuses.push({
+      key: "divine-shield",
+      label: `Escudo Divino (${roundsLeft})`,
+      emoji: "🛡️✨",
+      className: "bg-amber-100/95 text-amber-700",
+    });
+  }
+
   const healed =
     !tookDamage &&
     !evaded &&
@@ -540,6 +696,49 @@ export default function RPGCombatantPanel({
       (event) =>
         event.type === "heal"
     );
+
+  const fullHealUsed = events.some(
+    (event) =>
+      event.type === "heal" &&
+      event.cardId === "unique_full_heal"
+  );
+
+  const statusDamage = statusTickEvents.reduce(
+    (total, event) => total + (event.amount ?? 0),
+    0
+  );
+
+  const totalHealing = events.reduce(
+    (total, event) =>
+      event.type === "heal" ? total + (event.amount ?? 0) : total,
+    0
+  );
+
+  const netDamageThisRound = Math.max(
+    0,
+    damageAmount + statusDamage - totalHealing
+  );
+
+  const visualStartHp = Math.min(
+    combatant.maxHp,
+    Math.max(0, combatant.hp + netDamageThisRound)
+  );
+
+  const visualHpAfterNormalDamage = Math.min(
+    combatant.maxHp,
+    Math.max(0, visualStartHp - damageAmount)
+  );
+
+  const statusDamageHpKeyframes =
+    statusDamage > 0
+      ? [
+          visualStartHp / combatant.maxHp,
+          visualHpAfterNormalDamage / combatant.maxHp,
+          hpPct / 100,
+        ]
+      : [hpPct / 100];
+
+  const criticalHp = hpPct <= 15 && combatant.alive;
 
   const dead =
     !combatant.alive;
@@ -629,6 +828,18 @@ export default function RPGCombatantPanel({
               ],
             }
 
+          : criticalHp
+            ? {
+                scale: [1, 1.018, 0.992, 1.018, 1],
+                boxShadow: [
+                  "0 8px 28px rgba(31,41,55,0.09)",
+                  "0 0 0 3px rgba(239,68,68,0.26), 0 0 28px rgba(239,68,68,0.28)",
+                  "0 8px 28px rgba(31,41,55,0.09)",
+                  "0 0 0 3px rgba(239,68,68,0.2), 0 0 24px rgba(239,68,68,0.22)",
+                  "0 8px 28px rgba(31,41,55,0.09)",
+                ],
+              }
+
           : tookDamage
             ? {
                 x: heavyDamage
@@ -677,15 +888,32 @@ export default function RPGCombatantPanel({
       transition={{
         duration: dead
           ? 0.85
-          : heavyDamage
-            ? 0.6
-            : criticalDamage
-              ? 0.55
-              : 0.38,
+          : criticalHp
+            ? 1.2
+            : heavyDamage
+              ? 0.6
+              : criticalDamage
+                ? 0.55
+                : 0.38,
+        repeat: criticalHp ? Infinity : 0,
+        repeatType: criticalHp ? "mirror" : "loop",
 
         ease: "easeOut",
       }}
     >
+
+      <AnimatePresence>
+        {criticalHp && (
+          <motion.div
+            key={`critical-hp-${eventsKey}-${combatant.hp}`}
+            className="pointer-events-none absolute inset-0 z-[28] rounded-2xl border-2 border-red-500/55 bg-red-500/10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.08, 0.4, 0.12, 0.3, 0.08] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ===================================================
          FUNDO DA CLASSE
@@ -1105,51 +1333,26 @@ export default function RPGCombatantPanel({
         {/* =================================================
            STATUS
            ================================================= */}
-
-        {(combatant.stunnedRounds > 0 ||
-          combatant.immuneNextHit ||
-          showChosenBadge) && (
+        {(activeStatuses.length > 0 || showChosenBadge) && (
           <div
             className="
               flex
               min-h-[18px]
+              flex-wrap
               items-center
               justify-center
               gap-1.5
             "
           >
-
-            {combatant.stunnedRounds > 0 && (
+            {activeStatuses.map((status) => (
               <span
-                className="
-                  rounded-full
-                  bg-slate-200/80
-                  px-2
-                  py-0.5
-                  text-[9px]
-                  font-bold
-                  text-slate-600
-                "
+                key={status.key}
+                title={status.label}
+                className={`rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md ${status.className}`}
               >
-                ATORDOADO
+                {status.emoji} {status.label}
               </span>
-            )}
-
-            {combatant.immuneNextHit && (
-              <span
-                className="
-                  rounded-full
-                  bg-sky-100/90
-                  px-2
-                  py-0.5
-                  text-[9px]
-                  font-bold
-                  text-sky-700
-                "
-              >
-                🛡️ PROTEGIDO
-              </span>
-            )}
+            ))}
 
             {showChosenBadge && (
               <span
@@ -1166,7 +1369,6 @@ export default function RPGCombatantPanel({
                 ✓ ESCOLHIDO
               </span>
             )}
-
           </div>
         )}
 
@@ -1335,7 +1537,10 @@ export default function RPGCombatantPanel({
             `}
             initial={false}
             animate={{
-              scaleX: hpPct / 100,
+              scaleX:
+                statusDamage > 0
+                  ? statusDamageHpKeyframes
+                  : hpPct / 100,
               opacity: dead ? 0.15 : 1,
             }}
             style={{
@@ -1343,7 +1548,8 @@ export default function RPGCombatantPanel({
             }}
             transition={{
               scaleX: {
-                duration: 1.0,
+                duration: statusDamage > 0 ? 0.92 : 1.0,
+                times: statusDamage > 0 ? [0, 0.47, 1] : undefined,
                 ease: [0.22, 1, 0.36, 1],
               },
               opacity: {
@@ -1559,6 +1765,127 @@ export default function RPGCombatantPanel({
           </motion.div>
         </div>
       </div>
+
+      {/* =====================================================
+         RECUPERAÇÃO TOTAL — VÁRIOS CORAÇÕES
+         ===================================================== */}
+
+      <AnimatePresence>
+        {fullHealUsed && (
+          <motion.div
+            key={`full-heal-hearts-${eventsKey}`}
+            className="pointer-events-none absolute inset-0 z-[58] overflow-hidden rounded-2xl"
+          >
+            {Array.from({ length: 12 }, (_, index) => {
+              const x = ((index * 29) % 86) + 7;
+              const y = 76 - ((index * 11) % 22);
+              const scale = 0.75 + (index % 4) * 0.12;
+              return (
+                <motion.span
+                  key={index}
+                  className="absolute text-2xl leading-none drop-shadow-[0_4px_10px_rgba(190,24,93,0.35)] sm:text-3xl"
+                  style={{ left: `${x}%`, top: `${y}%` }}
+                  initial={{ opacity: 0, scale: 0.2, y: 8, rotate: -15 }}
+                  animate={{
+                    opacity: [0, 1, 1, 0],
+                    scale: [0.2, scale * 1.22, scale, scale * 0.9],
+                    y: [-2, -18 - (index % 4) * 4, -42 - (index % 5) * 6, -58 - (index % 3) * 8],
+                    x: [index % 2 ? -4 : 4, (index % 3 - 1) * 12, index % 2 ? 8 : -8, 0],
+                    rotate: [-15, 8, -5, 0],
+                  }}
+                  transition={{
+                    delay: index * 0.045,
+                    duration: 1.15 + (index % 3) * 0.08,
+                    ease: "easeOut",
+                  }}
+                >
+                  ❤️
+                </motion.span>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* =====================================================
+         DANO DE EFEITOS — TOCA DEPOIS DO DANO NORMAL
+         ===================================================== */}
+
+      <AnimatePresence>
+        {statusTickEvents.map((event, index) => {
+          const status: StatusKind =
+            event.status ??
+            (event.cardId === "bleeding" ? "bleed" : event.cardId === "curse" ? "curse" : "poison");
+          const visual = STATUS_VISUALS[status];
+
+          return (
+            <motion.div
+              key={`status-tick-${eventsKey}-${index}-${status}`}
+              className="
+                pointer-events-none
+                absolute
+                inset-0
+                z-[55]
+                flex
+                items-center
+                justify-center
+                overflow-hidden
+                rounded-2xl
+              "
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.42, 0.16, 0] }}
+              exit={{ opacity: 0 }}
+              transition={{
+                delay: 0.42 + index * 0.22,
+                duration: 0.55,
+                ease: "easeOut",
+              }}
+            >
+              <motion.div
+                className={`absolute inset-0 ${visual.flash}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0.92, 0.25, 0.55, 0] }}
+                transition={{
+                  delay: 0.42 + index * 0.22,
+                  duration: 0.5,
+                  ease: "easeOut",
+                }}
+              />
+
+              <motion.span
+                className="relative z-10 text-7xl leading-none drop-shadow-[0_0_18px_rgba(255,255,255,0.95)] drop-shadow-[0_6px_14px_rgba(0,0,0,0.55)] sm:text-8xl"
+                initial={{ opacity: 0, scale: 0.25, y: 10, rotate: -10 }}
+                animate={{
+                  opacity: [0, 1, 1, 0],
+                  scale: [0.25, 1.25, 0.95, 1],
+                  y: [10, -5, -18, -34],
+                  rotate: [-10, 6, -3, 0],
+                }}
+                transition={{
+                  delay: 0.42 + index * 0.22,
+                  duration: 0.9,
+                  ease: "easeOut",
+                }}
+              >
+                {visual.emoji}
+              </motion.span>
+
+              <motion.span
+                className={`absolute bottom-5 z-10 rounded-full bg-white/90 px-3 py-1 font-display text-base font-extrabold shadow-lg ${visual.text}`}
+                initial={{ opacity: 0, y: 10, scale: 0.75 }}
+                animate={{ opacity: [0, 1, 1, 0], y: [10, 0, -10, -24], scale: [0.75, 1, 1, 1.05] }}
+                transition={{
+                  delay: 0.44 + index * 0.22,
+                  duration: 0.9,
+                  ease: "easeOut",
+                }}
+              >
+                -{event.amount ?? 0} {visual.label}
+              </motion.span>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
 
       {/* =====================================================
          MORTE — CAVEIRA GRANDE

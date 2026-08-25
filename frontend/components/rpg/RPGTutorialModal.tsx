@@ -160,15 +160,6 @@ const TUTORIAL_CARDS: Record<RPGRarity, TutorialCard[]> = {
       description: "Três ataques consecutivos contra o inimigo.",
     },
     {
-      id: "legendary_super_magic",
-      instanceId: "tutorial-legendary-super-magic",
-      rarity: "legendary",
-      kind: "superMagic",
-      name: "Super Magia",
-      emoji: "☄️",
-      description: "Um ataque mágico devastador que ignora esquivas.",
-    },
-    {
       id: "legendary_atk_immunity",
       instanceId: "tutorial-legendary-atk-immunity",
       rarity: "legendary",
@@ -263,6 +254,93 @@ const TUTORIAL_CARDS: Record<RPGRarity, TutorialCard[]> = {
     },
   ],
 };
+
+const CLASS_UNIQUE_CARDS: Record<
+  Exclude<RPGClassId, "boss">,
+  TutorialCard[]
+> = {
+  mage: [
+    {
+      id: "unique_super_magic",
+      instanceId: "tutorial-class-mage-super-magic",
+      rarity: "unique",
+      kind: "superMagic",
+      name: "Super Magia",
+      emoji: "☄️",
+      description: "Um ataque mágico devastador que ignora esquivas. Exclusiva para magos.",
+      classRestriction: "mage",
+    },
+  ],
+  warlock: [
+    {
+      id: "unique_curse",
+      instanceId: "tutorial-class-warlock-curse",
+      rarity: "unique",
+      kind: "curse",
+      name: "Maldição",
+      emoji: "🕯️",
+      description: "Causa dano de 0,75x por 5 rounds seguidos. Exclusiva para bruxos.",
+      classRestriction: "warlock",
+    },
+  ],
+  archer: [
+    {
+      id: "unique_arrow_rain",
+      instanceId: "tutorial-class-archer-arrow-rain",
+      rarity: "unique",
+      kind: "arrowRain",
+      name: "Chuva de Flechas",
+      emoji: "🏹🏹🏹",
+      description: "Realiza 5 ataques com dano padrão. Exclusiva para arqueiros.",
+      classRestriction: "archer",
+    },
+  ],
+  warrior: [
+    {
+      id: "unique_hammer_smash",
+      instanceId: "tutorial-class-warrior-hammer-smash",
+      rarity: "unique",
+      kind: "hammerSmash",
+      name: "Marretada",
+      emoji: "🔨",
+      description: "Golpe de 2x o dano base, como a Super Magia. Exclusiva para guerreiros.",
+      classRestriction: "warrior",
+    },
+  ],
+  assassin: [
+    {
+      id: "unique_assassinate",
+      instanceId: "tutorial-class-assassin-assassinate",
+      rarity: "unique",
+      kind: "assassinate",
+      name: "Assassinar",
+      emoji: "🗡️",
+      description: "Golpe de 3x o dano base e sangramento de dano padrão por 3 rounds. Exclusiva para assassinos.",
+      classRestriction: "assassin",
+    },
+  ],
+  paladin: [
+    {
+      id: "unique_divine_shield",
+      instanceId: "tutorial-class-paladin-divine-shield",
+      rarity: "unique",
+      kind: "divineShield",
+      name: "Escudo Divino",
+      emoji: "🛡️✨",
+      description: "Aumenta a defesa em 50% pelos próximos 3 rounds. Exclusiva para paladinos.",
+      classRestriction: "paladin",
+    },
+  ],
+};
+
+const CLASS_UNIQUE_ORDER: Exclude<RPGClassId, "boss">[] = [
+  "warrior",
+  "mage",
+  "assassin",
+  "archer",
+  "paladin",
+  "warlock",
+];
 
 const RARITIES: RPGRarity[] = [
   "common",
@@ -408,6 +486,39 @@ export default function RPGTutorialModal({
                       </section>
                     );
                   })}
+
+                  <section>
+                    <div className="mb-3 mt-2 flex items-center justify-center gap-3">
+                      <span className="h-px flex-1 bg-black/5" />
+                      <h3 className="text-center text-sm font-extrabold uppercase tracking-[0.16em] text-fuchsia-600">
+                        Único por classe
+                      </h3>
+                      <span className="h-px flex-1 bg-black/5" />
+                    </div>
+
+                    <div className="mb-4 rounded-2xl border border-fuchsia-200/80 bg-fuchsia-50/65 px-4 py-3 text-center text-xs leading-relaxed text-ink-soft">
+                      Estas cartas são <strong>Únicas</strong>, mas só podem aparecer para a classe indicada. Cada uma pode ser recebida uma única vez por jogador durante a partida.
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+                      {CLASS_UNIQUE_ORDER.flatMap((classId) =>
+                        CLASS_UNIQUE_CARDS[classId].map((card, index) => (
+                          <div key={card.instanceId} className="min-w-0">
+                            <div className="mb-1.5 flex justify-center">
+                              <span className="rounded-full bg-white/85 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.08em] text-fuchsia-700 shadow-sm">
+                                {RPG_CLASSES[classId].emoji} {RPG_CLASSES[classId].name}
+                              </span>
+                            </div>
+                            <RPGCard
+                              card={card}
+                              delay={index * 0.04}
+                              disabled
+                            />
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </section>
                 </div>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">

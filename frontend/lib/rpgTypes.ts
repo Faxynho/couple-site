@@ -27,6 +27,11 @@ export type RPGCardKind =
   | "physicalCritBoost"
   | "tripleAttack"
   | "superMagic"
+  | "curse"
+  | "arrowRain"
+  | "hammerSmash"
+  | "assassinate"
+  | "divineShield"
   | "physicalImmuneBuff"
   | "fullHeal"
   | "domination"
@@ -50,6 +55,7 @@ export interface RPGCard {
   name: string;
   emoji: string;
   description: string;
+  classRestriction?: RPGClassId;
 }
 
 export interface RPGCombatant {
@@ -76,6 +82,13 @@ export interface RPGCombatant {
   luckBonus: number;
   poisonRoundsRemaining: number;
   poisonDamage: number;
+  bleedRoundsRemaining: number;
+  bleedDamage: number;
+  curseRoundsRemaining: number;
+  curseDamage: number;
+  defenseMultiplier: number;
+  defenseBuffStartRound: number;
+  defenseBuffUntilRound: number;
   rerollCharges: number;
   usedUniqueCardIds: string[];
 }
@@ -89,6 +102,7 @@ export type RPGRoundEventType =
   | "domination"
   | "buff"
   | "poison"
+  | "statusTick"
   | "swap"
   | "reroll";
 
@@ -99,6 +113,7 @@ export interface RPGRoundEvent {
   cardId: string;
   amount?: number;
   isCrit?: boolean;
+  status?: "poison" | "bleed" | "curse";
 }
 
 export type RPGPhase =
@@ -187,7 +202,7 @@ export const RPG_CLASSES: Record<
     name: "Paladino",
     emoji: "🛡️",
     passiveName: "Bênção da Muralha",
-    passiveDescription: "Reduz uma quantidade fixa de dano recebido.",
+    passiveDescription: "Tem defesa alta e reduz 3 de dano recebido em cada golpe.",
   },
 
   warlock: {

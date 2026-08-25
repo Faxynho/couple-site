@@ -271,6 +271,14 @@ const RARITY_VISUALS: Record<
   },
 };
 
+/* =========================================================
+   ANIMAÇÃO DAS LINHAS DIAGONAIS
+   A partir da ÉPICA, uma luz percorre as linhas como
+   uma estrela cadente.
+   ========================================================= */
+
+const DIAGONAL_RARITIES = ["epic", "legendary", "unique"];
+
 export default function RPGCard({
   card,
   delay = 0,
@@ -421,9 +429,18 @@ export default function RPGCard({
           }}
         />
 
-        {/* Linhas diagonais decorativas */}
+        {/* =================================================
+            LINHAS DIAGONAIS
+            Comum/Rara: estáticas
+            Épica/Lendária/Única: estrela cadente
+          ================================================= */}
+
         <div
-          className="absolute inset-0 opacity-50"
+          className={`absolute inset-0 ${
+            DIAGONAL_RARITIES.includes(card.rarity)
+              ? "opacity-70"
+              : "opacity-50"
+          }`}
           style={{
             background: `
               linear-gradient(
@@ -440,6 +457,96 @@ export default function RPGCard({
             `,
           }}
         />
+
+        {/* =================================================
+            ESTRELAS CADENTES
+            Somente Épica, Lendária e Única
+          ================================================= */}
+
+        {DIAGONAL_RARITIES.includes(card.rarity) && (
+          <>
+            {/* Primeira estrela cadente */}
+            <motion.div
+              className="absolute pointer-events-none"
+              style={{
+                width: "75px",
+                height: "2px",
+                top: "32%",
+                left: "-80px",
+                background: `linear-gradient(
+                  90deg,
+                  transparent,
+                  ${visual.sparkle},
+                  white
+                )`,
+                boxShadow: `0 0 8px ${visual.sparkle}`,
+                transform: "rotate(45deg)",
+                transformOrigin: "left center",
+              }}
+              animate={{
+                left: ["-80px", "120%"],
+                opacity: [0, 1, 1, 0],
+              }}
+              transition={{
+                duration:
+                  card.rarity === "epic"
+                    ? 4.5
+                    : card.rarity === "legendary"
+                      ? 3.5
+                      : 2.8,
+                repeat: Infinity,
+                repeatDelay:
+                  card.rarity === "epic"
+                    ? 2.5
+                    : card.rarity === "legendary"
+                      ? 1.8
+                      : 1.2,
+                ease: "easeInOut",
+              }}
+            />
+
+            {/* Segunda estrela cadente */}
+            <motion.div
+              className="absolute pointer-events-none"
+              style={{
+                width: "45px",
+                height: "1.5px",
+                top: "68%",
+                left: "-60px",
+                background: `linear-gradient(
+                  90deg,
+                  transparent,
+                  ${visual.sparkle},
+                  white
+                )`,
+                boxShadow: `0 0 6px ${visual.sparkle}`,
+                transform: "rotate(45deg)",
+                transformOrigin: "left center",
+              }}
+              animate={{
+                left: ["-60px", "120%"],
+                opacity: [0, 0.8, 0],
+              }}
+              transition={{
+                duration:
+                  card.rarity === "epic"
+                    ? 5.5
+                    : card.rarity === "legendary"
+                      ? 4.2
+                      : 3.4,
+                repeat: Infinity,
+                repeatDelay:
+                  card.rarity === "epic"
+                    ? 3.5
+                    : card.rarity === "legendary"
+                      ? 2.5
+                      : 1.8,
+                delay: 1.5,
+                ease: "easeInOut",
+              }}
+            />
+          </>
+        )}
 
         {/* Moldura interna mais forte */}
         <div
@@ -460,106 +567,341 @@ export default function RPGCard({
 
         {/* =================================================
             DETALHES DOS CANTOS
-           ================================================= */}
+          ================================================= */}
 
-        <span
-          className="absolute left-3 top-3 h-3 w-3 rotate-45 rounded-[2px]"
-          style={{
-            background: visual.corner,
-          }}
-        />
-
-        <span
-          className="absolute right-3 top-3 h-3 w-3 rotate-45 rounded-[2px]"
-          style={{
-            background: visual.corner,
-          }}
-        />
-
-        <span
-          className="absolute bottom-3 left-3 h-3 w-3 rotate-45 rounded-[2px]"
-          style={{
-            background: visual.corner,
-          }}
-        />
-
-        <span
-          className="absolute bottom-3 right-3 h-3 w-3 rotate-45 rounded-[2px]"
-          style={{
-            background: visual.corner,
-          }}
-        />
-
-        {/* =================================================
-            DETALHE CENTRAL
-           ================================================= */}
-
-        <div
-          className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{
-            border: `1px solid ${visual.line}`,
-            opacity: 0.7,
-          }}
-        />
-
-        <div
-          className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[8px]"
-          style={{
-            border: `1px solid ${visual.line}`,
-            opacity: 0.65,
-          }}
-        />
-
-        {/* =================================================
-            PEQUENOS PONTOS DE BRILHO
-           ================================================= */}
-
-        <span
-          className="absolute left-[18%] top-[28%] h-1.5 w-1.5 rotate-45 rounded-[1px]"
-          style={{
-            background: visual.sparkle,
-          }}
-        />
-
-        <span
-          className="absolute right-[18%] top-[31%] h-1.5 w-1.5 rotate-45 rounded-[1px]"
-          style={{
-            background: visual.sparkle,
-          }}
-        />
-
-        <span
-          className="absolute bottom-[29%] left-[20%] h-1.5 w-1.5 rotate-45 rounded-[1px]"
-          style={{
-            background: visual.sparkle,
-          }}
-        />
-
-        <span
-          className="absolute bottom-[27%] right-[20%] h-1.5 w-1.5 rotate-45 rounded-[1px]"
-          style={{
-            background: visual.sparkle,
-          }}
-        />
-
-        {/* =================================================
-            DETALHES EXTRAS ÉPICO
-           ================================================= */}
-
-        {isEpic && (
+        {/* Comum: apenas dois detalhes discretos */}
+        {card.rarity === "common" && (
           <>
-            <div
-              className="absolute left-1/2 top-6 h-12 w-20 -translate-x-1/2 rounded-full blur-xl"
+            <span
+              className="absolute left-3 top-3 h-2 w-2 rotate-45 rounded-[2px]"
               style={{
-                background: "rgba(168,85,247,0.16)",
+                background: visual.corner,
+              }}
+            />
+
+            <span
+              className="absolute right-3 bottom-3 h-2 w-2 rotate-45 rounded-[2px]"
+              style={{
+                background: visual.corner,
+              }}
+            />
+          </>
+        )}
+
+        {/* Raro: quatro losangos */}
+        {card.rarity === "rare" && (
+          <>
+            <span
+              className="absolute left-3 top-3 h-3 w-3 rotate-45 rounded-[2px]"
+              style={{
+                background: visual.corner,
+              }}
+            />
+
+            <span
+              className="absolute right-3 top-3 h-3 w-3 rotate-45 rounded-[2px]"
+              style={{
+                background: visual.corner,
+              }}
+            />
+
+            <span
+              className="absolute bottom-3 left-3 h-3 w-3 rotate-45 rounded-[2px]"
+              style={{
+                background: visual.corner,
+              }}
+            />
+
+            <span
+              className="absolute bottom-3 right-3 h-3 w-3 rotate-45 rounded-[2px]"
+              style={{
+                background: visual.corner,
+              }}
+            />
+          </>
+        )}
+
+        {/* Épico, Lendário e Único: cantos maiores */}
+        {["epic", "legendary", "unique"].includes(card.rarity) && (
+          <>
+            <span
+              className="absolute left-3 top-3 h-4 w-4 rotate-45 rounded-[2px] border"
+              style={{
+                background: visual.corner,
+                borderColor: visual.sparkle,
+              }}
+            />
+
+            <span
+              className="absolute right-3 top-3 h-4 w-4 rotate-45 rounded-[2px] border"
+              style={{
+                background: visual.corner,
+                borderColor: visual.sparkle,
+              }}
+            />
+
+            <span
+              className="absolute bottom-3 left-3 h-4 w-4 rotate-45 rounded-[2px] border"
+              style={{
+                background: visual.corner,
+                borderColor: visual.sparkle,
+              }}
+            />
+
+            <span
+              className="absolute bottom-3 right-3 h-4 w-4 rotate-45 rounded-[2px] border"
+              style={{
+                background: visual.corner,
+                borderColor: visual.sparkle,
+              }}
+            />
+          </>
+        )}
+
+        {/* =================================================
+            PEQUENOS BRILHOS
+          ================================================= */}
+
+        {/* Comum: somente 1 detalhe */}
+        {card.rarity === "common" && (
+          <span
+            className="absolute left-[18%] top-[28%] h-1.5 w-1.5 rotate-45 rounded-[1px]"
+            style={{
+              background: visual.sparkle,
+            }}
+          />
+        )}
+
+        {/* Raro: 3 detalhes */}
+        {card.rarity === "rare" && (
+          <>
+            <span
+              className="absolute left-[15%] top-[25%] h-1.5 w-1.5 rotate-45"
+              style={{ background: visual.sparkle }}
+            />
+
+            <span
+              className="absolute right-[18%] top-[30%] h-1.5 w-1.5 rotate-45"
+              style={{ background: visual.sparkle }}
+            />
+
+            <span
+              className="absolute bottom-[28%] left-[22%] h-1.5 w-1.5 rotate-45"
+              style={{ background: visual.sparkle }}
+            />
+          </>
+        )}
+
+        {/* Épico: 6 detalhes */}
+        {card.rarity === "epic" && (
+          <>
+            {[
+              ["14%", "24%"],
+              ["82%", "27%"],
+              ["10%", "50%"],
+              ["90%", "52%"],
+              ["20%", "72%"],
+              ["78%", "74%"],
+            ].map(([left, top], index) => (
+              <span
+                key={`epic-spark-${index}`}
+                className="absolute h-1.5 w-1.5 rotate-45"
+                style={{
+                  left,
+                  top,
+                  background: visual.sparkle,
+                }}
+              />
+            ))}
+          </>
+        )}
+
+        {/* Lendário: 9 estrelas */}
+        {card.rarity === "legendary" && (
+          <>
+            {[
+              ["12%", "20%"],
+              ["27%", "27%"],
+              ["72%", "20%"],
+              ["88%", "29%"],
+              ["9%", "45%"],
+              ["91%", "48%"],
+              ["17%", "67%"],
+              ["83%", "68%"],
+              ["50%", "82%"],
+            ].map(([left, top], index) => (
+              <motion.span
+                key={`legendary-spark-${index}`}
+                className="absolute text-sm"
+                style={{
+                  left,
+                  top,
+                  color: visual.sparkle,
+                }}
+                animate={{
+                  opacity: [0.35, 1, 0.35],
+                  scale: [0.8, 1.15, 0.8],
+                }}
+                transition={{
+                  duration: 1.8 + index * 0.08,
+                  repeat: Infinity,
+                  delay: index * 0.08,
+                }}
+              >
+                ✦
+              </motion.span>
+            ))}
+          </>
+        )}
+
+        {/* Único: 14 estrelas */}
+        {card.rarity === "unique" && (
+          <>
+            {[
+              ["10%", "17%", "✦"],
+              ["22%", "25%", "✧"],
+              ["38%", "16%", "✦"],
+              ["62%", "17%", "✧"],
+              ["78%", "23%", "✦"],
+              ["90%", "17%", "✧"],
+              ["8%", "42%", "✧"],
+              ["92%", "43%", "✦"],
+              ["12%", "60%", "✦"],
+              ["88%", "61%", "✧"],
+              ["22%", "76%", "✦"],
+              ["38%", "84%", "✧"],
+              ["62%", "84%", "✦"],
+              ["78%", "76%", "✧"],
+            ].map(([left, top, symbol], index) => (
+              <motion.span
+                key={`unique-spark-${index}`}
+                className="absolute text-sm"
+                style={{
+                  left,
+                  top,
+                  color: visual.sparkle,
+                }}
+                animate={{
+                  opacity: [0.25, 1, 0.25],
+                  scale: [0.75, 1.2, 0.75],
+                  rotate: [0, 8, 0],
+                }}
+                transition={{
+                  duration: 1.6 + (index % 4) * 0.3,
+                  repeat: Infinity,
+                  delay: index * 0.1,
+                }}
+              >
+                {symbol}
+              </motion.span>
+            ))}
+          </>
+        )}
+
+        {/* =================================================
+              ORNAMENTO MÁGICO DO ÉPICO
+            ================================================= */}
+
+          {isEpic && (
+            <>
+              {/* Círculo mágico central */}
+              <motion.div
+                className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border pointer-events-none"
+                style={{
+                  borderColor: visual.corner,
+                  opacity: 0.22,
+                }}
+                animate={{
+                  rotate: 360,
+                }}
+                transition={{
+                  duration: 18,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              />
+
+              {/* Segundo círculo */}
+              <motion.div
+                className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border pointer-events-none"
+                style={{
+                  borderColor: visual.sparkle,
+                  opacity: 0.15,
+                  borderStyle: "dashed",
+                }}
+                animate={{
+                  rotate: -360,
+                }}
+                transition={{
+                  duration: 12,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              />
+            </>
+          )}
+
+        {/* =================================================
+              ORNAMENTOS EXTRAS DO ÚNICO
+            ================================================= */}
+
+        {isUnique && (
+          <>
+            {/* Moldura dupla */}
+            <div
+              className="absolute inset-3 rounded-xl border-2"
+              style={{
+                borderColor: visual.corner,
+                opacity: 0.55,
               }}
             />
 
             <div
-              className="absolute bottom-6 left-1/2 h-px w-[60%] -translate-x-1/2"
+              className="absolute inset-5 rounded-lg border"
               style={{
-                background:
-                  "linear-gradient(90deg, transparent, rgba(139,92,246,0.4), transparent)",
+                borderColor: visual.line,
+                opacity: 0.7,
+              }}
+            />
+
+            {/* Grande losango central */}
+            <div
+              className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[12px]"
+              style={{
+                border: `1px solid ${visual.corner}`,
+                opacity: 0.4,
+              }}
+            />
+
+            {/* Pequenos losangos intermediários */}
+            <div
+              className="absolute left-[16%] top-[43%] h-4 w-4 rotate-45 border"
+              style={{
+                borderColor: visual.corner,
+              }}
+            />
+
+            <div
+              className="absolute right-[16%] top-[43%] h-4 w-4 rotate-45 border"
+              style={{
+                borderColor: visual.corner,
+              }}
+            />
+
+            {/* Partículas */}
+            <span
+              className="absolute left-[30%] top-[18%] h-1.5 w-1.5 rounded-full"
+              style={{
+                background: visual.sparkle,
+                boxShadow: `0 0 8px ${visual.sparkle}`,
+              }}
+            />
+
+            <span
+              className="absolute right-[30%] bottom-[18%] h-1.5 w-1.5 rounded-full"
+              style={{
+                background: visual.sparkle,
+                boxShadow: `0 0 8px ${visual.sparkle}`,
               }}
             />
           </>
@@ -589,6 +931,43 @@ export default function RPGCard({
           </>
         )}
       </div>
+
+      {/* =====================================================
+          REFLEXO DOURADO DA CARTA LENDÁRIA
+        ===================================================== */}
+
+      {isLegendary && (
+        <motion.div
+          className="
+            pointer-events-none
+            absolute
+            -inset-[40%]
+            z-10
+            rotate-45
+          "
+          style={{
+            background: `
+              linear-gradient(
+                90deg,
+                transparent 0%,
+                transparent 42%,
+                rgba(255,255,255,0.45) 50%,
+                transparent 58%,
+                transparent 100%
+              )
+            `,
+          }}
+          animate={{
+            x: ["-80%", "80%"],
+          }}
+          transition={{
+            duration: 4.5,
+            repeat: Infinity,
+            repeatDelay: 3,
+            ease: "easeInOut",
+          }}
+        />
+      )}
 
       {/* =====================================================
           BRILHO ESPECIAL DO LENDÁRIO

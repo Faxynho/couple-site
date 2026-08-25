@@ -84,6 +84,10 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
       (e) => (e.targetId ?? e.actorId) === id
     );
   };
+  // Identifica de forma única cada partida. Isso é essencial para que
+  // animações infinitas (como a de vida crítica) não sejam reaproveitadas
+  // quando o jogador usa "Jogar novamente" dentro da mesma sala.
+  const gameInstanceKey = `${state.startedAt}-${state.finishedAt ?? "active"}`;
   const eventsKey = state.round * 1000 + (state.resolvedAt ? 1 : 0);
 
   const introCombatants = state.order.map((id) => ({
@@ -120,12 +124,13 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
       <div className="flex w-full max-w-[min(94vw,560px)] flex-col gap-2">
         {enemyIds.map((id) => (
           <RPGCombatantPanel
-            key={id}
+            key={`${id}-${gameInstanceKey}`}
             combatant={state.combatants[id]}
             name={state.combatants[id].displayName ?? namesById[id] ?? "Jogador"}
             color={colorsById[id]}
             events={eventsFor(id)}
             eventsKey={eventsKey}
+            currentRound={state.round}
             showChosenBadge={isChoosingPhase && state.combatants[id].hasChosen}
           />
         ))}
@@ -136,13 +141,14 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
       <div className="flex w-full max-w-[min(94vw,560px)] flex-col gap-2">
         {allyIds.map((id) => (
           <RPGCombatantPanel
-            key={id}
+            key={`${id}-${gameInstanceKey}`}
             combatant={state.combatants[id]}
             name={state.combatants[id].displayName ?? namesById[id] ?? "Jogador"}
             color={colorsById[id]}
             isSelf={id === selfId}
             events={eventsFor(id)}
             eventsKey={eventsKey}
+            currentRound={state.round}
             showChosenBadge={isChoosingPhase && id !== selfId && state.combatants[id].hasChosen}
           />
         ))}
