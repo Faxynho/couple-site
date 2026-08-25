@@ -23,7 +23,7 @@ const UNIQUE_EVADE_BONUS = 0.35;
 const LUCK_BONUS = 0.10;
 
 export const RPG_INTRO_DURATION_MS = 3200;
-export const RPG_RESOLVE_PAUSE_MS = 2600;
+export const RPG_RESOLVE_PAUSE_MS = 1750;
 
 const VALID_MODES: RPGMode[] = ["1v1", "soloBot", "duoBot"];
 

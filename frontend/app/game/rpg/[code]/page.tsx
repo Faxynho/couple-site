@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useGameRoom } from "@/hooks/useGameRoom";
@@ -9,12 +9,27 @@ import { useRPGGame } from "@/hooks/useRPGGame";
 import RPGClassIntro from "@/components/rpg/RPGClassIntro";
 import RPGCombatantPanel from "@/components/rpg/RPGCombatantPanel";
 import RPGHand from "@/components/rpg/RPGHand";
+import RPGCard from "@/components/rpg/RPGCard";
 import RPGResultModal from "@/components/rpg/RPGResultModal";
 import RPGTutorialModal from "@/components/rpg/RPGTutorialModal";
 import LoadingScreen from "@/components/LoadingScreen";
 import Button from "@/components/Button";
 import Logo from "@/components/Logo";
-import { RPG_MODES, RPGRoundEvent } from "@/lib/rpgTypes";
+import { RPGCard as RPGCardData, RPGCombatant, RPG_MODES, RPGRoundEvent } from "@/lib/rpgTypes";
+
+function getChosenCardForCombatant(
+  combatant?: RPGCombatant
+): RPGCardData | null {
+  if (!combatant?.chosenCardId) return null;
+
+  return (
+    combatant.hand.find(
+      (item) => item.instanceId === combatant.chosenCardId
+    ) ?? null
+  );
+}
+
+const RPG_REVEAL_ANIMATION_VERSION = "dom-clone-v3";
 
 export default function RPGGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -56,6 +71,98 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
     return map;
   }, [room?.players]);
 
+  const selfCombatant = state && selfId
+    ? state.combatants[selfId]
+    : undefined;
+
+  const selfTeam = selfCombatant?.team ?? "a";
+  const allyIds = state
+    ? selfTeam === "a"
+      ? state.teamA
+      : state.teamB
+    : [];
+  const enemyIds = state
+    ? selfTeam === "a"
+      ? state.teamB
+      : state.teamA
+    : [];
+
+  const revealEntries = state
+    ? [
+        ...(selfId && selfCombatant
+          ? [{
+              id: selfId,
+              ownerLabel: "VOCÊ",
+              card: getChosenCardForCombatant(selfCombatant),
+            }]
+          : []),
+        ...(enemyIds[0]
+          ? [{
+              id: enemyIds[0],
+              ownerLabel: "OPONENTE",
+              card: getChosenCardForCombatant(state.combatants[enemyIds[0]]),
+            }]
+          : []),
+      ].filter(
+        (
+          item
+        ): item is {
+          id: string;
+          ownerLabel: string;
+          card: RPGCardData;
+        } => Boolean(item.card)
+      )
+    : [];
+
+  const revealVisible = Boolean(
+    state &&
+    revealEntries.length > 0 &&
+    (state.phase === "resolved" || state.phase === "finished")
+  );
+
+
+  const eventsFor = (id: string): RPGRoundEvent[] => {
+    if (
+      !state ||
+      (state.phase !== "resolved" &&
+        state.phase !== "finished")
+    ) {
+      return [];
+    }
+
+    return state.lastRoundEvents.filter(
+      (e) => (e.targetId ?? e.actorId) === id
+    );
+  };
+
+  const gameInstanceKey = state
+    ? `${state.startedAt}-${state.finishedAt ?? "active"}`
+    : "loading";
+
+  const eventsKey = state
+    ? state.round * 1000 +
+      (state.resolvedAt ? 1 : 0)
+    : 0;
+
+  const introCombatants = state
+    ? state.order.map((id) => ({
+        id,
+        classId: state.combatants[id].classId,
+        label:
+          namesById[id] ?? "Jogador",
+        isSelf: id === selfId,
+      }))
+    : [];
+
+  const isChoosingPhase = state?.phase === "choosing";
+  const handDisabled =
+    !selfCombatant?.alive ||
+    selfCombatant?.skippingThisRound ||
+    !isChoosingPhase;
+  const alreadyChosen = Boolean(
+    selfCombatant?.chosenCardId
+  );
+
   if (notFound) {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-5 text-center">
@@ -70,36 +177,6 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
     return <LoadingScreen label="Preparando a arena..." />;
   }
 
-  const selfCombatant = selfId ? state.combatants[selfId] : undefined;
-  const selfTeam = selfCombatant?.team ?? "a";
-  const allyIds = selfTeam === "a" ? state.teamA : state.teamB;
-  const enemyIds = selfTeam === "a" ? state.teamB : state.teamA;
-
-  const eventsFor = (id: string): RPGRoundEvent[] => {
-    if (state.phase !== "resolved" && state.phase !== "finished") {
-      return [];
-    }
-
-    return state.lastRoundEvents.filter(
-      (e) => (e.targetId ?? e.actorId) === id
-    );
-  };
-  // Identifica de forma única cada partida. Isso é essencial para que
-  // animações infinitas (como a de vida crítica) não sejam reaproveitadas
-  // quando o jogador usa "Jogar novamente" dentro da mesma sala.
-  const gameInstanceKey = `${state.startedAt}-${state.finishedAt ?? "active"}`;
-  const eventsKey = state.round * 1000 + (state.resolvedAt ? 1 : 0);
-
-  const introCombatants = state.order.map((id) => ({
-    id,
-    classId: state.combatants[id].classId,
-    label: namesById[id] ?? "Jogador",
-    isSelf: id === selfId,
-  }));
-
-  const isChoosingPhase = state.phase === "choosing";
-  const handDisabled = !selfCombatant?.alive || selfCombatant?.skippingThisRound || !isChoosingPhase;
-  const alreadyChosen = Boolean(selfCombatant?.chosenCardId);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center gap-4 bg-cozy-gradient px-4 py-6 sm:py-8">
@@ -153,6 +230,60 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
           />
         ))}
       </div>
+
+      <AnimatePresence mode="wait">
+        {revealVisible && (
+          <motion.section
+            key={`revealed-cards-${state.round}-${state.resolvedAt ?? state.finishedAt ?? "active"}`}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+            className="relative flex w-full max-w-[min(94vw,560px)] flex-col items-center gap-2"
+          >
+            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-soft/75">
+              Cartas escolhidas
+            </div>
+
+            <div className="grid w-full grid-cols-2 gap-4">
+              {revealEntries.map(({ id, ownerLabel, card }, index) => (
+                <div
+                  key={`${state.round}-${id}-${card.instanceId}`}
+                  className="flex min-h-[255px] flex-col items-center justify-start gap-1.5"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 12, scale: 0.72, rotate: index === 0 ? -3 : 3 }}
+                    animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+                    transition={{
+                      duration: 0.34,
+                      delay: index * 0.05,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                    className="flex flex-col items-center gap-1.5"
+                  >
+                    <div className="text-[11px] font-black uppercase tracking-[0.16em] text-ink">
+                      {ownerLabel}
+                    </div>
+
+                    <motion.div
+                      initial={{ scale: 0.78 }}
+                      animate={{ scale: 1 }}
+                      transition={{
+                        duration: 0.28,
+                        delay: index * 0.05 + 0.03,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                      className="w-[174px] sm:w-[190px]"
+                    >
+                      <RPGCard card={card} delay={0} disabled />
+                    </motion.div>
+                  </motion.div>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
 
       {isChoosingPhase && selfCombatant?.alive && selfCombatant.skippingThisRound && (
         <p className="text-center text-sm font-medium text-ink-soft">Você está atordoado e perdeu esta rodada!</p>

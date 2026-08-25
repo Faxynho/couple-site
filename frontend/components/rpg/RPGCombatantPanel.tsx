@@ -17,6 +17,8 @@ interface RPGCombatantPanelProps {
   eventsKey: number;
   currentRound: number;
   showChosenBadge?: boolean;
+  revealActive?: boolean;
+  revealStartHp?: number;
 }
 
 function floatFor(
@@ -501,6 +503,8 @@ export default function RPGCombatantPanel({
   eventsKey,
   currentRound,
   showChosenBadge,
+  revealActive = false,
+  revealStartHp,
 }: RPGCombatantPanelProps) {
   const classDef = RPG_CLASSES[combatant.classId];
 
@@ -518,6 +522,24 @@ export default function RPGCombatantPanel({
       : hpPct > 25
         ? "bg-amber-400"
         : "bg-red-500";
+
+  const displayedHp =
+    revealActive &&
+    typeof revealStartHp === "number"
+      ? Math.round(revealStartHp)
+      : Math.max(0, combatant.hp);
+
+  const revealBarPct =
+    revealActive &&
+    typeof revealStartHp === "number"
+      ? Math.max(
+          0,
+          Math.min(
+            1,
+            revealStartHp / combatant.maxHp
+          )
+        )
+      : hpPct / 100;
 
   /* =======================================================
      EVENTOS
@@ -738,7 +760,7 @@ export default function RPGCombatantPanel({
         ]
       : [hpPct / 100];
 
-  const criticalHp = hpPct <= 15 && combatant.alive;
+  const criticalHp = !revealActive && hpPct <= 15 && combatant.alive;
 
   const dead =
     !combatant.alive;
@@ -755,6 +777,7 @@ export default function RPGCombatantPanel({
 
   return (
     <motion.div
+      data-rpg-combatant-id={combatant.id}
       className="
         relative
         w-full
@@ -1096,7 +1119,7 @@ export default function RPGCombatantPanel({
               ],
             }}
             transition={{
-              duration: 0.9,
+              duration: 0.68,
               ease: "easeOut",
             }}
           />
@@ -1423,10 +1446,7 @@ export default function RPGCombatantPanel({
                 text-ink
               "
             >
-              {Math.max(
-                0,
-                combatant.hp
-              )}
+              {displayedHp}
               {" / "}
               {combatant.maxHp}
             </span>
@@ -1537,8 +1557,9 @@ export default function RPGCombatantPanel({
             `}
             initial={false}
             animate={{
-              scaleX:
-                statusDamage > 0
+              scaleX: revealActive
+                ? revealBarPct
+                : statusDamage > 0
                   ? statusDamageHpKeyframes
                   : hpPct / 100,
               opacity: dead ? 0.15 : 1,
@@ -1548,8 +1569,15 @@ export default function RPGCombatantPanel({
             }}
             transition={{
               scaleX: {
-                duration: statusDamage > 0 ? 0.92 : 1.0,
-                times: statusDamage > 0 ? [0, 0.47, 1] : undefined,
+                duration: revealActive
+                  ? 0
+                  : statusDamage > 0
+                    ? 0.92
+                    : 0.55,
+                times:
+                  !revealActive && statusDamage > 0
+                    ? [0, 0.47, 1]
+                    : undefined,
                 ease: [0.22, 1, 0.36, 1],
               },
               opacity: {
@@ -1836,8 +1864,8 @@ export default function RPGCombatantPanel({
               animate={{ opacity: [0, 0.42, 0.16, 0] }}
               exit={{ opacity: 0 }}
               transition={{
-                delay: 0.42 + index * 0.22,
-                duration: 0.55,
+                delay: 0.12 + index * 0.14,
+                duration: 0.42,
                 ease: "easeOut",
               }}
             >
@@ -1846,8 +1874,8 @@ export default function RPGCombatantPanel({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: [0, 0.92, 0.25, 0.55, 0] }}
                 transition={{
-                  delay: 0.42 + index * 0.22,
-                  duration: 0.5,
+                  delay: 0.12 + index * 0.14,
+                  duration: 0.42,
                   ease: "easeOut",
                 }}
               />
@@ -1862,8 +1890,8 @@ export default function RPGCombatantPanel({
                   rotate: [-10, 6, -3, 0],
                 }}
                 transition={{
-                  delay: 0.42 + index * 0.22,
-                  duration: 0.9,
+                  delay: 0.12 + index * 0.14,
+                  duration: 0.68,
                   ease: "easeOut",
                 }}
               >
@@ -1875,8 +1903,8 @@ export default function RPGCombatantPanel({
                 initial={{ opacity: 0, y: 10, scale: 0.75 }}
                 animate={{ opacity: [0, 1, 1, 0], y: [10, 0, -10, -24], scale: [0.75, 1, 1, 1.05] }}
                 transition={{
-                  delay: 0.44 + index * 0.22,
-                  duration: 0.9,
+                  delay: 0.14 + index * 0.14,
+                  duration: 0.68,
                   ease: "easeOut",
                 }}
               >
@@ -2017,7 +2045,7 @@ export default function RPGCombatantPanel({
             }}
             transition={{
               delay: 0.55,
-              duration: 0.5,
+              duration: 0.42,
               type: "spring",
               stiffness: 220,
               damping: 15,
