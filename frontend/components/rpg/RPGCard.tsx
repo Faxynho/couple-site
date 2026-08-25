@@ -271,14 +271,6 @@ const RARITY_VISUALS: Record<
   },
 };
 
-/* =========================================================
-   ANIMAÇÃO DAS LINHAS DIAGONAIS
-   A partir da ÉPICA, uma luz percorre as linhas como
-   uma estrela cadente.
-   ========================================================= */
-
-const DIAGONAL_RARITIES = ["epic", "legendary", "unique"];
-
 export default function RPGCard({
   card,
   delay = 0,
@@ -298,7 +290,7 @@ export default function RPGCard({
   const isUnique = card.rarity === "unique";
   const isEpic = card.rarity === "epic";
   const isRare = card.rarity === "rare";
-  
+
   const rarityBorderColors: Record<RPGRarity, string> = {
     common: "#86b98f",
     rare: "#6fa9d8",
@@ -431,16 +423,10 @@ export default function RPGCard({
 
         {/* =================================================
             LINHAS DIAGONAIS
-            Comum/Rara: estáticas
-            Épica/Lendária/Única: estrela cadente
           ================================================= */}
 
         <div
-          className={`absolute inset-0 ${
-            DIAGONAL_RARITIES.includes(card.rarity)
-              ? "opacity-70"
-              : "opacity-50"
-          }`}
+          className="absolute inset-0 opacity-50"
           style={{
             background: `
               linear-gradient(
@@ -457,96 +443,6 @@ export default function RPGCard({
             `,
           }}
         />
-
-        {/* =================================================
-            ESTRELAS CADENTES
-            Somente Épica, Lendária e Única
-          ================================================= */}
-
-        {DIAGONAL_RARITIES.includes(card.rarity) && (
-          <>
-            {/* Primeira estrela cadente */}
-            <motion.div
-              className="absolute pointer-events-none"
-              style={{
-                width: "75px",
-                height: "2px",
-                top: "32%",
-                left: "-80px",
-                background: `linear-gradient(
-                  90deg,
-                  transparent,
-                  ${visual.sparkle},
-                  white
-                )`,
-                boxShadow: `0 0 8px ${visual.sparkle}`,
-                transform: "rotate(45deg)",
-                transformOrigin: "left center",
-              }}
-              animate={{
-                left: ["-80px", "120%"],
-                opacity: [0, 1, 1, 0],
-              }}
-              transition={{
-                duration:
-                  card.rarity === "epic"
-                    ? 4.5
-                    : card.rarity === "legendary"
-                      ? 3.5
-                      : 2.8,
-                repeat: Infinity,
-                repeatDelay:
-                  card.rarity === "epic"
-                    ? 2.5
-                    : card.rarity === "legendary"
-                      ? 1.8
-                      : 1.2,
-                ease: "easeInOut",
-              }}
-            />
-
-            {/* Segunda estrela cadente */}
-            <motion.div
-              className="absolute pointer-events-none"
-              style={{
-                width: "45px",
-                height: "1.5px",
-                top: "68%",
-                left: "-60px",
-                background: `linear-gradient(
-                  90deg,
-                  transparent,
-                  ${visual.sparkle},
-                  white
-                )`,
-                boxShadow: `0 0 6px ${visual.sparkle}`,
-                transform: "rotate(45deg)",
-                transformOrigin: "left center",
-              }}
-              animate={{
-                left: ["-60px", "120%"],
-                opacity: [0, 0.8, 0],
-              }}
-              transition={{
-                duration:
-                  card.rarity === "epic"
-                    ? 5.5
-                    : card.rarity === "legendary"
-                      ? 4.2
-                      : 3.4,
-                repeat: Infinity,
-                repeatDelay:
-                  card.rarity === "epic"
-                    ? 3.5
-                    : card.rarity === "legendary"
-                      ? 2.5
-                      : 1.8,
-                delay: 1.5,
-                ease: "easeInOut",
-              }}
-            />
-          </>
-        )}
 
         {/* Moldura interna mais forte */}
         <div
@@ -802,44 +698,44 @@ export default function RPGCard({
               ORNAMENTO MÁGICO DO ÉPICO
             ================================================= */}
 
-          {isEpic && (
-            <>
-              {/* Círculo mágico central */}
-              <motion.div
-                className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border pointer-events-none"
-                style={{
-                  borderColor: visual.corner,
-                  opacity: 0.22,
-                }}
-                animate={{
-                  rotate: 360,
-                }}
-                transition={{
-                  duration: 18,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-              />
+        {isEpic && (
+          <>
+            {/* Círculo mágico central */}
+            <motion.div
+              className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border pointer-events-none"
+              style={{
+                borderColor: visual.corner,
+                opacity: 0.22,
+              }}
+              animate={{
+                rotate: 360,
+              }}
+              transition={{
+                duration: 18,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
 
-              {/* Segundo círculo */}
-              <motion.div
-                className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border pointer-events-none"
-                style={{
-                  borderColor: visual.sparkle,
-                  opacity: 0.15,
-                  borderStyle: "dashed",
-                }}
-                animate={{
-                  rotate: -360,
-                }}
-                transition={{
-                  duration: 12,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-              />
-            </>
-          )}
+            {/* Segundo círculo */}
+            <motion.div
+              className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border pointer-events-none"
+              style={{
+                borderColor: visual.sparkle,
+                opacity: 0.15,
+                borderStyle: "dashed",
+              }}
+              animate={{
+                rotate: -360,
+              }}
+              transition={{
+                duration: 12,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+          </>
+        )}
 
         {/* =================================================
               ORNAMENTOS EXTRAS DO ÚNICO
@@ -1062,7 +958,7 @@ export default function RPGCard({
               ease: "easeInOut",
             }}
           />
-          
+
           <motion.div
             className="
               pointer-events-none
