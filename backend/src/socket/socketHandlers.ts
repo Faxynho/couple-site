@@ -4,6 +4,7 @@ import { RoomManager } from "../rooms/RoomManager";
 import { GameId } from "../types";
 import { isValidImageId, isValidDifficulty } from "../games/puzzle/puzzleImages";
 import { isValidSudokuDifficulty } from "../games/sudoku/sudokuGenerator";
+import { isValidSudokuMode } from "../games/sudoku/SudokuGame";
 import { isValidColorDifficulty, isValidColorMode } from "../games/colors/ColorMemoryGame";
 import { isValidCrosswordDifficulty } from "../games/crossword/crosswordGenerator";
 import { isValidCrosswordMode } from "../games/crossword/CrosswordGame";
@@ -112,6 +113,10 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getRPGStateForPlayer(room.gameState, player.id));
     }
+  } else if (room.gameId === "sudoku") {
+    for (const player of room.players.values()) {
+      emitToPlayer(io, room, player.id, "game:state", getSudokuStateForPlayer(room.gameState, player.id));
+    }
   } else {
     io.to(roomCode).emit("game:state", room.gameState);
   }
@@ -124,6 +129,7 @@ function getMaskedStateForPlayer(room: { gameId: GameId; gameState: unknown }, p
   if (room.gameId === "wordsearch") return getWordSearchStateForPlayer(room.gameState, playerId);
   if (room.gameId === "quiz") return getQuizStateForPlayer(room.gameState, playerId);
   if (room.gameId === "rpg") return getRPGStateForPlayer(room.gameState, playerId);
+  if (room.gameId === "sudoku") return getSudokuStateForPlayer(room.gameState, playerId);
   return room.gameState;
 }
 
@@ -193,6 +199,47 @@ function getCrosswordStateForPlayer(state: unknown, playerId: string): unknown {
   }
 
   return { ...s, cells: publicCells, words: publicWords, progress };
+}
+
+interface SudokuCellShape {
+  value: number;
+  isGiven: boolean;
+  filledBy?: string;
+}
+interface SudokuProgressShape {
+  cells: SudokuCellShape[];
+  moves: number;
+  finished: boolean;
+  finishedAt: number | null;
+  timeMs: number | null;
+}
+interface SudokuStateShape {
+  mode?: string;
+  progress: Record<string, SudokuProgressShape>;
+}
+
+/**
+ * No modo Duelo, os dois jogadores recebem o MESMO puzzle — mostrar a grade
+ * do adversário revelaria a solução de graça (diferente do Palavras Cruzadas,
+ * aqui não tem "resumo parcial" que não seja a resposta em si). Por isso, no
+ * Duelo cada jogador só recebe a própria grade; a do adversário chega só como
+ * um placar (terminou, quando, quantas casas já preencheu).
+ */
+function getSudokuStateForPlayer(state: unknown, playerId: string): unknown {
+  const s = state as SudokuStateShape | null;
+  if (!s) return state;
+
+  const progress: Record<string, unknown> = {};
+  for (const [pid, prog] of Object.entries(s.progress)) {
+    if (s.mode !== "duel" || pid === playerId) {
+      progress[pid] = prog;
+    } else {
+      const cellsFilled = prog.cells.filter((c) => !c.isGiven && c.value !== 0).length;
+      progress[pid] = { finished: prog.finished, finishedAt: prog.finishedAt, timeMs: prog.timeMs, cellsFilled };
+    }
+  }
+
+  return { ...s, progress };
 }
 
 interface WordSearchWordShape {
@@ -473,7 +520,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
           (isValidCrosswordMode(payload.matchMode) ||
             isValidWordSearchMode(payload.matchMode) ||
             isValidQuizMode(payload.matchMode) ||
-            isValidRPGMode(payload.matchMode))
+            isValidRPGMode(payload.matchMode) ||
+            isValidSudokuMode(payload.matchMode))
         ) {
           options.matchMode = payload.matchMode;
         }

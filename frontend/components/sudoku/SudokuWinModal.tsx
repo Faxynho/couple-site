@@ -1,29 +1,61 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Trophy } from "lucide-react";
 import Confetti from "../Confetti";
 import Button from "../Button";
+import { SudokuResultEntry } from "@/lib/sudokuTypes";
+import { MatchMode } from "@/lib/matchModes";
+
+interface Player {
+  id: string;
+  name: string;
+  color: string;
+}
 
 interface SudokuWinModalProps {
   visible: boolean;
+  mode: MatchMode;
   elapsedLabel: string;
   moves: number;
   difficultyLabel: string;
+  selfId: string | null;
+  players: Player[];
+  results: SudokuResultEntry[];
   onNewPuzzle: () => void;
   onBack: () => void;
   onClose: () => void;
 }
 
+function formatTime(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
+function playerName(players: Player[], id: string) {
+  return players.find((p) => p.id === id)?.name ?? "Jogador";
+}
+
 export default function SudokuWinModal({
   visible,
+  mode,
   elapsedLabel,
   moves,
   difficultyLabel,
+  selfId,
+  players,
+  results,
   onNewPuzzle,
   onBack,
   onClose,
 }: SudokuWinModalProps) {
+  const isDuel = mode === "duel" && results.length > 0;
+  const winner = results[0];
+  const runnerUp = results[1];
+  const diffMs = winner && runnerUp ? runnerUp.timeMs - winner.timeMs : null;
+
   return (
     <AnimatePresence>
       {visible && (
@@ -52,19 +84,52 @@ export default function SudokuWinModal({
             </button>
 
             <div className="mx-auto mb-3 text-5xl animate-pop-in">🔢</div>
-            <h2 className="font-display text-2xl font-semibold text-ink">Sudoku completo!</h2>
+            <h2 className="font-display text-2xl font-semibold text-ink">
+              {isDuel ? "Duelo encerrado!" : "Sudoku completo!"}
+            </h2>
             <p className="mt-1 text-sm text-ink-soft">Dificuldade {difficultyLabel} concluída.</p>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div className="rounded-xl2 bg-white/60 py-3">
-                <p className="text-xs text-ink-soft">Tempo</p>
-                <p className="font-display text-lg font-semibold text-ink">{elapsedLabel}</p>
+            {isDuel ? (
+              <div className="mt-6 flex flex-col gap-2">
+                {results.map((r) => {
+                  const isSelf = r.playerId === selfId;
+                  const isWinner = r.place === 1;
+                  return (
+                    <div
+                      key={r.playerId}
+                      className={`flex items-center justify-between rounded-xl2 px-4 py-3 ${
+                        isWinner ? "bg-rose/15" : "bg-white/60"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-left">
+                        {isWinner && <Trophy size={16} className="text-rose" />}
+                        <span className="text-sm font-medium text-ink">
+                          {r.place}º — {playerName(players, r.playerId)}
+                          {isSelf ? " (você)" : ""}
+                        </span>
+                      </div>
+                      <span className="font-display text-sm font-semibold tabular-nums text-ink">
+                        {formatTime(r.timeMs)}
+                      </span>
+                    </div>
+                  );
+                })}
+                {diffMs !== null && (
+                  <p className="mt-1 text-xs text-ink-soft">Diferença de {formatTime(diffMs)} entre 1º e 2º lugar.</p>
+                )}
               </div>
-              <div className="rounded-xl2 bg-white/60 py-3">
-                <p className="text-xs text-ink-soft">Jogadas</p>
-                <p className="font-display text-lg font-semibold text-ink">{moves}</p>
+            ) : (
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="rounded-xl2 bg-white/60 py-3">
+                  <p className="text-xs text-ink-soft">Tempo</p>
+                  <p className="font-display text-lg font-semibold text-ink">{elapsedLabel}</p>
+                </div>
+                <div className="rounded-xl2 bg-white/60 py-3">
+                  <p className="text-xs text-ink-soft">Jogadas</p>
+                  <p className="font-display text-lg font-semibold text-ink">{moves}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="mt-7 flex flex-col gap-2">
               <Button onClick={onClose} className="w-full">

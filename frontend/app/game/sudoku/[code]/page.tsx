@@ -13,7 +13,8 @@ import SudokuWinModal from "@/components/sudoku/SudokuWinModal";
 import LoadingScreen from "@/components/LoadingScreen";
 import Button from "@/components/Button";
 import Logo from "@/components/Logo";
-import { SUDOKU_DIFFICULTIES, SudokuDifficulty } from "@/lib/sudokuTypes";
+import { isFullProgress, SUDOKU_DIFFICULTIES, SudokuDifficulty } from "@/lib/sudokuTypes";
+import { MatchMode } from "@/lib/matchModes";
 
 function formatFinalTime(ms: number) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -31,19 +32,27 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showWinModal, setShowWinModal] = useState(false);
-  const wasSolvedRef = useRef(false);
+  const wasMatchFinishedRef = useRef(false);
+  const wasSelfFinishedRef = useRef(false);
+
+  const ownProgressRaw = selfId && state ? state.progress[selfId] : undefined;
+  const ownProgress = ownProgressRaw && isFullProgress(ownProgressRaw) ? ownProgressRaw : null;
 
   useEffect(() => {
-    if (state?.solved && !wasSolvedRef.current) {
+    if (state?.finished && !wasMatchFinishedRef.current) {
       setShowWinModal(true);
-    } else if (!state?.solved && wasSolvedRef.current) {
+    } else if (!state?.finished && wasMatchFinishedRef.current) {
       // O estado é sincronizado pelo servidor: quando qualquer um dos dois
-      // clica em "Jogar de novo", os dois recebem `solved: false` de volta —
-      // o modal precisa fechar nos dois clientes, não só em quem clicou.
+      // clica em "Jogar de novo", os dois recebem `finished: false` de
+      // volta — o modal precisa fechar nos dois clientes, não só em quem clicou.
       setShowWinModal(false);
     }
-    wasSolvedRef.current = Boolean(state?.solved);
-  }, [state?.solved, state?.solvedAt]);
+    wasMatchFinishedRef.current = Boolean(state?.finished);
+  }, [state?.finished, state?.finishedAt]);
+
+  useEffect(() => {
+    wasSelfFinishedRef.current = Boolean(ownProgress?.finished);
+  }, [ownProgress?.finished]);
 
   if (notFound) {
     return (
@@ -55,12 +64,14 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
     );
   }
 
-  if (!room || !state) {
+  if (!room || !state || !ownProgress) {
     return <LoadingScreen label="Preparando o Sudoku..." />;
   }
 
-  const finalElapsed = state.solved && state.solvedAt ? state.solvedAt - state.startedAt : 0;
+  const mode = state.mode as MatchMode;
+  const finalElapsed = ownProgress.finished && ownProgress.finishedAt ? ownProgress.finishedAt - state.startedAt : 0;
   const difficultyLabel = SUDOKU_DIFFICULTIES[state.difficulty as SudokuDifficulty]?.label ?? state.difficulty;
+  const selfFinishedWaitingForOthers = ownProgress.finished && !state.finished;
 
   const handleSetValue = (index: number, value: number) => {
     setCell(index, value);
@@ -71,32 +82,49 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
       <SudokuControls
         roomCode={room.code}
         difficulty={state.difficulty}
+        mode={mode}
         startedAt={state.startedAt}
-        solved={state.solved}
-        solvedAt={state.solvedAt}
-        moves={state.moves}
+        finished={state.finished}
+        moves={ownProgress.moves}
         players={room.players}
+        progress={state.progress}
+        selfId={selfId}
         onNewPuzzle={(difficulty) => newPuzzle(difficulty)}
         onRestart={resetGame}
         onBack={() => router.push("/")}
       />
 
       <SudokuBoard
-        cells={state.cells}
+        cells={ownProgress.cells}
         selectedIndex={selectedIndex}
         onSelect={setSelectedIndex}
         onSetValue={handleSetValue}
         players={room.players}
         selfId={selfId}
-        locked={state.solved}
+        locked={ownProgress.finished}
       />
 
       <div className="w-full max-w-[min(92vw,540px)]">
-        <SudokuNumberPad cells={state.cells} selectedIndex={selectedIndex} onPick={(v) => selectedIndex !== null && handleSetValue(selectedIndex, v)} disabled={state.solved} />
+        <SudokuNumberPad
+          cells={ownProgress.cells}
+          selectedIndex={selectedIndex}
+          onPick={(v) => selectedIndex !== null && handleSetValue(selectedIndex, v)}
+          disabled={ownProgress.finished}
+        />
       </div>
 
       <AnimatePresence>
-        {state.solved && !showWinModal && (
+        {selfFinishedWaitingForOthers && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className="glass-panel fixed bottom-4 left-1/2 -translate-x-1/2 rounded-full px-4 py-2.5 text-sm font-medium text-ink shadow-soft"
+          >
+            Você terminou! Aguardando seu par concluir a grade...
+          </motion.div>
+        )}
+        {state.finished && !showWinModal && (
           <motion.button
             initial={{ opacity: 0, scale: 0.8, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -114,9 +142,13 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
 
       <SudokuWinModal
         visible={showWinModal}
+        mode={mode}
         elapsedLabel={formatFinalTime(finalElapsed)}
-        moves={state.moves}
+        moves={ownProgress.moves}
         difficultyLabel={difficultyLabel}
+        selfId={selfId}
+        players={room.players}
+        results={state.results}
         onNewPuzzle={() => {
           setShowWinModal(false);
           newPuzzle(state.difficulty);

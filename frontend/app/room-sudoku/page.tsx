@@ -8,6 +8,7 @@ import Button from "@/components/Button";
 import ConnectionThread from "@/components/ConnectionThread";
 import { useRoom } from "@/hooks/useRoom";
 import { SUDOKU_DIFFICULTIES, SudokuDifficulty } from "@/lib/sudokuTypes";
+import { MATCH_MODES, MatchMode } from "@/lib/matchModes";
 
 export default function SudokuLobbyPage() {
   const router = useRouter();
@@ -35,10 +36,16 @@ export default function SudokuLobbyPage() {
   const isHost = Boolean(room && selfId && room.hostId === selfId);
   const bothConnected = room ? room.players.filter((p) => p.connected).length === room.maxPlayers : false;
   const selectedDifficulty = (room?.pendingDifficulty as SudokuDifficulty) ?? "medium";
+  const selectedMatchMode = (room?.pendingMatchMode as MatchMode) ?? "together";
 
   const handleSelectDifficulty = (key: SudokuDifficulty) => {
     if (!isHost) return;
     setConfig({ difficulty: key });
+  };
+
+  const handleSelectMatchMode = (key: MatchMode) => {
+    if (!isHost) return;
+    setConfig({ matchMode: key });
   };
 
   return (
@@ -113,6 +120,31 @@ export default function SudokuLobbyPage() {
             <ConnectionThread players={room.players} maxPlayers={room.maxPlayers} selfId={selfId} />
 
             <div className="mt-2 text-left">
+              <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">
+                {isHost ? "Modo de jogo" : "Modo escolhido pelo anfitrião"}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.entries(MATCH_MODES) as [MatchMode, (typeof MATCH_MODES)[MatchMode]][]).map(([key, info]) => {
+                  const isSelected = selectedMatchMode === key;
+                  return (
+                    <button
+                      key={key}
+                      disabled={!isHost}
+                      onClick={() => handleSelectMatchMode(key)}
+                      className={`flex flex-col items-center gap-1 rounded-xl2 border px-2 py-2.5 transition-colors ${
+                        isSelected ? "border-rose bg-rose/10 text-ink" : "border-white/70 bg-white/50 text-ink-soft"
+                      } ${isHost ? "hover:bg-white/70" : "cursor-default opacity-90"}`}
+                    >
+                      <span className="text-lg leading-none">{info.emoji}</span>
+                      <span className="text-xs font-medium">{info.label}</span>
+                      <span className="text-center text-[10px] text-ink-soft">{info.hint}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-5 text-left">
               <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">
                 {isHost ? "Dificuldade" : "Dificuldade escolhida pelo anfitrião"}
               </p>

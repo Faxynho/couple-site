@@ -159,7 +159,11 @@ export class Room {
     // O Quiz reaproveita o mesmo campo com valores "solo" | "together" | "duel".
     // O Mini RPG reaproveita o mesmo campo com valores "1v1" | "soloBot" | "duoBot".
     const matchMode =
-      this.gameId === "crossword" || this.gameId === "wordsearch" || this.gameId === "quiz" || this.gameId === "rpg"
+      this.gameId === "crossword" ||
+      this.gameId === "wordsearch" ||
+      this.gameId === "quiz" ||
+      this.gameId === "rpg" ||
+      this.gameId === "sudoku"
         ? this.pendingMatchMode
         : undefined;
 

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Clock3, RotateCcw, Shuffle, SlidersHorizontal } from "lucide-react";
-import { SUDOKU_DIFFICULTIES, SudokuDifficulty } from "@/lib/sudokuTypes";
+import { ArrowLeft, Check, Clock3, RotateCcw, Shuffle, SlidersHorizontal } from "lucide-react";
+import { SUDOKU_DIFFICULTIES, SudokuDifficulty, SudokuProgress } from "@/lib/sudokuTypes";
+import { MATCH_MODES, MatchMode } from "@/lib/matchModes";
 
 interface Player {
   id: string;
@@ -15,11 +16,13 @@ interface Player {
 interface SudokuControlsProps {
   roomCode: string;
   difficulty: string;
+  mode: MatchMode;
   startedAt: number;
-  solved: boolean;
-  solvedAt: number | null;
+  finished: boolean;
   moves: number;
   players: Player[];
+  progress: Record<string, SudokuProgress>;
+  selfId: string | null;
   onNewPuzzle: (difficulty?: string) => void;
   onRestart: () => void;
   onBack: () => void;
@@ -35,11 +38,13 @@ function formatTime(ms: number) {
 export default function SudokuControls({
   roomCode,
   difficulty,
+  mode,
   startedAt,
-  solved,
-  solvedAt,
+  finished,
   moves,
   players,
+  progress,
+  selfId,
   onNewPuzzle,
   onRestart,
   onBack,
@@ -48,12 +53,12 @@ export default function SudokuControls({
   const [difficultyMenuOpen, setDifficultyMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (solved) return;
+    if (finished) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [solved]);
+  }, [finished]);
 
-  const elapsed = (solved && solvedAt ? solvedAt : now) - startedAt;
+  const elapsed = now - startedAt;
 
   return (
     <motion.div
@@ -81,19 +86,45 @@ export default function SudokuControls({
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {players.map((p) => (
-            <span
-              key={p.id}
-              className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
-              style={{ opacity: p.connected ? 1 : 0.5 }}
-            >
-              <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
-              {p.name}
-            </span>
-          ))}
+          {players.map((p) => {
+            const playerFinished = Boolean(progress[p.id]?.finished);
+            return (
+              <span
+                key={p.id}
+                className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
+                style={{ opacity: p.connected ? 1 : 0.5 }}
+              >
+                <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
+                {p.name}
+                {mode === "duel" &&
+                  (playerFinished ? (
+                    <Check size={12} className="text-sage" />
+                  ) : (
+                    <span className="h-1.5 w-1.5 rounded-full bg-rose/70" />
+                  ))}
+              </span>
+            );
+          })}
         </div>
-        <span className="text-xs text-ink-soft">{moves} jogadas</span>
+        <span className="flex items-center gap-2 text-xs text-ink-soft">
+          <span>{moves} jogadas</span>
+          <span className="flex items-center gap-1">
+            {MATCH_MODES[mode].emoji} {MATCH_MODES[mode].label}
+          </span>
+        </span>
       </div>
+
+      {mode === "duel" &&
+        players.length > 1 &&
+        players.map((p) => {
+          if (p.id === selfId) return null;
+          const opponentFinished = Boolean(progress[p.id]?.finished);
+          return (
+            <p key={p.id} className="text-center text-xs text-ink-soft">
+              {opponentFinished ? `${p.name} já terminou! 🎉` : `${p.name} ainda está jogando...`}
+            </p>
+          );
+        })}
 
       <div className="flex items-center gap-2">
         <button
