@@ -27,7 +27,7 @@ export default function PlayerChip({ player, isHost, selfId, onKick, children, l
 
   return (
     <span
-      className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
+      className="flex items-center gap-1.5 rounded-full bg-surface/60 px-2.5 py-1 text-xs font-medium text-ink"
       style={{ opacity: player.connected ? 1 : 0.5 }}
     >
       <span className="h-2 w-2 rounded-full" style={{ background: player.color }} />

@@ -71,7 +71,7 @@ export default function CrosswordControls({
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
           aria-label="Voltar"
         >
           <ArrowLeft size={18} />
@@ -121,14 +121,14 @@ export default function CrosswordControls({
       <div className="flex items-center gap-2">
         <button
           onClick={() => onNewPuzzle()}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-surface/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-surface"
         >
           <RotateCw size={14} /> Nova grade
         </button>
         <div className="relative flex-1">
           <button
             onClick={() => setDifficultyMenuOpen((v) => !v)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
+            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-surface/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-surface"
           >
             <SlidersHorizontal size={14} />
             {CROSSWORD_DIFFICULTIES[difficulty as CrosswordDifficulty]?.label ?? "Dificuldade"}
@@ -151,7 +151,7 @@ export default function CrosswordControls({
                         setDifficultyMenuOpen(false);
                         onNewPuzzle(key);
                       }}
-                      className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-white/60 ${
+                      className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-surface/60 ${
                         key === difficulty ? "font-semibold text-ink" : "text-ink-soft"
                       }`}
                     >

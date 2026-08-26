@@ -34,7 +34,7 @@ function DuoEntryContent() {
       <div className="flex w-full items-center gap-3">
         <button
           onClick={() => router.push("/")}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
           aria-label="Voltar"
         >
           <ArrowLeft size={20} />
@@ -64,7 +64,7 @@ function DuoEntryContent() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Como podemos te chamar?"
-            className="mt-2 w-full rounded-full border border-white/70 bg-white/60 px-5 py-3 text-ink placeholder:text-ink-soft/70 outline-none focus:border-rose"
+            className="mt-2 w-full rounded-full border border-surface/70 bg-surface/60 px-5 py-3 text-ink placeholder:text-ink-soft/70 outline-none focus:border-rose"
           />
 
           {screen === "choose" ? (
@@ -83,7 +83,7 @@ function DuoEntryContent() {
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="Código da sala"
                 maxLength={5}
-                className="w-full rounded-full border border-white/70 bg-white/60 px-5 py-3 text-center font-display tracking-[0.3em] text-ink placeholder:tracking-normal placeholder:text-ink-soft/70 outline-none focus:border-rose"
+                className="w-full rounded-full border border-surface/70 bg-surface/60 px-5 py-3 text-center font-display tracking-[0.3em] text-ink placeholder:tracking-normal placeholder:text-ink-soft/70 outline-none focus:border-rose"
               />
               <Button onClick={handleJoin} disabled={!name.trim() || !code.trim() || loading} className="w-full">
                 Entrar na sala

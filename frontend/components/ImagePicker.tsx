@@ -62,7 +62,7 @@ export default function ImagePicker({ images, loading, selected, onSelect, readO
               whileTap={readOnly ? undefined : { scale: 0.96 }}
               className={`group relative overflow-hidden rounded-xl2 border-2 text-left transition-colors ${
                 readOnly ? "cursor-default" : ""
-              } ${isSelected ? "border-rose shadow-glow" : "border-white/60 hover:border-white"}`}
+              } ${isSelected ? "border-rose shadow-glow" : "border-surface/60 hover:border-surface"}`}
             >
               <div className="aspect-square w-full overflow-hidden bg-beige">
                 <img

@@ -79,7 +79,7 @@ export default function SudokuControls({
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
           aria-label="Voltar"
         >
           <ArrowLeft size={18} />
@@ -130,7 +130,7 @@ export default function SudokuControls({
         })}
 
       {mode === "duel" && players.some((p) => (hintsUsedByPlayer[p.id] ?? 0) > 0) && (
-        <div className="rounded-lg bg-white/55 px-3 py-2 text-center text-xs text-ink-soft">
+        <div className="rounded-lg bg-surface/55 px-3 py-2 text-center text-xs text-ink-soft">
           {players
             .filter((p) => (hintsUsedByPlayer[p.id] ?? 0) > 0)
             .map((p) => {
@@ -155,20 +155,20 @@ export default function SudokuControls({
         </button>
         <button
           onClick={() => onNewPuzzle()}
-          className="flex min-w-[92px] flex-1 items-center justify-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
+          className="flex min-w-[92px] flex-1 items-center justify-center gap-1.5 rounded-full bg-surface/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-surface"
         >
           <Shuffle size={14} /> Novo Sudoku
         </button>
         <button
           onClick={onRestart}
-          className="flex min-w-[92px] flex-1 items-center justify-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
+          className="flex min-w-[92px] flex-1 items-center justify-center gap-1.5 rounded-full bg-surface/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-surface"
         >
           <RotateCcw size={14} /> Reiniciar
         </button>
         <div className="relative min-w-[120px] flex-1">
           <button
             onClick={() => setDifficultyMenuOpen((v) => !v)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
+            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-surface/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-surface"
           >
             <SlidersHorizontal size={14} />
             {SUDOKU_DIFFICULTIES[difficulty as SudokuDifficulty]?.label ?? "Dificuldade"}
@@ -191,7 +191,7 @@ export default function SudokuControls({
                         setDifficultyMenuOpen(false);
                         onNewPuzzle(key);
                       }}
-                      className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-white/60 ${
+                      className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-surface/60 ${
                         key === difficulty ? "font-semibold text-ink" : "text-ink-soft"
                       }`}
                     >

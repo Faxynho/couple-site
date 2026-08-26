@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
+import { themeInitScript } from "@/lib/theme";
+import ThemeToggleGate from "@/components/ThemeToggleGate";
 
 const fredoka = Fredoka({
   subsets: ["latin"],
@@ -21,8 +23,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${fredoka.variable} ${nunito.variable}`}>
-      <body>{children}</body>
+    <html lang="pt-BR" className={`${fredoka.variable} ${nunito.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Roda antes da primeira pintura pra aplicar o tema salvo (ou a
+            preferência do sistema) sem dar aquele "flash" de tema errado. */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body suppressHydrationWarning>
+        <ThemeToggleGate />
+        {children}
+      </body>
     </html>
   );
 }

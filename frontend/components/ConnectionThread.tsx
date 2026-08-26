@@ -36,8 +36,8 @@ function Avatar({
           transition={{ type: "spring", stiffness: 260, damping: 18 }}
           className="flex h-16 w-16 items-center justify-center rounded-full font-display text-xl font-semibold text-white shadow-soft"
           style={{
-            background: placeholder ? "rgba(255,255,255,0.5)" : player?.color,
-            border: placeholder ? "2px dashed rgba(122,108,114,0.35)" : "2px solid white",
+            background: placeholder ? "rgb(var(--color-surface) / 0.5)" : player?.color,
+            border: placeholder ? "2px dashed rgb(var(--color-ink-soft) / 0.35)" : "2px solid rgb(var(--color-surface))",
           }}
         >
           {placeholder ? "…" : initial}
@@ -48,7 +48,7 @@ function Avatar({
             onClick={() => onKick(player.id)}
             aria-label={`Remover ${player.name} da sala`}
             title="Remover da sala"
-            className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink-soft shadow-soft transition-colors hover:bg-rose/20 hover:text-rose-deep"
+            className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-surface text-ink-soft shadow-soft transition-colors hover:bg-rose/20 hover:text-rose-deep"
           >
             <X size={13} strokeWidth={2.5} />
           </button>

@@ -83,7 +83,7 @@ export default function SudokuBoard({
   }, [handleKeyDown]);
 
   return (
-    <div className="mx-auto grid aspect-square w-full max-w-[min(92vw,540px)] grid-cols-9 grid-rows-9 gap-0 overflow-hidden rounded-xl2 border-2 border-ink/70 bg-white shadow-soft">
+    <div className="mx-auto grid aspect-square w-full max-w-[min(92vw,540px)] grid-cols-9 grid-rows-9 gap-0 overflow-hidden rounded-xl2 border-2 border-ink/70 bg-surface shadow-soft">
       {cells.map((cell, index) => {
         const { row, col, box } = cellPosition(index);
         const isSelected = index === selectedIndex;
@@ -107,7 +107,13 @@ export default function SudokuBoard({
               conflict ? "text-red-500" : "",
             ].join(" ")}
             style={{
-              background: isSelected ? "#F6D3DE" : isSameValue ? "#DFCBF0AA" : isPeer ? "#FDF6EE" : "#FFFFFF",
+              background: isSelected
+                ? "var(--sudoku-cell-selected)"
+                : isSameValue
+                ? "var(--sudoku-cell-same)"
+                : isPeer
+                ? "var(--sudoku-cell-peer)"
+                : "var(--sudoku-cell-default)",
             }}
           >
             {cell.value !== 0 && (
@@ -121,7 +127,7 @@ export default function SudokuBoard({
             )}
             {!cell.isGiven && holderColor && (
               <span
-                className="absolute bottom-[8%] right-[10%] h-[9%] w-[9%] rounded-full ring-1 ring-white"
+                className="absolute bottom-[8%] right-[10%] h-[9%] w-[9%] rounded-full ring-1 ring-surface"
                 style={{ background: holderColor }}
                 title={isOwnEntry ? "Preenchida por você" : "Preenchida pelo seu par"}
               />

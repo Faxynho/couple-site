@@ -16,7 +16,7 @@ export default function SoloPickerPage() {
       <div className="flex w-full items-center gap-3">
         <button
           onClick={() => router.push("/")}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
           aria-label="Voltar"
         >
           <ArrowLeft size={20} />

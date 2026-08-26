@@ -72,7 +72,7 @@ export default function SidePanel({
       <button
         onClick={onBack}
         aria-label="Voltar para os jogos"
-        className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
       >
         <ArrowLeft size={17} />
       </button>
@@ -104,7 +104,7 @@ export default function SidePanel({
             <span key={p.id} className="relative inline-flex">
               <span
                 title={p.name}
-                className="h-3 w-3 rounded-full ring-2 ring-white"
+                className="h-3 w-3 rounded-full ring-2 ring-surface"
                 style={{ background: p.connected ? p.color : "#D9D0D4" }}
               />
               {canKick && (
@@ -116,7 +116,7 @@ export default function SidePanel({
                   }}
                   aria-label={`Remover ${p.name} da sala`}
                   title="Remover da sala"
-                  className="absolute -right-1.5 -top-2 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-ink-soft shadow-soft transition-colors hover:bg-rose/20 hover:text-rose-deep"
+                  className="absolute -right-1.5 -top-2 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-surface text-ink-soft shadow-soft transition-colors hover:bg-rose/20 hover:text-rose-deep"
                 >
                   <X size={8} strokeWidth={3} />
                 </button>
@@ -130,7 +130,7 @@ export default function SidePanel({
         <button
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Mais opções"
-          className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
         >
           <MoreVertical size={17} />
         </button>
@@ -149,7 +149,7 @@ export default function SidePanel({
                   setMenuOpen(false);
                   onRestart();
                 }}
-                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-ink transition-colors hover:bg-white/60"
+                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-ink transition-colors hover:bg-surface/60"
               >
                 <RotateCcw size={15} /> Reiniciar
               </button>
@@ -158,7 +158,7 @@ export default function SidePanel({
                   setMenuOpen(false);
                   onNewImage();
                 }}
-                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-ink transition-colors hover:bg-white/60"
+                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-ink transition-colors hover:bg-surface/60"
               >
                 <ImagePlus size={15} /> Nova imagem
               </button>

@@ -1,21 +1,26 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
         cream: "#FDF6EE",
-        beige: "#F1E4D3",
+        beige: "rgb(var(--color-beige) / <alpha-value>)",
         blush: "#F6D3DE",
         lilac: "#DFCBF0",
         skymist: "#C9E0F2",
-        sage: "#C7DBC9",
-        ink: "#4A3F45",
-        "ink-soft": "#7A6C72",
-        rose: "#E893AA",
-        "rose-deep": "#D9758F",
+        sage: "rgb(var(--color-sage) / <alpha-value>)",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        "ink-soft": "rgb(var(--color-ink-soft) / <alpha-value>)",
+        rose: "rgb(var(--color-rose) / <alpha-value>)",
+        "rose-deep": "rgb(var(--color-rose-deep) / <alpha-value>)",
         periwinkle: "#8FB0DE",
+        // "surface" é o novo nome para o que antes era só "white" translúcido
+        // (fundo de vidro dos painéis, bordas, etc.) — em modo escuro essa
+        // variável vira um cinza morno escuro em vez de branco.
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
       },
       fontFamily: {
         display: ["var(--font-display)", "sans-serif"],
@@ -30,8 +35,8 @@ const config: Config = {
         glow: "0 0 0 1px rgba(255,255,255,0.5), 0 20px 40px -20px rgba(217, 117, 143, 0.35)",
       },
       backgroundImage: {
-        "cozy-gradient": "linear-gradient(135deg, #FDF6EE 0%, #F6D3DE 45%, #C9E0F2 100%)",
-        "card-gradient": "linear-gradient(160deg, rgba(255,255,255,0.75), rgba(255,255,255,0.35))",
+        "cozy-gradient": "linear-gradient(135deg, var(--gradient-1) 0%, var(--gradient-2) 45%, var(--gradient-3) 100%)",
+        "card-gradient": "linear-gradient(160deg, rgb(var(--color-surface) / 0.75), rgb(var(--color-surface) / 0.35))",
       },
       keyframes: {
         floaty: {

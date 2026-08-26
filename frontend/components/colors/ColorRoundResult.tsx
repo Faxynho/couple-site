@@ -75,7 +75,7 @@ export default function ColorRoundResult({
               guess={sharedGuess.hex}
               label={guesserId === selfId ? "Seu palpite" : `Palpite de ${guesserName}`}
             />
-            <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-4 border-white bg-ink shadow-glow">
+            <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-4 border-surface bg-ink shadow-glow">
               <span className="font-display text-xl font-semibold leading-none text-white">
                 {sharedGuess.score.toFixed(1)}
               </span>
@@ -121,7 +121,7 @@ export default function ColorRoundResult({
             guess={primaryGuess.hex}
             label={primaryPlayer.id === selfId ? "Seu palpite" : primaryPlayer.name}
           />
-          <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-4 border-white bg-ink shadow-glow">
+          <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-4 border-surface bg-ink shadow-glow">
             <span className="font-display text-xl font-semibold leading-none text-white">
               {primaryGuess.score.toFixed(1)}
             </span>
@@ -137,10 +137,10 @@ export default function ColorRoundResult({
             return (
               <div
                 key={player.id}
-                className="flex items-center gap-3 rounded-xl2 border border-white/70 bg-white/50 px-3 py-2.5"
+                className="flex items-center gap-3 rounded-xl2 border border-surface/70 bg-surface/50 px-3 py-2.5"
               >
                 <div
-                  className="h-11 w-11 shrink-0 rounded-full border-2 border-white shadow-soft"
+                  className="h-11 w-11 shrink-0 rounded-full border-2 border-surface shadow-soft"
                   style={{ background: guess?.hex ?? "transparent" }}
                 />
                 <div className="flex-1 text-left">

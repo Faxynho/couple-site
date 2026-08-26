@@ -60,7 +60,7 @@ export default function RPGHand({
                     delay: i * 0.08,
                   },
                 }}
-                className="flex aspect-[3/4] items-center justify-center rounded-2xl bg-white/50 ring-1 ring-white/70"
+                className="flex aspect-[3/4] items-center justify-center rounded-2xl bg-surface/50 ring-1 ring-surface/70"
               >
                 <span className="text-2xl opacity-70">🂠</span>
               </motion.div>
@@ -105,8 +105,8 @@ export default function RPGHand({
             gap-2
             rounded-full
             border
-            border-white/80
-            bg-white/65
+            border-surface/80
+            bg-surface/65
             px-4
             py-2
             text-xs
@@ -115,7 +115,7 @@ export default function RPGHand({
             shadow-sm
             backdrop-blur-sm
             transition
-            hover:bg-white
+            hover:bg-surface
             disabled:cursor-not-allowed
             disabled:opacity-45
           "

@@ -399,7 +399,7 @@ export default function RPGTutorialModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 260, damping: 22 }}
-            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-white/80 bg-[#f8fbf8]/95 shadow-[0_24px_80px_rgba(15,23,42,0.25)]"
+            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-surface/80 bg-[#f8fbf8]/95 shadow-[0_24px_80px_rgba(15,23,42,0.25)]"
           >
             <div className="flex items-center justify-between border-b border-black/5 px-5 py-4 sm:px-7">
               <div>
@@ -416,7 +416,7 @@ export default function RPGTutorialModal({
                 whileHover={{ scale: 1.08, rotate: 3 }}
                 whileTap={{ scale: 0.92 }}
                 onClick={onClose}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/75 text-lg font-bold text-ink-soft shadow-sm hover:bg-white hover:text-ink"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-surface/75 text-lg font-bold text-ink-soft shadow-sm hover:bg-surface hover:text-ink"
                 aria-label="Fechar tutorial"
               >
                 ×
@@ -430,7 +430,7 @@ export default function RPGTutorialModal({
                 className={`rounded-full px-4 py-2 text-xs font-extrabold transition ${
                   tab === "cards"
                     ? "bg-ink text-white shadow-sm"
-                    : "bg-white/70 text-ink-soft hover:bg-white"
+                    : "bg-surface/70 text-ink-soft hover:bg-surface"
                 }`}
               >
                 🃏 Cartas
@@ -442,7 +442,7 @@ export default function RPGTutorialModal({
                 className={`rounded-full px-4 py-2 text-xs font-extrabold transition ${
                   tab === "classes"
                     ? "bg-ink text-white shadow-sm"
-                    : "bg-white/70 text-ink-soft hover:bg-white"
+                    : "bg-surface/70 text-ink-soft hover:bg-surface"
                 }`}
               >
                 ⚔️ Classes
@@ -452,7 +452,7 @@ export default function RPGTutorialModal({
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-5 sm:px-7">
               {tab === "cards" ? (
                 <div className="space-y-8">
-                  <div className="rounded-2xl border border-white/90 bg-white/50 px-4 py-3 text-center text-xs text-ink-soft">
+                  <div className="rounded-2xl border border-surface/90 bg-surface/50 px-4 py-3 text-center text-xs text-ink-soft">
                     As cartas abaixo são <strong>as mesmas cartas visuais do jogo</strong>.
                     Elas são apenas demonstrativas e não podem ser selecionadas.
                   </div>
@@ -505,7 +505,7 @@ export default function RPGTutorialModal({
                         CLASS_UNIQUE_CARDS[classId].map((card, index) => (
                           <div key={card.instanceId} className="min-w-0">
                             <div className="mb-1.5 flex justify-center">
-                              <span className="rounded-full bg-white/85 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.08em] text-fuchsia-700 shadow-sm">
+                              <span className="rounded-full bg-surface/85 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.08em] text-fuchsia-700 shadow-sm">
                                 {RPG_CLASSES[classId].emoji} {RPG_CLASSES[classId].name}
                               </span>
                             </div>
@@ -531,14 +531,14 @@ export default function RPGTutorialModal({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.045 }}
-                        className="relative overflow-hidden rounded-2xl border border-white/90 bg-white/65 p-4 shadow-sm"
+                        className="relative overflow-hidden rounded-2xl border border-surface/90 bg-surface/65 p-4 shadow-sm"
                       >
                         <div className="absolute -right-5 -top-5 text-7xl opacity-[0.06]">
                           {cls.emoji}
                         </div>
 
                         <div className="relative flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/80 text-2xl shadow-sm">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface/80 text-2xl shadow-sm">
                             {cls.emoji}
                           </div>
 

@@ -37,7 +37,7 @@ export default function WinModal({ visible, elapsedLabel, moves, onPlayAgain, on
             <button
               onClick={onClose}
               aria-label="Fechar"
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
             >
               <X size={18} />
             </button>
@@ -47,11 +47,11 @@ export default function WinModal({ visible, elapsedLabel, moves, onPlayAgain, on
             <p className="mt-1 text-sm text-ink-soft">Mais um quebra-cabeça montado a dois.</p>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <div className="rounded-xl2 bg-white/60 py-3">
+              <div className="rounded-xl2 bg-surface/60 py-3">
                 <p className="text-xs text-ink-soft">Tempo</p>
                 <p className="font-display text-lg font-semibold text-ink">{elapsedLabel}</p>
               </div>
-              <div className="rounded-xl2 bg-white/60 py-3">
+              <div className="rounded-xl2 bg-surface/60 py-3">
                 <p className="text-xs text-ink-soft">Movimentos</p>
                 <p className="font-display text-lg font-semibold text-ink">{moves}</p>
               </div>

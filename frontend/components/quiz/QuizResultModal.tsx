@@ -91,7 +91,7 @@ export default function QuizResultModal({
             >
               <button
                 onClick={onClose}
-                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft hover:bg-white/60 hover:text-ink"
+                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft hover:bg-surface/60 hover:text-ink"
                 aria-label="Fechar"
               >
                 <X size={16} />
@@ -107,7 +107,7 @@ export default function QuizResultModal({
 
               <div className="mt-5 flex flex-col gap-3">
                 {isTogether && teamStats && (
-                  <div className="rounded-xl2 bg-white/60 p-4">
+                  <div className="rounded-xl2 bg-surface/60 p-4">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-2 font-display text-base font-semibold text-ink">
                         <Users size={16} className="text-ink-soft" />
@@ -143,7 +143,7 @@ export default function QuizResultModal({
 
                 {!isTogether &&
                   rows.map(({ player, stats }) => (
-                    <div key={player.id} className="rounded-xl2 bg-white/60 p-4">
+                    <div key={player.id} className="rounded-xl2 bg-surface/60 p-4">
                       <div className="flex items-center justify-between">
                         <span className="flex items-center gap-2 font-display text-base font-semibold text-ink">
                           <span className="h-2.5 w-2.5 rounded-full" style={{ background: player.color }} />

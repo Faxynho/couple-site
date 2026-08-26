@@ -230,7 +230,7 @@ export default function CrosswordGrid({
                     ? "border-sage/60 bg-sage/20 text-ink"
                     : isInActiveWord
                     ? "border-rose/40 bg-rose/10 text-ink"
-                    : "border-white/70 bg-white/85 text-ink hover:bg-white"
+                    : "border-surface/70 bg-surface/85 text-ink hover:bg-surface"
                 }`}
               >
                 {cell.number !== null && (

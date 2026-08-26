@@ -42,7 +42,7 @@ function Slider({ label, value, max, trackBackground, onChange }: SliderProps) {
           className="absolute inset-0 h-4 w-full cursor-pointer opacity-0"
         />
         <div
-          className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-ink bg-white shadow-soft"
+          className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-ink bg-surface shadow-soft"
           style={{ left: `calc(${percent}% - 10px)` }}
         />
       </div>

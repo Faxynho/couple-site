@@ -76,7 +76,7 @@ export default function CrosswordResultModal({
             <button
               onClick={onClose}
               aria-label="Fechar"
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
             >
               <X size={18} />
             </button>
@@ -96,7 +96,7 @@ export default function CrosswordResultModal({
                     <div
                       key={r.playerId}
                       className={`flex items-center justify-between rounded-xl2 px-4 py-3 ${
-                        isWinner ? "bg-rose/15" : "bg-white/60"
+                        isWinner ? "bg-rose/15" : "bg-surface/60"
                       }`}
                     >
                       <div className="flex items-center gap-2 text-left">
@@ -119,7 +119,7 @@ export default function CrosswordResultModal({
                 )}
               </div>
             ) : (
-              <div className="mt-6 rounded-xl2 bg-white/60 py-3">
+              <div className="mt-6 rounded-xl2 bg-surface/60 py-3">
                 <p className="text-xs text-ink-soft">Tempo</p>
                 <p className="font-display text-lg font-semibold text-ink">
                   {selfTimeMs !== null ? formatTime(selfTimeMs) : "--:--"}

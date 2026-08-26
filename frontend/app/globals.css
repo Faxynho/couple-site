@@ -3,12 +3,58 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+    /* Cores em "R G B" (sem vírgula) — formato exigido pelo Tailwind pra
+       permitir os modificadores de opacidade (ex.: bg-ink/40) mesmo com a
+       cor vindo de uma variável CSS. */
+    --color-ink: 74 63 69;
+    --color-ink-soft: 122 108 114;
+    --color-rose: 232 147 170;
+    --color-rose-deep: 217 117 143;
+    --color-sage: 199 219 201;
+    --color-beige: 241 228 211;
+    /* "surface" substitui o antigo "white" translúcido usado nos painéis de
+       vidro, bordas e cartões pela maior parte do site. */
+    --color-surface: 255 255 255;
+
+    --gradient-1: #fdf6ee;
+    --gradient-2: #f6d3de;
+    --gradient-3: #c9e0f2;
+
+    --sudoku-cell-selected: #f6d3de;
+    --sudoku-cell-same: rgba(223, 203, 240, 0.67);
+    --sudoku-cell-peer: #fdf6ee;
+    --sudoku-cell-default: #ffffff;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --color-ink: 240 232 230;
+    --color-ink-soft: 191 178 183;
+    --color-rose: 232 147 170;
+    --color-rose-deep: 235 150 175;
+    --color-sage: 152 199 160;
+    --color-beige: 54 45 51;
+    --color-surface: 51 43 49;
+
+    --gradient-1: #1c1519;
+    --gradient-2: #2c1f28;
+    --gradient-3: #182234;
+
+    --sudoku-cell-selected: rgba(232, 147, 170, 0.28);
+    --sudoku-cell-same: rgba(180, 140, 220, 0.22);
+    --sudoku-cell-peer: rgba(255, 255, 255, 0.06);
+    --sudoku-cell-default: rgb(51, 43, 49);
+  }
+
   html {
     scroll-behavior: smooth;
   }
 
   body {
     @apply bg-cozy-gradient bg-fixed text-ink font-body antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   ::selection {
@@ -16,7 +62,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid theme("colors.rose-deep");
+    outline: 2px solid rgb(var(--color-rose-deep));
     outline-offset: 3px;
     border-radius: 0.5rem;
   }
@@ -24,7 +70,7 @@
 
 @layer components {
   .glass-panel {
-    @apply bg-card-gradient backdrop-blur-xl border border-white/60 shadow-soft;
+    @apply bg-card-gradient backdrop-blur-xl border border-surface/60 shadow-soft;
   }
 }
 

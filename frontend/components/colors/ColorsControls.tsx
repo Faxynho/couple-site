@@ -57,7 +57,7 @@ export default function ColorsControls({
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
           aria-label="Voltar"
         >
           <ArrowLeft size={18} />
@@ -66,10 +66,10 @@ export default function ColorsControls({
         <span className="font-display text-xs font-medium tracking-[0.15em] text-ink-soft">Sala {roomCode}</span>
 
         <div className="flex items-center gap-1.5">
-          <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-ink">
+          <span className="rounded-full bg-surface/60 px-3 py-1 text-xs font-medium text-ink">
             {isCooperative ? "🤝 Juntos" : "⚔️ Um contra o outro"}
           </span>
-          <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-ink">{difficultyLabel}</span>
+          <span className="rounded-full bg-surface/60 px-3 py-1 text-xs font-medium text-ink">{difficultyLabel}</span>
         </div>
       </div>
 

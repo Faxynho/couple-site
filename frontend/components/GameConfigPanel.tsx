@@ -51,8 +51,8 @@ function OptionGrid<K extends string>({
             disabled={!isHost}
             onClick={() => onSelect(key)}
             className={`flex flex-col items-center gap-1 rounded-xl2 border px-2 py-2.5 transition-colors ${
-              isSelected ? "border-rose bg-rose/10 text-ink" : "border-white/70 bg-white/50 text-ink-soft"
-            } ${isHost ? "hover:bg-white/70" : "cursor-default opacity-90"}`}
+              isSelected ? "border-rose bg-rose/10 text-ink" : "border-surface/70 bg-surface/50 text-ink-soft"
+            } ${isHost ? "hover:bg-surface/70" : "cursor-default opacity-90"}`}
           >
             <span className="text-lg leading-none">{info.emoji}</span>
             <span className="text-xs font-medium">{info.label}</span>
@@ -174,8 +174,8 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
                       disabled={!isHost}
                       onClick={() => setConfig({ seerId: player.id })}
                       className={`flex flex-col items-center gap-1 rounded-xl2 border px-2 py-2.5 transition-colors ${
-                        isSeer ? "border-rose bg-rose/10 text-ink" : "border-white/70 bg-white/50 text-ink-soft"
-                      } ${isHost ? "hover:bg-white/70" : "cursor-default opacity-90"}`}
+                        isSeer ? "border-rose bg-rose/10 text-ink" : "border-surface/70 bg-surface/50 text-ink-soft"
+                      } ${isHost ? "hover:bg-surface/70" : "cursor-default opacity-90"}`}
                     >
                       <span className="text-lg leading-none">{isSeer ? "👁️" : "🎯"}</span>
                       <span className="text-xs font-medium">{player.id === selfId ? "Você" : player.name}</span>

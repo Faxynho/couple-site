@@ -68,7 +68,7 @@ export default function RPGResultModal({
             >
               <button
                 onClick={onClose}
-                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft hover:bg-white/60 hover:text-ink"
+                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft hover:bg-surface/60 hover:text-ink"
                 aria-label="Fechar"
               >
                 <X size={16} />
@@ -91,7 +91,7 @@ export default function RPGResultModal({
                   const name = c.displayName ?? (id === "BOT" ? "BOT" : namesById[id] ?? "Jogador");
                   const won = state.winnerTeam === c.team;
                   return (
-                    <div key={id} className="rounded-xl2 bg-white/60 p-3.5">
+                    <div key={id} className="rounded-xl2 bg-surface/60 p-3.5">
                       <div className="flex items-center justify-between">
                         <span className="flex items-center gap-2 font-display text-sm font-semibold text-ink">
                           <span className="text-lg leading-none">{def.emoji}</span>

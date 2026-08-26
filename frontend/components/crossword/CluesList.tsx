@@ -55,7 +55,7 @@ export default function CluesList({
                     ? "border-rose bg-rose/20 font-medium text-ink"
                     : done
                     ? "line-through decoration-ink-soft/50"
-                    : "border-transparent text-ink-soft hover:bg-white/60 hover:text-ink"
+                    : "border-transparent text-ink-soft hover:bg-surface/60 hover:text-ink"
                 }`}
                 style={
                   !active && done

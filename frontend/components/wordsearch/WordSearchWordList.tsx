@@ -79,7 +79,7 @@ export default function WordSearchWordList({
             className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
               found
                 ? "line-through decoration-ink-soft/60"
-                : "border-transparent bg-white/70 text-ink"
+                : "border-transparent bg-surface/70 text-ink"
             }`}
             style={
               found

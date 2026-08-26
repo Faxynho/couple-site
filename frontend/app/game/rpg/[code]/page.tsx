@@ -194,7 +194,7 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
         <div className="flex items-center justify-between">
           <button
             onClick={handleBackToConfig}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
@@ -326,9 +326,9 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
           whileTap={{ scale: 0.97 }}
           className="
             flex items-center gap-2 rounded-full
-            border border-white/80 bg-white/60 px-4 py-2
+            border border-surface/80 bg-surface/60 px-4 py-2
             text-xs font-bold text-ink-soft shadow-sm
-            backdrop-blur-sm transition hover:bg-white/85 hover:text-ink
+            backdrop-blur-sm transition hover:bg-surface/85 hover:text-ink
           "
         >
           <span className="text-base">❔</span>

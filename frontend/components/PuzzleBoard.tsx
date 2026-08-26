@@ -567,7 +567,7 @@ export default function PuzzleBoard({
         touchAction: "none",
         overscrollBehavior: "contain",
         background:
-          "radial-gradient(120% 100% at 50% 0%, rgba(255,255,255,0.5), rgba(241,228,211,0.3) 60%), repeating-linear-gradient(135deg, rgba(74,63,69,0.025) 0px, rgba(74,63,69,0.025) 2px, transparent 2px, transparent 16px)",
+          "radial-gradient(120% 100% at 50% 0%, rgb(var(--color-surface) / 0.5), rgb(var(--color-beige) / 0.3) 60%), repeating-linear-gradient(135deg, rgb(var(--color-ink) / 0.025) 0px, rgb(var(--color-ink) / 0.025) 2px, transparent 2px, transparent 16px)",
       }}
       onPointerDownCapture={handleViewportPointerDownCapture}
       onPointerDown={handleViewportPointerDown}
@@ -589,13 +589,13 @@ export default function PuzzleBoard({
       >
         {/* moldura-guia: mostra onde a imagem final se monta */}
         <div
-          className="absolute rounded-2xl border-2 border-dashed border-white/70"
+          className="absolute rounded-2xl border-2 border-dashed border-surface/70"
           style={{
             left: state.targetX,
             top: state.targetY,
             width: assembled.width,
             height: assembled.height,
-            background: "rgba(255,255,255,0.10)",
+            background: "rgb(var(--color-surface) / 0.10)",
           }}
         />
 

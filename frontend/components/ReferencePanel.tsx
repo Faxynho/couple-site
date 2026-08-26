@@ -15,7 +15,7 @@ export default function ReferencePanel({ imageSrc, visible, onToggle }: Referenc
       <motion.button
         whileTap={{ scale: 0.94 }}
         onClick={onToggle}
-        className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2.5 text-sm font-medium text-ink shadow-soft backdrop-blur-md transition-colors hover:bg-white"
+        className="flex items-center gap-2 rounded-full bg-surface/80 px-4 py-2.5 text-sm font-medium text-ink shadow-soft backdrop-blur-md transition-colors hover:bg-surface"
       >
         <ImageIcon size={16} />
         {visible ? "Esconder referência" : "Mostrar referência"}

@@ -14,9 +14,9 @@ const variantClasses: Record<Variant, string> = {
   primary:
     "bg-rose text-white shadow-glow hover:bg-rose-deep",
   secondary:
-    "bg-white/70 text-ink border border-white/80 hover:bg-white",
+    "bg-surface/70 text-ink border border-surface/80 hover:bg-surface",
   ghost:
-    "bg-transparent text-ink-soft hover:text-ink hover:bg-white/50",
+    "bg-transparent text-ink-soft hover:text-ink hover:bg-surface/50",
 };
 
 export default function Button({ children, variant = "primary", className = "", ...props }: ButtonProps) {

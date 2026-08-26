@@ -43,7 +43,7 @@ export default function GameSequenceSuggestion({
           <button
             type="button"
             onClick={onShuffle}
-            className="flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
+            className="flex items-center gap-1.5 rounded-full bg-surface/70 px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-surface"
           >
             <Shuffle size={14} /> Sortear de novo
           </button>
@@ -62,8 +62,8 @@ export default function GameSequenceSuggestion({
                 disabled={!isHost}
                 onClick={() => isHost && onPickGame(gameId)}
                 className={`flex w-full items-center gap-3 rounded-xl2 border px-3 py-2.5 text-left transition-colors ${
-                  done ? "border-sage/50 bg-sage/10" : "border-white/70 bg-white/50"
-                } ${isHost ? "hover:bg-white/80" : "cursor-default"}`}
+                  done ? "border-sage/50 bg-sage/10" : "border-surface/70 bg-surface/50"
+                } ${isHost ? "hover:bg-surface/80" : "cursor-default"}`}
               >
                 <span className="font-display text-xs font-semibold text-ink-soft">{index + 1}</span>
                 <span className="text-lg leading-none">{game.emoji}</span>

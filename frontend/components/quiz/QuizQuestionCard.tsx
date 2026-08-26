@@ -48,7 +48,7 @@ export default function QuizQuestionCard({
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       className="glass-panel w-full max-w-[min(94vw,560px)] rounded-xl3 p-5 sm:p-6"
     >
-      <span className="inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-ink-soft">
+      <span className="inline-flex items-center rounded-full bg-surface/70 px-3 py-1 text-xs font-medium text-ink-soft">
         {question.category}
       </span>
 
@@ -63,11 +63,11 @@ export default function QuizQuestionCard({
           const isCorrectOption = revealed && question.correctIndex === index;
           const isWrongChoice = revealed && isChosen && !isCorrectOption;
 
-          let stateClasses = "border-white/70 bg-white/60 text-ink hover:bg-white/85";
+          let stateClasses = "border-surface/70 bg-surface/60 text-ink hover:bg-surface/85";
           if (isCorrectOption) stateClasses = "border-sage bg-sage/40 text-ink";
           else if (isWrongChoice) stateClasses = "border-rose-deep bg-rose/20 text-ink";
           else if (isChosen) stateClasses = "border-rose bg-rose/10 text-ink";
-          else if (isPartnerPick) stateClasses = "border-dashed border-ink-soft/50 bg-white/60 text-ink";
+          else if (isPartnerPick) stateClasses = "border-dashed border-ink-soft/50 bg-surface/60 text-ink";
 
           return (
             <button
@@ -76,7 +76,7 @@ export default function QuizQuestionCard({
               disabled={locked}
               className={`flex items-center gap-3 rounded-xl2 border px-4 py-3.5 text-left text-sm font-medium transition-colors disabled:cursor-default sm:text-base ${stateClasses}`}
             >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/70 text-xs font-semibold text-ink-soft">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface/70 text-xs font-semibold text-ink-soft">
                 {OPTION_LETTERS[index]}
               </span>
               <span className="flex-1">{option}</span>
@@ -120,7 +120,7 @@ export default function QuizQuestionCard({
           <motion.p
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-4 rounded-xl2 bg-white/60 px-4 py-3 text-sm text-ink-soft"
+            className="mt-4 rounded-xl2 bg-surface/60 px-4 py-3 text-sm text-ink-soft"
           >
             💡 {question.explanation}
           </motion.p>

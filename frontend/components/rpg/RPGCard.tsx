@@ -352,7 +352,7 @@ export default function RPGCard({
         text-center
         sm:p-4
 
-        bg-white
+        bg-surface
         shadow-sm
 
         focus:outline-none

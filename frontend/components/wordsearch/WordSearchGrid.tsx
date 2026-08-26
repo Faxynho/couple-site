@@ -204,7 +204,7 @@ export default function WordSearchGrid({
                   ? "border-rose bg-rose/30 text-ink"
                   : isFound
                   ? "border-sage/60 bg-sage/25 text-ink"
-                  : "border-white/70 bg-white/85 text-ink"
+                  : "border-surface/70 bg-surface/85 text-ink"
               }`}
             >
               {letter}

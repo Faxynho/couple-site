@@ -59,7 +59,7 @@ export default function ColorMemorizeView({ hex, round, totalRounds, durationMs,
         </div>
       </motion.div>
 
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/60">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface/60">
         <motion.div
           key={`${hex}-bar`}
           className="h-full rounded-full bg-rose"

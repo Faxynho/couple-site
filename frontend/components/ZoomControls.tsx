@@ -11,7 +11,7 @@ interface ZoomControlsProps {
 
 export default function ZoomControls({ onZoomIn, onZoomOut, onCentralize }: ZoomControlsProps) {
   const buttonClass =
-    "flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-ink shadow-soft backdrop-blur-md transition-colors hover:bg-white";
+    "flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-ink shadow-soft backdrop-blur-md transition-colors hover:bg-surface";
 
   return (
     <div className="flex flex-col items-center gap-2">

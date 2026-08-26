@@ -43,7 +43,7 @@ export default function GameCard({ game, index, onPlay, ctaLabel = "Jogar juntos
           {ctaLabel}
         </Button>
       ) : (
-        <div className="w-full rounded-full bg-white/50 py-3 text-center text-sm text-ink-soft">
+        <div className="w-full rounded-full bg-surface/50 py-3 text-center text-sm text-ink-soft">
           Em breve ✨
         </div>
       )}

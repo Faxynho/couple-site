@@ -32,10 +32,10 @@ export default function SudokuNumberPad({ cells, selectedIndex, onPick, disabled
             onClick={() => onPick(digit)}
             className={`relative flex aspect-square items-center justify-center rounded-xl2 font-display text-xl font-bold shadow-soft transition-colors sm:text-2xl ${
               complete
-                ? "cursor-default bg-white/40 text-ink-soft/40"
+                ? "cursor-default bg-surface/40 text-ink-soft/40"
                 : canType
-                ? "bg-white/85 text-ink hover:bg-white"
-                : "bg-white/50 text-ink-soft/60"
+                ? "bg-surface/85 text-ink hover:bg-surface"
+                : "bg-surface/50 text-ink-soft/60"
             }`}
           >
             {digit}
@@ -48,7 +48,7 @@ export default function SudokuNumberPad({ cells, selectedIndex, onPick, disabled
         whileTap={canType ? { scale: 0.9 } : undefined}
         onClick={() => onPick(0)}
         className={`col-span-5 flex aspect-square items-center justify-center gap-2 rounded-xl2 shadow-soft transition-colors sm:col-span-1 sm:aspect-auto ${
-          canType ? "bg-white/85 text-ink hover:bg-white" : "bg-white/50 text-ink-soft/60"
+          canType ? "bg-surface/85 text-ink hover:bg-surface" : "bg-surface/50 text-ink-soft/60"
         }`}
         aria-label="Apagar"
       >

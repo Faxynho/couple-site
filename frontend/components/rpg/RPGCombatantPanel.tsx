@@ -785,9 +785,9 @@ export default function RPGCombatantPanel({
         rounded-2xl
 
         border
-        border-white/80
+        border-surface/80
 
-        bg-white/70
+        bg-surface/70
 
         px-4
         py-3
@@ -958,7 +958,7 @@ export default function RPGCombatantPanel({
           inset-[1px]
           rounded-[15px]
           border
-          border-white/40
+          border-surface/40
         "
       />
 
@@ -1320,8 +1320,8 @@ export default function RPGCombatantPanel({
             className="
               rounded-full
               border
-              border-white/80
-              bg-white/55
+              border-surface/80
+              bg-surface/55
               px-2.5
               py-1
 
@@ -1404,8 +1404,8 @@ export default function RPGCombatantPanel({
             relative
             rounded-xl
             border
-            border-white/80
-            bg-white/45
+            border-surface/80
+            bg-surface/45
             px-2.5
             py-2
             shadow-inner
@@ -1464,7 +1464,7 @@ export default function RPGCombatantPanel({
               overflow-hidden
               rounded-full
               border
-              border-white/90
+              border-surface/90
               bg-slate-200/55
               shadow-inner
               sm:h-[18px]
@@ -1595,7 +1595,7 @@ export default function RPGCombatantPanel({
                 top-0
                 h-1/2
                 rounded-full
-                bg-white/30
+                bg-surface/30
               "
             />
 
@@ -1899,7 +1899,7 @@ export default function RPGCombatantPanel({
               </motion.span>
 
               <motion.span
-                className={`absolute bottom-5 z-10 rounded-full bg-white/90 px-3 py-1 font-display text-base font-extrabold shadow-lg ${visual.text}`}
+                className={`absolute bottom-5 z-10 rounded-full bg-surface/90 px-3 py-1 font-display text-base font-extrabold shadow-lg ${visual.text}`}
                 initial={{ opacity: 0, y: 10, scale: 0.75 }}
                 animate={{ opacity: [0, 1, 1, 0], y: [10, 0, -10, -24], scale: [0.75, 1, 1, 1.05] }}
                 transition={{

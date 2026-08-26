@@ -35,8 +35,8 @@ function DifficultyGrid<K extends string>({
             key={key}
             type="button"
             onClick={() => onSelect(key)}
-            className={`flex flex-col items-center gap-1 rounded-xl2 border px-2 py-2.5 transition-colors hover:bg-white/70 ${
-              isSelected ? "border-rose bg-rose/10 text-ink" : "border-white/70 bg-white/50 text-ink-soft"
+            className={`flex flex-col items-center gap-1 rounded-xl2 border px-2 py-2.5 transition-colors hover:bg-surface/70 ${
+              isSelected ? "border-rose bg-rose/10 text-ink" : "border-surface/70 bg-surface/50 text-ink-soft"
             }`}
           >
             <span className="text-lg leading-none">{info.emoji}</span>
@@ -110,7 +110,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
       <div className="flex w-full items-center gap-3">
         <button
           onClick={() => router.push("/solo")}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
           aria-label="Voltar"
         >
           <ArrowLeft size={20} />

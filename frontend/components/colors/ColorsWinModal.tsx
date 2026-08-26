@@ -68,7 +68,7 @@ export default function ColorsWinModal({
             <button
               onClick={onClose}
               aria-label="Fechar"
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
             >
               <X size={18} />
             </button>
@@ -103,7 +103,7 @@ export default function ColorsWinModal({
                     <div
                       key={player.id}
                       className={`flex items-center gap-3 rounded-xl2 border px-4 py-3 ${
-                        isMultiplayer && i === 0 ? "border-rose bg-rose/10" : "border-white/70 bg-white/60"
+                        isMultiplayer && i === 0 ? "border-rose bg-rose/10" : "border-surface/70 bg-surface/60"
                       }`}
                     >
                       <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: player.color }} />

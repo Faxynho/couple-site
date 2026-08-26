@@ -42,7 +42,7 @@ export default function SeerLiveView({ hex, round, totalRounds, guesserName, liv
         <motion.div
           animate={{ background: previewHex ?? "#e5e5e5" }}
           transition={{ duration: 0.15 }}
-          className="h-20 w-20 rounded-full border-4 border-white shadow-soft"
+          className="h-20 w-20 rounded-full border-4 border-surface shadow-soft"
         />
         <p className="text-xs text-ink-soft">
           {previewHex ? "Acompanhe em tempo real e guie até chegar perto!" : `Aguardando ${guesserName} começar a mexer nos sliders...`}
