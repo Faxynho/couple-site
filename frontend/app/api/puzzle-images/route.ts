@@ -34,7 +34,12 @@ export async function GET() {
     .filter((f) => IMAGE_EXTENSIONS.includes(path.extname(f).toLowerCase()))
     .sort((a, b) => a.localeCompare(b, "pt-BR"))
     .map((filename) => {
-      const file = `/images/puzzle/${filename}`;
+      // Codifica o nome do arquivo na URL — sem isso, nomes com espaço (ou
+      // outros caracteres especiais) geram uma URL como
+      // "/images/puzzle/imagem Dois.jpg", que quebra o `url(...)` do CSS
+      // usado para recortar as peças (o navegador só reconhece o pedaço até
+      // o primeiro espaço) e a imagem simplesmente não aparece.
+      const file = `/images/puzzle/${encodeURIComponent(filename)}`;
       return { file, label: toLabel(filename) };
     });
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Clock3, RotateCw, SlidersHorizontal } from "lucide-react";
 import { QUIZ_DIFFICULTIES, QUIZ_MODES, QuizDifficulty, QuizMode, QuizPhase } from "@/lib/quizTypes";
+import PlayerChip from "@/components/PlayerChip";
 
 interface Player {
   id: string;
@@ -22,6 +23,9 @@ interface QuizControlsProps {
   questionStartedAt: number;
   timeLimitMs: number;
   players: Player[];
+  selfId?: string | null;
+  isHost?: boolean;
+  onKick?: (playerId: string) => void;
   onNewGame: (difficulty?: string) => void;
   onBack: () => void;
 }
@@ -36,6 +40,9 @@ export default function QuizControls({
   questionStartedAt,
   timeLimitMs,
   players,
+  selfId,
+  isHost,
+  onKick,
   onNewGame,
   onBack,
 }: QuizControlsProps) {
@@ -99,16 +106,7 @@ export default function QuizControls({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {mode !== "solo" &&
-            players.map((p) => (
-              <span
-                key={p.id}
-                className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
-                style={{ opacity: p.connected ? 1 : 0.5 }}
-              >
-                <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
-                {p.name}
-              </span>
-            ))}
+            players.map((p) => <PlayerChip key={p.id} player={p} isHost={isHost} selfId={selfId} onKick={onKick} />)}
           <span className="text-xs text-ink-soft">
             Pergunta {questionIndex + 1}/{totalQuestions}
           </span>

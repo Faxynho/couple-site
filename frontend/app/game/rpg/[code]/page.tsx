@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { useGameRoom } from "@/hooks/useGameRoom";
+import { useRoomSession } from "@/hooks/useRoomSession";
 import { useRPGGame } from "@/hooks/useRPGGame";
 import RPGClassIntro from "@/components/rpg/RPGClassIntro";
 import RPGCombatantPanel from "@/components/rpg/RPGCombatantPanel";
@@ -16,6 +16,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 import Button from "@/components/Button";
 import Logo from "@/components/Logo";
 import { RPGCard as RPGCardData, RPGCombatant, RPG_MODES, RPGRoundEvent } from "@/lib/rpgTypes";
+import PlayerChip from "@/components/PlayerChip";
 
 function getChosenCardForCombatant(
   combatant?: RPGCombatant
@@ -35,7 +36,7 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
   const code = params.code.toUpperCase();
 
-  const { room, selfId, notFound } = useGameRoom(code);
+  const { room, selfId, notFound, kicked, backToConfig, backToGameSelect, kickPlayer } = useRoomSession(code);
   const { state, selectCard, rerollHand, newGame } = useRPGGame(code);
 
   const [showResultModal, setShowResultModal] = useState(false);
@@ -71,97 +72,16 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
     return map;
   }, [room?.players]);
 
-  const selfCombatant = state && selfId
-    ? state.combatants[selfId]
-    : undefined;
-
-  const selfTeam = selfCombatant?.team ?? "a";
-  const allyIds = state
-    ? selfTeam === "a"
-      ? state.teamA
-      : state.teamB
-    : [];
-  const enemyIds = state
-    ? selfTeam === "a"
-      ? state.teamB
-      : state.teamA
-    : [];
-
-  const revealEntries = state
-    ? [
-        ...(selfId && selfCombatant
-          ? [{
-              id: selfId,
-              ownerLabel: "VOCÊ",
-              card: getChosenCardForCombatant(selfCombatant),
-            }]
-          : []),
-        ...(enemyIds[0]
-          ? [{
-              id: enemyIds[0],
-              ownerLabel: "OPONENTE",
-              card: getChosenCardForCombatant(state.combatants[enemyIds[0]]),
-            }]
-          : []),
-      ].filter(
-        (
-          item
-        ): item is {
-          id: string;
-          ownerLabel: string;
-          card: RPGCardData;
-        } => Boolean(item.card)
-      )
-    : [];
-
-  const revealVisible = Boolean(
-    state &&
-    revealEntries.length > 0 &&
-    (state.phase === "resolved" || state.phase === "finished")
-  );
-
-
-  const eventsFor = (id: string): RPGRoundEvent[] => {
-    if (
-      !state ||
-      (state.phase !== "resolved" &&
-        state.phase !== "finished")
-    ) {
-      return [];
+  useEffect(() => {
+    if (!room) return;
+    if (room.gameId !== "rpg" || (room.status !== "playing" && room.status !== "finished")) {
+      if (room.roomMode === "duo") {
+        router.push(`/sala/${room.code}`);
+      } else {
+        router.push("/solo");
+      }
     }
-
-    return state.lastRoundEvents.filter(
-      (e) => (e.targetId ?? e.actorId) === id
-    );
-  };
-
-  const gameInstanceKey = state
-    ? `${state.startedAt}-${state.finishedAt ?? "active"}`
-    : "loading";
-
-  const eventsKey = state
-    ? state.round * 1000 +
-      (state.resolvedAt ? 1 : 0)
-    : 0;
-
-  const introCombatants = state
-    ? state.order.map((id) => ({
-        id,
-        classId: state.combatants[id].classId,
-        label:
-          namesById[id] ?? "Jogador",
-        isSelf: id === selfId,
-      }))
-    : [];
-
-  const isChoosingPhase = state?.phase === "choosing";
-  const handDisabled =
-    !selfCombatant?.alive ||
-    selfCombatant?.skippingThisRound ||
-    !isChoosingPhase;
-  const alreadyChosen = Boolean(
-    selfCombatant?.chosenCardId
-  );
+  }, [room, router]);
 
   if (notFound) {
     return (
@@ -173,29 +93,126 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
     );
   }
 
-  if (!room || !state) {
+  if (kicked) return null;
+
+  // Se o host trocar de jogo (ou voltar pra escolha de jogo) enquanto o
+  // convidado ainda está nesta tela, o socket vai começar a mandar
+  // `game:state` de outro jogo (formato diferente) pra cá — sem essa trava,
+  // ler `state.combatants[selfId]` explode com o formato errado. Por isso
+  // essas contas (que dependem de `state`) só são feitas DEPOIS desta guarda.
+  if (!room || !state || room.gameId !== "rpg") {
     return <LoadingScreen label="Preparando a arena..." />;
   }
 
+  const selfCombatant = selfId ? state.combatants[selfId] : undefined;
+
+  const selfTeam = selfCombatant?.team ?? "a";
+  const allyIds = selfTeam === "a" ? state.teamA : state.teamB;
+  const enemyIds = selfTeam === "a" ? state.teamB : state.teamA;
+
+  const revealEntries = [
+    ...(selfId && selfCombatant
+      ? [{
+          id: selfId,
+          ownerLabel: "VOCÊ",
+          card: getChosenCardForCombatant(selfCombatant),
+        }]
+      : []),
+    ...(enemyIds[0]
+      ? [{
+          id: enemyIds[0],
+          ownerLabel: "OPONENTE",
+          card: getChosenCardForCombatant(state.combatants[enemyIds[0]]),
+        }]
+      : []),
+  ].filter(
+    (
+      item
+    ): item is {
+      id: string;
+      ownerLabel: string;
+      card: RPGCardData;
+    } => Boolean(item.card)
+  );
+
+  const revealVisible = Boolean(
+    revealEntries.length > 0 &&
+    (state.phase === "resolved" || state.phase === "finished")
+  );
+
+  const eventsFor = (id: string): RPGRoundEvent[] => {
+    if (state.phase !== "resolved" && state.phase !== "finished") {
+      return [];
+    }
+
+    return state.lastRoundEvents.filter(
+      (e) => (e.targetId ?? e.actorId) === id
+    );
+  };
+
+  const gameInstanceKey = `${state.startedAt}-${state.finishedAt ?? "active"}`;
+
+  const eventsKey = state.round * 1000 + (state.resolvedAt ? 1 : 0);
+
+  const introCombatants = state.order.map((id) => ({
+    id,
+    classId: state.combatants[id].classId,
+    label: namesById[id] ?? "Jogador",
+    isSelf: id === selfId,
+  }));
+
+  const isChoosingPhase = state.phase === "choosing";
+  const handDisabled =
+    !selfCombatant?.alive ||
+    selfCombatant?.skippingThisRound ||
+    !isChoosingPhase;
+  const alreadyChosen = Boolean(selfCombatant?.chosenCardId);
+
+  const isHost = Boolean(selfId && room.hostId === selfId);
+  const handleBackToConfig = () => {
+    if (room.roomMode === "duo") {
+      backToConfig();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
+  const handleBackToGameSelect = () => {
+    if (room.roomMode === "duo") {
+      backToGameSelect();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
 
   return (
     <main className="relative flex min-h-screen flex-col items-center gap-4 bg-cozy-gradient px-4 py-6 sm:py-8">
       {state.phase === "intro" && <RPGClassIntro combatants={introCombatants} />}
 
-      <div className="glass-panel flex w-full max-w-[min(94vw,560px)] items-center justify-between rounded-xl3 p-3.5">
-        <button
-          onClick={() => router.push("/")}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
-          aria-label="Voltar"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <span className="font-display text-sm font-semibold text-ink">
-          Rodada {Math.min(state.round, state.maxRounds)}/{state.maxRounds}
-        </span>
-        <span className="text-xs text-ink-soft">
-          {RPG_MODES[state.mode].emoji} {RPG_MODES[state.mode].label}
-        </span>
+      <div className="glass-panel flex w-full max-w-[min(94vw,560px)] flex-col gap-2 rounded-xl3 p-3.5">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handleBackToConfig}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white/60 hover:text-ink"
+            aria-label="Voltar"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <span className="font-display text-sm font-semibold text-ink">
+            Rodada {Math.min(state.round, state.maxRounds)}/{state.maxRounds}
+          </span>
+          <span className="text-xs text-ink-soft">
+            {RPG_MODES[state.mode].emoji} {RPG_MODES[state.mode].label}
+          </span>
+        </div>
+        {room.roomMode === "duo" && (
+          <div className="flex items-center justify-center gap-2">
+            {room.players.map((p) => (
+              <PlayerChip key={p.id} player={p} isHost={isHost} selfId={selfId} onKick={kickPlayer} />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex w-full max-w-[min(94vw,560px)] flex-col gap-2">
@@ -336,7 +353,7 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
           setShowResultModal(false);
           newGame();
         }}
-        onBackToGames={() => router.push("/")}
+        onBackToGames={handleBackToGameSelect}
         state={state}
         namesById={namesById}
         selfId={selfId}

@@ -131,6 +131,13 @@ function PuzzlePieceImpl({
         zIndex: isOwnHold ? 500 : isHeld ? 300 : 10 + row * cols + col,
         touchAction: "none",
         willChange: isOwnHold || isHeld ? "transform" : "auto",
+        // Ajuda alguns navegadores mobile (Safari/Chrome Android) a manterem
+        // a camada de composição estável durante o zoom do quadro — sem
+        // isso, um elemento com `clip-path` dentro de um ancestral que está
+        // sendo escalado via transform pode "piscar"/sumir brevemente
+        // enquanto a GPU rasteriza a camada de novo.
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
         cursor: isSolved ? "default" : isHeld && !isOwnHold ? "not-allowed" : isOwnHold ? "grabbing" : "grab",
       }}
     >
@@ -140,7 +147,7 @@ function PuzzlePieceImpl({
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: `linear-gradient(160deg, rgba(255,255,255,0.32), rgba(255,255,255,0) 45%, rgba(74,63,69,0.05) 100%), url(${imageSrc})`,
+          backgroundImage: `linear-gradient(160deg, rgba(255,255,255,0.32), rgba(255,255,255,0) 45%, rgba(74,63,69,0.05) 100%), url("${imageSrc}")`,
           backgroundBlendMode: "overlay, normal",
           backgroundSize: `100% 100%, ${bgFullWidth}px ${bgFullHeight}px`,
           backgroundPosition: `0 0, ${bgX}px ${bgY}px`,

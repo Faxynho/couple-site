@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { COLOR_DIFFICULTIES, ColorDifficulty } from "@/lib/colorTypes";
 import { Player } from "@/lib/types";
+import PlayerChip from "@/components/PlayerChip";
 
 interface ColorsControlsProps {
   roomCode: string;
@@ -15,6 +16,8 @@ interface ColorsControlsProps {
   totalRounds: number;
   players: Player[];
   selfId: string | null;
+  isHost?: boolean;
+  onKick?: (playerId: string) => void;
   scores: Record<string, number>;
   onBack: () => void;
 }
@@ -29,6 +32,8 @@ export default function ColorsControls({
   totalRounds,
   players,
   selfId,
+  isHost,
+  onKick,
   scores,
   onBack,
 }: ColorsControlsProps) {
@@ -83,18 +88,19 @@ export default function ColorsControls({
           {players.map((p) => {
             const tag = roleTag(p.id);
             return (
-              <span
+              <PlayerChip
                 key={p.id}
-                className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
-                style={{ opacity: p.connected ? 1 : 0.5 }}
+                player={p}
+                isHost={isHost}
+                selfId={selfId}
+                onKick={onKick}
+                labelOverride={p.id === selfId ? "Você" : p.name}
               >
-                <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
                 {tag && <span>{tag}</span>}
-                {p.id === selfId ? "Você" : p.name}
                 {!isCooperative && (
                   <span className="font-display font-semibold tabular-nums">{(scores[p.id] ?? 0).toFixed(1)}</span>
                 )}
-              </span>
+              </PlayerChip>
             );
           })}
           {isCooperative && (

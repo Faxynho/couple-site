@@ -1,5 +1,14 @@
 export type GameId = "puzzle" | "sudoku" | "colors" | "crossword" | "wordsearch" | "quiz" | "rpg";
 
+/** Mesma ordem do catálogo (`GAMES`, em games.ts) — usada para sortear a
+ *  sugestão de sequência de jogos da sala Duo. */
+export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "crossword", "wordsearch", "quiz", "rpg"];
+
+/** "solo": sessão de um único jogador — sem convite, sem convidado, sem sala
+ *  persistente. "duo": sala pensada para dois jogadores, criada ANTES de
+ *  escolher o jogo, que sobrevive à troca de jogo/modo e a quedas de conexão. */
+export type RoomMode = "solo" | "duo";
+
 export interface Player {
   id: string;
   name: string;
@@ -7,11 +16,16 @@ export interface Player {
   connected: boolean;
 }
 
-export type RoomStatus = "waiting" | "ready" | "playing" | "finished";
+/** "lobby": sala Duo criada, ainda sem jogo escolhido. "waiting"/"ready":
+ *  jogo escolhido, tela de configuração antes de iniciar. "playing"/"finished":
+ *  partida em andamento/terminada. */
+export type RoomStatus = "lobby" | "waiting" | "ready" | "playing" | "finished";
 
 export interface RoomSnapshot {
   code: string;
-  gameId: GameId;
+  roomMode: RoomMode;
+  /** `null` só enquanto uma sala Duo ainda não escolheu o primeiro jogo. */
+  gameId: GameId | null;
   status: RoomStatus;
   players: Player[];
   maxPlayers: number;
@@ -23,6 +37,10 @@ export interface RoomSnapshot {
   pendingColorMode: string;
   pendingSeerId: string | null;
   pendingMatchMode: string;
+  /** Sugestão de sequência de jogos da sala Duo (sem efeito numa sala Solo). */
+  sequence: GameId[];
+  /** Ids (dentro de `sequence`) já jogados até o fim desde o último sorteio. */
+  sequenceProgress: GameId[];
 }
 
 export interface PieceGroup {

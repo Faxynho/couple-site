@@ -7,6 +7,16 @@
 
 export type GameId = "puzzle" | "sudoku" | "colors" | "crossword" | "wordsearch" | "quiz" | "rpg"; // adicione novos ids aqui
 
+/** Lista de todos os ids de jogo, na mesma ordem do catálogo — usada para
+ *  sortear a sugestão de sequência de jogos da sala Duo. */
+export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "crossword", "wordsearch", "quiz", "rpg"];
+
+/** "solo": sessão de um único jogador, sem convite nem convidado — a sala
+ *  existe só para reaproveitar a mesma infraestrutura de motor de jogo.
+ *  "duo": sala persistente pensada para dois jogadores, criada ANTES de
+ *  escolher o jogo, que sobrevive à troca de jogo/modo e a quedas de conexão. */
+export type RoomMode = "solo" | "duo";
+
 export interface Player {
   // Identidade PERSISTENTE do jogador (gerada uma vez pelo cliente e salva no
   // navegador) — NÃO é o socket.id. O socket.id muda a cada reconexão de
@@ -19,15 +29,24 @@ export interface Player {
   connected: boolean;
 }
 
-export type RoomStatus = "waiting" | "ready" | "playing" | "finished";
+/** "lobby": sala Duo criada, ainda sem jogo escolhido — mostra o catálogo de
+ *  jogos para o anfitrião escolher. "waiting"/"ready": jogo escolhido, tela de
+ *  configuração (dificuldade/modo) antes de iniciar. "playing"/"finished":
+ *  partida em andamento/terminada. */
+export type RoomStatus = "lobby" | "waiting" | "ready" | "playing" | "finished";
 
 export interface RoomSnapshot {
   code: string;
-  gameId: GameId;
+  roomMode: RoomMode;
+  /** Jogo atualmente selecionado na sala — `null` enquanto a sala Duo está no
+   *  lobby (nenhum jogo escolhido ainda). Nunca é `null` numa sala Solo. */
+  gameId: GameId | null;
   status: RoomStatus;
   players: Player[];
   maxPlayers: number;
-  /** socket.id de quem criou a sala — só ele pode mudar a configuração e iniciar. */
+  /** id PERSISTENTE (Player.id) de quem criou a sala (ou de quem herdou a
+   *  posição depois que o anfitrião original caiu) — só ele pode mudar a
+   *  configuração, trocar de jogo/modo e expulsar o convidado. */
   hostId: string | null;
   /** Configuração escolhida pelo host, sincronizada em tempo real com o outro jogador. */
   pendingImageId: string | null;
@@ -44,6 +63,12 @@ export interface RoomSnapshot {
    *  O Quiz reaproveita o mesmo campo com valores "solo" | "together" | "duel".
    *  O Mini RPG reaproveita o mesmo campo com valores "1v1" | "soloBot" | "duoBot". */
   pendingMatchMode: string;
+  /** Sugestão de sequência de jogos da sala Duo: uma ordem sorteada com todos
+   *  os jogos do catálogo. Sem efeito numa sala Solo. */
+  sequence: GameId[];
+  /** Ids (dentro de `sequence`) que já foram jogados até o fim desde o último
+   *  sorteio — resetado toda vez que a sequência é sorteada de novo. */
+  sequenceProgress: GameId[];
 }
 
 /**

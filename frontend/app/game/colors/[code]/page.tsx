@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
-import { useGameRoom } from "@/hooks/useGameRoom";
+import { useRoomSession } from "@/hooks/useRoomSession";
 import { useColorGame } from "@/hooks/useColorGame";
 import ColorMemorizeView from "@/components/colors/ColorMemorizeView";
 import ColorPicker from "@/components/colors/ColorPicker";
@@ -21,7 +21,7 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
   const router = useRouter();
   const code = params.code.toUpperCase();
 
-  const { room, selfId, notFound } = useGameRoom(code);
+  const { room, selfId, notFound, kicked, backToConfig, backToGameSelect, kickPlayer } = useRoomSession(code);
   const { state, livePreview, submitGuess, nextRound, newGame, sendLivePreview } = useColorGame(code);
 
   const [localPhase, setLocalPhase] = useState<"memorize" | "guess">("memorize");
@@ -44,6 +44,19 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
     wasFinishedRef.current = Boolean(state?.finished);
   }, [state?.finished, state?.finishedAt]);
 
+  useEffect(() => {
+    if (!room) return;
+    if (room.gameId !== "colors" || (room.status !== "playing" && room.status !== "finished")) {
+      if (room.roomMode === "duo") {
+        router.push(`/sala/${room.code}`);
+      } else {
+        router.push("/solo");
+      }
+    }
+  }, [room, router]);
+
+  if (kicked) return null;
+
   if (notFound) {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-5 text-center">
@@ -54,9 +67,31 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
     );
   }
 
-  if (!room || !state) {
+  // Se o host trocar de jogo (ou voltar pra escolha de jogo) enquanto o
+  // convidado ainda está nesta tela, o socket vai começar a mandar
+  // `game:state` de outro jogo (formato diferente) pra cá — sem essa trava,
+  // ler `state.rounds`/`state.mode` explode com o formato errado.
+  if (!room || !state || room.gameId !== "colors") {
     return <LoadingScreen label="Preparando as cores..." />;
   }
+
+  const isHost = Boolean(selfId && room.hostId === selfId);
+  const handleBackToConfig = () => {
+    if (room.roomMode === "duo") {
+      backToConfig();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
+  const handleBackToGameSelect = () => {
+    if (room.roomMode === "duo") {
+      backToGameSelect();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
 
   const isCooperative = state.mode === "cooperative";
   const isSeer = isCooperative && selfId === state.seerId;
@@ -102,8 +137,10 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
         totalRounds={state.totalRounds}
         players={room.players}
         selfId={selfId}
+        isHost={isHost}
+        onKick={kickPlayer}
         scores={scores}
-        onBack={() => router.push("/")}
+        onBack={handleBackToConfig}
       />
 
       <AnimatePresence initial={false}>
@@ -228,7 +265,7 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
           setShowWinModal(false);
           newGame(state.difficulty);
         }}
-        onBack={() => router.push("/")}
+        onBack={handleBackToGameSelect}
         onClose={() => setShowWinModal(false)}
       />
     </main>

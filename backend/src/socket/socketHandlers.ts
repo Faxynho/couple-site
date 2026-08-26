@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Server, Socket } from "socket.io";
 import { RoomManager } from "../rooms/RoomManager";
-import { GameId } from "../types";
+import { ALL_GAME_IDS, GameId, RoomMode } from "../types";
 import { isValidImageId, isValidDifficulty } from "../games/puzzle/puzzleImages";
 import { isValidSudokuDifficulty } from "../games/sudoku/sudokuGenerator";
 import { isValidSudokuMode } from "../games/sudoku/SudokuGame";
@@ -123,7 +123,7 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
 }
 
 /** Retorna a versão pública (sem `game.gameState` cru) do estado de acordo com o jogo/jogador. */
-function getMaskedStateForPlayer(room: { gameId: GameId; gameState: unknown }, playerId: string): unknown {
+function getMaskedStateForPlayer(room: { gameId: GameId | null; gameState: unknown }, playerId: string): unknown {
   if (room.gameId === "colors") return getColorsStateForPlayer(room.gameState, playerId);
   if (room.gameId === "crossword") return getCrosswordStateForPlayer(room.gameState, playerId);
   if (room.gameId === "wordsearch") return getWordSearchStateForPlayer(room.gameState, playerId);
@@ -465,8 +465,16 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
   io.on("connection", (socket: Socket<any, any, any, SocketData>) => {
     socket.on(
       "room:create",
-      (payload: { gameId: GameId; playerName: string; playerId?: string }, callback: AckCallback) => {
-        const room = roomManager.createRoom(payload.gameId);
+      (
+        payload: { roomMode: RoomMode; gameId?: GameId; playerName: string; playerId?: string },
+        callback: AckCallback
+      ) => {
+        const roomMode: RoomMode = payload.roomMode === "solo" ? "solo" : "duo";
+        // Sala Solo já nasce com o jogo escolhido (o jogador acabou de
+        // escolher na grade); sala Duo sempre nasce sem jogo (lobby) — o
+        // gameId enviado, se houver, é ignorado nesse caso.
+        const gameId = roomMode === "solo" ? payload.gameId ?? null : null;
+        const room = roomManager.createRoom(roomMode, gameId);
         const playerId = payload.playerId?.trim() || randomUUID();
         const player = room.addPlayer(playerId, payload.playerName);
         room.setSocketId(playerId, socket.id);
@@ -487,6 +495,10 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
           return;
         }
         const playerId = payload.playerId?.trim() || randomUUID();
+        if (room.roomMode === "solo" && !room.players.has(playerId)) {
+          callback?.({ ok: false, error: "Essa sala é de uma sessão solo e não aceita outro jogador." });
+          return;
+        }
         if (room.players.size >= room.maxPlayers && !room.players.has(playerId)) {
           callback?.({ ok: false, error: "Essa sala já está completa." });
           return;
@@ -576,6 +588,73 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
     );
 
+    // ---- Sala Duo: escolher jogo / voltar / expulsar / sequência ----
+    // (Uma sala Solo nunca usa esses eventos — nasce direto com o jogo
+    // escolhido e não tem convidado para expulsar.)
+
+    // Só o host chama isso — escolhe (ou troca) o jogo ativo da sala sem
+    // sair dela. Funciona tanto saindo do lobby (primeira escolha) quanto
+    // trocando de jogo a qualquer momento depois.
+    socket.on("room:selectGame", (payload: { gameId: GameId }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      if (!payload?.gameId || !ALL_GAME_IDS.includes(payload.gameId)) return;
+      room.selectGame(payload.gameId);
+      broadcastRoom(io, code!, roomManager);
+    });
+
+    // Só o host chama isso — volta da partida atual (em andamento ou já
+    // terminada) para a tela de configuração do MESMO jogo, sem sair da sala.
+    socket.on("room:backToConfig", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      room.backToConfig();
+      broadcastRoom(io, code!, roomManager);
+    });
+
+    // Só o host chama isso — volta mais um passo, para a escolha de jogo
+    // (lobby da sala), sem tirar ninguém da sala.
+    socket.on("room:backToGameSelect", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      room.backToGameSelect();
+      broadcastRoom(io, code!, roomManager);
+    });
+
+    // Só o host chama isso — sorteia uma nova ordem para a sugestão de
+    // sequência de jogos e zera o progresso marcado.
+    socket.on("room:shuffleSequence", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      room.shuffleSequence();
+      broadcastRoom(io, code!, roomManager);
+    });
+
+    // Só o host chama isso — remove o convidado da sala definitivamente
+    // (diferente de uma desconexão, ele não recupera o lugar reconectando).
+    // O convidado expulso recebe um evento dedicado para sair da tela.
+    socket.on("room:kick", (payload: { targetPlayerId: string }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      const targetId = payload?.targetPlayerId;
+      if (!targetId || targetId === socket.data.playerId || !room.players.has(targetId)) return;
+
+      const targetSocketId = room.getSocketId(targetId);
+      room.removePlayer(targetId);
+      const targetSocket = targetSocketId ? io.sockets.sockets.get(targetSocketId) : undefined;
+      if (targetSocket) {
+        targetSocket.emit("room:kicked", { code: room.code });
+        targetSocket.leave(room.code);
+        targetSocket.data.roomCode = undefined;
+      }
+      broadcastRoom(io, code!, roomManager);
+    });
+
     socket.on("game:start", (payload: StartPayload | undefined, callback: AckCallback) => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
@@ -585,6 +664,10 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
       if (!socket.data.playerId || !room.isHost(socket.data.playerId)) {
         callback?.({ ok: false, error: "Só o anfitrião da sala pode iniciar a partida." });
+        return;
+      }
+      if (!room.gameId) {
+        callback?.({ ok: false, error: "Escolha um jogo antes de começar." });
         return;
       }
       if (room.gameId === "puzzle" && !room.pendingImageId) {

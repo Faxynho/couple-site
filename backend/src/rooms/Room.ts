@@ -1,15 +1,28 @@
-import { GameId, Player, RoomSnapshot, RoomStatus } from "../types";
+import { ALL_GAME_IDS, GameId, Player, RoomMode, RoomSnapshot, RoomStatus } from "../types";
 import { getGameEngine } from "../games/GameRegistry";
 
 const PLAYER_COLORS = ["#F2A6B8", "#9FC3E8"]; // rosa e azul pastel, um por jogador
 const DEFAULT_PENDING_DIFFICULTY = "medium";
 
+function shuffle<T>(items: T[]): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export class Room {
   readonly code: string;
-  readonly gameId: GameId;
-  readonly maxPlayers = 2;
+  readonly roomMode: RoomMode;
+  /** Jogo selecionado no momento — `null` só é possível numa sala Duo que
+   *  ainda não escolheu o primeiro jogo (status "lobby"). Mutável: é isso que
+   *  permite trocar de jogo sem sair da sala. */
+  gameId: GameId | null;
+  readonly maxPlayers: number;
   players: Map<string, Player> = new Map();
-  status: RoomStatus = "waiting";
+  status: RoomStatus;
   gameState: unknown = null;
   createdAt = Date.now();
 
@@ -20,7 +33,10 @@ export class Room {
    *  qual conexão enviar os eventos direcionados a um jogador específico. */
   private socketIds: Map<string, string> = new Map();
 
-  /** O primeiro jogador a entrar vira o host — só ele configura e inicia a partida. */
+  /** O primeiro jogador a entrar vira o host — só ele configura, troca de
+   *  jogo/modo, expulsa o convidado e inicia a partida. Se o host cair da
+   *  conexão (ou sair de propósito) e o outro jogador ainda estiver
+   *  conectado, a posição passa automaticamente para ele (ver markDisconnected). */
   hostId: string | null = null;
 
   /** Configuração da partida escolhida pelo host, sincronizada em tempo real
@@ -32,12 +48,22 @@ export class Room {
   /** Específico da Memória de Cores. */
   pendingColorMode = "competitive";
   pendingSeerId: string | null = null;
-  /** Específico do Palavras Cruzadas e do Caça-Palavras: "together" ou "duel". */
+  /** Específico do Palavras Cruzadas, Caça-Palavras, Quiz e Mini RPG. */
   pendingMatchMode = "together";
 
-  constructor(code: string, gameId: GameId) {
+  /** Sugestão de sequência de jogos (só relevante em salas Duo). */
+  sequence: GameId[] = [];
+  sequenceProgress: GameId[] = [];
+
+  constructor(code: string, roomMode: RoomMode, gameId: GameId | null = null) {
     this.code = code;
+    this.roomMode = roomMode;
+    this.maxPlayers = roomMode === "solo" ? 1 : 2;
     this.gameId = gameId;
+    this.status = gameId ? "waiting" : "lobby";
+    if (roomMode === "duo") {
+      this.sequence = shuffle(ALL_GAME_IDS);
+    }
   }
 
   addPlayer(id: string, name: string): Player | null {
@@ -90,6 +116,10 @@ export class Room {
     return this.socketIds.get(playerId);
   }
 
+  /** Chamado tanto numa queda de conexão quanto numa saída deliberada
+   *  (room:leave). Marca o jogador como desconectado e, se ele era o host,
+   *  passa a posição para o outro jogador (se algum ainda estiver
+   *  conectado) — assim a sala nunca fica "sem dono" e travada. */
   markDisconnected(id: string) {
     const player = this.players.get(id);
     if (player) {
@@ -99,10 +129,27 @@ export class Room {
       }
     }
     if (this.gameState) {
-      const engine = getGameEngine(this.gameId);
+      const engine = getGameEngine(this.gameId as GameId);
       if (engine.releasePlayer) {
         this.gameState = engine.releasePlayer(this.gameState, id);
       }
+    }
+    if (this.hostId === id) {
+      const successor = [...this.players.values()].find((p) => p.id !== id && p.connected);
+      if (successor) this.hostId = successor.id;
+    }
+  }
+
+  /** Remove um jogador definitivamente da sala (usado só para expulsar o
+   *  convidado) — diferente de markDisconnected, que mantém o lugar dele
+   *  reservado para uma reconexão. Depois de expulso, o código da sala
+   *  continua o mesmo, mas essa identidade específica não faz mais parte dela. */
+  removePlayer(id: string) {
+    this.players.delete(id);
+    this.socketIds.delete(id);
+    if (this.hostId === id) {
+      const successor = [...this.players.values()][0];
+      this.hostId = successor?.id ?? null;
     }
   }
 
@@ -116,6 +163,66 @@ export class Room {
 
   isHost(playerId: string): boolean {
     return this.hostId === playerId;
+  }
+
+  /** Configuração inicial de cada jogo ao ser selecionado — os valores de
+   *  modo mudam conforme o tipo de sala: uma sala Solo já entra no único modo
+   *  que faz sentido sozinho; uma sala Duo entra no modo cooperativo padrão
+   *  (nunca em "solo"/"soloBot", que não fazem sentido com o convidado presente). */
+  private defaultMatchModeFor(gameId: GameId): string {
+    if (gameId === "quiz") return this.roomMode === "solo" ? "solo" : "together";
+    if (gameId === "rpg") return this.roomMode === "solo" ? "soloBot" : "1v1";
+    return "together"; // crossword / wordsearch / sudoku — puzzle/colors ignoram este campo
+  }
+
+  /** Só o host chama isso (numa sala Duo) — troca o jogo ativo da sala sem
+   *  sair dela, reiniciando a configuração pendente com os padrões daquele
+   *  jogo e voltando para a tela de configuração (nunca inicia sozinho). */
+  selectGame(gameId: GameId) {
+    this.gameId = gameId;
+    this.gameState = null;
+    this.pendingImageId = null;
+    this.pendingImageWidth = null;
+    this.pendingImageHeight = null;
+    this.pendingDifficulty = DEFAULT_PENDING_DIFFICULTY;
+    this.pendingColorMode = "competitive";
+    this.pendingSeerId = null;
+    this.pendingMatchMode = this.defaultMatchModeFor(gameId);
+    this.status = this.players.size === this.maxPlayers ? "ready" : "waiting";
+  }
+
+  /** "Voltar" a partir do jogo em andamento (ou já terminado) para a tela de
+   *  configuração do MESMO jogo — mantém dificuldade/modo já escolhidos, só
+   *  descarta a partida atual, para trocar o modo (ex.: Juntos -> Duelo) sem
+   *  sair da sala. */
+  backToConfig() {
+    if (!this.gameId) return;
+    this.gameState = null;
+    this.status = this.players.size === this.maxPlayers ? "ready" : "waiting";
+  }
+
+  /** "Voltar" mais uma vez — sai da configuração/jogo atual e volta para a
+   *  escolha de jogo (lobby da sala), sem tirar ninguém da sala. */
+  backToGameSelect() {
+    this.gameId = null;
+    this.gameState = null;
+    this.status = "lobby";
+  }
+
+  /** Sorteia uma nova ordem para a sugestão de sequência de jogos e zera o
+   *  progresso marcado — só faz sentido numa sala Duo. */
+  shuffleSequence() {
+    this.sequence = shuffle(ALL_GAME_IDS);
+    this.sequenceProgress = [];
+  }
+
+  /** Marca um jogo como já jogado nesta rodada da sequência sugerida (chamado
+   *  sempre que uma partida termina) — idempotente. */
+  private markSequenceProgress(gameId: GameId) {
+    if (this.roomMode !== "duo") return;
+    if (!this.sequenceProgress.includes(gameId)) {
+      this.sequenceProgress = [...this.sequenceProgress, gameId];
+    }
   }
 
   /** Só o host chama isso — atualiza a configuração pendente e é transmitido via room:update. */
@@ -138,6 +245,7 @@ export class Room {
   }
 
   startGame(overrides?: Record<string, unknown>) {
+    if (!this.gameId) return;
     const engine = getGameEngine(this.gameId);
 
     // Modo cooperativo da Memória de Cores exige dois jogadores com papéis
@@ -154,10 +262,11 @@ export class Room {
       colorMode = "competitive";
     }
 
-    // Palavras Cruzadas e Caça-Palavras usam um modo genérico "together"/"duel"
-    // (independente do `colorMode`, que é específico da Memória de Cores).
-    // O Quiz reaproveita o mesmo campo com valores "solo" | "together" | "duel".
-    // O Mini RPG reaproveita o mesmo campo com valores "1v1" | "soloBot" | "duoBot".
+    // Palavras Cruzadas, Caça-Palavras e Sudoku usam um modo genérico
+    // "together"/"duel" (independente do `colorMode`, que é específico da
+    // Memória de Cores). O Quiz reaproveita o mesmo campo com valores
+    // "solo" | "together" | "duel". O Mini RPG reaproveita o mesmo campo com
+    // valores "1v1" | "soloBot" | "duoBot".
     const matchMode =
       this.gameId === "crossword" ||
       this.gameId === "wordsearch" ||
@@ -185,6 +294,7 @@ export class Room {
   }
 
   resetGame() {
+    if (!this.gameId) return;
     const engine = getGameEngine(this.gameId);
     if (this.gameState) {
       this.gameState = engine.reset(this.gameState);
@@ -193,17 +303,20 @@ export class Room {
   }
 
   applyAction(action: unknown, playerId: string) {
+    if (!this.gameId) return;
     const engine = getGameEngine(this.gameId);
     if (!this.gameState) return;
     this.gameState = engine.applyAction(this.gameState, action, playerId);
     if (engine.isSolved(this.gameState)) {
       this.status = "finished";
+      this.markSequenceProgress(this.gameId);
     }
   }
 
   toSnapshot(): RoomSnapshot {
     return {
       code: this.code,
+      roomMode: this.roomMode,
       gameId: this.gameId,
       status: this.status,
       players: [...this.players.values()],
@@ -216,6 +329,8 @@ export class Room {
       pendingColorMode: this.pendingColorMode,
       pendingSeerId: this.pendingSeerId,
       pendingMatchMode: this.pendingMatchMode,
+      sequence: this.sequence,
+      sequenceProgress: this.sequenceProgress,
     };
   }
 }

@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import { getPlayerId } from "@/lib/playerId";
-import { GameId, Player, RoomSnapshot } from "@/lib/types";
+import { setStoredRoomCode } from "@/lib/roomSession";
+import { GameId, Player, RoomMode, RoomSnapshot } from "@/lib/types";
 
 interface CreateOrJoinResult {
   ok: boolean;
@@ -12,38 +13,43 @@ interface CreateOrJoinResult {
   error?: string;
 }
 
+/**
+ * Hook de ENTRADA — cria uma sala Solo (já com o jogo escolhido) ou uma sala
+ * Duo (sempre sem jogo, no lobby) e, no caso Solo, também permite configurar
+ * e iniciar em seguida. Depois do create/join a página redireciona para
+ * `/sala/[code]` (Duo) ou `/game/[gameId]/[code]` (Solo), onde quem cuida da
+ * sincronização contínua é o `useRoomSession`.
+ */
 export function useRoom() {
   const [room, setRoom] = useState<RoomSnapshot | null>(null);
-  // A identidade de "quem sou eu" agora é o id persistente do navegador, não
-  // mais o socket.id (que mudava a cada reconexão e fazia a UI achar que
-  // você tinha virado outra pessoa).
   const [selfId] = useState<string | null>(() => getPlayerId() || null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const socket = getSocket();
-
     const onRoomUpdate = (snapshot: RoomSnapshot) => setRoom(snapshot);
-
     socket.on("room:update", onRoomUpdate);
-
     return () => {
       socket.off("room:update", onRoomUpdate);
     };
   }, []);
 
-  const createRoom = useCallback((gameId: GameId, playerName: string) => {
+  const createRoom = useCallback((roomMode: RoomMode, playerName: string, gameId?: GameId) => {
     setLoading(true);
     setError(null);
     return new Promise<CreateOrJoinResult>((resolve) => {
       getSocket().emit(
         "room:create",
-        { gameId, playerName, playerId: getPlayerId() },
+        { roomMode, gameId, playerName, playerId: getPlayerId() },
         (res: CreateOrJoinResult) => {
           setLoading(false);
-          if (res.ok && res.room) setRoom(res.room);
-          else setError(res.error || "Não foi possível criar a sala.");
+          if (res.ok && res.room) {
+            setRoom(res.room);
+            if (res.room.roomMode === "duo") setStoredRoomCode(res.room.code);
+          } else {
+            setError(res.error || "Não foi possível criar a sala.");
+          }
           resolve(res);
         }
       );
@@ -59,17 +65,16 @@ export function useRoom() {
         { code: code.toUpperCase(), playerName, playerId: getPlayerId() },
         (res: CreateOrJoinResult) => {
           setLoading(false);
-          if (res.ok && res.room) setRoom(res.room);
-          else setError(res.error || "Não foi possível entrar na sala.");
+          if (res.ok && res.room) {
+            setRoom(res.room);
+            if (res.room.roomMode === "duo") setStoredRoomCode(res.room.code);
+          } else {
+            setError(res.error || "Não foi possível entrar na sala.");
+          }
           resolve(res);
         }
       );
     });
-  }, []);
-
-  const leaveRoom = useCallback(() => {
-    getSocket().emit("room:leave");
-    setRoom(null);
   }, []);
 
   const startGame = useCallback(() => {
@@ -98,5 +103,5 @@ export function useRoom() {
     []
   );
 
-  return { room, selfId, error, loading, createRoom, joinRoom, leaveRoom, startGame, setConfig };
+  return { room, selfId, error, loading, createRoom, joinRoom, startGame, setConfig };
 }

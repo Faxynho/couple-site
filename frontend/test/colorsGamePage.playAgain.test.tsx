@@ -21,8 +21,8 @@ vi.mock("next/navigation", () => ({
 const mockRoom = vi.fn();
 const mockColorGame = vi.fn();
 
-vi.mock("../hooks/useGameRoom", () => ({
-  useGameRoom: () => mockRoom(),
+vi.mock("../hooks/useRoomSession", () => ({
+  useRoomSession: () => mockRoom(),
 }));
 
 vi.mock("../hooks/useColorGame", () => ({
@@ -50,6 +50,7 @@ function freshState(gameNum: number): ColorMemoryState {
 
 const room: RoomSnapshot = {
   code: "ABCDE",
+  roomMode: "duo",
   gameId: "colors",
   status: "playing",
   players: [{ id: "self", name: "Andre", color: "#E893AA", connected: true }],
@@ -62,6 +63,8 @@ const room: RoomSnapshot = {
   pendingColorMode: "competitive",
   pendingSeerId: null,
   pendingMatchMode: "together",
+  sequence: [],
+  sequenceProgress: [],
 };
 
 describe("ColorsGamePage - fluxo de jogar de novo", () => {

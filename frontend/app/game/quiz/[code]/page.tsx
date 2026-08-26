@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { useGameRoom } from "@/hooks/useGameRoom";
+import { useRoomSession } from "@/hooks/useRoomSession";
 import { useQuizGame } from "@/hooks/useQuizGame";
 import QuizControls from "@/components/quiz/QuizControls";
 import QuizQuestionCard from "@/components/quiz/QuizQuestionCard";
@@ -17,11 +17,26 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
   const code = params.code.toUpperCase();
 
-  const { room, selfId, notFound } = useGameRoom(code);
+  const { room, selfId, notFound, kicked, backToConfig, backToGameSelect, kickPlayer } = useRoomSession(code);
   const { state, submitAnswer, newGame } = useQuizGame(code);
 
   const [showResultModal, setShowResultModal] = useState(false);
   const wasFinishedRef = useRef(false);
+
+  useEffect(() => {
+    if (kicked) router.push("/?aviso=expulso");
+  }, [kicked, router]);
+
+  useEffect(() => {
+    if (!room) return;
+    if (room.gameId !== "quiz" || (room.status !== "playing" && room.status !== "finished")) {
+      if (room.roomMode === "duo") {
+        router.push(`/sala/${room.code}`);
+      } else {
+        router.push("/solo");
+      }
+    }
+  }, [room, router]);
 
   useEffect(() => {
     if (state?.finished && !wasFinishedRef.current) {
@@ -36,6 +51,8 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
     wasFinishedRef.current = Boolean(state?.finished);
   }, [state?.finished, state?.finishedAt]);
 
+  if (kicked) return null;
+
   if (notFound) {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-5 text-center">
@@ -46,9 +63,29 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
     );
   }
 
-  if (!room || !state) {
+  if (!room || !state || room.gameId !== "quiz") {
     return <LoadingScreen label="Sorteando as perguntas..." />;
   }
+
+  const isHost = Boolean(selfId && room.hostId === selfId);
+  // Numa sala Duo, "voltar" leva para a configuração (sem sair da sala); numa
+  // sala Solo, não há sala para voltar — sai direto para a grade de jogos.
+  const handleBackToConfig = () => {
+    if (room.roomMode === "duo") {
+      backToConfig();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
+  const handleBackToGameSelect = () => {
+    if (room.roomMode === "duo") {
+      backToGameSelect();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
 
   const currentQuestion = state.questions[state.currentIndex];
   const isTogether = state.mode === "together";
@@ -103,8 +140,11 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
         questionStartedAt={state.questionStartedAt}
         timeLimitMs={state.timeLimitMs}
         players={players}
+        selfId={selfId}
+        isHost={isHost}
+        onKick={kickPlayer}
         onNewGame={(difficulty) => newGame(difficulty)}
-        onBack={() => router.push("/")}
+        onBack={handleBackToConfig}
       />
 
       <QuizPlayersBar players={players} scores={scores} hasAnswered={hasAnswered} selfId={selfId} />
@@ -131,7 +171,7 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
           setShowResultModal(false);
           newGame(state.difficulty);
         }}
-        onBackToGames={() => router.push("/")}
+        onBackToGames={handleBackToGameSelect}
         state={state}
         players={players}
         selfId={selfId}

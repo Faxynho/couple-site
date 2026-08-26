@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Check, Clock3, RotateCw, SlidersHorizontal } from "lucide-react";
 import { CROSSWORD_DIFFICULTIES, CrosswordDifficulty, CrosswordProgress } from "@/lib/crosswordTypes";
 import { MATCH_MODES, MatchMode } from "@/lib/matchModes";
+import PlayerChip from "@/components/PlayerChip";
 
 interface Player {
   id: string;
@@ -22,6 +23,8 @@ interface CrosswordControlsProps {
   players: Player[];
   progress: Record<string, CrosswordProgress>;
   selfId: string | null;
+  isHost?: boolean;
+  onKick?: (playerId: string) => void;
   onNewPuzzle: (difficulty?: string) => void;
   onBack: () => void;
 }
@@ -42,6 +45,8 @@ export default function CrosswordControls({
   players,
   progress,
   selfId,
+  isHost,
+  onKick,
   onNewPuzzle,
   onBack,
 }: CrosswordControlsProps) {
@@ -85,20 +90,14 @@ export default function CrosswordControls({
           {players.map((p) => {
             const playerFinished = Boolean(progress[p.id]?.finished);
             return (
-              <span
-                key={p.id}
-                className="flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-xs font-medium text-ink"
-                style={{ opacity: p.connected ? 1 : 0.5 }}
-              >
-                <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
-                {p.name}
+              <PlayerChip key={p.id} player={p} isHost={isHost} selfId={selfId} onKick={onKick}>
                 {mode === "duel" &&
                   (playerFinished ? (
                     <Check size={12} className="text-sage" />
                   ) : (
                     <span className="h-1.5 w-1.5 rounded-full bg-rose/70" />
                   ))}
-              </span>
+              </PlayerChip>
             );
           })}
         </div>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
-import { useGameRoom } from "@/hooks/useGameRoom";
+import { useRoomSession } from "@/hooks/useRoomSession";
 import { usePuzzle } from "@/hooks/usePuzzle";
 import PuzzleBoard from "@/components/PuzzleBoard";
 import SidePanel from "@/components/SidePanel";
@@ -25,7 +25,7 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
   const router = useRouter();
   const code = params.code.toUpperCase();
 
-  const { room, selfId, notFound } = useGameRoom(code);
+  const { room, selfId, notFound, kicked, backToConfig, backToGameSelect, kickPlayer } = useRoomSession(code);
   const { state, remoteDrags, pickup, drag, drop, resetGame, newImage } = usePuzzle(code);
   const { images } = usePuzzleImages();
 
@@ -47,6 +47,17 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.solved, state?.solvedAt]);
 
+  useEffect(() => {
+    if (!room) return;
+    if (room.gameId !== "puzzle" || (room.status !== "playing" && room.status !== "finished")) {
+      if (room.roomMode === "duo") {
+        router.push(`/sala/${room.code}`);
+      } else {
+        router.push("/solo");
+      }
+    }
+  }, [room, router]);
+
   if (notFound) {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-5 text-center">
@@ -59,9 +70,33 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
     );
   }
 
-  if (!room || !state) {
+  if (kicked) return null;
+
+  // Se o host trocar de jogo (ou voltar pra escolha de jogo) enquanto o
+  // convidado ainda está nesta tela, o socket vai começar a mandar
+  // `game:state` de outro jogo (formato diferente) pra cá — sem essa trava,
+  // ler `state.imageId`/`state.moves` explode com o formato errado.
+  if (!room || !state || room.gameId !== "puzzle") {
     return <LoadingScreen label="Preparando o quebra-cabeça..." />;
   }
+
+  const isHost = Boolean(selfId && room.hostId === selfId);
+  const handleBackToConfig = () => {
+    if (room.roomMode === "duo") {
+      backToConfig();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
+  const handleBackToGameSelect = () => {
+    if (room.roomMode === "duo") {
+      backToGameSelect();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
 
   const imageSrc = state.imageId;
   const finalElapsed = state.solved && state.solvedAt ? state.solvedAt - state.startedAt : 0;
@@ -89,6 +124,9 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
             solvedAt={state.solvedAt}
             moves={state.moves}
             players={room.players}
+            selfId={selfId}
+            isHost={isHost}
+            onKick={kickPlayer}
             onRestart={resetGame}
             onNewImage={() => {
               if (images.length === 0) return;
@@ -96,7 +134,7 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
               const next = images[(currentIndex + 1) % images.length];
               newImage(next.file, state.difficulty, next.width, next.height);
             }}
-            onBack={() => router.push("/")}
+            onBack={handleBackToConfig}
           />
         </div>
 
@@ -124,7 +162,7 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
         elapsedLabel={formatFinalTime(finalElapsed)}
         moves={state.moves}
         onPlayAgain={resetGame}
-        onBack={() => router.push("/")}
+        onBack={handleBackToGameSelect}
         onClose={() => setShowWinModal(false)}
       />
     </main>

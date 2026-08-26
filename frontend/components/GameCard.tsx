@@ -8,9 +8,11 @@ interface GameCardProps {
   game: GameDefinition;
   index: number;
   onPlay: (game: GameDefinition) => void;
+  /** Texto do botão — "Jogar juntos" (padrão, usado na sala Duo) ou "Jogar sozinho" (grade Solo). */
+  ctaLabel?: string;
 }
 
-export default function GameCard({ game, index, onPlay }: GameCardProps) {
+export default function GameCard({ game, index, onPlay, ctaLabel = "Jogar juntos" }: GameCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -38,7 +40,7 @@ export default function GameCard({ game, index, onPlay }: GameCardProps) {
 
       {game.available ? (
         <Button onClick={() => onPlay(game)} className="w-full">
-          Jogar juntos
+          {ctaLabel}
         </Button>
       ) : (
         <div className="w-full rounded-full bg-white/50 py-3 text-center text-sm text-ink-soft">

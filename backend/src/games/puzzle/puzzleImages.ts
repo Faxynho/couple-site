@@ -2,13 +2,25 @@
  * As imagens agora são descobertas dinamicamente pela pasta
  * `frontend/public/images/puzzle/` (ver `frontend/app/api/puzzle-images/route.ts`)
  * — não existe mais uma lista fixa aqui. O `imageId` que chega neste servidor
- * já é o caminho completo do arquivo (ex.: "/images/puzzle/aurora.jpg"),
- * então só validamos que ele parece um caminho seguro dessa pasta.
+ * já é o caminho completo do arquivo, com o nome codificado como URL (ex.:
+ * "/images/puzzle/imagem%20dois.jpg" para um arquivo "imagem dois.jpg") —
+ * então validamos a forma codificada e, depois de decodificar, o nome em si.
  */
-const SAFE_IMAGE_ID_PATTERN = /^\/images\/puzzle\/[a-zA-Z0-9 _.-]+\.(jpg|jpeg|png|webp)$/i;
+const ENCODED_IMAGE_ID_PATTERN = /^\/images\/puzzle\/[a-zA-Z0-9 _.%-]+\.(jpg|jpeg|png|webp)$/i;
+const DECODED_IMAGE_ID_PATTERN = /^\/images\/puzzle\/[a-zA-Z0-9 _.-]+\.(jpg|jpeg|png|webp)$/i;
 
 export function isValidImageId(id: string): boolean {
-  return typeof id === "string" && id.length < 300 && SAFE_IMAGE_ID_PATTERN.test(id);
+  if (typeof id !== "string" || id.length >= 300) return false;
+  if (!ENCODED_IMAGE_ID_PATTERN.test(id)) return false;
+  try {
+    // Decodifica e valida de novo com o mesmo conjunto de caracteres seguro —
+    // sem isso, uma sequência "%2e%2e%2f" (".." codificado) passaria batida
+    // pelo primeiro regex e poderia tentar escapar da pasta de imagens.
+    const decoded = decodeURIComponent(id);
+    return DECODED_IMAGE_ID_PATTERN.test(decoded) && !decoded.includes("..");
+  } catch {
+    return false;
+  }
 }
 
 /** Fallback genérico, usado só se o cliente não enviar a dimensão real medida. */

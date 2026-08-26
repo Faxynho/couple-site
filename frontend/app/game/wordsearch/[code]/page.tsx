@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
-import { useGameRoom } from "@/hooks/useGameRoom";
+import { useRoomSession } from "@/hooks/useRoomSession";
 import { useWordSearchGame } from "@/hooks/useWordSearchGame";
 import WordSearchGrid from "@/components/wordsearch/WordSearchGrid";
 import WordSearchWordList from "@/components/wordsearch/WordSearchWordList";
@@ -20,14 +20,30 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
   const router = useRouter();
   const code = params.code.toUpperCase();
 
-  const { room, selfId, notFound } = useGameRoom(code);
+  const { room, selfId, notFound, kicked, backToConfig, backToGameSelect, kickPlayer } = useRoomSession(code);
   const { state, submitSelection, newPuzzle } = useWordSearchGame(code);
 
   const [showResultModal, setShowResultModal] = useState(false);
   const wasMatchFinishedRef = useRef(false);
 
-  const ownProgressRaw = selfId && state ? state.progress[selfId] : undefined;
+  // Se o host trocar de jogo (ou voltar pra escolha de jogo) enquanto o
+  // convidado ainda está nesta tela, o socket vai começar a mandar
+  // `game:state` de outro jogo (formato diferente) pra cá — sem essa
+  // trava, ler `state.progress[selfId]` explode com o formato errado.
+  const isActiveGame = room?.gameId === "wordsearch";
+  const ownProgressRaw = isActiveGame && selfId && state ? state.progress?.[selfId] : undefined;
   const ownProgress = ownProgressRaw && isFullWordSearchProgress(ownProgressRaw) ? ownProgressRaw : null;
+
+  useEffect(() => {
+    if (!room) return;
+    if (room.gameId !== "wordsearch" || (room.status !== "playing" && room.status !== "finished")) {
+      if (room.roomMode === "duo") {
+        router.push(`/sala/${room.code}`);
+      } else {
+        router.push("/solo");
+      }
+    }
+  }, [room, router]);
 
   useEffect(() => {
     if (state?.finished && !wasMatchFinishedRef.current) {
@@ -40,6 +56,8 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
     }
     wasMatchFinishedRef.current = Boolean(state?.finished);
   }, [state?.finished, state?.finishedAt]);
+
+  if (kicked) return null;
 
   if (notFound) {
     return (
@@ -54,6 +72,24 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
   if (!room || !state || !ownProgress) {
     return <LoadingScreen label="Escondendo as palavras..." />;
   }
+
+  const isHost = Boolean(selfId && room.hostId === selfId);
+  const handleBackToConfig = () => {
+    if (room.roomMode === "duo") {
+      backToConfig();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
+  const handleBackToGameSelect = () => {
+    if (room.roomMode === "duo") {
+      backToGameSelect();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
 
   const difficultyLabel = WORDSEARCH_DIFFICULTIES[state.difficulty as WordSearchDifficulty]?.label ?? state.difficulty;
   const mode = state.mode as MatchMode;
@@ -73,8 +109,10 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
         players={room.players}
         progress={state.progress}
         selfId={selfId}
+        isHost={isHost}
+        onKick={kickPlayer}
         onNewPuzzle={(difficulty) => newPuzzle(difficulty)}
-        onBack={() => router.push("/")}
+        onBack={handleBackToConfig}
       />
 
       <WordSearchGrid
@@ -129,7 +167,7 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
           setShowResultModal(false);
           newPuzzle(state.difficulty);
         }}
-        onBack={() => router.push("/")}
+        onBack={handleBackToGameSelect}
         onClose={() => setShowResultModal(false)}
       />
     </main>

@@ -557,6 +557,15 @@ export default function PuzzleBoard({
       className="relative h-full w-full select-none overflow-hidden"
       style={{
         cursor: cursorStyle,
+        // Impede o navegador de aplicar seu próprio pinch-zoom/pan nativo
+        // neste elemento — sem isso, no celular, o gesto de pinça é tratado
+        // ao mesmo tempo pelo navegador (que tenta ampliar a página) E pelo
+        // nosso JS (que já cuida do zoom/pan manualmente aqui embaixo). Essa
+        // disputa entre as duas transformações é o que fazia as peças
+        // piscarem/sumirem durante o pinch — precisando de outro zoom pra
+        // forçar o navegador a redesenhar a camada e "consertar" visualmente.
+        touchAction: "none",
+        overscrollBehavior: "contain",
         background:
           "radial-gradient(120% 100% at 50% 0%, rgba(255,255,255,0.5), rgba(241,228,211,0.3) 60%), repeating-linear-gradient(135deg, rgba(74,63,69,0.025) 0px, rgba(74,63,69,0.025) 2px, transparent 2px, transparent 16px)",
       }}

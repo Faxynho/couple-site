@@ -1,4 +1,4 @@
-import { GameId } from "../types";
+import { GameId, RoomMode } from "../types";
 import { Room } from "./Room";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem O/0/I/1 para evitar confusão
@@ -14,12 +14,15 @@ function generateCode(length = 5): string {
 export class RoomManager {
   private rooms: Map<string, Room> = new Map();
 
-  createRoom(gameId: GameId): Room {
+  /** `gameId` só deve vir preenchido para salas Solo (que já nascem com o
+   *  jogo escolhido). Uma sala Duo sempre nasce sem jogo (lobby) — o jogo é
+   *  escolhido depois, dentro da sala, via `room:selectGame`. */
+  createRoom(roomMode: RoomMode, gameId: GameId | null = null): Room {
     let code = generateCode();
     while (this.rooms.has(code)) {
       code = generateCode();
     }
-    const room = new Room(code, gameId);
+    const room = new Room(code, roomMode, gameId);
     this.rooms.set(code, room);
     return room;
   }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Clock3, MoreVertical, RotateCcw, ImagePlus } from "lucide-react";
+import { ArrowLeft, Clock3, MoreVertical, RotateCcw, ImagePlus, X } from "lucide-react";
 import { Player } from "@/lib/types";
 
 interface SidePanelProps {
@@ -12,6 +12,9 @@ interface SidePanelProps {
   solvedAt: number | null;
   moves: number;
   players: Player[];
+  selfId?: string | null;
+  isHost?: boolean;
+  onKick?: (playerId: string) => void;
   onRestart: () => void;
   onNewImage: () => void;
   onBack: () => void;
@@ -31,6 +34,9 @@ export default function SidePanel({
   solvedAt,
   moves,
   players,
+  selfId,
+  isHost,
+  onKick,
   onRestart,
   onNewImage,
   onBack,
@@ -92,14 +98,32 @@ export default function SidePanel({
       </div>
 
       <div className="flex items-center -space-x-1.5">
-        {players.map((p) => (
-          <span
-            key={p.id}
-            title={p.name}
-            className="h-3 w-3 rounded-full ring-2 ring-white"
-            style={{ background: p.connected ? p.color : "#D9D0D4" }}
-          />
-        ))}
+        {players.map((p) => {
+          const canKick = Boolean(isHost && onKick && p.id !== selfId);
+          return (
+            <span key={p.id} className="relative inline-flex">
+              <span
+                title={p.name}
+                className="h-3 w-3 rounded-full ring-2 ring-white"
+                style={{ background: p.connected ? p.color : "#D9D0D4" }}
+              />
+              {canKick && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onKick!(p.id);
+                  }}
+                  aria-label={`Remover ${p.name} da sala`}
+                  title="Remover da sala"
+                  className="absolute -right-1.5 -top-2 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-ink-soft shadow-soft transition-colors hover:bg-rose/20 hover:text-rose-deep"
+                >
+                  <X size={8} strokeWidth={3} />
+                </button>
+              )}
+            </span>
+          );
+        })}
       </div>
 
       <div className="relative" ref={menuRef}>

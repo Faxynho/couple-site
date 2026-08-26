@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
-import { useGameRoom } from "@/hooks/useGameRoom";
+import { useRoomSession } from "@/hooks/useRoomSession";
 import { useCrosswordGame } from "@/hooks/useCrosswordGame";
 import CrosswordGrid from "@/components/crossword/CrosswordGrid";
 import CluesList from "@/components/crossword/CluesList";
@@ -20,7 +20,7 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
   const router = useRouter();
   const code = params.code.toUpperCase();
 
-  const { room, selfId, notFound } = useGameRoom(code);
+  const { room, selfId, notFound, kicked, backToConfig, backToGameSelect, kickPlayer } = useRoomSession(code);
   const { state, setCell, newPuzzle } = useCrosswordGame(code);
 
   const [selected, setSelected] = useState<number | null>(null);
@@ -31,8 +31,24 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
   const wasMatchFinishedRef = useRef(false);
   const wasSelfFinishedRef = useRef(false);
 
-  const ownProgressRaw = selfId && state ? state.progress[selfId] : undefined;
+  // Se o host trocar de jogo (ou voltar pra escolha de jogo) enquanto o
+  // convidado ainda está nesta tela, o socket vai começar a mandar
+  // `game:state` de outro jogo (formato diferente) pra cá — sem essa
+  // trava, ler `state.progress[selfId]` explode com o formato errado.
+  const isActiveGame = room?.gameId === "crossword";
+  const ownProgressRaw = isActiveGame && selfId && state ? state.progress?.[selfId] : undefined;
   const ownProgress = ownProgressRaw && isFullProgress(ownProgressRaw) ? ownProgressRaw : null;
+
+  useEffect(() => {
+    if (!room) return;
+    if (room.gameId !== "crossword" || (room.status !== "playing" && room.status !== "finished")) {
+      if (room.roomMode === "duo") {
+        router.push(`/sala/${room.code}`);
+      } else {
+        router.push("/solo");
+      }
+    }
+  }, [room, router]);
 
   useEffect(() => {
     if (state?.finished && !wasMatchFinishedRef.current) {
@@ -50,6 +66,8 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
     wasSelfFinishedRef.current = Boolean(ownProgress?.finished);
   }, [ownProgress?.finished]);
 
+  if (kicked) return null;
+
   if (notFound) {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-5 text-center">
@@ -63,6 +81,24 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
   if (!room || !state || !ownProgress) {
     return <LoadingScreen label="Montando a grade..." />;
   }
+
+  const isHost = Boolean(selfId && room.hostId === selfId);
+  const handleBackToConfig = () => {
+    if (room.roomMode === "duo") {
+      backToConfig();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
+  const handleBackToGameSelect = () => {
+    if (room.roomMode === "duo") {
+      backToGameSelect();
+      router.push(`/sala/${room.code}`);
+    } else {
+      router.push("/solo");
+    }
+  };
 
   const difficultyLabel = CROSSWORD_DIFFICULTIES[state.difficulty as CrosswordDifficulty]?.label ?? state.difficulty;
   const mode = state.mode as MatchMode;
@@ -79,8 +115,10 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
         players={room.players}
         progress={state.progress}
         selfId={selfId}
+        isHost={isHost}
+        onKick={kickPlayer}
         onNewPuzzle={(difficulty) => newPuzzle(difficulty)}
-        onBack={() => router.push("/")}
+        onBack={handleBackToConfig}
       />
 
       <CrosswordGrid
@@ -151,7 +189,7 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
           setShowResultModal(false);
           newPuzzle(state.difficulty);
         }}
-        onBack={() => router.push("/")}
+        onBack={handleBackToGameSelect}
         onClose={() => setShowResultModal(false)}
       />
     </main>
