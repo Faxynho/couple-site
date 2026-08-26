@@ -1144,7 +1144,7 @@ export default function RPGCard({
           text-sm
           font-semibold
           leading-tight
-          text-ink
+          text-[#4a3f45]
 
           sm:text-base
         "
@@ -1165,6 +1165,7 @@ export default function RPGCard({
           font-medium
           leading-relaxed
           text-ink-soft
+          dark:text-[#5a4d55]
 
           sm:text-sm
         "

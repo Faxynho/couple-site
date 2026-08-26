@@ -75,7 +75,7 @@ export default function ColorRoundResult({
               guess={sharedGuess.hex}
               label={guesserId === selfId ? "Seu palpite" : `Palpite de ${guesserName}`}
             />
-            <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-4 border-surface bg-ink shadow-glow">
+            <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-4 border-[#4a3f45] bg-[#4a3f45] shadow-glow">
               <span className="font-display text-xl font-semibold leading-none text-white">
                 {sharedGuess.score.toFixed(1)}
               </span>
@@ -121,7 +121,7 @@ export default function ColorRoundResult({
             guess={primaryGuess.hex}
             label={primaryPlayer.id === selfId ? "Seu palpite" : primaryPlayer.name}
           />
-          <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-4 border-surface bg-ink shadow-glow">
+          <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-4 border-[#4a3f45] bg-[#4a3f45] shadow-glow">
             <span className="font-display text-xl font-semibold leading-none text-white">
               {primaryGuess.score.toFixed(1)}
             </span>

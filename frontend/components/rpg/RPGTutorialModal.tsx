@@ -399,7 +399,7 @@ export default function RPGTutorialModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 260, damping: 22 }}
-            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-surface/80 bg-[#f8fbf8]/95 shadow-[0_24px_80px_rgba(15,23,42,0.25)]"
+            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-surface/80 bg-[#f8fbf8]/95 shadow-[0_24px_80px_rgba(15,23,42,0.25)] dark:bg-[#221b20]/95"
           >
             <div className="flex items-center justify-between border-b border-black/5 px-5 py-4 sm:px-7">
               <div>
