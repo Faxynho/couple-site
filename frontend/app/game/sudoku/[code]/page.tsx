@@ -15,6 +15,7 @@ import Button from "@/components/Button";
 import Logo from "@/components/Logo";
 import { isFullProgress, SUDOKU_DIFFICULTIES, SudokuDifficulty } from "@/lib/sudokuTypes";
 import { MatchMode } from "@/lib/matchModes";
+import { playSoundEffect } from "@/lib/sound";
 
 function formatFinalTime(ms: number) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -31,6 +32,7 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
   const { state, setCell, hint, newPuzzle, resetGame } = useSudokuGame(code);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [markedIndices, setMarkedIndices] = useState<Set<number>>(new Set());
   const [showWinModal, setShowWinModal] = useState(false);
   const wasMatchFinishedRef = useRef(false);
   const wasSelfFinishedRef = useRef(false);
@@ -56,6 +58,7 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
 
   useEffect(() => {
     if (state?.finished && !wasMatchFinishedRef.current) {
+      if (state.mode === "together" || state.results[0]?.playerId === selfId) playSoundEffect("victory");
       setShowWinModal(true);
     } else if (!state?.finished && wasMatchFinishedRef.current) {
       // O estado é sincronizado pelo servidor: quando qualquer um dos dois
@@ -69,6 +72,13 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
   useEffect(() => {
     wasSelfFinishedRef.current = Boolean(ownProgress?.finished);
   }, [ownProgress?.finished]);
+
+  useEffect(() => {
+    if (state?.startedAt) {
+      setMarkedIndices(new Set());
+      setSelectedIndex(null);
+    }
+  }, [state?.startedAt]);
 
   if (kicked) return null;
 
@@ -110,6 +120,7 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
   const selfFinishedWaitingForOthers = ownProgress.finished && !state.finished;
 
   const handleSetValue = (index: number, value: number) => {
+    playSoundEffect("sudokuPlace");
     setCell(index, value);
   };
 
@@ -142,6 +153,13 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
         players={room.players}
         selfId={selfId}
         locked={ownProgress.finished}
+        markedIndices={markedIndices}
+        onToggleMark={(index) => setMarkedIndices((current) => {
+          const next = new Set(current);
+          if (next.has(index)) next.delete(index);
+          else next.add(index);
+          return next;
+        })}
       />
 
       <div className="w-full max-w-[min(92vw,540px)]">

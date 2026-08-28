@@ -4,32 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import { getPlayerId } from "@/lib/playerId";
 import { PuzzleState } from "@/lib/types";
-
-/** Toca um "pop" curto e suave via Web Audio API — sem depender de arquivos de áudio. */
-function playSnapSound() {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    const ctx = new AudioContextClass();
-    const now = ctx.currentTime;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(660, now);
-    osc.frequency.exponentialRampToValueAtTime(880, now + 0.09);
-
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
-
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.25);
-    osc.onended = () => ctx.close();
-  } catch {
-    // Áudio é apenas um extra decorativo; falhas silenciosas não devem afetar o jogo.
-  }
-}
+import { playSoundEffect } from "@/lib/sound";
 
 interface RemoteDragPosition {
   x: number;
@@ -47,7 +22,7 @@ export function usePuzzle(roomCode: string) {
     const applyState = (next: PuzzleState | null) => {
       if (next) {
         const groupCount = Object.keys(next.groups).length;
-        if (groupCount < prevGroupCount.current) playSnapSound();
+        if (groupCount < prevGroupCount.current) playSoundEffect("puzzleSnap");
         prevGroupCount.current = groupCount;
 
         // Limpa posições de arrasto "remoto" de grupos que já não existem mais

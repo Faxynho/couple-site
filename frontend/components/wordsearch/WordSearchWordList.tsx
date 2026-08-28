@@ -89,15 +89,15 @@ export default function WordSearchWordList({
                       borderColor: ownerColor,
                       borderLeftWidth: 3,
                       color: ownerColor,
-                      backgroundColor: "rgba(255,255,255,0.78)",
+                      backgroundColor: "rgb(var(--color-surface) / 0.82)",
                     }
                   : {
                       // Você encontrou.
                       // Mesmo que o oponente também tenha encontrado,
                       // sua marcação passa a ter prioridade.
                       borderColor: "rgba(90,90,90,0.18)",
-                      backgroundColor: "rgba(120,120,120,0.10)",
-                      color: "#777",
+                      backgroundColor: "rgb(var(--color-surface) / 0.55)",
+                      color: "rgb(var(--color-ink-soft))",
                     }
                 : undefined
             }

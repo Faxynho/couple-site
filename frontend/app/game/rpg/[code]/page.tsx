@@ -17,6 +17,7 @@ import Button from "@/components/Button";
 import Logo from "@/components/Logo";
 import { RPGCard as RPGCardData, RPGCombatant, RPG_MODES, RPGRoundEvent } from "@/lib/rpgTypes";
 import PlayerChip from "@/components/PlayerChip";
+import { playSoundEffect } from "@/lib/sound";
 
 function getChosenCardForCombatant(
   combatant?: RPGCombatant
@@ -41,6 +42,20 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
 
   const [showResultModal, setShowResultModal] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const previousResolutionRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!state || !selfId || (state.phase !== "resolved" && state.phase !== "finished")) return;
+    const resolutionKey = state.resolvedAt ?? state.finishedAt;
+    if (resolutionKey === null || resolutionKey === undefined || previousResolutionRef.current === resolutionKey) return;
+    previousResolutionRef.current = resolutionKey;
+
+    playSoundEffect("rpgResolve");
+    const ownEvents = state.lastRoundEvents.filter((event) => event.targetId === selfId);
+    if (ownEvents.some((event) => event.type === "evade")) playSoundEffect("rpgEvade");
+    if (ownEvents.some((event) => event.type === "heal")) playSoundEffect("rpgHeal");
+    if (ownEvents.some((event) => event.type === "attack" || event.type === "statusTick")) playSoundEffect("rpgDamage");
+  }, [selfId, state?.phase, state?.resolvedAt, state?.finishedAt, state?.lastRoundEvents]);
 
   useEffect(() => {
     if (state?.phase !== "finished") {
@@ -52,6 +67,7 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
     }
 
     const timer = window.setTimeout(() => {
+      if (selfId && state.winnerTeam !== "draw" && state.winnerTeam === state.combatants[selfId]?.team) playSoundEffect("victory");
       setShowResultModal(true);
     }, 1600);
 
@@ -312,7 +328,7 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
           chosenInstanceId={selfCombatant.chosenCardId}
           disabled={handDisabled}
           dealKey={state.round}
-          onSelect={(instanceId) => selectCard(instanceId)}
+          onSelect={(instanceId) => { playSoundEffect("rpgSelect"); selectCard(instanceId); }}
           rerollCharges={selfCombatant.rerollCharges}
           onReroll={() => rerollHand()}
         />

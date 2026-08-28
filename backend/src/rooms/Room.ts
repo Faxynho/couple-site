@@ -182,7 +182,7 @@ export class Room {
    *  que faz sentido sozinho; uma sala Duo entra no modo cooperativo padrão
    *  (nunca em "solo"/"soloBot", que não fazem sentido com o convidado presente). */
   private defaultMatchModeFor(gameId: GameId): string {
-    if (gameId === "quiz") return this.roomMode === "solo" ? "solo" : "together";
+    if (gameId === "quiz" || gameId === "memory") return this.roomMode === "solo" ? "solo" : "together";
     if (gameId === "rpg") return this.roomMode === "solo" ? "soloBot" : "1v1";
     return "together"; // crossword / wordsearch / sudoku — puzzle/colors ignoram este campo
   }
@@ -284,7 +284,8 @@ export class Room {
       this.gameId === "wordsearch" ||
       this.gameId === "quiz" ||
       this.gameId === "rpg" ||
-      this.gameId === "sudoku"
+      this.gameId === "sudoku" ||
+      this.gameId === "memory"
         ? this.pendingMatchMode
         : undefined;
 

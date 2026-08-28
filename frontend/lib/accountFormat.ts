@@ -5,6 +5,7 @@ import { COLOR_DIFFICULTIES } from "@/lib/colorTypes";
 import { CROSSWORD_DIFFICULTIES } from "@/lib/crosswordTypes";
 import { WORDSEARCH_DIFFICULTIES } from "@/lib/wordsearchTypes";
 import { QUIZ_DIFFICULTIES } from "@/lib/quizTypes";
+import { MEMORY_DIFFICULTIES } from "@/lib/memoryTypes";
 import { NO_RANK } from "@/lib/accountTypes";
 
 type RankInfo = { label: string; emoji: string };
@@ -18,6 +19,7 @@ const RANK_MAPS: Partial<Record<GameId, Record<string, RankInfo>>> = {
   crossword: CROSSWORD_DIFFICULTIES,
   wordsearch: WORDSEARCH_DIFFICULTIES,
   quiz: QUIZ_DIFFICULTIES,
+  memory: MEMORY_DIFFICULTIES,
 };
 
 /** Ordem de exibição dos ranks de cada jogo nas abas de Estatísticas/Recordes. */
@@ -28,6 +30,7 @@ export const GAME_RANKS: Record<GameId, string[]> = {
   crossword: ["easy", "medium", "hard"],
   wordsearch: ["easy", "medium", "hard"],
   quiz: ["easy", "medium", "hard"],
+  memory: ["easy", "medium", "hard"],
   rpg: [NO_RANK],
 };
 

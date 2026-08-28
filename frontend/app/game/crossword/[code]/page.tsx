@@ -15,6 +15,7 @@ import Button from "@/components/Button";
 import Logo from "@/components/Logo";
 import { CROSSWORD_DIFFICULTIES, CrosswordDifficulty, CrosswordDirection, isFullProgress } from "@/lib/crosswordTypes";
 import { MatchMode } from "@/lib/matchModes";
+import { playSoundEffect } from "@/lib/sound";
 
 export default function CrosswordGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
 
   const wasMatchFinishedRef = useRef(false);
   const wasSelfFinishedRef = useRef(false);
+  const completedWordCountRef = useRef<number | null>(null);
 
   // Se o host trocar de jogo (ou voltar pra escolha de jogo) enquanto o
   // convidado ainda está nesta tela, o socket vai começar a mandar
@@ -52,6 +54,7 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
 
   useEffect(() => {
     if (state?.finished && !wasMatchFinishedRef.current) {
+      if (state.mode === "together" || state.results[0]?.playerId === selfId) playSoundEffect("victory");
       setShowResultModal(true);
     } else if (!state?.finished && wasMatchFinishedRef.current) {
       // O estado é sincronizado pelo servidor: quando qualquer um dos dois
@@ -65,6 +68,12 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
   useEffect(() => {
     wasSelfFinishedRef.current = Boolean(ownProgress?.finished);
   }, [ownProgress?.finished]);
+
+  useEffect(() => {
+    const count = ownProgress?.completedWordIds.length ?? 0;
+    if (completedWordCountRef.current !== null && count > completedWordCountRef.current) playSoundEffect("crosswordCorrect");
+    completedWordCountRef.current = count;
+  }, [ownProgress?.completedWordIds.length]);
 
   if (kicked) return null;
 

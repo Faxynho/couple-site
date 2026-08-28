@@ -13,6 +13,7 @@ import { isValidWordSearchMode } from "../games/wordsearch/WordSearchGame";
 import { isValidQuizDifficulty } from "../games/quiz/questionBank";
 import { isValidQuizMode, QUIZ_REVEAL_DURATION_MS } from "../games/quiz/QuizGame";
 import { isValidRPGMode, RPG_INTRO_DURATION_MS, RPG_RESOLVE_PAUSE_MS } from "../games/rpg/RPGGame";
+import { isValidMemoryDifficulty, isValidMemoryMode, MemoryState } from "../games/memory/MemoryGame";
 import { isAccountId } from "../accounts/types";
 
 interface SocketData {
@@ -120,6 +121,10 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getRPGStateForPlayer(room.gameState, player.id));
     }
+  } else if (room.gameId === "memory") {
+    for (const player of room.players.values()) {
+      emitToPlayer(io, room, player.id, "game:state", getMemoryStateForPlayer(room.gameState, player.id));
+    }
   } else if (room.gameId === "sudoku") {
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getSudokuStateForPlayer(room.gameState, player.id));
@@ -136,6 +141,7 @@ function getMaskedStateForPlayer(room: { gameId: GameId | null; gameState: unkno
   if (room.gameId === "wordsearch") return getWordSearchStateForPlayer(room.gameState, playerId);
   if (room.gameId === "quiz") return getQuizStateForPlayer(room.gameState, playerId);
   if (room.gameId === "rpg") return getRPGStateForPlayer(room.gameState, playerId);
+  if (room.gameId === "memory") return getMemoryStateForPlayer(room.gameState, playerId);
   if (room.gameId === "sudoku") return getSudokuStateForPlayer(room.gameState, playerId);
   return room.gameState;
 }
@@ -468,6 +474,47 @@ function getRPGStateForPlayer(state: unknown, playerId: string): unknown {
   return { ...s, combatants };
 }
 
+/** O layout é o mesmo no Duelo, mas o ícone de uma carta só é enviado quando
+ * ela está visível no progresso de quem recebeu o estado. O adversário nunca
+ * recebe seus pares, cartas abertas ou mapeamento secreto. */
+function getMemoryStateForPlayer(state: unknown, playerId: string): unknown {
+  const s = state as MemoryState | null;
+  if (!s) return state;
+
+  const own = s.progress[playerId];
+  const previewing = s.playStartedAt === null;
+  const visibleIds = new Set([...(own?.matchedSlotIds ?? []), ...(own?.openSlotIds ?? [])]);
+  const slots = s.slots.map((slot) => ({
+    id: slot.id,
+    empty: slot.iconId === null,
+    imageSrc: slot.iconId !== null && (previewing || visibleIds.has(slot.id)) ? `/images/memory/${slot.iconId}.png` : null,
+  }));
+
+  const progress: Record<string, unknown> = {};
+  for (const [id, entry] of Object.entries(s.progress)) {
+    if (s.mode !== "duel" || id === playerId) {
+      progress[id] = entry;
+    } else {
+      progress[id] = {
+        matchedSlotIds: [],
+        openSlotIds: [],
+        score: entry.score,
+        combo: entry.combo,
+        pairsFound: entry.pairsFound,
+        mistakes: entry.mistakes,
+        mismatchUntil: null,
+        finished: entry.finished,
+        completed: entry.completed,
+        finishedAt: entry.finishedAt,
+        timeUsedMs: entry.timeUsedMs,
+      };
+    }
+  }
+
+  // O estado original tem slots.iconId; nunca espalhe esse campo ao cliente.
+  return { ...s, slots, progress };
+}
+
 export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
   io.on("connection", (socket: Socket<any, any, any, SocketData>) => {
     socket.on(
@@ -591,7 +638,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
             isValidWordSearchMode(payload.matchMode) ||
             isValidQuizMode(payload.matchMode) ||
             isValidRPGMode(payload.matchMode) ||
-            isValidSudokuMode(payload.matchMode))
+            isValidSudokuMode(payload.matchMode) ||
+            isValidMemoryMode(payload.matchMode))
         ) {
           options.matchMode = payload.matchMode;
         }
@@ -984,6 +1032,35 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       broadcastGameState(io, code!, roomManager);
     });
 
+    // ---- Eventos exclusivos do Jogo da Memória ----
+
+    // A posição escolhida nunca traz informação sobre a imagem: o servidor
+    // decide se ela pode ser aberta, compara o par e mantém o layout secreto.
+    socket.on("memory:flipCard", (payload: { slotId: string }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "memory" || typeof payload?.slotId !== "string") return;
+      room.applyAction({ type: "flipCard", slotId: payload.slotId }, socket.data.playerId ?? socket.id);
+      broadcastGameState(io, code!, roomManager);
+      if (room.status === "finished") broadcastRoom(io, code!, roomManager);
+    });
+
+    // Nova disposição, preservando modo e dificuldade quando o jogador não
+    // escolhe outra dificuldade no menu da tela.
+    socket.on("memory:newGame", (payload: { difficulty?: string } | undefined) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "memory") return;
+      const current = room.gameState as { difficulty?: string; mode?: string } | null;
+      const options: Record<string, unknown> = {};
+      if (payload?.difficulty && isValidMemoryDifficulty(payload.difficulty)) options.difficulty = payload.difficulty;
+      else if (current?.difficulty) options.difficulty = current.difficulty;
+      if (current?.mode) options.mode = current.mode;
+      room.startGame(options);
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
     // ---- Eventos exclusivos do Quiz ----
 
     // Envia a alternativa escolhida para a pergunta atual. Ignorado se não for
@@ -1084,6 +1161,33 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
     });
   });
+
+  // ---- Relógio do servidor do Jogo da Memória ----
+  // Prévia, erro temporariamente revelado e tempo limite são controlados aqui
+  // para todos os clientes verem as mesmas transições, inclusive após reconectar.
+  setInterval(() => {
+    const now = Date.now();
+    for (const room of roomManager.getAllRooms()) {
+      if (room.gameId !== "memory" || room.status !== "playing" || !room.gameState) continue;
+      const state = room.gameState as MemoryState;
+      if (state.finished) continue;
+
+      let action: { type: "startPlay" } | { type: "hideMismatch"; playerId: string } | { type: "timeUp" } | null = null;
+      if (state.playStartedAt === null && now >= state.previewEndsAt) {
+        action = { type: "startPlay" };
+      } else if (state.playStartedAt !== null && state.deadlineAt !== null && now >= state.deadlineAt) {
+        action = { type: "timeUp" };
+      } else {
+        const mismatch = Object.entries(state.progress).find(([, progress]) => progress.mismatchUntil !== null && now >= progress.mismatchUntil);
+        if (mismatch) action = { type: "hideMismatch", playerId: mismatch[0] };
+      }
+      if (!action) continue;
+
+      room.applyAction(action, "system");
+      broadcastGameState(io, room.code, roomManager);
+      if ((room.status as string) === "finished") broadcastRoom(io, room.code, roomManager);
+    }
+  }, 250);
 
   // ---- Relógio do servidor do Quiz ----
   // Varre periodicamente as salas com uma partida de Quiz em andamento para

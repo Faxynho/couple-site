@@ -12,6 +12,13 @@ import QuizResultModal from "@/components/quiz/QuizResultModal";
 import LoadingScreen from "@/components/LoadingScreen";
 import Button from "@/components/Button";
 import Logo from "@/components/Logo";
+import { playSoundEffect } from "@/lib/sound";
+
+function isQuizWinner(state: { expectedPlayers: string[]; players: Record<string, { score: number }> }, selfId: string | null) {
+  if (!selfId || state.expectedPlayers.length !== 2) return false;
+  const opponentId = state.expectedPlayers.find((id) => id !== selfId);
+  return opponentId ? (state.players[selfId]?.score ?? 0) > (state.players[opponentId]?.score ?? 0) : false;
+}
 
 export default function QuizGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -22,6 +29,7 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
 
   const [showResultModal, setShowResultModal] = useState(false);
   const wasFinishedRef = useRef(false);
+  const previousAnswerKey = useRef<string | null>(null);
 
   useEffect(() => {
     if (kicked) router.push("/?aviso=expulso");
@@ -40,6 +48,7 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
 
   useEffect(() => {
     if (state?.finished && !wasFinishedRef.current) {
+      if (state.mode !== "duel" || isQuizWinner(state, selfId)) playSoundEffect("victory");
       setShowResultModal(true);
     } else if (!state?.finished && wasFinishedRef.current) {
       // O estado do quiz é sincronizado pelo servidor: quando qualquer um dos
@@ -50,6 +59,23 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
     }
     wasFinishedRef.current = Boolean(state?.finished);
   }, [state?.finished, state?.finishedAt]);
+
+  useEffect(() => {
+    const answer = state?.mode === "together"
+      ? state.teamAnswers?.[state.currentIndex] ?? null
+      : selfId && state
+      ? state.players[selfId]?.answers[state.currentIndex] ?? null
+      : null;
+    const key = answer ? `${state?.currentIndex}:${answer.optionIndex}` : null;
+    if (!answer) {
+      previousAnswerKey.current = null;
+      return;
+    }
+    if (state?.phase === "revealed" && key !== previousAnswerKey.current) {
+      playSoundEffect(answer.correct ? "crosswordCorrect" : "memoryWrong");
+      previousAnswerKey.current = key;
+    }
+  }, [selfId, state?.currentIndex, state?.players, state?.teamAnswers, state?.mode, state?.phase]);
 
   if (kicked) return null;
 
@@ -66,6 +92,11 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
   if (!room || !state || room.gameId !== "quiz") {
     return <LoadingScreen label="Sorteando as perguntas..." />;
   }
+
+  const handleAnswer = (optionIndex: number) => {
+    playSoundEffect("quizSelect");
+    submitAnswer(state.currentIndex, optionIndex);
+  };
 
   const isHost = Boolean(selfId && room.hostId === selfId);
   // Numa sala Duo, "voltar" leva para a configuração (sem sair da sala); numa
@@ -155,7 +186,7 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
             question={currentQuestion}
             ownAnswer={ownAnswer}
             revealed={revealed}
-            onAnswer={(optionIndex) => submitAnswer(state.currentIndex, optionIndex)}
+            onAnswer={handleAnswer}
             mode={state.mode}
             opponent={opponentResult}
             together={togetherPicks}

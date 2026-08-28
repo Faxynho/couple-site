@@ -13,6 +13,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 import Button from "@/components/Button";
 import Logo from "@/components/Logo";
 import { usePuzzleImages } from "@/hooks/usePuzzleImages";
+import { playSoundEffect } from "@/lib/sound";
 
 function formatFinalTime(ms: number) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -36,6 +37,7 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
 
   useEffect(() => {
     if (state?.solved && !wasSolvedRef.current) {
+      playSoundEffect("victory");
       setShowWinModal(true);
     } else if (!state?.solved && wasSolvedRef.current) {
       // O estado é sincronizado pelo servidor: quando qualquer um dos dois

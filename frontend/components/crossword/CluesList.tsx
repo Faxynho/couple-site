@@ -63,12 +63,12 @@ export default function CluesList({
                       ? {
                           borderLeftColor: ownerColor,
                           color: ownerColor,
-                          backgroundColor: "rgba(255,255,255,0.78)",
+                          backgroundColor: "rgb(var(--color-surface) / 0.82)",
                         }
                       : {
                           borderLeftColor: "rgba(120,120,120,0.35)",
-                          backgroundColor: "rgba(120,120,120,0.10)",
-                          color: "#777",
+                          backgroundColor: "rgb(var(--color-surface) / 0.55)",
+                          color: "rgb(var(--color-ink-soft))",
                         }
                     : undefined
                 }

@@ -15,6 +15,7 @@ import Button from "@/components/Button";
 import Logo from "@/components/Logo";
 import { WORDSEARCH_DIFFICULTIES, WordSearchDifficulty, isFullWordSearchProgress } from "@/lib/wordsearchTypes";
 import { MatchMode } from "@/lib/matchModes";
+import { playSoundEffect } from "@/lib/sound";
 
 export default function WordSearchGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
 
   const [showResultModal, setShowResultModal] = useState(false);
   const wasMatchFinishedRef = useRef(false);
+  const previousWordStats = useRef<{ found: number; mistakes: number } | null>(null);
 
   // Se o host trocar de jogo (ou voltar pra escolha de jogo) enquanto o
   // convidado ainda está nesta tela, o socket vai começar a mandar
@@ -47,6 +49,7 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
 
   useEffect(() => {
     if (state?.finished && !wasMatchFinishedRef.current) {
+      if (state.mode === "together" || state.results[0]?.playerId === selfId) playSoundEffect("victory");
       setShowResultModal(true);
     } else if (!state?.finished && wasMatchFinishedRef.current) {
       // O estado é sincronizado pelo servidor: quando qualquer um dos dois
@@ -56,6 +59,16 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
     }
     wasMatchFinishedRef.current = Boolean(state?.finished);
   }, [state?.finished, state?.finishedAt]);
+
+  useEffect(() => {
+    const found = ownProgress ? Object.keys(ownProgress.found).length : 0;
+    const mistakes = ownProgress?.mistakes ?? 0;
+    if (previousWordStats.current) {
+      if (found > previousWordStats.current.found) playSoundEffect("wordsearchFound");
+      else if (mistakes > previousWordStats.current.mistakes) playSoundEffect("memoryWrong");
+    }
+    previousWordStats.current = { found, mistakes };
+  }, [ownProgress?.found, ownProgress?.mistakes]);
 
   if (kicked) return null;
 

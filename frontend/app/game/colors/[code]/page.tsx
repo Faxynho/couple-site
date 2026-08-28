@@ -16,6 +16,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 import Button from "@/components/Button";
 import Logo from "@/components/Logo";
 import { COLOR_DIFFICULTIES, ColorDifficulty } from "@/lib/colorTypes";
+import { playSoundEffect } from "@/lib/sound";
 
 export default function ColorsGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -34,6 +35,9 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
 
   useEffect(() => {
     if (state?.finished && !wasFinishedRef.current) {
+      const ownScore = selfId ? state.rounds.reduce((sum, round) => sum + (round.guesses[selfId]?.score ?? 0), 0) : 0;
+      const otherScores = room?.players.filter((player) => player.id !== selfId).map((player) => state.rounds.reduce((sum, round) => sum + (round.guesses[player.id]?.score ?? 0), 0)) ?? [];
+      if (state.mode === "cooperative" || otherScores.length === 0 || otherScores.every((score) => ownScore > score)) playSoundEffect("victory");
       setShowWinModal(true);
     } else if (!state?.finished && wasFinishedRef.current) {
       // O estado é sincronizado pelo servidor: quando qualquer um dos dois
@@ -122,6 +126,7 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
   const difficultyLabel = COLOR_DIFFICULTIES[state.difficulty as ColorDifficulty]?.label ?? state.difficulty;
 
   const handleSubmitGuess = (h: number, s: number, v: number) => {
+    playSoundEffect("colorsResult");
     submitGuess(state.currentRound, h, s, v);
   };
 

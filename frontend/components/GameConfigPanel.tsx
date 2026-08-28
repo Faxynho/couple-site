@@ -10,6 +10,7 @@ import { WORDSEARCH_DIFFICULTIES, WordSearchDifficulty } from "@/lib/wordsearchT
 import { MATCH_MODES, MatchMode } from "@/lib/matchModes";
 import { QUIZ_DIFFICULTIES, QUIZ_MODES, QuizDifficulty, QuizMode } from "@/lib/quizTypes";
 import { RPG_MODES, RPGMode } from "@/lib/rpgTypes";
+import { MEMORY_DIFFICULTIES, MEMORY_MODES, MemoryDifficulty, MemoryMode } from "@/lib/memoryTypes";
 import { RoomSnapshot } from "@/lib/types";
 
 interface GameConfigPanelProps {
@@ -254,6 +255,31 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
           <SectionLabel>{isHost ? "Dificuldade" : "Dificuldade escolhida pelo anfitrião"}</SectionLabel>
           <OptionGrid
             entries={Object.entries(QUIZ_DIFFICULTIES) as [QuizDifficulty, (typeof QUIZ_DIFFICULTIES)[QuizDifficulty]][]}
+            selected={selectedDifficulty}
+            isHost={isHost}
+            onSelect={(key) => setConfig({ difficulty: key })}
+          />
+        </div>
+      </>
+    );
+  }
+
+  if (room.gameId === "memory") {
+    const selectedDifficulty = (room.pendingDifficulty as MemoryDifficulty) ?? "medium";
+    const selectedMode = (room.pendingMatchMode as MemoryMode) ?? "together";
+    const modeEntries = (Object.entries(MEMORY_MODES) as [MemoryMode, (typeof MEMORY_MODES)[MemoryMode]][]).filter(
+      ([key]) => key !== "solo"
+    );
+    return (
+      <>
+        <div className="text-left">
+          <SectionLabel>{isHost ? "Modo de jogo" : "Modo escolhido pelo anfitrião"}</SectionLabel>
+          <OptionGrid cols={2} entries={modeEntries} selected={selectedMode} isHost={isHost} onSelect={(key) => setConfig({ matchMode: key })} />
+        </div>
+        <div className="mt-5 text-left">
+          <SectionLabel>{isHost ? "Dificuldade" : "Dificuldade escolhida pelo anfitrião"}</SectionLabel>
+          <OptionGrid
+            entries={Object.entries(MEMORY_DIFFICULTIES) as [MemoryDifficulty, (typeof MEMORY_DIFFICULTIES)[MemoryDifficulty]][]}
             selected={selectedDifficulty}
             isHost={isHost}
             onSelect={(key) => setConfig({ difficulty: key })}

@@ -17,6 +17,8 @@ interface SudokuBoardProps {
   players: Player[];
   selfId: string | null;
   locked: boolean;
+  markedIndices: ReadonlySet<number>;
+  onToggleMark: (index: number) => void;
 }
 
 function cellPosition(index: number) {
@@ -48,6 +50,8 @@ export default function SudokuBoard({
   players,
   selfId,
   locked,
+  markedIndices,
+  onToggleMark,
 }: SudokuBoardProps) {
   const colorByPlayer = Object.fromEntries(players.map((p) => [p.id, p.color]));
   const selected = selectedIndex !== null ? cellPosition(selectedIndex) : null;
@@ -92,19 +96,22 @@ export default function SudokuBoard({
         const conflict = hasConflict(cells, index);
         const holderColor = cell.filledBy ? colorByPlayer[cell.filledBy] : undefined;
         const isOwnEntry = cell.filledBy === selfId;
+        const isMarked = !cell.isGiven && cell.value !== 0 && markedIndices.has(index);
 
         return (
           <button
             key={index}
             type="button"
             disabled={locked}
-            onClick={() => onSelect(index)}
+            onClick={() => {
+              onSelect(index);
+              if (isMarked || (!cell.isGiven && cell.value !== 0)) onToggleMark(index);
+            }}
             className={[
               "relative flex items-center justify-center font-display text-[clamp(0.85rem,3.6vw,1.35rem)] font-semibold transition-colors duration-150",
               col % 3 === 0 && col !== 0 ? "border-l-2 border-l-ink/70" : "border-l border-l-ink/10",
               row % 3 === 0 && row !== 0 ? "border-t-2 border-t-ink/70" : "border-t border-t-ink/10",
-              cell.isGiven ? "text-ink" : "text-rose-deep",
-              conflict ? "text-red-500" : "",
+              conflict ? "text-red-500" : isMarked ? "text-emerald-700 dark:text-emerald-300" : cell.isGiven ? "text-ink" : "text-rose-deep",
             ].join(" ")}
             style={{
               background: isSelected

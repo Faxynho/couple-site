@@ -16,6 +16,7 @@ import { COLOR_DIFFICULTIES, ColorDifficulty } from "@/lib/colorTypes";
 import { CROSSWORD_DIFFICULTIES, CrosswordDifficulty } from "@/lib/crosswordTypes";
 import { WORDSEARCH_DIFFICULTIES, WordSearchDifficulty } from "@/lib/wordsearchTypes";
 import { QUIZ_DIFFICULTIES, QuizDifficulty } from "@/lib/quizTypes";
+import { MEMORY_DIFFICULTIES, MemoryDifficulty } from "@/lib/memoryTypes";
 import { fetchAccounts } from "@/lib/accountApi";
 import { getActiveAccount } from "@/lib/accountSession";
 
@@ -108,6 +109,8 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
       setConfig({ difficulty, matchMode: "solo" });
     } else if (gameId === "rpg") {
       setConfig({ matchMode: "soloBot" });
+    } else if (gameId === "memory") {
+      setConfig({ difficulty, matchMode: "solo" });
     } else {
       setConfig({ difficulty });
     }
@@ -223,6 +226,17 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
             <DifficultyGrid
               entries={Object.entries(QUIZ_DIFFICULTIES) as [QuizDifficulty, (typeof QUIZ_DIFFICULTIES)[QuizDifficulty]][]}
               selected={difficulty as QuizDifficulty}
+              onSelect={setDifficulty}
+            />
+          </div>
+        )}
+
+        {gameId === "memory" && (
+          <div className="text-left">
+            <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">Dificuldade</p>
+            <DifficultyGrid
+              entries={Object.entries(MEMORY_DIFFICULTIES) as [MemoryDifficulty, (typeof MEMORY_DIFFICULTIES)[MemoryDifficulty]][]}
+              selected={difficulty as MemoryDifficulty}
               onSelect={setDifficulty}
             />
           </div>

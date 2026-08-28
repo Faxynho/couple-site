@@ -3,7 +3,7 @@
 import { ReactNode, useState } from "react";
 import { GAMES } from "@/lib/games";
 import { GAME_RANKS, GAMES_WITHOUT_DUEL, formatRecordValue, rankLabel } from "@/lib/accountFormat";
-import { AccountsOverview } from "@/lib/accountTypes";
+import { AccountId, AccountRecords, AccountsOverview, RecordEntry } from "@/lib/accountTypes";
 
 interface RecordsTabProps {
   overview: AccountsOverview | null;
@@ -18,6 +18,26 @@ const SUB_TABS: { id: SubTab; label: string }[] = [
   { id: "duo", label: "⚔️ Duelo" },
   { id: "together", label: "💞 Juntos" },
 ];
+
+function isBetter(candidate: RecordEntry, current: RecordEntry): boolean {
+  if (candidate.scoreType !== current.scoreType) return false;
+  return candidate.scoreType === "time" ? candidate.value < current.value : candidate.value > current.value;
+}
+
+function winnerIds(records: Record<AccountId, AccountRecords>, gameId: keyof AccountRecords["solo"], rank: string, mode: "solo" | "duo"): AccountId[] {
+  const entries = ACCOUNT_ORDER.map((id) => [id, records[id][mode]?.[gameId]?.[rank]] as const).filter((entry): entry is readonly [AccountId, RecordEntry] => Boolean(entry[1]));
+  return entries.filter(([, entry]) => entries.every(([, other]) => !isBetter(other, entry))).map(([id]) => id);
+}
+
+function trophyCounts(overview: AccountsOverview, mode: "solo" | "duo"): Record<AccountId, number> {
+  const counts: Record<AccountId, number> = { andre: 0, flavia: 0 };
+  for (const game of GAMES) {
+    for (const rank of GAME_RANKS[game.id]) {
+      for (const id of winnerIds(overview.records, game.id, rank, mode)) counts[id] += 1;
+    }
+  }
+  return counts;
+}
 
 export default function RecordsTab({ overview, error }: RecordsTabProps) {
   const [subTab, setSubTab] = useState<SubTab>("solo");
@@ -36,6 +56,8 @@ export default function RecordsTab({ overview, error }: RecordsTabProps) {
           </SubTabButton>
         ))}
       </div>
+
+      {(subTab === "solo" || subTab === "duo") && <TrophySummary overview={overview} mode={subTab} />}
 
       {subTab === "duo" && (
         <p className="text-center text-xs text-ink-soft">
@@ -75,9 +97,10 @@ export default function RecordsTab({ overview, error }: RecordsTabProps) {
                         <div className="flex flex-1 flex-wrap justify-end gap-x-5 gap-y-1">
                           {ACCOUNT_ORDER.map((id) => {
                             const entry = records[id][subTab]?.[game.id]?.[rank];
+                            const winners = winnerIds(records, game.id, rank, subTab);
                             return (
                               <span key={id} className="flex items-center gap-1.5 whitespace-nowrap">
-                                <span className="text-xs text-ink-soft">{profiles[id].name}</span>
+                                <span className="text-xs text-ink-soft">{profiles[id].name}{winners.includes(id) ? " 🏆" : ""}</span>
                                 <span className="font-medium text-ink">
                                   {entry ? formatRecordValue(entry.value, entry.scoreType) : "—"}
                                 </span>
@@ -93,6 +116,23 @@ export default function RecordsTab({ overview, error }: RecordsTabProps) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function TrophySummary({ overview, mode }: { overview: AccountsOverview; mode: "solo" | "duo" }) {
+  const counts = trophyCounts(overview, mode);
+  return (
+    <div className="glass-panel mx-auto w-full max-w-md rounded-xl2 px-4 py-3">
+      <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-soft">🏆 Troféus {mode === "solo" ? "Solo" : "Duelo"}</p>
+      <div className="mt-2 grid grid-cols-2 gap-2 text-center">
+        {ACCOUNT_ORDER.map((id) => (
+          <div key={id} className="rounded-lg bg-surface/55 px-2 py-1.5">
+            <p className="truncate text-xs text-ink-soft">{overview.profiles[id].name}</p>
+            <p className="font-display text-lg font-semibold text-ink">{counts[id]} 🏆</p>
+          </div>
+        ))}
       </div>
     </div>
   );

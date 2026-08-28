@@ -216,6 +216,7 @@ export const CARD_TEMPLATES: Record<RPGRarity, RPGCardTemplate[]> = {
       description: "Causa dano contínuo de multiplicador por 5 rodadas.",
       curseDamageMultiplier: 0.85,
       curseRounds: 5,
+      ignoreEvade: true,
       classRestriction: "warlock",
     },
     {

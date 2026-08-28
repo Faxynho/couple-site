@@ -3,7 +3,7 @@ import { accountStore } from "./AccountStore";
 import { ACCOUNT_IDS, AccountId, NO_RANK, RecordScoreType } from "./types";
 
 /**
- * Traduz o estado (já finalizado) de qualquer um dos 7 jogos para um formato
+ * Traduz o estado (já finalizado) de qualquer um dos jogos para um formato
  * único que o AccountStore entende — é o único lugar do backend que "sabe"
  * onde cada jogo guarda dificuldade/duração/pontuação, então adicionar um
  * jogo novo no futuro só exige um `case` novo aqui, nada em Room.ts.
@@ -200,6 +200,65 @@ function extractColors(
   return { rank, durationMs, bucket, players };
 }
 
+interface MemoryStateShape {
+  difficulty?: string;
+  mode?: string; // "solo" | "duel" | "together"
+  playStartedAt: number | null;
+  finishedAt: number | null;
+  expectedPlayers: string[];
+  results: { playerId: string; place: number; score: number; pairsFound: number; timeUsedMs: number }[];
+}
+
+/** O recorde do Jogo da Memória é a maior pontuação. O desempate por pares e
+ * tempo já é resolvido pelo motor para o resultado da partida, sem criar um
+ * segundo formato de recorde fora da arquitetura atual. */
+function extractMemory(state: MemoryStateShape, accountByPlayerId: Map<string, AccountId | undefined>): MatchOutcome {
+  const durationMs = Math.max(0, (state.finishedAt ?? Date.now()) - (state.playStartedAt ?? state.finishedAt ?? Date.now()));
+  const rank = state.difficulty ?? NO_RANK;
+  const results = state.results ?? [];
+
+  if (state.mode === "together") {
+    const score = results[0]?.score ?? 0;
+    return {
+      rank,
+      durationMs,
+      bucket: "together",
+      players: [],
+      togetherMetric: { value: score, scoreType: "points" },
+    };
+  }
+
+  if (state.mode === "duel") {
+    const first = results[0];
+    const second = results[1];
+    const isDraw = Boolean(
+      first && second && first.score === second.score && first.pairsFound === second.pairsFound && first.timeUsedMs === second.timeUsedMs
+    );
+    const players: PlayerOutcome[] = [];
+    for (const result of results) {
+      const accountId = accountFor(result.playerId, accountByPlayerId);
+      if (!accountId) continue;
+      players.push({
+        accountId,
+        metricValue: result.score,
+        scoreType: "points",
+        result: isDraw ? "draw" : result.place === 1 ? "win" : "loss",
+      });
+    }
+    return { rank, durationMs, bucket: "duel", players };
+  }
+
+  const result = results[0];
+  const playerId = result?.playerId ?? state.expectedPlayers[0];
+  const accountId = playerId ? accountFor(playerId, accountByPlayerId) : undefined;
+  return {
+    rank,
+    durationMs,
+    bucket: "solo",
+    players: accountId ? [{ accountId, metricValue: result?.score ?? 0, scoreType: "points", result: "solo" }] : [],
+  };
+}
+
 interface RPGStateShape {
   mode: string; // "1v1" | "soloBot" | "duoBot"
   teamA: string[];
@@ -275,6 +334,8 @@ function extractGameOutcome(
       return extractQuiz(gameState as QuizStateShape, accountByPlayerId);
     case "colors":
       return extractColors(gameState as ColorsStateShape, roomMode, accountByPlayerId);
+    case "memory":
+      return extractMemory(gameState as MemoryStateShape, accountByPlayerId);
     case "rpg":
       return extractRPG(gameState as RPGStateShape, accountByPlayerId);
     default:
