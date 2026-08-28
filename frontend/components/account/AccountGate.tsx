@@ -29,7 +29,12 @@ export default function AccountGate({ onSelected }: AccountGateProps) {
       .then((data) => {
         if (alive) setAccounts(data);
       })
-      .catch(() => {
+      .catch((err) => {
+        // A mensagem na tela fica genérica de propósito (o visitante não
+        // precisa saber o que é CORS), mas o motivo real vai pro console —
+        // é o que diferencia "CORS bloqueado" de "404" de "servidor fora do
+        // ar" na hora de debugar um deploy (aba Network/Console do navegador).
+        console.error("[AccountGate] fetchAccounts falhou:", err);
         if (alive) setError("Não foi possível falar com o servidor. Confira se o backend está rodando.");
       });
     return () => {
