@@ -27,6 +27,12 @@ export interface Player {
   name: string;
   color: string; // cor de identificação do jogador na UI (avatar/cursor)
   connected: boolean;
+  /** Conta fixa selecionada (André/Flávia) antes de entrar na sala — `undefined`
+   *  para quem entrou como Visitante. É o que permite atribuir estatísticas e
+   *  recordes à conta certa quando a partida termina (ver accounts/gameResult.ts).
+   *  Nunca é a fonte de verdade de "quem é essa pessoa" para fins de acesso —
+   *  a plataforma continua sem autenticação, é só um rótulo de atribuição. */
+  accountId?: "andre" | "flavia";
 }
 
 /** "lobby": sala Duo criada, ainda sem jogo escolhido — mostra o catálogo de

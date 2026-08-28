@@ -11,7 +11,7 @@ export const GAMES: GameDefinition[] = [
     name: "Quebra-cabeça Cooperativo",
     description: "Montem juntos, peça por peça, em tempo real — não importa a distância.",
     emoji: "🧩",
-    image: "/images/puzzle/Me and You 2.jpg",
+    image: "/images/puzzle-card.png",
     available: true,
   },
   {
@@ -19,7 +19,7 @@ export const GAMES: GameDefinition[] = [
     name: "Sudoku",
     description: "Clássico 9x9, sozinho ou a dois — cada jogada aparece na hora para o outro.",
     emoji: "🔢",
-    image: "/images/sudoku-card.svg",
+    image: "/images/sudoku-card.png",
     available: true,
   },
   {
@@ -27,7 +27,7 @@ export const GAMES: GameDefinition[] = [
     name: "Memória de Cores",
     description: "Memorizem a cor, recriem de olho na memória e comparem o resultado — sozinho ou a dois.",
     emoji: "🎨",
-    image: "/images/colors-card.svg",
+    image: "/images/colors-card.png",
     available: true,
   },
   {
@@ -35,7 +35,7 @@ export const GAMES: GameDefinition[] = [
     name: "Palavras Cruzadas",
     description: "Preencham a grade com as dicas — juntos numa só cópia ou em duelo pra ver quem termina primeiro.",
     emoji: "📝",
-    image: "/images/crossword-card.svg",
+    image: "/images/crossword-card.png",
     available: true,
   },
   {
@@ -43,7 +43,7 @@ export const GAMES: GameDefinition[] = [
     name: "Caça-Palavras",
     description: "Encontrem as palavras escondidas na grade em todas as direções — em equipe ou em duelo.",
     emoji: "🔍",
-    image: "/images/wordsearch-card.svg",
+    image: "/images/wordsearch-card.png",
     available: true,
   },
   {
@@ -51,7 +51,7 @@ export const GAMES: GameDefinition[] = [
     name: "Quiz",
     description: "Perguntas de conhecimentos gerais com tempo — sozinho, em equipe ou em duelo pontuado.",
     emoji: "❓",
-    image: "/images/quiz-card.svg",
+    image: "/images/quiz-card.png",
     available: true,
   },
   {
@@ -59,7 +59,7 @@ export const GAMES: GameDefinition[] = [
     name: "Mini RPG: Duelo",
     description: "Sorteie sua classe e batalhe com cartas aleatórias — 1x1, ou em dupla contra o BOT.",
     emoji: "🗡️",
-    image: "/images/rpg-card.svg",
+    image: "/images/rpg-card.png",
     available: true,
   },
 ];

@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { motion } from "framer-motion";
 import Logo from "@/components/Logo";
+import AccountGate from "@/components/account/AccountGate";
 import { getStoredRoomCode } from "@/lib/roomSession";
+import { ActiveAccount, clearActiveAccount, getActiveAccount, subscribeToActiveAccountChange } from "@/lib/accountSession";
 
 const KICK_MESSAGES: Record<string, string> = {
   expulso: "Você foi removido da sala pelo anfitrião.",
@@ -16,10 +18,21 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const notice = searchParams.get("aviso");
   const [storedRoomCode, setStoredRoomCode] = useState<string | null>(null);
+  // `undefined` enquanto ainda não checamos o navegador (evita mostrar a
+  // tela errada por uma fração de segundo); `null` = ninguém escolhido ainda.
+  const [account, setAccount] = useState<ActiveAccount | null | undefined>(undefined);
 
   useEffect(() => {
     setStoredRoomCode(getStoredRoomCode());
+    setAccount(getActiveAccount());
+    // Cobre o caso de "Trocar de conta" ser clicado com o painel aberto
+    // enquanto já se está em "/" — nesse caso não há troca de rota para
+    // remontar este componente, então escutamos a mudança diretamente.
+    return subscribeToActiveAccountChange(() => setAccount(getActiveAccount()));
   }, []);
+
+  if (account === undefined) return null;
+  if (account === null) return <AccountGate onSelected={setAccount} />;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center px-5 py-14 sm:py-20">
@@ -91,6 +104,16 @@ function HomeContent() {
           Voltar para sua sala ({storedRoomCode})
         </button>
       )}
+
+      <button
+        onClick={() => {
+          clearActiveAccount();
+          setAccount(null);
+        }}
+        className="mt-4 text-sm font-medium text-ink-soft underline decoration-dotted underline-offset-4 transition-colors hover:text-ink"
+      >
+        Trocar de conta
+      </button>
     </main>
   );
 }

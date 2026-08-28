@@ -14,6 +14,9 @@ export interface Player {
   name: string;
   color: string;
   connected: boolean;
+  /** Conta fixa (André/Flávia) que esse jogador selecionou antes de entrar na
+   *  sala — ausente para quem entrou como Visitante. */
+  accountId?: "andre" | "flavia";
 }
 
 /** "lobby": sala Duo criada, ainda sem jogo escolhido. "waiting"/"ready":

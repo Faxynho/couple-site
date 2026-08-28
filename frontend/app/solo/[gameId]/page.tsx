@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
@@ -16,6 +16,8 @@ import { COLOR_DIFFICULTIES, ColorDifficulty } from "@/lib/colorTypes";
 import { CROSSWORD_DIFFICULTIES, CrosswordDifficulty } from "@/lib/crosswordTypes";
 import { WORDSEARCH_DIFFICULTIES, WordSearchDifficulty } from "@/lib/wordsearchTypes";
 import { QUIZ_DIFFICULTIES, QuizDifficulty } from "@/lib/quizTypes";
+import { fetchAccounts } from "@/lib/accountApi";
+import { getActiveAccount } from "@/lib/accountSession";
 
 function DifficultyGrid<K extends string>({
   entries,
@@ -61,6 +63,21 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
   const [imageId, setImageId] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<{ width: number; height: number } | null>(null);
   const [starting, setStarting] = useState(false);
+  // Continua sem pedir nome (nunca teve essa etapa no Solo) — só passa a usar
+  // o nome atual da conta fixa, se houver, no lugar do "Você" genérico.
+  const [playerName, setPlayerName] = useState("Você");
+
+  useEffect(() => {
+    const active = getActiveAccount();
+    if (active?.type === "account") {
+      fetchAccounts()
+        .then((accounts) => {
+          const found = accounts.find((a) => a.id === active.id);
+          if (found) setPlayerName(found.name);
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   if (!game) {
     return (
@@ -77,7 +94,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
 
   const handleStart = async () => {
     setStarting(true);
-    const res = await createRoom("solo", "Você", gameId);
+    const res = await createRoom("solo", playerName, gameId);
     if (!res.ok || !res.room) {
       setStarting(false);
       return;

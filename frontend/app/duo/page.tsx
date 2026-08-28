@@ -1,12 +1,15 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
 import Button from "@/components/Button";
+import AccountAvatar from "@/components/account/AccountAvatar";
 import { useRoom } from "@/hooks/useRoom";
+import { fetchAccounts } from "@/lib/accountApi";
+import { ActiveAccount, getActiveAccount } from "@/lib/accountSession";
 
 function DuoEntryContent() {
   const router = useRouter();
@@ -17,6 +20,22 @@ function DuoEntryContent() {
   const [screen, setScreen] = useState<"choose" | "join">(prefillCode ? "join" : "choose");
   const [name, setName] = useState("");
   const [code, setCode] = useState(prefillCode);
+  const [account, setAccount] = useState<ActiveAccount | null>(null);
+
+  // Com uma conta fixa selecionada, o nome já é conhecido — busca o nome
+  // (e a foto) atuais da conta em vez de pedir de novo, como pedia antes.
+  useEffect(() => {
+    const active = getActiveAccount();
+    setAccount(active);
+    if (active?.type === "account") {
+      fetchAccounts()
+        .then((accounts) => {
+          const found = accounts.find((a) => a.id === active.id);
+          if (found) setName(found.name);
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const handleCreate = async () => {
     const res = await createRoom("duo", name);
@@ -59,13 +78,20 @@ function DuoEntryContent() {
             </p>
           </div>
 
-          <label className="text-sm font-medium text-ink">Seu nome</label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Como podemos te chamar?"
-            className="mt-2 w-full rounded-full border border-surface/70 bg-surface/60 px-5 py-3 text-ink placeholder:text-ink-soft/70 outline-none focus:border-rose"
-          />
+          <label className="text-sm font-medium text-ink">{account?.type === "account" ? "Sua conta" : "Seu nome"}</label>
+          {account?.type === "account" ? (
+            <div className="mt-2 flex items-center gap-3 rounded-full border border-surface/70 bg-surface/60 px-4 py-2.5">
+              <AccountAvatar name={name || "?"} accountId={account.id} size={30} />
+              <span className="text-sm font-medium text-ink">Jogando como {name || "..."}</span>
+            </div>
+          ) : (
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Como podemos te chamar?"
+              className="mt-2 w-full rounded-full border border-surface/70 bg-surface/60 px-5 py-3 text-ink placeholder:text-ink-soft/70 outline-none focus:border-rose"
+            />
+          )}
 
           {screen === "choose" ? (
             <div className="mt-6 flex flex-col gap-3">

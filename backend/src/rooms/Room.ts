@@ -1,5 +1,6 @@
 import { ALL_GAME_IDS, GameId, Player, RoomMode, RoomSnapshot, RoomStatus } from "../types";
 import { getGameEngine } from "../games/GameRegistry";
+import { recordFinishedMatch } from "../accounts/gameResult";
 
 const PLAYER_COLORS = ["#F2A6B8", "#9FC3E8"]; // rosa e azul pastel, um por jogador
 const DEFAULT_PENDING_DIFFICULTY = "medium";
@@ -55,6 +56,13 @@ export class Room {
   sequence: GameId[] = [];
   sequenceProgress: GameId[] = [];
 
+  /** Evita registrar a mesma partida duas vezes nas estatísticas de conta —
+   *  `isSolved` continua `true` em toda ação aplicada DEPOIS do fim do jogo
+   *  (ex.: o vencedor de um duelo mexendo na própria grade enquanto espera o
+   *  outro terminar), então sem esse guard `recordFinishedMatch` rodaria de
+   *  novo a cada uma dessas ações. Zerado sempre que uma partida nova começa. */
+  private statsRecordedForMatch = false;
+
   constructor(code: string, roomMode: RoomMode, gameId: GameId | null = null) {
     this.code = code;
     this.roomMode = roomMode;
@@ -66,7 +74,7 @@ export class Room {
     }
   }
 
-  addPlayer(id: string, name: string): Player | null {
+  addPlayer(id: string, name: string, accountId?: "andre" | "flavia"): Player | null {
     // Mesma identidade persistente já presente na sala: é uma RECONEXÃO
     // (refresh, nova aba, ou o WebSocket caiu e reabriu com um socket.id
     // novo por baixo dos panos), não um terceiro jogador entrando — nunca
@@ -75,6 +83,9 @@ export class Room {
     if (existing) {
       existing.connected = true;
       if (name?.trim()) existing.name = name.trim();
+      // Só atualiza se vier um valor — nunca "esquece" a conta numa
+      // reconexão/room:sync que não manda esse campo.
+      if (accountId) existing.accountId = accountId;
       if (this.status === "waiting" || this.status === "ready") {
         this.status = this.bothConnected() ? "ready" : "waiting";
       }
@@ -93,6 +104,7 @@ export class Room {
       name: name?.trim() || `Jogador ${this.players.size + 1}`,
       color: PLAYER_COLORS[colorIndex],
       connected: true,
+      accountId,
     };
     this.players.set(id, player);
     // Não regride o status se o jogo já começou (ex.: um amigo entra depois
@@ -291,6 +303,7 @@ export class Room {
     };
     this.gameState = engine.createInitialState(options);
     this.status = "playing";
+    this.statsRecordedForMatch = false;
   }
 
   resetGame() {
@@ -299,6 +312,7 @@ export class Room {
     if (this.gameState) {
       this.gameState = engine.reset(this.gameState);
       this.status = "playing";
+      this.statsRecordedForMatch = false;
     }
   }
 
@@ -310,6 +324,21 @@ export class Room {
     if (engine.isSolved(this.gameState)) {
       this.status = "finished";
       this.markSequenceProgress(this.gameId);
+      if (!this.statsRecordedForMatch) {
+        this.statsRecordedForMatch = true;
+        try {
+          recordFinishedMatch({
+            roomMode: this.roomMode,
+            gameId: this.gameId,
+            players: [...this.players.values()],
+            gameState: this.gameState,
+          });
+        } catch (err) {
+          // Uma falha ao interpretar o estado de um jogo nunca pode derrubar
+          // a partida em si — só a estatística dessa partida específica é perdida.
+          console.error(`Falha ao registrar estatísticas da partida (${this.gameId}):`, err);
+        }
+      }
     }
   }
 

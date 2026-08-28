@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import { getPlayerId } from "@/lib/playerId";
+import { getActiveAccountId } from "@/lib/accountSession";
 import { setStoredRoomCode } from "@/lib/roomSession";
 import { GameId, Player, RoomMode, RoomSnapshot } from "@/lib/types";
 
@@ -41,7 +42,7 @@ export function useRoom() {
     return new Promise<CreateOrJoinResult>((resolve) => {
       getSocket().emit(
         "room:create",
-        { roomMode, gameId, playerName, playerId: getPlayerId() },
+        { roomMode, gameId, playerName, playerId: getPlayerId(), accountId: getActiveAccountId() },
         (res: CreateOrJoinResult) => {
           setLoading(false);
           if (res.ok && res.room) {
@@ -62,7 +63,7 @@ export function useRoom() {
     return new Promise<CreateOrJoinResult>((resolve) => {
       getSocket().emit(
         "room:join",
-        { code: code.toUpperCase(), playerName, playerId: getPlayerId() },
+        { code: code.toUpperCase(), playerName, playerId: getPlayerId(), accountId: getActiveAccountId() },
         (res: CreateOrJoinResult) => {
           setLoading(false);
           if (res.ok && res.room) {

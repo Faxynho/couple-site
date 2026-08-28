@@ -3,6 +3,7 @@ import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 import { themeInitScript } from "@/lib/theme";
 import ThemeToggleGate from "@/components/ThemeToggleGate";
+import AccountPanelGate from "@/components/account/AccountPanelGate";
 
 const fredoka = Fredoka({
   subsets: ["latin"],
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body suppressHydrationWarning>
         <ThemeToggleGate />
+        <AccountPanelGate />
         {children}
       </body>
     </html>

@@ -13,6 +13,7 @@ import { isValidWordSearchMode } from "../games/wordsearch/WordSearchGame";
 import { isValidQuizDifficulty } from "../games/quiz/questionBank";
 import { isValidQuizMode, QUIZ_REVEAL_DURATION_MS } from "../games/quiz/QuizGame";
 import { isValidRPGMode, RPG_INTRO_DURATION_MS, RPG_RESOLVE_PAUSE_MS } from "../games/rpg/RPGGame";
+import { isAccountId } from "../accounts/types";
 
 interface SocketData {
   roomCode?: string;
@@ -39,6 +40,12 @@ function sanitizeStartOptions(payload?: StartPayload) {
   if (typeof payload?.imageWidth === "number" && payload.imageWidth > 0) options.imageWidth = payload.imageWidth;
   if (typeof payload?.imageHeight === "number" && payload.imageHeight > 0) options.imageHeight = payload.imageHeight;
   return options;
+}
+
+/** Só aceita "andre"/"flavia" — qualquer outra coisa (visitante, valor
+ *  malformado) vira `undefined`, o mesmo que "sem conta". */
+function sanitizeAccountId(value: unknown): "andre" | "flavia" | undefined {
+  return isAccountId(value) ? value : undefined;
 }
 
 function broadcastRoom(io: Server, roomCode: string, roomManager: RoomManager) {
@@ -466,7 +473,13 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     socket.on(
       "room:create",
       (
-        payload: { roomMode: RoomMode; gameId?: GameId; playerName: string; playerId?: string },
+        payload: {
+          roomMode: RoomMode;
+          gameId?: GameId;
+          playerName: string;
+          playerId?: string;
+          accountId?: string;
+        },
         callback: AckCallback
       ) => {
         const roomMode: RoomMode = payload.roomMode === "solo" ? "solo" : "duo";
@@ -476,7 +489,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         const gameId = roomMode === "solo" ? payload.gameId ?? null : null;
         const room = roomManager.createRoom(roomMode, gameId);
         const playerId = payload.playerId?.trim() || randomUUID();
-        const player = room.addPlayer(playerId, payload.playerName);
+        const player = room.addPlayer(playerId, payload.playerName, sanitizeAccountId(payload.accountId));
         room.setSocketId(playerId, socket.id);
         socket.data.roomCode = room.code;
         socket.data.playerId = playerId;
@@ -488,7 +501,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
 
     socket.on(
       "room:join",
-      (payload: { code: string; playerName: string; playerId?: string }, callback: AckCallback) => {
+      (payload: { code: string; playerName: string; playerId?: string; accountId?: string }, callback: AckCallback) => {
         const room = roomManager.getRoom(payload.code);
         if (!room) {
           callback?.({ ok: false, error: "Sala não encontrada. Confira o código." });
@@ -503,7 +516,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
           callback?.({ ok: false, error: "Essa sala já está completa." });
           return;
         }
-        const player = room.addPlayer(playerId, payload.playerName);
+        const player = room.addPlayer(playerId, payload.playerName, sanitizeAccountId(payload.accountId));
         room.setSocketId(playerId, socket.id);
         socket.data.roomCode = room.code;
         socket.data.playerId = playerId;

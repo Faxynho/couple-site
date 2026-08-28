@@ -6,6 +6,10 @@ node_modules/
 dist/
 out/
 
+# Dados persistidos das contas fixas (perfil, estatísticas e recordes) —
+# gerado automaticamente pelo backend em runtime, não faz parte do código.
+backend/data/
+
 # Variáveis de ambiente
 .env
 .env.local
