@@ -27,6 +27,7 @@ export interface AirHockeyState {
   impactStrength: number;
   impactKind: "wall" | "paddle" | null;
   paddleContact: Record<string, boolean>;
+  paddleContactNormals: Record<string, { x: number; y: number } | null>;
   botNextThinkAt: number;
   results: AirHockeyResult[];
 }
@@ -38,7 +39,9 @@ export type AirHockeyAction =
 const WORLD_WIDTH = 1.6;
 const WORLD_HEIGHT = 1;
 const HALF_WIDTH = WORLD_WIDTH / 2;
-const PADDLE_RADIUS = 0.067;
+// 12% larger than the original paddle while keeping the puck radius and
+// collision geometry unchanged.
+const PADDLE_RADIUS = 0.075;
 const PUCK_RADIUS = 0.034;
 const GOAL_MIN_Y = 0.34;
 const GOAL_MAX_Y = 0.66;
@@ -118,25 +121,44 @@ function botTarget(state: AirHockeyState, now: number) {
   bot.targetY = clamp(projectedY + error, PADDLE_RADIUS, WORLD_HEIGHT - PADDLE_RADIUS);
 }
 
-function collidePaddle(state: AirHockeyState, paddleId: string, paddle: AirHockeyPaddle, previousPaddle: AirHockeyPaddle, previousPuck: AirHockeyVector) {
+function constrainPaddleContact(state: AirHockeyState, paddleId: string, paddle: AirHockeyPaddle, previousPaddle: AirHockeyPaddle, dt: number) {
+  const normal = state.paddleContactNormals[paddleId];
+  if (!state.paddleContact[paddleId] || !normal) return;
+  const minDistance = PADDLE_RADIUS + PUCK_RADIUS + 0.001;
+  const puck = state.puck;
+  const alongNormal = (puck.x - paddle.x) * normal.x + (puck.y - paddle.y) * normal.y;
+  if (alongNormal >= minDistance) return;
+
+  // A raquete é cinemática, mas não pode terminar do outro lado do disco.
+  // Mantê-la atrás da normal do primeiro contato impede atravessamentos sem
+  // mover artificialmente o disco ou acrescentar um collider invisível.
+  paddle.x = puck.x - normal.x * minDistance;
+  paddle.y = puck.y - normal.y * minDistance;
+  const side = paddleId === state.playerIds[0] ? 0 : 1;
+  const minX = side === 0 ? PADDLE_RADIUS : HALF_WIDTH + PADDLE_RADIUS * 0.25;
+  const maxX = side === 0 ? HALF_WIDTH - PADDLE_RADIUS * 0.25 : WORLD_WIDTH - PADDLE_RADIUS;
+  paddle.x = clamp(paddle.x, minX, maxX);
+  paddle.y = clamp(paddle.y, PADDLE_RADIUS, WORLD_HEIGHT - PADDLE_RADIUS);
+  paddle.vx = (paddle.x - previousPaddle.x) / Math.max(dt, 0.001);
+  paddle.vy = (paddle.y - previousPaddle.y) / Math.max(dt, 0.001);
+}
+
+function collidePaddle(state: AirHockeyState, paddleId: string, paddle: AirHockeyPaddle, previousPaddle: AirHockeyPaddle, previousPuck: AirHockeyVector, dt: number): number | null {
   const puck = state.puck;
   const dx = puck.x - paddle.x;
   const dy = puck.y - paddle.y;
   const minDistance = PADDLE_RADIUS + PUCK_RADIUS;
   const distance = length(dx, dy);
-  // Continuous collision detection in relative space: the closest point of
-  // the segment between the previous and current relative centers is tested,
-  // so a fast paddle cannot cross the puck between two snapshots.
+  // Continuous collision detection in relative space. Both circles may move
+  // during the step, but their relative trajectory is a single segment. The
+  // quadratic below finds the first time that segment reaches the exact
+  // combined radius, including the case where both endpoints are outside.
   const startX = previousPuck.x - previousPaddle.x;
   const startY = previousPuck.y - previousPaddle.y;
   const endX = dx;
   const endY = dy;
   const segmentX = endX - startX;
   const segmentY = endY - startY;
-  const segmentLengthSq = segmentX * segmentX + segmentY * segmentY;
-  const segmentT = segmentLengthSq > 0 ? clamp(-(startX * segmentX + startY * segmentY) / segmentLengthSq, 0, 1) : 1;
-  const closestX = startX + segmentX * segmentT;
-  const closestY = startY + segmentY * segmentT;
   const previousDistance = length(startX, startY);
   const wasInContact = Boolean(state.paddleContact[paddleId]);
   // Clear the latch only after the two circles have visibly separated. This
@@ -144,43 +166,50 @@ function collidePaddle(state: AirHockeyState, paddleId: string, paddle: AirHocke
   // impulses on every substep, while still allowing a later fresh hit.
   if (wasInContact && previousDistance > minDistance + 0.012 && distance > minDistance + 0.012) {
     state.paddleContact[paddleId] = false;
+    state.paddleContactNormals[paddleId] = null;
   }
-  if (distance >= minDistance && length(closestX, closestY) >= minDistance) return;
   if (state.paddleContact[paddleId]) {
-    if (distance < minDistance) {
-      const separation = distance > 0.000001 ? distance : previousDistance;
-      const nx = separation > 0.000001 ? (distance > 0.000001 ? dx / separation : startX / separation) : 1;
-      const ny = separation > 0.000001 ? (distance > 0.000001 ? dy / separation : startY / separation) : 0;
-      puck.x = paddle.x + nx * (minDistance + 0.001);
-      puck.y = paddle.y + ny * (minDistance + 0.001);
-    }
-    return;
+    constrainPaddleContact(state, paddleId, paddle, previousPaddle, dt);
+    return null;
   }
 
-  // Use the side from which the relative trajectory arrived at the paddle.
-  // This matters when both circles are outside the radius at the beginning
-  // and end of a substep but crossed through one another in between.
-  const closestDistance = length(closestX, closestY);
-  let nx: number;
-  let ny: number;
-  if (closestDistance > 0.000001) {
-    nx = closestX / closestDistance;
-    ny = closestY / closestDistance;
-  } else {
-    const startDistance = length(startX, startY);
-    if (startDistance > 0.000001) {
-      nx = startX / startDistance;
-      ny = startY / startDistance;
-    } else {
-      const relativeVx = puck.vx - paddle.vx;
-      const relativeVy = puck.vy - paddle.vy;
-      const relativeSpeed = length(relativeVx, relativeVy);
-      nx = relativeSpeed > 0.000001 ? -relativeVx / relativeSpeed : 1;
-      ny = relativeSpeed > 0.000001 ? -relativeVy / relativeSpeed : 0;
+  const radiusSq = minDistance * minDistance;
+  const segmentLengthSq = segmentX * segmentX + segmentY * segmentY;
+  const b = 2 * (startX * segmentX + startY * segmentY);
+  const c = startX * startX + startY * startY - radiusSq;
+  let impactT: number | null = c <= 0 ? 0 : null;
+  if (impactT === null && segmentLengthSq > 0.000000001) {
+    const discriminant = b * b - 4 * segmentLengthSq * c;
+    if (discriminant >= 0) {
+      const root = Math.sqrt(discriminant);
+      const first = (-b - root) / (2 * segmentLengthSq);
+      const second = (-b + root) / (2 * segmentLengthSq);
+      if (first >= 0 && first <= 1) impactT = first;
+      else if (second >= 0 && second <= 1) impactT = second;
     }
   }
-  puck.x = paddle.x + nx * (minDistance + 0.001);
-  puck.y = paddle.y + ny * (minDistance + 0.001);
+  if (impactT === null) return null;
+
+  const impactX = startX + segmentX * impactT;
+  const impactY = startY + segmentY * impactT;
+  const impactDistance = length(impactX, impactY);
+  let nx: number;
+  let ny: number;
+  if (impactDistance > 0.000001) {
+    nx = impactX / impactDistance;
+    ny = impactY / impactDistance;
+  } else {
+    const startDistance = length(startX, startY);
+    const relativeVx = puck.vx - paddle.vx;
+    const relativeVy = puck.vy - paddle.vy;
+    const relativeSpeed = length(relativeVx, relativeVy);
+    nx = startDistance > 0.000001 ? startX / startDistance : relativeSpeed > 0.000001 ? -relativeVx / relativeSpeed : 1;
+    ny = startDistance > 0.000001 ? startY / startDistance : relativeSpeed > 0.000001 ? -relativeVy / relativeSpeed : 0;
+  }
+  const contactPaddleX = previousPaddle.x + (paddle.x - previousPaddle.x) * impactT;
+  const contactPaddleY = previousPaddle.y + (paddle.y - previousPaddle.y) * impactT;
+  puck.x = contactPaddleX + nx * (minDistance + 0.001);
+  puck.y = contactPaddleY + ny * (minDistance + 0.001);
   const relativeX = puck.vx - paddle.vx;
   const relativeY = puck.vy - paddle.vy;
   const approach = relativeX * nx + relativeY * ny;
@@ -195,9 +224,11 @@ function collidePaddle(state: AirHockeyState, paddleId: string, paddle: AirHocke
   if (speed > maxSpeed) { puck.vx = puck.vx / speed * maxSpeed; puck.vy = puck.vy / speed * maxSpeed; }
   if (speed < 0.5) { puck.vx += nx * 0.42; puck.vy += ny * 0.42; }
   state.paddleContact[paddleId] = true;
+  state.paddleContactNormals[paddleId] = { x: nx, y: ny };
   state.impactSerial += 1;
   state.impactStrength = clamp(speed / maxSpeed, 0, 1);
   state.impactKind = "paddle";
+  return impactT;
 }
 
 function scoreGoal(state: AirHockeyState, scorer: string, now: number) {
@@ -224,23 +255,51 @@ function scoreGoal(state: AirHockeyState, scorer: string, now: number) {
   state.puck.vy = 0;
 }
 
+function handlePuckBounds(state: AirHockeyState, now: number): boolean {
+  const puck = state.puck;
+  if (puck.y - PUCK_RADIUS < 0) { puck.y = PUCK_RADIUS; puck.vy = Math.abs(puck.vy); state.impactSerial += 1; state.impactKind = "wall"; }
+  if (puck.y + PUCK_RADIUS > WORLD_HEIGHT) { puck.y = WORLD_HEIGHT - PUCK_RADIUS; puck.vy = -Math.abs(puck.vy); state.impactSerial += 1; state.impactKind = "wall"; }
+  if (puck.x - PUCK_RADIUS < 0) {
+    if (puck.y > GOAL_MIN_Y && puck.y < GOAL_MAX_Y) { scoreGoal(state, state.playerIds[1], now); return true; }
+    puck.x = PUCK_RADIUS; puck.vx = Math.abs(puck.vx); state.impactSerial += 1; state.impactKind = "wall";
+  }
+  if (puck.x + PUCK_RADIUS > WORLD_WIDTH) {
+    if (puck.y > GOAL_MIN_Y && puck.y < GOAL_MAX_Y) { scoreGoal(state, state.playerIds[0], now); return true; }
+    puck.x = WORLD_WIDTH - PUCK_RADIUS; puck.vx = -Math.abs(puck.vx); state.impactSerial += 1; state.impactKind = "wall";
+  }
+  return false;
+}
+
 function stepPuck(state: AirHockeyState, dt: number, now: number, previousPaddles: Record<string, AirHockeyPaddle>) {
   const puck = state.puck;
   const previousPuck = { ...puck };
   puck.x += puck.vx * dt;
   puck.y += puck.vy * dt;
-  if (puck.y - PUCK_RADIUS < 0) { puck.y = PUCK_RADIUS; puck.vy = Math.abs(puck.vy); state.impactSerial += 1; state.impactKind = "wall"; }
-  if (puck.y + PUCK_RADIUS > WORLD_HEIGHT) { puck.y = WORLD_HEIGHT - PUCK_RADIUS; puck.vy = -Math.abs(puck.vy); state.impactSerial += 1; state.impactKind = "wall"; }
-  if (puck.x - PUCK_RADIUS < 0) {
-    if (puck.y > GOAL_MIN_Y && puck.y < GOAL_MAX_Y) { scoreGoal(state, state.playerIds[1], now); return; }
-    puck.x = PUCK_RADIUS; puck.vx = Math.abs(puck.vx); state.impactSerial += 1; state.impactKind = "wall";
+  if (handlePuckBounds(state, now)) return;
+
+  const firstId = state.playerIds[0];
+  const firstImpact = collidePaddle(state, firstId, state.paddles[firstId], previousPaddles[firstId], previousPuck, dt);
+  if (firstImpact !== null) {
+    if (firstImpact < 1) {
+      const remaining = dt * (1 - firstImpact);
+      puck.x += puck.vx * remaining;
+      puck.y += puck.vy * remaining;
+      if (handlePuckBounds(state, now)) return;
+    }
+    constrainPaddleContact(state, firstId, state.paddles[firstId], previousPaddles[firstId], dt);
+  } else {
+    const secondId = state.playerIds[1];
+    const secondImpact = collidePaddle(state, secondId, state.paddles[secondId], previousPaddles[secondId], previousPuck, dt);
+    if (secondImpact !== null) {
+      if (secondImpact < 1) {
+        const remaining = dt * (1 - secondImpact);
+        puck.x += puck.vx * remaining;
+        puck.y += puck.vy * remaining;
+        if (handlePuckBounds(state, now)) return;
+      }
+      constrainPaddleContact(state, secondId, state.paddles[secondId], previousPaddles[secondId], dt);
+    }
   }
-  if (puck.x + PUCK_RADIUS > WORLD_WIDTH) {
-    if (puck.y > GOAL_MIN_Y && puck.y < GOAL_MAX_Y) { scoreGoal(state, state.playerIds[0], now); return; }
-    puck.x = WORLD_WIDTH - PUCK_RADIUS; puck.vx = -Math.abs(puck.vx); state.impactSerial += 1; state.impactKind = "wall";
-  }
-  collidePaddle(state, state.playerIds[0], state.paddles[state.playerIds[0]], previousPaddles[state.playerIds[0]], previousPuck);
-  collidePaddle(state, state.playerIds[1], state.paddles[state.playerIds[1]], previousPaddles[state.playerIds[1]], previousPuck);
   const drag = Math.pow(0.9975, dt * 60);
   puck.vx *= drag;
   puck.vy *= drag;
@@ -251,6 +310,8 @@ function resetRound(state: AirHockeyState, now: number) {
   state.paddles[state.playerIds[1]] = startPaddle(1);
   state.paddleContact[state.playerIds[0]] = false;
   state.paddleContact[state.playerIds[1]] = false;
+  state.paddleContactNormals[state.playerIds[0]] = null;
+  state.paddleContactNormals[state.playerIds[1]] = null;
   state.puck = newPuck(state.lastGoalBy === state.playerIds[0] ? -1 : 1);
   state.phase = "countdown";
   state.phaseEndsAt = now + 1450;
@@ -271,7 +332,8 @@ export class AirHockeyGame implements GameEngine<AirHockeyState, AirHockeyAction
       paddles: { [first]: startPaddle(0), [second]: startPaddle(1) }, puck: newPuck(), scores: { [first]: 0, [second]: 0 },
       phase: "countdown", phaseEndsAt: now + 2400, startedAt: now, finishedAt: null, lastTickAt: now,
       lastGoalBy: null, goalSerial: 0, impactSerial: 0, impactStrength: 0, impactKind: null,
-      paddleContact: { [first]: false, [second]: false }, botNextThinkAt: now, results: [],
+      paddleContact: { [first]: false, [second]: false },
+      paddleContactNormals: { [first]: null, [second]: null }, botNextThinkAt: now, results: [],
     };
     return state;
   }
@@ -300,8 +362,8 @@ export class AirHockeyGame implements GameEngine<AirHockeyState, AirHockeyAction
     // O número de substeps acompanha o maior deslocamento possível no
     // intervalo (disco ou raquete), com teto para manter custo previsível.
     const paddleSpeed = next.playerIds[1] === "BOT" ? Math.max(3.45, BOT_PROFILE[next.difficulty].speed) : 3.45;
-    const fastestTravel = Math.max(length(next.puck.vx, next.puck.vy), paddleSpeed) * dt;
-    const substeps = clamp(Math.ceil(fastestTravel / (PUCK_RADIUS * 0.42)), 1, 12);
+    const relativeTravel = (length(next.puck.vx, next.puck.vy) + paddleSpeed) * dt;
+    const substeps = clamp(Math.ceil(relativeTravel / (PUCK_RADIUS * 0.42)), 1, 12);
     const subDt = dt / substeps;
     for (let step = 0; step < substeps && next.phase === "playing"; step += 1) {
       const previousPaddles = {

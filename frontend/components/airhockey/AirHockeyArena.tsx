@@ -5,8 +5,9 @@ import { AirHockeyState } from "@/lib/airHockeyTypes";
 
 const WIDTH = 1.6;
 const HEIGHT = 1;
-const PADDLE_RADIUS = 0.067;
+const PADDLE_RADIUS = 0.075;
 const PUCK_RADIUS = 0.034;
+const LOCAL_PADDLE_SPEED = 3.45;
 type Effect = "wall" | "hit" | "goal" | "countdown";
 type Props = { stateRef: React.MutableRefObject<AirHockeyState | null>; selfId: string; onMove: (x: number, y: number) => void; onEffect: (effect: Effect) => void };
 
@@ -49,6 +50,44 @@ export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: P
       return selfIsLeft
         ? { x: field.x + y * field.width, y: field.y + (1 - x / WIDTH) * field.height }
         : { x: field.x + (1 - y) * field.width, y: field.y + x / WIDTH * field.height };
+    };
+    // A raquete local segue a intenção do ponteiro, mas nunca é desenhada
+    // atravessando o disco entre dois snapshots. É a mesma geometria circular
+    // do servidor e apenas impede uma previsão visual impossível; o impulso e
+    // a posição final do disco continuam vindo da física autoritativa.
+    const advanceLocalPaddle = (from: { x: number; y: number }, target: { x: number; y: number }, puck: { x: number; y: number }, dt: number) => {
+      const targetX = target.x - from.x;
+      const targetY = target.y - from.y;
+      const targetDistance = Math.hypot(targetX, targetY);
+      const maxDistance = LOCAL_PADDLE_SPEED * dt;
+      let nextX = targetDistance > maxDistance && targetDistance > 0 ? from.x + targetX / targetDistance * maxDistance : target.x;
+      let nextY = targetDistance > maxDistance && targetDistance > 0 ? from.y + targetY / targetDistance * maxDistance : target.y;
+      const startX = from.x - puck.x;
+      const startY = from.y - puck.y;
+      const moveX = nextX - from.x;
+      const moveY = nextY - from.y;
+      const radius = PADDLE_RADIUS + PUCK_RADIUS + 0.001;
+      const startDistanceSq = startX * startX + startY * startY;
+      const moveLengthSq = moveX * moveX + moveY * moveY;
+      const c = startDistanceSq - radius * radius;
+      let hitT: number | null = c <= 0 ? 0 : null;
+      if (hitT === null && moveLengthSq > 0.0000001) {
+        const b = 2 * (startX * moveX + startY * moveY);
+        const discriminant = b * b - 4 * moveLengthSq * c;
+        if (discriminant >= 0) {
+          const first = (-b - Math.sqrt(discriminant)) / (2 * moveLengthSq);
+          if (first >= 0 && first <= 1) hitT = first;
+        }
+      }
+      if (hitT === null) return { x: nextX, y: nextY };
+      const contactX = startX + moveX * hitT;
+      const contactY = startY + moveY * hitT;
+      const contactDistance = Math.hypot(contactX, contactY);
+      const nx = contactDistance > 0.000001 ? contactX / contactDistance : (startDistanceSq > 0.000001 ? startX / Math.sqrt(startDistanceSq) : -1);
+      const ny = contactDistance > 0.000001 ? contactY / contactDistance : (startDistanceSq > 0.000001 ? startY / Math.sqrt(startDistanceSq) : 0);
+      nextX = puck.x + nx * radius;
+      nextY = puck.y + ny * radius;
+      return { x: nextX, y: nextY };
     };
 
     const drawGoal = (side: "left" | "right" | "top" | "bottom", color: string, dark: boolean, playX: number, playY: number, playW: number, playH: number, shortest: number, middleX: number, middleY: number) => {
@@ -128,7 +167,12 @@ export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: P
       lastVisualPhase.current = state.phase;
       const unit = portrait ? playW : playH; const puckPoint = map(visual.x, visual.y, selfIsLeft);
       for (const id of state.playerIds) {
-        const paddle = state.paddles[id]; if (!paddle) continue; const previous=paddleVisuals.current[id]??{x:paddle.x,y:paddle.y}; const display=id===selfId&&localPaddle.current?localPaddle.current:{x:previous.x+(paddle.x-previous.x)*.24,y:previous.y+(paddle.y-previous.y)*.24};paddleVisuals.current[id]=display;
+        const paddle = state.paddles[id]; if (!paddle) continue;
+        const previous = paddleVisuals.current[id] ?? { x: paddle.x, y: paddle.y };
+        const display = id === selfId && localPaddle.current
+          ? advanceLocalPaddle(previous, localPaddle.current, visual, renderDt)
+          : { x: previous.x + (paddle.x - previous.x) * .24, y: previous.y + (paddle.y - previous.y) * .24 };
+        paddleVisuals.current[id] = display;
         const point=map(display.x,display.y,selfIsLeft);const radius=unit*PADDLE_RADIUS;const local=id===selfId;const color=local?blush:(id==="BOT"?violet:"#7657cf");context.save();context.shadowColor="rgba(44,16,31,.52)";context.shadowBlur=radius*.38;context.shadowOffsetY=radius*.24;const base=context.createRadialGradient(point.x-radius*.28,point.y-radius*.35,radius*.05,point.x,point.y,radius);base.addColorStop(0,"#ffe0e6");base.addColorStop(.32,local?"#fb7696":"#ad95ff");base.addColorStop(.76,color);base.addColorStop(1,dark?"#371929":"#8d2a51");context.fillStyle=base;context.beginPath();context.arc(point.x,point.y,radius,0,Math.PI*2);context.fill();context.restore();context.strokeStyle="rgba(255,231,233,.88)";context.lineWidth=Math.max(1.4,radius*.08);context.beginPath();context.arc(point.x,point.y,radius*.7,0,Math.PI*2);context.stroke();const cap=context.createRadialGradient(point.x-radius*.14,point.y-radius*.2,radius*.04,point.x,point.y,radius*.47);cap.addColorStop(0,"#fff0f1");cap.addColorStop(.42,local?"#ff6d91":"#9d80f3");cap.addColorStop(1,local?"#b92751":"#49338a");context.fillStyle=cap;context.beginPath();context.arc(point.x,point.y,radius*.47,0,Math.PI*2);context.fill();
       }
       const puckR=unit*PUCK_RADIUS;context.save();context.shadowColor="rgba(65,25,43,.45)";context.shadowBlur=puckR*.75;context.shadowOffsetY=puckR*.26;context.fillStyle="#fdf6f0";context.beginPath();context.arc(puckPoint.x,puckPoint.y,puckR,0,Math.PI*2);context.fill();context.restore();context.strokeStyle="#d5aaa8";context.lineWidth=Math.max(1,puckR*.11);context.beginPath();context.arc(puckPoint.x,puckPoint.y,puckR*.75,0,Math.PI*2);context.stroke();context.fillStyle="rgba(255,255,255,.95)";context.beginPath();context.arc(puckPoint.x-puckR*.22,puckPoint.y-puckR*.25,puckR*.24,0,Math.PI*2);context.fill();

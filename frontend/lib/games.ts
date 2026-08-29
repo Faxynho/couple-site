@@ -83,7 +83,7 @@ export const GAMES: GameDefinition[] = [
     name: "Air Hockey",
     description: "Arraste a raquete, acelere o disco e seja o primeiro a fazer 7 gols.",
     emoji: "🏒",
-    image: "/images/air-hockey-card.svg",
+    image: "/images/air-hockey-card.png",
     available: true,
   },
 ];
