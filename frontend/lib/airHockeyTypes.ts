@@ -23,6 +23,10 @@ export interface AirHockeyState {
   phaseEndsAt: number | null;
   startedAt: number;
   finishedAt: number | null;
+  /** Relógio do passo autoritativo; usado apenas para extrapolar snapshots no Canvas. */
+  lastTickAt: number;
+  /** Offset estimado entre o relógio do cliente e o do servidor. Campo local, nunca persistido. */
+  clockOffsetMs?: number;
   lastGoalBy: string | null;
   goalSerial: number;
   impactSerial: number;

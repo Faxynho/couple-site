@@ -14,6 +14,7 @@ interface PuzzleBoardProps {
   selfId: string | null;
   players: Player[];
   remoteDrags: Record<string, { x: number; y: number }>;
+  optimisticDrops: Record<string, { x: number; y: number }>;
   onPickup: (groupId: string) => void;
   onDrag: (groupId: string, x: number, y: number) => void;
   onDrop: (groupId: string, x: number, y: number) => void;
@@ -68,6 +69,7 @@ interface PieceLayerProps {
   solved: boolean;
   colorByPlayer: Record<string, string>;
   remoteDrags: Record<string, { x: number; y: number }>;
+  optimisticDrops: Record<string, { x: number; y: number }>;
   localDrag: LocalDrag | null;
   onPiecePointerDown: PiecePointerHandler;
   onPiecePointerMove: PiecePointerHandler;
@@ -99,6 +101,7 @@ function PieceLayerImpl({
   solved,
   colorByPlayer,
   remoteDrags,
+  optimisticDrops,
   localDrag,
   onPiecePointerDown,
   onPiecePointerMove,
@@ -109,8 +112,9 @@ function PieceLayerImpl({
       {Object.values(groups).flatMap((group) => {
         const isOwnHold = localDrag?.groupId === group.id;
         const remote = remoteDrags[group.id];
-        const originX = isOwnHold ? localDrag!.x : remote ? remote.x : group.originX;
-        const originY = isOwnHold ? localDrag!.y : remote ? remote.y : group.originY;
+        const optimistic = optimisticDrops[group.id];
+        const originX = isOwnHold ? localDrag!.x : remote ? remote.x : optimistic ? optimistic.x : group.originX;
+        const originY = isOwnHold ? localDrag!.y : remote ? remote.y : optimistic ? optimistic.y : group.originY;
         const isHeld = Boolean(group.heldBy);
         const holderColor = group.heldBy ? colorByPlayer[group.heldBy] : undefined;
 
@@ -160,6 +164,7 @@ export default function PuzzleBoard({
   selfId,
   players,
   remoteDrags,
+  optimisticDrops,
   onPickup,
   onDrag,
   onDrop,
@@ -617,6 +622,7 @@ export default function PuzzleBoard({
           solved={state.solved}
           colorByPlayer={colorByPlayer}
           remoteDrags={remoteDrags}
+          optimisticDrops={optimisticDrops}
           localDrag={localDrag}
           onPiecePointerDown={handlePiecePointerDown}
           onPiecePointerMove={handlePiecePointerMove}

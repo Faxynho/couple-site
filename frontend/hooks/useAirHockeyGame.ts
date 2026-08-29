@@ -11,21 +11,41 @@ export function useAirHockeyGame(roomCode: string) {
 
   useEffect(() => {
     const socket = getSocket();
+    let clockOffsetMs = 0;
     const accept = (next: AirHockeyState | null) => {
-      stateRef.current = next;
-      if (!next) return;
+      if (!next) { stateRef.current = next; return; }
+      // Os snapshots carregam o instante exato do tick no Railway. Em vez de
+      // desenhá-los como se fossem "agora" (o que expõe toda a latência
+      // Vercel ↔ Railway), o Canvas os extrapola até o relógio atual.
+      const stamped = { ...next, clockOffsetMs };
+      stateRef.current = stamped;
       setMeta((previous) => {
-        if (previous && previous.phase === next.phase && previous.goalSerial === next.goalSerial && previous.scores[next.playerIds[0]] === next.scores[next.playerIds[0]] && previous.scores[next.playerIds[1]] === next.scores[next.playerIds[1]]) return previous;
-        return next;
+        if (previous && previous.phase === stamped.phase && previous.goalSerial === stamped.goalSerial && previous.scores[stamped.playerIds[0]] === stamped.scores[stamped.playerIds[0]] && previous.scores[stamped.playerIds[1]] === stamped.scores[stamped.playerIds[1]]) return previous;
+        return stamped;
       });
     };
     const sync = () => socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (response: { ok: boolean; gameState?: AirHockeyState }) => {
       if (response.ok && response.gameState) accept(response.gameState);
     });
     sync();
+
+    // Pequena medição periódica, sem afetar o loop de jogo. Ela compensa
+    // relógios diferentes entre navegador e servidor e deixa a extrapolação
+    // do disco independente da frequência dos snapshots.
+    const measureClock = () => {
+      const sentAt = Date.now();
+      socket.timeout(1800).emit("airhockey:ping", (error: Error | null, response?: { serverNow?: number }) => {
+        if (error || !Number.isFinite(response?.serverNow)) return;
+        const roundTrip = Date.now() - sentAt;
+        clockOffsetMs = (response!.serverNow as number) - (sentAt + roundTrip / 2);
+        if (stateRef.current) stateRef.current.clockOffsetMs = clockOffsetMs;
+      });
+    };
+    measureClock();
+    const clockTimer = window.setInterval(measureClock, 5000);
     socket.on("game:state", accept);
     socket.on("connect", sync);
-    return () => { socket.off("game:state", accept); socket.off("connect", sync); };
+    return () => { window.clearInterval(clockTimer); socket.off("game:state", accept); socket.off("connect", sync); };
   }, [roomCode]);
 
   const move = useCallback((x: number, y: number) => getSocket().emit("airhockey:move", { x, y }), []);

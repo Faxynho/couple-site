@@ -66,11 +66,13 @@ export interface PuzzleState {
   startedAt: number;
   solved: boolean;
   solvedAt: number | null;
+  /** Identificador opaco da última ação local aceita pelo servidor. */
+  lastActionId: string | null;
 }
 
 export type PuzzleAction =
   | { type: "pickup"; groupId: string }
-  | { type: "drop"; groupId: string; x: number; y: number };
+  | { type: "drop"; groupId: string; x: number; y: number; clientActionId?: string };
 
 function shuffleInPlace<T>(arr: T[]): void {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -403,6 +405,7 @@ export class PuzzleGame implements GameEngine<PuzzleState, PuzzleAction> {
       startedAt: Date.now(),
       solved: false,
       solvedAt: null,
+      lastActionId: null,
     };
   }
 
@@ -436,6 +439,7 @@ export class PuzzleGame implements GameEngine<PuzzleState, PuzzleAction> {
       next.moves += 1;
       next.solved = this.isSolved(next);
       next.solvedAt = next.solved ? Date.now() : null;
+      next.lastActionId = action.clientActionId ?? null;
       return next;
     }
 

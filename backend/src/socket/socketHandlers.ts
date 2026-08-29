@@ -819,18 +819,21 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       });
     });
 
-    socket.on("game:drop", (payload: { groupId: string; x: number; y: number }) => {
+    socket.on("game:drop", (payload: { groupId: string; x: number; y: number; clientActionId?: string }, callback?: AckCallback) => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room) return;
+      if (!room) { callback?.({ ok: false }); return; }
+      const clientActionId = typeof payload.clientActionId === "string" ? payload.clientActionId.slice(0, 80) : undefined;
       room.applyAction(
-        { type: "drop", groupId: payload.groupId, x: payload.x, y: payload.y },
+        { type: "drop", groupId: payload.groupId, x: payload.x, y: payload.y, clientActionId },
         socket.data.playerId ?? socket.id
       );
       broadcastGameState(io, code!, roomManager);
       if (room.status === "finished") {
         broadcastRoom(io, code!, roomManager);
       }
+      const applied = !clientActionId || (room.gameState as { lastActionId?: string | null } | null)?.lastActionId === clientActionId;
+      callback?.({ ok: applied });
     });
 
     socket.on("game:reset", () => {
@@ -1150,6 +1153,10 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (!room || room.gameId !== "airhockey" || !Number.isFinite(payload?.x) || !Number.isFinite(payload?.y)) return;
       room.applyAction({ type: "move", x: payload.x, y: payload.y }, socket.data.playerId ?? socket.id);
     });
+
+    // Não participa da física nem dos resultados. Serve somente para o
+    // cliente estimar o tempo do snapshot e renderizar entre as atualizações.
+    socket.on("airhockey:ping", (callback?: AckCallback) => callback?.({ serverNow: Date.now() }));
 
     socket.on("airhockey:newGame", () => {
       const code = socket.data.roomCode;

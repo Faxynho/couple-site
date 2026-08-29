@@ -11,10 +11,16 @@ interface RemoteDragPosition {
   y: number;
 }
 
+interface OptimisticDropPosition extends RemoteDragPosition {
+  actionId: string;
+}
+
 export function usePuzzle(roomCode: string) {
   const [state, setState] = useState<PuzzleState | null>(null);
   const [remoteDrags, setRemoteDrags] = useState<Record<string, RemoteDragPosition>>({});
+  const [optimisticDrops, setOptimisticDrops] = useState<Record<string, OptimisticDropPosition>>({});
   const prevGroupCount = useRef<number>(Infinity);
+  const actionSequence = useRef(0);
 
   useEffect(() => {
     const socket = getSocket();
@@ -39,6 +45,23 @@ export function usePuzzle(roomCode: string) {
           }
           return changed ? copy : prev;
         });
+        // O drop é desenhado imediatamente no cliente. Só o snapshot que
+        // carrega o mesmo id pode substituí-lo pela posição (eventualmente
+        // encaixada/fundida) decidida pelo servidor — snapshots antigos nunca
+        // fazem a peça saltar para trás enquanto a resposta está a caminho.
+        if (next.lastActionId) {
+          setOptimisticDrops((previous) => {
+            let changed = false;
+            const copy = { ...previous };
+            for (const [groupId, drop] of Object.entries(copy)) {
+              if (drop.actionId === next.lastActionId) {
+                delete copy[groupId];
+                changed = true;
+              }
+            }
+            return changed ? copy : previous;
+          });
+        }
       }
       setState(next);
     };
@@ -79,7 +102,20 @@ export function usePuzzle(roomCode: string) {
   }, []);
 
   const drop = useCallback((groupId: string, x: number, y: number) => {
-    getSocket().emit("game:drop", { groupId, x, y });
+    const actionId = `drop-${Date.now()}-${++actionSequence.current}`;
+    setOptimisticDrops((previous) => ({ ...previous, [groupId]: { x, y, actionId } }));
+    getSocket().timeout(5000).emit("game:drop", { groupId, x, y, clientActionId: actionId }, (error: Error | null, response?: { ok?: boolean }) => {
+      if (!error && response?.ok !== false) return;
+      // Em caso de desconexão/rejeição, abandona somente esta previsão; o
+      // próximo room:sync volta a ser a fonte de verdade.
+      setOptimisticDrops((previous) => {
+        const current = previous[groupId];
+        if (!current || current.actionId !== actionId) return previous;
+        const next = { ...previous };
+        delete next[groupId];
+        return next;
+      });
+    });
     setRemoteDrags((prev) => {
       if (!(groupId in prev)) return prev;
       const next = { ...prev };
@@ -96,5 +132,5 @@ export function usePuzzle(roomCode: string) {
     getSocket().emit("game:newImage", { imageId, difficulty, imageWidth, imageHeight });
   }, []);
 
-  return { state, remoteDrags, pickup, drag, drop, resetGame, newImage };
+  return { state, remoteDrags, optimisticDrops, pickup, drag, drop, resetGame, newImage };
 }

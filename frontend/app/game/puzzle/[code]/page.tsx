@@ -27,7 +27,7 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
   const code = params.code.toUpperCase();
 
   const { room, selfId, notFound, kicked, backToConfig, backToGameSelect, kickPlayer } = useRoomSession(code);
-  const { state, remoteDrags, pickup, drag, drop, resetGame, newImage } = usePuzzle(code);
+  const { state, remoteDrags, optimisticDrops, pickup, drag, drop, resetGame, newImage } = usePuzzle(code);
   const { images } = usePuzzleImages();
 
   // "Resolvido" (estado do jogo, permanente) é separado de "modal aberto"
@@ -112,6 +112,7 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
           selfId={selfId}
           players={room.players}
           remoteDrags={remoteDrags}
+          optimisticDrops={optimisticDrops}
           onPickup={pickup}
           onDrag={drag}
           onDrop={drop}

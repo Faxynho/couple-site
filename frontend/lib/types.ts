@@ -79,6 +79,7 @@ export interface PuzzleState {
   startedAt: number;
   solved: boolean;
   solvedAt: number | null;
+  lastActionId: string | null;
 }
 
 export interface GameDefinition {
