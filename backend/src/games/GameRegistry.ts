@@ -3,6 +3,7 @@ import { PuzzleGame } from "./puzzle/PuzzleGame";
 import { SudokuGame } from "./sudoku/SudokuGame";
 import { ColorMemoryGame } from "./colors/ColorMemoryGame";
 import { MemoryGame } from "./memory/MemoryGame";
+import { TermoGame } from "./termo/TermoGame";
 import { CrosswordGame } from "./crossword/CrosswordGame";
 import { WordSearchGame } from "./wordsearch/WordSearchGame";
 import { QuizGame } from "./quiz/QuizGame";
@@ -20,6 +21,7 @@ export const GameRegistry: Record<GameId, GameEngine<unknown, unknown>> = {
   sudoku: new SudokuGame() as unknown as GameEngine<unknown, unknown>,
   colors: new ColorMemoryGame() as unknown as GameEngine<unknown, unknown>,
   memory: new MemoryGame() as unknown as GameEngine<unknown, unknown>,
+  termo: new TermoGame() as unknown as GameEngine<unknown, unknown>,
   crossword: new CrosswordGame() as unknown as GameEngine<unknown, unknown>,
   wordsearch: new WordSearchGame() as unknown as GameEngine<unknown, unknown>,
   quiz: new QuizGame() as unknown as GameEngine<unknown, unknown>,

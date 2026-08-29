@@ -11,6 +11,7 @@ import { MATCH_MODES, MatchMode } from "@/lib/matchModes";
 import { QUIZ_DIFFICULTIES, QUIZ_MODES, QuizDifficulty, QuizMode } from "@/lib/quizTypes";
 import { RPG_MODES, RPGMode } from "@/lib/rpgTypes";
 import { MEMORY_DIFFICULTIES, MEMORY_MODES, MemoryDifficulty, MemoryMode } from "@/lib/memoryTypes";
+import { TERMO_VARIANTS, TermoVariant } from "@/lib/termoTypes";
 import { RoomSnapshot } from "@/lib/types";
 
 interface GameConfigPanelProps {
@@ -286,6 +287,22 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
           />
         </div>
       </>
+    );
+  }
+
+  if (room.gameId === "termo") {
+    const selectedVariant = (room.pendingDifficulty as TermoVariant) ?? "one";
+    return (
+      <div className="text-left">
+        <SectionLabel>{isHost ? "Variante do duelo" : "Variante escolhida pelo anfitrião"}</SectionLabel>
+        <OptionGrid
+          entries={Object.entries(TERMO_VARIANTS) as [TermoVariant, (typeof TERMO_VARIANTS)[TermoVariant]][]}
+          selected={selectedVariant}
+          isHost={isHost}
+          onSelect={(key) => setConfig({ difficulty: key })}
+        />
+        <p className="mt-3 text-center text-xs text-ink-soft">⚔️ Duelo — as mesmas palavras, tentativas privadas.</p>
+      </div>
     );
   }
 

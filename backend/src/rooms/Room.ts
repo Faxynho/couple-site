@@ -49,7 +49,7 @@ export class Room {
   /** Específico da Memória de Cores. */
   pendingColorMode = "competitive";
   pendingSeerId: string | null = null;
-  /** Específico do Palavras Cruzadas, Caça-Palavras, Quiz e Mini RPG. */
+  /** Específico dos jogos com modo de partida (incluindo Termo em Duelo). */
   pendingMatchMode = "together";
 
   /** Sugestão de sequência de jogos (só relevante em salas Duo). */
@@ -183,6 +183,7 @@ export class Room {
    *  (nunca em "solo"/"soloBot", que não fazem sentido com o convidado presente). */
   private defaultMatchModeFor(gameId: GameId): string {
     if (gameId === "quiz" || gameId === "memory") return this.roomMode === "solo" ? "solo" : "together";
+    if (gameId === "termo") return this.roomMode === "solo" ? "solo" : "duel";
     if (gameId === "rpg") return this.roomMode === "solo" ? "soloBot" : "1v1";
     return "together"; // crossword / wordsearch / sudoku — puzzle/colors ignoram este campo
   }
@@ -196,7 +197,7 @@ export class Room {
     this.pendingImageId = null;
     this.pendingImageWidth = null;
     this.pendingImageHeight = null;
-    this.pendingDifficulty = DEFAULT_PENDING_DIFFICULTY;
+    this.pendingDifficulty = gameId === "termo" ? "one" : DEFAULT_PENDING_DIFFICULTY;
     this.pendingColorMode = "competitive";
     this.pendingSeerId = null;
     this.pendingMatchMode = this.defaultMatchModeFor(gameId);
@@ -274,7 +275,7 @@ export class Room {
       colorMode = "competitive";
     }
 
-    // Palavras Cruzadas, Caça-Palavras e Sudoku usam um modo genérico
+    // Palavras Cruzadas, Caça-Palavras, Sudoku e Termo usam o campo de modo
     // "together"/"duel" (independente do `colorMode`, que é específico da
     // Memória de Cores). O Quiz reaproveita o mesmo campo com valores
     // "solo" | "together" | "duel". O Mini RPG reaproveita o mesmo campo com
@@ -285,7 +286,8 @@ export class Room {
       this.gameId === "quiz" ||
       this.gameId === "rpg" ||
       this.gameId === "sudoku" ||
-      this.gameId === "memory"
+      this.gameId === "memory" ||
+      this.gameId === "termo"
         ? this.pendingMatchMode
         : undefined;
 

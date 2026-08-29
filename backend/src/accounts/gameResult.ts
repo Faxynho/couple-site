@@ -209,6 +209,41 @@ interface MemoryStateShape {
   results: { playerId: string; place: number; score: number; pairsFound: number; timeUsedMs: number }[];
 }
 
+interface TermoStateShape {
+  variant?: string;
+  mode?: string;
+  startedAt: number;
+  finishedAt: number | null;
+  results: {
+    playerId: string;
+    outcome: "win" | "loss" | "draw" | "solo";
+    completed: boolean;
+    timeUsedMs: number;
+  }[];
+}
+
+/** O recorde do Termo usa o menor tempo de uma partida efetivamente concluída.
+ * A variante (1, 2 ou 4 palavras) é o rank, preservando o formato genérico
+ * de recordes já usado pela aplicação. */
+function extractTermo(state: TermoStateShape, accountByPlayerId: Map<string, AccountId | undefined>): MatchOutcome {
+  const durationMs = Math.max(0, (state.finishedAt ?? Date.now()) - state.startedAt);
+  const bucket: Bucket = state.mode === "duel" ? "duel" : "solo";
+  const players: PlayerOutcome[] = [];
+
+  for (const result of state.results ?? []) {
+    const accountId = accountFor(result.playerId, accountByPlayerId);
+    if (!accountId) continue;
+    players.push({
+      accountId,
+      metricValue: result.completed ? result.timeUsedMs : null,
+      scoreType: "time",
+      result: bucket === "duel" ? result.outcome as "win" | "loss" | "draw" : "solo",
+    });
+  }
+
+  return { rank: state.variant ?? NO_RANK, durationMs, bucket, players };
+}
+
 /** O recorde do Jogo da Memória é a maior pontuação. O desempate por pares e
  * tempo já é resolvido pelo motor para o resultado da partida, sem criar um
  * segundo formato de recorde fora da arquitetura atual. */
@@ -336,6 +371,8 @@ function extractGameOutcome(
       return extractColors(gameState as ColorsStateShape, roomMode, accountByPlayerId);
     case "memory":
       return extractMemory(gameState as MemoryStateShape, accountByPlayerId);
+    case "termo":
+      return extractTermo(gameState as TermoStateShape, accountByPlayerId);
     case "rpg":
       return extractRPG(gameState as RPGStateShape, accountByPlayerId);
     default:

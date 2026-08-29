@@ -14,7 +14,13 @@ export type SoundEffect =
   | "rpgResolve"
   | "rpgDamage"
   | "rpgHeal"
-  | "rpgEvade";
+  | "rpgEvade"
+  | "termoSubmit"
+  | "termoInvalid"
+  | "termoReveal"
+  | "termoWord"
+  | "termoDefeat"
+  | "termoDraw";
 
 const SOUND_EVENT = "couple-site:sound-change";
 const SOUND_STORAGE_KEY = "couple-site:sound-enabled";
@@ -116,6 +122,12 @@ export function playSoundEffect(effect: SoundEffect) {
         break;
       case "rpgHeal": tone(context, 523, 0.08, 0, 0.04); tone(context, 659, 0.1, 0.07, 0.045); tone(context, 784, 0.12, 0.15, 0.05); break;
       case "rpgEvade": tone(context, 740, 0.06, 0, 0.045, "triangle"); tone(context, 990, 0.09, 0.06, 0.05, "triangle"); break;
+      case "termoSubmit": tone(context, 360, 0.055, 0, 0.04, "triangle"); tone(context, 480, 0.065, 0.04, 0.04); break;
+      case "termoInvalid": tone(context, 190, 0.09, 0, 0.04, "triangle"); tone(context, 150, 0.11, 0.06, 0.035); break;
+      case "termoReveal": tone(context, 510, 0.055, 0, 0.035); break;
+      case "termoWord": tone(context, 523, 0.075, 0, 0.045); tone(context, 659, 0.09, 0.06, 0.045); tone(context, 784, 0.11, 0.13, 0.05); break;
+      case "termoDefeat": tone(context, 294, 0.11, 0, 0.04, "triangle"); tone(context, 220, 0.15, 0.1, 0.035); break;
+      case "termoDraw": tone(context, 392, 0.09, 0, 0.04); tone(context, 440, 0.1, 0.08, 0.04); break;
     }
   } catch {
     // Áudio é apenas um extra decorativo; falhas silenciosas não afetam o jogo.

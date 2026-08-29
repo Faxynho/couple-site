@@ -14,6 +14,7 @@ import { isValidQuizDifficulty } from "../games/quiz/questionBank";
 import { isValidQuizMode, QUIZ_REVEAL_DURATION_MS } from "../games/quiz/QuizGame";
 import { isValidRPGMode, RPG_INTRO_DURATION_MS, RPG_RESOLVE_PAUSE_MS } from "../games/rpg/RPGGame";
 import { isValidMemoryDifficulty, isValidMemoryMode, MemoryState } from "../games/memory/MemoryGame";
+import { isValidTermoMode, isValidTermoVariant, TermoState } from "../games/termo/TermoGame";
 import { isAccountId } from "../accounts/types";
 
 interface SocketData {
@@ -125,6 +126,10 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getMemoryStateForPlayer(room.gameState, player.id));
     }
+  } else if (room.gameId === "termo") {
+    for (const player of room.players.values()) {
+      emitToPlayer(io, room, player.id, "game:state", getTermoStateForPlayer(room.gameState, player.id));
+    }
   } else if (room.gameId === "sudoku") {
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getSudokuStateForPlayer(room.gameState, player.id));
@@ -142,6 +147,7 @@ function getMaskedStateForPlayer(room: { gameId: GameId | null; gameState: unkno
   if (room.gameId === "quiz") return getQuizStateForPlayer(room.gameState, playerId);
   if (room.gameId === "rpg") return getRPGStateForPlayer(room.gameState, playerId);
   if (room.gameId === "memory") return getMemoryStateForPlayer(room.gameState, playerId);
+  if (room.gameId === "termo") return getTermoStateForPlayer(room.gameState, playerId);
   if (room.gameId === "sudoku") return getSudokuStateForPlayer(room.gameState, playerId);
   return room.gameState;
 }
@@ -515,6 +521,43 @@ function getMemoryStateForPlayer(state: unknown, playerId: string): unknown {
   return { ...s, slots, progress };
 }
 
+/** Estado público do Termo: durante a partida, nenhuma solução (nem índice ou
+ * grafia) sai do servidor. No Duelo, as tentativas do rival são reduzidas a
+ * contadores seguros. As respostas só aparecem depois do fim real da partida. */
+function getTermoStateForPlayer(state: unknown, playerId: string): unknown {
+  const s = state as TermoState | null;
+  if (!s) return state;
+
+  const progress: Record<string, unknown> = {};
+  for (const [id, entry] of Object.entries(s.progress)) {
+    if (id === playerId || s.mode === "solo") {
+      progress[id] = entry;
+    } else {
+      progress[id] = {
+        attemptsUsed: entry.attemptsUsed,
+        solvedCount: entry.solvedIndices.length,
+        finished: entry.finished,
+        completed: entry.completed,
+        finishedAt: entry.finishedAt,
+        timeUsedMs: entry.timeUsedMs,
+      };
+    }
+  }
+
+  return {
+    variant: s.variant,
+    mode: s.mode,
+    maxAttempts: s.maxAttempts,
+    expectedPlayers: s.expectedPlayers,
+    progress,
+    startedAt: s.startedAt,
+    finished: s.finished,
+    finishedAt: s.finishedAt,
+    results: s.results,
+    revealedSolutions: s.finished ? s.solutions.map((solution) => solution.original.toLocaleUpperCase("pt-BR")) : null,
+  };
+}
+
 export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
   io.on("connection", (socket: Socket<any, any, any, SocketData>) => {
     socket.on(
@@ -639,12 +682,15 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
             isValidQuizMode(payload.matchMode) ||
             isValidRPGMode(payload.matchMode) ||
             isValidSudokuMode(payload.matchMode) ||
-            isValidMemoryMode(payload.matchMode))
+            isValidMemoryMode(payload.matchMode) ||
+            isValidTermoMode(payload.matchMode))
         ) {
           options.matchMode = payload.matchMode;
         }
 
-        room.setPendingConfig({ ...sanitizeStartOptions(payload), ...options });
+        const baseOptions = sanitizeStartOptions(payload);
+        if (payload?.difficulty && isValidTermoVariant(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
+        room.setPendingConfig({ ...baseOptions, ...options });
         broadcastRoom(io, code!, roomManager);
       }
     );
@@ -733,6 +779,10 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
       if (room.gameId === "puzzle" && !room.pendingImageId) {
         callback?.({ ok: false, error: "Escolha uma imagem antes de começar." });
+        return;
+      }
+      if (room.gameId === "termo" && room.roomMode === "duo" && !room.bothConnected()) {
+        callback?.({ ok: false, error: "O Duelo de Termo precisa dos dois jogadores conectados." });
         return;
       }
       // Sem exigência de "os dois conectados": o host pode jogar sozinho —
@@ -1056,6 +1106,33 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (payload?.difficulty && isValidMemoryDifficulty(payload.difficulty)) options.difficulty = payload.difficulty;
       else if (current?.difficulty) options.difficulty = current.difficulty;
       if (current?.mode) options.mode = current.mode;
+      room.startGame(options);
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
+    // ---- Eventos exclusivos do Termo ----
+    // A tentativa chega como texto cru: normalização, existência na lista e
+    // avaliação de letras acontecem no motor do servidor.
+    socket.on("termo:submitGuess", (payload: { word: string }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "termo" || typeof payload?.word !== "string" || payload.word.length > 64) return;
+      room.applyAction({ type: "submitGuess", word: payload.word }, socket.data.playerId ?? socket.id);
+      broadcastGameState(io, code!, roomManager);
+      if (room.status === "finished") broadcastRoom(io, code!, roomManager);
+    });
+
+    // Cria uma nova partida compartilhada com a mesma variante e modo; o
+    // reset é sempre do estado do servidor, nunca apenas de um cliente.
+    socket.on("termo:newGame", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "termo" || room.status !== "finished" || (room.roomMode === "duo" && !room.bothConnected())) return;
+      const current = room.gameState as { variant?: string; mode?: string } | null;
+      const options: Record<string, unknown> = {};
+      if (current?.variant && isValidTermoVariant(current.variant)) options.difficulty = current.variant;
+      if (current?.mode && isValidTermoMode(current.mode)) options.mode = current.mode;
       room.startGame(options);
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);

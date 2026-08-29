@@ -1,8 +1,8 @@
-export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "crossword" | "wordsearch" | "quiz" | "rpg";
+export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "rpg";
 
 /** Mesma ordem do catálogo (`GAMES`, em games.ts) — usada para sortear a
  *  sugestão de sequência de jogos da sala Duo. */
-export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "crossword", "wordsearch", "quiz", "rpg"];
+export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "rpg"];
 
 /** "solo": sessão de um único jogador — sem convite, sem convidado, sem sala
  *  persistente. "duo": sala pensada para dois jogadores, criada ANTES de

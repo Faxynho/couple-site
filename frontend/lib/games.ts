@@ -39,6 +39,14 @@ export const GAMES: GameDefinition[] = [
     available: true,
   },
   {
+    id: "termo",
+    name: "Termo",
+    description: "Descubra palavras de 5 letras — uma, duas ou quatro de uma vez.",
+    emoji: "🔤",
+    image: "/images/termo-card.png",
+    available: true,
+  },
+  {
     id: "crossword",
     name: "Palavras Cruzadas",
     description: "Preencham a grade com as dicas — juntos numa só cópia ou em duelo pra ver quem termina primeiro.",

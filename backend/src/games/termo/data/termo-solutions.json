@@ -1,0 +1,9476 @@
+{
+  "version": 2,
+  "description": "Lista conservadora de respostas de 5 letras para jogo estilo Termo.",
+  "normalization": "lowercase + Unicode NFD + remove marcas diacriticas; ç -> c pela decomposição Unicode",
+  "selection_policy": {
+    "source": "words5.csv",
+    "minimum_frequency": 1.0,
+    "must_exist_in_br_utf8_dictionary": true,
+    "exclude_canonical_roman_numerals": true,
+    "exclude_obvious_proper_names_places_entities": true,
+    "note": "A lista de respostas e deliberadamente conservadora. Tentativas validas continuam em arquivo separado."
+  },
+  "count": 1892,
+  "words": [
+    {
+      "word": "entre",
+      "normalized": "entre",
+      "freq": 1705.223835
+    },
+    {
+      "word": "sobre",
+      "normalized": "sobre",
+      "freq": 1452.299859
+    },
+    {
+      "word": "foram",
+      "normalized": "foram",
+      "freq": 1187.110304
+    },
+    {
+      "word": "dizer",
+      "normalized": "dizer",
+      "freq": 1161.533333
+    },
+    {
+      "word": "mesmo",
+      "normalized": "mesmo",
+      "freq": 819.847752
+    },
+    {
+      "word": "forma",
+      "normalized": "forma",
+      "freq": 774.715668
+    },
+    {
+      "word": "maior",
+      "normalized": "maior",
+      "freq": 769.946562
+    },
+    {
+      "word": "ainda",
+      "normalized": "ainda",
+      "freq": 760.201654
+    },
+    {
+      "word": "muito",
+      "normalized": "muito",
+      "freq": 706.358137
+    },
+    {
+      "word": "tempo",
+      "normalized": "tempo",
+      "freq": 633.827385
+    },
+    {
+      "word": "sendo",
+      "normalized": "sendo",
+      "freq": 611.895543
+    },
+    {
+      "word": "todos",
+      "normalized": "todos",
+      "freq": 584.594676
+    },
+    {
+      "word": "parte",
+      "normalized": "parte",
+      "freq": 580.188546
+    },
+    {
+      "word": "coisa",
+      "normalized": "coisa",
+      "freq": 493.955556
+    },
+    {
+      "word": "estão",
+      "normalized": "estao",
+      "freq": 487.143577
+    },
+    {
+      "word": "pelos",
+      "normalized": "pelos",
+      "freq": 470.417423
+    },
+    {
+      "word": "grupo",
+      "normalized": "grupo",
+      "freq": 460.076628
+    },
+    {
+      "word": "assim",
+      "normalized": "assim",
+      "freq": 443.388788
+    },
+    {
+      "word": "outro",
+      "normalized": "outro",
+      "freq": 428.034886
+    },
+    {
+      "word": "disse",
+      "normalized": "disse",
+      "freq": 419.575519
+    },
+    {
+      "word": "dados",
+      "normalized": "dados",
+      "freq": 419.110708
+    },
+    {
+      "word": "fazer",
+      "normalized": "fazer",
+      "freq": 418.582375
+    },
+    {
+      "word": "menos",
+      "normalized": "menos",
+      "freq": 405.32567
+    },
+    {
+      "word": "podem",
+      "normalized": "podem",
+      "freq": 404.577536
+    },
+    {
+      "word": "mundo",
+      "normalized": "mundo",
+      "freq": 374.602742
+    },
+    {
+      "word": "saúde",
+      "normalized": "saude",
+      "freq": 361.247227
+    },
+    {
+      "word": "ontem",
+      "normalized": "ontem",
+      "freq": 334.137931
+    },
+    {
+      "word": "final",
+      "normalized": "final",
+      "freq": 316.645493
+    },
+    {
+      "word": "valor",
+      "normalized": "valor",
+      "freq": 315.522283
+    },
+    {
+      "word": "deste",
+      "normalized": "deste",
+      "freq": 314.832628
+    },
+    {
+      "word": "vezes",
+      "normalized": "vezes",
+      "freq": 308.089333
+    },
+    {
+      "word": "gente",
+      "normalized": "gente",
+      "freq": 299.133333
+    },
+    {
+      "word": "desde",
+      "normalized": "desde",
+      "freq": 296.892519
+    },
+    {
+      "word": "total",
+      "normalized": "total",
+      "freq": 294.551321
+    },
+    {
+      "word": "todas",
+      "normalized": "todas",
+      "freq": 293.937286
+    },
+    {
+      "word": "poder",
+      "normalized": "poder",
+      "freq": 291.68784
+    },
+    {
+      "word": "tanto",
+      "normalized": "tanto",
+      "freq": 284.936479
+    },
+    {
+      "word": "pelas",
+      "normalized": "pelas",
+      "freq": 284.431337
+    },
+    {
+      "word": "quais",
+      "normalized": "quais",
+      "freq": 283.482557
+    },
+    {
+      "word": "mesma",
+      "normalized": "mesma",
+      "freq": 280.991127
+    },
+    {
+      "word": "média",
+      "normalized": "media",
+      "freq": 279.628957
+    },
+    {
+      "word": "nível",
+      "normalized": "nivel",
+      "freq": 279.618875
+    },
+    {
+      "word": "antes",
+      "normalized": "antes",
+      "freq": 277.957249
+    },
+    {
+      "word": "casos",
+      "normalized": "casos",
+      "freq": 273.840492
+    },
+    {
+      "word": "então",
+      "normalized": "entao",
+      "freq": 271.998387
+    },
+    {
+      "word": "ordem",
+      "normalized": "ordem",
+      "freq": 258.630772
+    },
+    {
+      "word": "neste",
+      "normalized": "neste",
+      "freq": 254.269006
+    },
+    {
+      "word": "ponto",
+      "normalized": "ponto",
+      "freq": 253.753781
+    },
+    {
+      "word": "geral",
+      "normalized": "geral",
+      "freq": 248.888889
+    },
+    {
+      "word": "seria",
+      "normalized": "seria",
+      "freq": 247.355314
+    },
+    {
+      "word": "pouco",
+      "normalized": "pouco",
+      "freq": 243.524904
+    },
+    {
+      "word": "outra",
+      "normalized": "outra",
+      "freq": 241.971164
+    },
+    {
+      "word": "desse",
+      "normalized": "desse",
+      "freq": 232.713249
+    },
+    {
+      "word": "campo",
+      "normalized": "campo",
+      "freq": 232.457149
+    },
+    {
+      "word": "dessa",
+      "normalized": "dessa",
+      "freq": 231.458964
+    },
+    {
+      "word": "desta",
+      "normalized": "desta",
+      "freq": 230.681589
+    },
+    {
+      "word": "tinha",
+      "normalized": "tinha",
+      "freq": 228.971567
+    },
+    {
+      "word": "cerca",
+      "normalized": "cerca",
+      "freq": 227.608389
+    },
+    {
+      "word": "ações",
+      "normalized": "acoes",
+      "freq": 224.758016
+    },
+    {
+      "word": "lugar",
+      "normalized": "lugar",
+      "freq": 222.959266
+    },
+    {
+      "word": "meses",
+      "normalized": "meses",
+      "freq": 222.557975
+    },
+    {
+      "word": "local",
+      "normalized": "local",
+      "freq": 222.416818
+    },
+    {
+      "word": "idade",
+      "normalized": "idade",
+      "freq": 219.289171
+    },
+    {
+      "word": "nosso",
+      "normalized": "nosso",
+      "freq": 218.811252
+    },
+    {
+      "word": "menor",
+      "normalized": "menor",
+      "freq": 218.757814
+    },
+    {
+      "word": "áreas",
+      "normalized": "areas",
+      "freq": 218.555152
+    },
+    {
+      "word": "velho",
+      "normalized": "velho",
+      "freq": 215.2
+    },
+    {
+      "word": "havia",
+      "normalized": "havia",
+      "freq": 210.126033
+    },
+    {
+      "word": "papel",
+      "normalized": "papel",
+      "freq": 208.915104
+    },
+    {
+      "word": "curso",
+      "normalized": "curso",
+      "freq": 205.0
+    },
+    {
+      "word": "esses",
+      "normalized": "esses",
+      "freq": 204.614842
+    },
+    {
+      "word": "cinco",
+      "normalized": "cinco",
+      "freq": 204.444444
+    },
+    {
+      "word": "agora",
+      "normalized": "agora",
+      "freq": 202.677959
+    },
+    {
+      "word": "estar",
+      "normalized": "estar",
+      "freq": 200.724945
+    },
+    {
+      "word": "setor",
+      "normalized": "setor",
+      "freq": 199.91833
+    },
+    {
+      "word": "conta",
+      "normalized": "conta",
+      "freq": 198.303085
+    },
+    {
+      "word": "devem",
+      "normalized": "devem",
+      "freq": 197.693083
+    },
+    {
+      "word": "disso",
+      "normalized": "disso",
+      "freq": 197.534785
+    },
+    {
+      "word": "homem",
+      "normalized": "homem",
+      "freq": 197.283727
+    },
+    {
+      "word": "nossa",
+      "normalized": "nossa",
+      "freq": 191.552732
+    },
+    {
+      "word": "quase",
+      "normalized": "quase",
+      "freq": 187.78786
+    },
+    {
+      "word": "texto",
+      "normalized": "texto",
+      "freq": 186.812865
+    },
+    {
+      "word": "força",
+      "normalized": "forca",
+      "freq": 186.266667
+    },
+    {
+      "word": "horas",
+      "normalized": "horas",
+      "freq": 185.001008
+    },
+    {
+      "word": "longo",
+      "normalized": "longo",
+      "freq": 184.428312
+    },
+    {
+      "word": "vista",
+      "normalized": "vista",
+      "freq": 183.985683
+    },
+    {
+      "word": "autor",
+      "normalized": "autor",
+      "freq": 181.143376
+    },
+    {
+      "word": "novas",
+      "normalized": "novas",
+      "freq": 180.729986
+    },
+    {
+      "word": "novos",
+      "normalized": "novos",
+      "freq": 180.330712
+    },
+    {
+      "word": "minha",
+      "normalized": "minha",
+      "freq": 179.02198
+    },
+    {
+      "word": "falta",
+      "normalized": "falta",
+      "freq": 178.429119
+    },
+    {
+      "word": "risco",
+      "normalized": "risco",
+      "freq": 177.400686
+    },
+    {
+      "word": "essas",
+      "normalized": "essas",
+      "freq": 174.983868
+    },
+    {
+      "word": "série",
+      "normalized": "serie",
+      "freq": 170.003025
+    },
+    {
+      "word": "porém",
+      "normalized": "porem",
+      "freq": 169.329502
+    },
+    {
+      "word": "apoio",
+      "normalized": "apoio",
+      "freq": 163.84755
+    },
+    {
+      "word": "época",
+      "normalized": "epoca",
+      "freq": 162.919944
+    },
+    {
+      "word": "idéia",
+      "normalized": "ideia",
+      "freq": 161.980238
+    },
+    {
+      "word": "corpo",
+      "normalized": "corpo",
+      "freq": 161.87437
+    },
+    {
+      "word": "tendo",
+      "normalized": "tendo",
+      "freq": 161.144384
+    },
+    {
+      "word": "houve",
+      "normalized": "houve",
+      "freq": 160.785441
+    },
+    {
+      "word": "livro",
+      "normalized": "livro",
+      "freq": 158.714459
+    },
+    {
+      "word": "porto",
+      "normalized": "porto",
+      "freq": 156.089937
+    },
+    {
+      "word": "santa",
+      "normalized": "santa",
+      "freq": 155.09881
+    },
+    {
+      "word": "feito",
+      "normalized": "feito",
+      "freq": 154.745917
+    },
+    {
+      "word": "serão",
+      "normalized": "serao",
+      "freq": 153.979633
+    },
+    {
+      "word": "feita",
+      "normalized": "feita",
+      "freq": 153.931236
+    },
+    {
+      "word": "atual",
+      "normalized": "atual",
+      "freq": 153.53297
+    },
+    {
+      "word": "nesta",
+      "normalized": "nesta",
+      "freq": 153.488607
+    },
+    {
+      "word": "serem",
+      "normalized": "serem",
+      "freq": 152.802984
+    },
+    {
+      "word": "acima",
+      "normalized": "acima",
+      "freq": 149.757007
+    },
+    {
+      "word": "saber",
+      "normalized": "saber",
+      "freq": 146.733212
+    },
+    {
+      "word": "nesse",
+      "normalized": "nesse",
+      "freq": 146.058681
+    },
+    {
+      "word": "busca",
+      "normalized": "busca",
+      "freq": 145.484977
+    },
+    {
+      "word": "causa",
+      "normalized": "causa",
+      "freq": 142.594273
+    },
+    {
+      "word": "médio",
+      "normalized": "medio",
+      "freq": 142.114338
+    },
+    {
+      "word": "comum",
+      "normalized": "comum",
+      "freq": 137.074007
+    },
+    {
+      "word": "morte",
+      "normalized": "morte",
+      "freq": 135.779391
+    },
+    {
+      "word": "razão",
+      "normalized": "razao",
+      "freq": 132.841299
+    },
+    {
+      "word": "estes",
+      "normalized": "estes",
+      "freq": 130.08167
+    },
+    {
+      "word": "plano",
+      "normalized": "plano",
+      "freq": 129.489816
+    },
+    {
+      "word": "tenha",
+      "normalized": "tenha",
+      "freq": 129.251865
+    },
+    {
+      "word": "sejam",
+      "normalized": "sejam",
+      "freq": 126.962089
+    },
+    {
+      "word": "terra",
+      "normalized": "terra",
+      "freq": 125.9024
+    },
+    {
+      "word": "teste",
+      "normalized": "teste",
+      "freq": 124.800363
+    },
+    {
+      "word": "renda",
+      "normalized": "renda",
+      "freq": 123.484574
+    },
+    {
+      "word": "prazo",
+      "normalized": "prazo",
+      "freq": 122.431942
+    },
+    {
+      "word": "linha",
+      "normalized": "linha",
+      "freq": 121.806816
+    },
+    {
+      "word": "crise",
+      "normalized": "crise",
+      "freq": 120.666465
+    },
+    {
+      "word": "junto",
+      "normalized": "junto",
+      "freq": 119.613833
+    },
+    {
+      "word": "visão",
+      "normalized": "visao",
+      "freq": 119.504941
+    },
+    {
+      "word": "teria",
+      "normalized": "teria",
+      "freq": 119.474692
+    },
+    {
+      "word": "nunca",
+      "normalized": "nunca",
+      "freq": 118.792095
+    },
+    {
+      "word": "volta",
+      "normalized": "volta",
+      "freq": 117.85239
+    },
+    {
+      "word": "obras",
+      "normalized": "obras",
+      "freq": 116.889494
+    },
+    {
+      "word": "aluno",
+      "normalized": "aluno",
+      "freq": 116.522484
+    },
+    {
+      "word": "único",
+      "normalized": "unico",
+      "freq": 116.392418
+    },
+    {
+      "word": "temos",
+      "normalized": "temos",
+      "freq": 114.562412
+    },
+    {
+      "word": "baixa",
+      "normalized": "baixa",
+      "freq": 114.537205
+    },
+    {
+      "word": "deles",
+      "normalized": "deles",
+      "freq": 114.469651
+    },
+    {
+      "word": "tirar",
+      "normalized": "tirar",
+      "freq": 114.466667
+    },
+    {
+      "word": "minas",
+      "normalized": "minas",
+      "freq": 114.144989
+    },
+    {
+      "word": "fosse",
+      "normalized": "fosse",
+      "freq": 113.482557
+    },
+    {
+      "word": "ficou",
+      "normalized": "ficou",
+      "freq": 113.107481
+    },
+    {
+      "word": "filme",
+      "normalized": "filme",
+      "freq": 112.722323
+    },
+    {
+      "word": "algum",
+      "normalized": "algum",
+      "freq": 111.718088
+    },
+    {
+      "word": "tipos",
+      "normalized": "tipos",
+      "freq": 111.508369
+    },
+    {
+      "word": "custo",
+      "normalized": "custo",
+      "freq": 110.301472
+    },
+    {
+      "word": "passa",
+      "normalized": "passa",
+      "freq": 108.416011
+    },
+    {
+      "word": "forte",
+      "normalized": "forte",
+      "freq": 107.32809
+    },
+    {
+      "word": "união",
+      "normalized": "uniao",
+      "freq": 105.571688
+    },
+    {
+      "word": "fator",
+      "normalized": "fator",
+      "freq": 103.670095
+    },
+    {
+      "word": "única",
+      "normalized": "unica",
+      "freq": 101.472071
+    },
+    {
+      "word": "noite",
+      "normalized": "noite",
+      "freq": 101.045574
+    },
+    {
+      "word": "torno",
+      "normalized": "torno",
+      "freq": 101.014317
+    },
+    {
+      "word": "braço",
+      "normalized": "braco",
+      "freq": 100.533333
+    },
+    {
+      "word": "fazem",
+      "normalized": "fazem",
+      "freq": 100.389191
+    },
+    {
+      "word": "preço",
+      "normalized": "preco",
+      "freq": 100.326679
+    },
+    {
+      "word": "baixo",
+      "normalized": "baixo",
+      "freq": 99.903206
+    },
+    {
+      "word": "certo",
+      "normalized": "certo",
+      "freq": 99.650131
+    },
+    {
+      "word": "falar",
+      "normalized": "falar",
+      "freq": 99.247832
+    },
+    {
+      "word": "estas",
+      "normalized": "estas",
+      "freq": 97.932043
+    },
+    {
+      "word": "nessa",
+      "normalized": "nessa",
+      "freq": 97.262553
+    },
+    {
+      "word": "livre",
+      "normalized": "livre",
+      "freq": 97.051825
+    },
+    {
+      "word": "massa",
+      "normalized": "massa",
+      "freq": 96.311756
+    },
+    {
+      "word": "norte",
+      "normalized": "norte",
+      "freq": 95.380117
+    },
+    {
+      "word": "reais",
+      "normalized": "reais",
+      "freq": 95.139141
+    },
+    {
+      "word": "queda",
+      "normalized": "queda",
+      "freq": 95.127042
+    },
+    {
+      "word": "ficar",
+      "normalized": "ficar",
+      "freq": 94.05122
+    },
+    {
+      "word": "possa",
+      "normalized": "possa",
+      "freq": 93.443235
+    },
+    {
+      "word": "tarde",
+      "normalized": "tarde",
+      "freq": 92.94515
+    },
+    {
+      "word": "filha",
+      "normalized": "filha",
+      "freq": 92.777778
+    },
+    {
+      "word": "julho",
+      "normalized": "julho",
+      "freq": 90.207703
+    },
+    {
+      "word": "perda",
+      "normalized": "perda",
+      "freq": 90.189554
+    },
+    {
+      "word": "juros",
+      "normalized": "juros",
+      "freq": 89.989917
+    },
+    {
+      "word": "filho",
+      "normalized": "filho",
+      "freq": 89.728776
+    },
+    {
+      "word": "banco",
+      "normalized": "banco",
+      "freq": 87.791894
+    },
+    {
+      "word": "abril",
+      "normalized": "abril",
+      "freq": 86.417625
+    },
+    {
+      "word": "faixa",
+      "normalized": "faixa",
+      "freq": 85.893325
+    },
+    {
+      "word": "junho",
+      "normalized": "junho",
+      "freq": 85.498084
+    },
+    {
+      "word": "criar",
+      "normalized": "criar",
+      "freq": 84.432345
+    },
+    {
+      "word": "visto",
+      "normalized": "visto",
+      "freq": 84.398064
+    },
+    {
+      "word": "ambos",
+      "normalized": "ambos",
+      "freq": 84.235733
+    },
+    {
+      "word": "meios",
+      "normalized": "meios",
+      "freq": 84.047187
+    },
+    {
+      "word": "levar",
+      "normalized": "levar",
+      "freq": 83.293003
+    },
+    {
+      "word": "claro",
+      "normalized": "claro",
+      "freq": 81.801775
+    },
+    {
+      "word": "exame",
+      "normalized": "exame",
+      "freq": 81.534584
+    },
+    {
+      "word": "termo",
+      "normalized": "termo",
+      "freq": 81.49022
+    },
+    {
+      "word": "venda",
+      "normalized": "venda",
+      "freq": 81.110103
+    },
+    {
+      "word": "capaz",
+      "normalized": "capaz",
+      "freq": 80.499093
+    },
+    {
+      "word": "taxas",
+      "normalized": "taxas",
+      "freq": 77.309942
+    },
+    {
+      "word": "fonte",
+      "normalized": "fonte",
+      "freq": 77.173825
+    },
+    {
+      "word": "civil",
+      "normalized": "civil",
+      "freq": 75.651341
+    },
+    {
+      "word": "trata",
+      "normalized": "trata",
+      "freq": 75.001008
+    },
+    {
+      "word": "prova",
+      "normalized": "prova",
+      "freq": 73.938294
+    },
+    {
+      "word": "certa",
+      "normalized": "certa",
+      "freq": 73.397862
+    },
+    {
+      "word": "rural",
+      "normalized": "rural",
+      "freq": 73.356523
+    },
+    {
+      "word": "santo",
+      "normalized": "santo",
+      "freq": 73.350474
+    },
+    {
+      "word": "ajuda",
+      "normalized": "ajuda",
+      "freq": 73.006655
+    },
+    {
+      "word": "obter",
+      "normalized": "obter",
+      "freq": 72.748538
+    },
+    {
+      "word": "igual",
+      "normalized": "igual",
+      "freq": 72.539827
+    },
+    {
+      "word": "tenho",
+      "normalized": "tenho",
+      "freq": 71.423674
+    },
+    {
+      "word": "atrás",
+      "normalized": "atras",
+      "freq": 71.377778
+    },
+    {
+      "word": "muita",
+      "normalized": "muita",
+      "freq": 71.201855
+    },
+    {
+      "word": "fundo",
+      "normalized": "fundo",
+      "freq": 70.946763
+    },
+    {
+      "word": "carga",
+      "normalized": "carga",
+      "freq": 70.878201
+    },
+    {
+      "word": "delas",
+      "normalized": "delas",
+      "freq": 70.059488
+    },
+    {
+      "word": "carro",
+      "normalized": "carro",
+      "freq": 70.050413
+    },
+    {
+      "word": "marca",
+      "normalized": "marca",
+      "freq": 69.920347
+    },
+    {
+      "word": "favor",
+      "normalized": "favor",
+      "freq": 68.281912
+    },
+    {
+      "word": "rosto",
+      "normalized": "rosto",
+      "freq": 67.355556
+    },
+    {
+      "word": "corte",
+      "normalized": "corte",
+      "freq": 67.250454
+    },
+    {
+      "word": "ciclo",
+      "normalized": "ciclo",
+      "freq": 67.034684
+    },
+    {
+      "word": "etapa",
+      "normalized": "etapa",
+      "freq": 66.748336
+    },
+    {
+      "word": "fluxo",
+      "normalized": "fluxo",
+      "freq": 66.439806
+    },
+    {
+      "word": "crime",
+      "normalized": "crime",
+      "freq": 66.081871
+    },
+    {
+      "word": "leite",
+      "normalized": "leite",
+      "freq": 65.885259
+    },
+    {
+      "word": "haver",
+      "normalized": "haver",
+      "freq": 65.643275
+    },
+    {
+      "word": "pagar",
+      "normalized": "pagar",
+      "freq": 64.640048
+    },
+    {
+      "word": "cargo",
+      "normalized": "cargo",
+      "freq": 64.603751
+    },
+    {
+      "word": "líder",
+      "normalized": "lider",
+      "freq": 64.469651
+    },
+    {
+      "word": "troca",
+      "normalized": "troca",
+      "freq": 64.377899
+    },
+    {
+      "word": "temas",
+      "normalized": "temas",
+      "freq": 64.244807
+    },
+    {
+      "word": "lista",
+      "normalized": "lista",
+      "freq": 63.279895
+    },
+    {
+      "word": "meter",
+      "normalized": "meter",
+      "freq": 63.2
+    },
+    {
+      "word": "fatos",
+      "normalized": "fatos",
+      "freq": 62.751563
+    },
+    {
+      "word": "órgão",
+      "normalized": "orgao",
+      "freq": 62.625529
+    },
+    {
+      "word": "fácil",
+      "normalized": "facil",
+      "freq": 62.347247
+    },
+    {
+      "word": "jogos",
+      "normalized": "jogos",
+      "freq": 62.089131
+    },
+    {
+      "word": "saída",
+      "normalized": "saida",
+      "freq": 61.778584
+    },
+    {
+      "word": "banda",
+      "normalized": "banda",
+      "freq": 61.51341
+    },
+    {
+      "word": "deixa",
+      "normalized": "deixa",
+      "freq": 59.926396
+    },
+    {
+      "word": "passo",
+      "normalized": "passo",
+      "freq": 59.79633
+    },
+    {
+      "word": "chega",
+      "normalized": "chega",
+      "freq": 59.593668
+    },
+    {
+      "word": "festa",
+      "normalized": "festa",
+      "freq": 59.444444
+    },
+    {
+      "word": "opção",
+      "normalized": "opcao",
+      "freq": 59.321436
+    },
+    {
+      "word": "poeta",
+      "normalized": "poeta",
+      "freq": 58.822222
+    },
+    {
+      "word": "tomar",
+      "normalized": "tomar",
+      "freq": 57.795927
+    },
+    {
+      "word": "milho",
+      "normalized": "milho",
+      "freq": 56.315789
+    },
+    {
+      "word": "ideal",
+      "normalized": "ideal",
+      "freq": 56.294616
+    },
+    {
+      "word": "olhos",
+      "normalized": "olhos",
+      "freq": 56.254285
+    },
+    {
+      "word": "vagas",
+      "normalized": "vagas",
+      "freq": 55.934664
+    },
+    {
+      "word": "moral",
+      "normalized": "moral",
+      "freq": 55.778383
+    },
+    {
+      "word": "clube",
+      "normalized": "clube",
+      "freq": 55.770317
+    },
+    {
+      "word": "usado",
+      "normalized": "usado",
+      "freq": 55.530349
+    },
+    {
+      "word": "alves",
+      "normalized": "alves",
+      "freq": 55.504134
+    },
+    {
+      "word": "vamos",
+      "normalized": "vamos",
+      "freq": 55.272232
+    },
+    {
+      "word": "votos",
+      "normalized": "votos",
+      "freq": 54.937487
+    },
+    {
+      "word": "manhã",
+      "normalized": "manha",
+      "freq": 54.550313
+    },
+    {
+      "word": "ácido",
+      "normalized": "acido",
+      "freq": 54.154063
+    },
+    {
+      "word": "quero",
+      "normalized": "quero",
+      "freq": 53.749748
+    },
+    {
+      "word": "torna",
+      "normalized": "torna",
+      "freq": 53.728574
+    },
+    {
+      "word": "casas",
+      "normalized": "casas",
+      "freq": 53.416011
+    },
+    {
+      "word": "sinal",
+      "normalized": "sinal",
+      "freq": 52.829199
+    },
+    {
+      "word": "aulas",
+      "normalized": "aulas",
+      "freq": 51.445856
+    },
+    {
+      "word": "nomes",
+      "normalized": "nomes",
+      "freq": 51.191773
+    },
+    {
+      "word": "grave",
+      "normalized": "grave",
+      "freq": 51.140351
+    },
+    {
+      "word": "levou",
+      "normalized": "levou",
+      "freq": 50.957854
+    },
+    {
+      "word": "redes",
+      "normalized": "redes",
+      "freq": 50.863077
+    },
+    {
+      "word": "jovem",
+      "normalized": "jovem",
+      "freq": 50.854003
+    },
+    {
+      "word": "dando",
+      "normalized": "dando",
+      "freq": 49.211535
+    },
+    {
+      "word": "seção",
+      "normalized": "secao",
+      "freq": 48.977616
+    },
+    {
+      "word": "mudar",
+      "normalized": "mudar",
+      "freq": 48.446259
+    },
+    {
+      "word": "legal",
+      "normalized": "legal",
+      "freq": 48.337366
+    },
+    {
+      "word": "estou",
+      "normalized": "estou",
+      "freq": 47.964307
+    },
+    {
+      "word": "acaba",
+      "normalized": "acaba",
+      "freq": 47.611414
+    },
+    {
+      "word": "olhar",
+      "normalized": "olhar",
+      "freq": 47.548901
+    },
+    {
+      "word": "bases",
+      "normalized": "bases",
+      "freq": 47.234321
+    },
+    {
+      "word": "peixe",
+      "normalized": "peixe",
+      "freq": 47.222222
+    },
+    {
+      "word": "peças",
+      "normalized": "pecas",
+      "freq": 46.473079
+    },
+    {
+      "word": "aliás",
+      "normalized": "alias",
+      "freq": 46.155556
+    },
+    {
+      "word": "ampla",
+      "normalized": "ampla",
+      "freq": 46.073805
+    },
+    {
+      "word": "noção",
+      "normalized": "nocao",
+      "freq": 45.776366
+    },
+    {
+      "word": "clima",
+      "normalized": "clima",
+      "freq": 45.261141
+    },
+    {
+      "word": "terem",
+      "normalized": "terem",
+      "freq": 44.198427
+    },
+    {
+      "word": "carta",
+      "normalized": "carta",
+      "freq": 43.792095
+    },
+    {
+      "word": "amigo",
+      "normalized": "amigo",
+      "freq": 43.698326
+    },
+    {
+      "word": "disco",
+      "normalized": "disco",
+      "freq": 43.555152
+    },
+    {
+      "word": "viver",
+      "normalized": "viver",
+      "freq": 43.442226
+    },
+    {
+      "word": "chefe",
+      "normalized": "chefe",
+      "freq": 43.36459
+    },
+    {
+      "word": "perto",
+      "normalized": "perto",
+      "freq": 43.214358
+    },
+    {
+      "word": "ganho",
+      "normalized": "ganho",
+      "freq": 43.053035
+    },
+    {
+      "word": "exige",
+      "normalized": "exige",
+      "freq": 43.011696
+    },
+    {
+      "word": "ética",
+      "normalized": "etica",
+      "freq": 42.215164
+    },
+    {
+      "word": "dizem",
+      "normalized": "dizem",
+      "freq": 42.112321
+    },
+    {
+      "word": "altos",
+      "normalized": "altos",
+      "freq": 42.10123
+    },
+    {
+      "word": "erros",
+      "normalized": "erros",
+      "freq": 41.892519
+    },
+    {
+      "word": "redor",
+      "normalized": "redor",
+      "freq": 41.882436
+    },
+    {
+      "word": "longe",
+      "normalized": "longe",
+      "freq": 41.603146
+    },
+    {
+      "word": "turno",
+      "normalized": "turno",
+      "freq": 41.534584
+    },
+    {
+      "word": "dieta",
+      "normalized": "dieta",
+      "freq": 41.466021
+    },
+    {
+      "word": "fases",
+      "normalized": "fases",
+      "freq": 41.357128
+    },
+    {
+      "word": "doses",
+      "normalized": "doses",
+      "freq": 41.327889
+    },
+    {
+      "word": "carne",
+      "normalized": "carne",
+      "freq": 41.138334
+    },
+    {
+      "word": "curto",
+      "normalized": "curto",
+      "freq": 41.086913
+    },
+    {
+      "word": "posse",
+      "normalized": "posse",
+      "freq": 40.994152
+    },
+    {
+      "word": "clara",
+      "normalized": "clara",
+      "freq": 40.818713
+    },
+    {
+      "word": "armas",
+      "normalized": "armas",
+      "freq": 40.604961
+    },
+    {
+      "word": "águas",
+      "normalized": "aguas",
+      "freq": 40.155273
+    },
+    {
+      "word": "mente",
+      "normalized": "mente",
+      "freq": 39.465618
+    },
+    {
+      "word": "canal",
+      "normalized": "canal",
+      "freq": 39.431337
+    },
+    {
+      "word": "posto",
+      "normalized": "posto",
+      "freq": 39.414196
+    },
+    {
+      "word": "anual",
+      "normalized": "anual",
+      "freq": 39.234725
+    },
+    {
+      "word": "caixa",
+      "normalized": "caixa",
+      "freq": 39.189353
+    },
+    {
+      "word": "terão",
+      "normalized": "terao",
+      "freq": 38.978625
+    },
+    {
+      "word": "fazia",
+      "normalized": "fazia",
+      "freq": 38.96955
+    },
+    {
+      "word": "prevê",
+      "normalized": "preve",
+      "freq": 38.962492
+    },
+    {
+      "word": "ritmo",
+      "normalized": "ritmo",
+      "freq": 38.911071
+    },
+    {
+      "word": "citar",
+      "normalized": "citar",
+      "freq": 38.8
+    },
+    {
+      "word": "grãos",
+      "normalized": "graos",
+      "freq": 38.446259
+    },
+    {
+      "word": "ambas",
+      "normalized": "ambas",
+      "freq": 38.129663
+    },
+    {
+      "word": "dólar",
+      "normalized": "dolar",
+      "freq": 38.034886
+    },
+    {
+      "word": "lesão",
+      "normalized": "lesao",
+      "freq": 37.6951
+    },
+    {
+      "word": "amplo",
+      "normalized": "amplo",
+      "freq": 37.664852
+    },
+    {
+      "word": "segue",
+      "normalized": "segue",
+      "freq": 37.423876
+    },
+    {
+      "word": "gerar",
+      "normalized": "gerar",
+      "freq": 37.255495
+    },
+    {
+      "word": "mídia",
+      "normalized": "midia",
+      "freq": 37.136519
+    },
+    {
+      "word": "solos",
+      "normalized": "solos",
+      "freq": 37.076023
+    },
+    {
+      "word": "altas",
+      "normalized": "altas",
+      "freq": 36.690865
+    },
+    {
+      "word": "bolsa",
+      "normalized": "bolsa",
+      "freq": 36.690865
+    },
+    {
+      "word": "rádio",
+      "normalized": "radio",
+      "freq": 36.333938
+    },
+    {
+      "word": "moeda",
+      "normalized": "moeda",
+      "freq": 36.258318
+    },
+    {
+      "word": "nobre",
+      "normalized": "nobre",
+      "freq": 36.145392
+    },
+    {
+      "word": "usada",
+      "normalized": "usada",
+      "freq": 36.115144
+    },
+    {
+      "word": "vírus",
+      "normalized": "virus",
+      "freq": 36.015326
+    },
+    {
+      "word": "jogar",
+      "normalized": "jogar",
+      "freq": 35.963904
+    },
+    {
+      "word": "greve",
+      "normalized": "greve",
+      "freq": 35.931639
+    },
+    {
+      "word": "abrir",
+      "normalized": "abrir",
+      "freq": 35.916515
+    },
+    {
+      "word": "regra",
+      "normalized": "regra",
+      "freq": 35.788465
+    },
+    {
+      "word": "tenta",
+      "normalized": "tenta",
+      "freq": 35.576729
+    },
+    {
+      "word": "chama",
+      "normalized": "chama",
+      "freq": 35.557572
+    },
+    {
+      "word": "ficam",
+      "normalized": "ficam",
+      "freq": 35.497076
+    },
+    {
+      "word": "metas",
+      "normalized": "metas",
+      "freq": 35.456745
+    },
+    {
+      "word": "seres",
+      "normalized": "seres",
+      "freq": 35.386167
+    },
+    {
+      "word": "preso",
+      "normalized": "preso",
+      "freq": 35.381125
+    },
+    {
+      "word": "graus",
+      "normalized": "graus",
+      "freq": 35.156282
+    },
+    {
+      "word": "cujos",
+      "normalized": "cujos",
+      "freq": 35.076628
+    },
+    {
+      "word": "longa",
+      "normalized": "longa",
+      "freq": 34.94152
+    },
+    {
+      "word": "lojas",
+      "normalized": "lojas",
+      "freq": 34.792297
+    },
+    {
+      "word": "porta",
+      "normalized": "porta",
+      "freq": 34.770115
+    },
+    {
+      "word": "ganha",
+      "normalized": "ganha",
+      "freq": 34.596693
+    },
+    {
+      "word": "lucro",
+      "normalized": "lucro",
+      "freq": 34.572494
+    },
+    {
+      "word": "vigor",
+      "normalized": "vigor",
+      "freq": 34.545271
+    },
+    {
+      "word": "dupla",
+      "normalized": "dupla",
+      "freq": 34.341601
+    },
+    {
+      "word": "neves",
+      "normalized": "neves",
+      "freq": 34.24884
+    },
+    {
+      "word": "vinte",
+      "normalized": "vinte",
+      "freq": 34.182295
+    },
+    {
+      "word": "ativa",
+      "normalized": "ativa",
+      "freq": 34.073402
+    },
+    {
+      "word": "porte",
+      "normalized": "porte",
+      "freq": 33.921153
+    },
+    {
+      "word": "povos",
+      "normalized": "povos",
+      "freq": 33.714459
+    },
+    {
+      "word": "grito",
+      "normalized": "grito",
+      "freq": 33.666667
+    },
+    {
+      "word": "ferro",
+      "normalized": "ferro",
+      "freq": 33.461383
+    },
+    {
+      "word": "pedir",
+      "normalized": "pedir",
+      "freq": 33.33535
+    },
+    {
+      "word": "podia",
+      "normalized": "podia",
+      "freq": 33.133696
+    },
+    {
+      "word": "pouca",
+      "normalized": "pouca",
+      "freq": 33.083283
+    },
+    {
+      "word": "parto",
+      "normalized": "parto",
+      "freq": 33.015729
+    },
+    {
+      "word": "irmão",
+      "normalized": "irmao",
+      "freq": 33.002621
+    },
+    {
+      "word": "fruto",
+      "normalized": "fruto",
+      "freq": 32.990522
+    },
+    {
+      "word": "andar",
+      "normalized": "andar",
+      "freq": 32.862472
+    },
+    {
+      "word": "ouvir",
+      "normalized": "ouvir",
+      "freq": 32.806009
+    },
+    {
+      "word": "oeste",
+      "normalized": "oeste",
+      "freq": 32.646703
+    },
+    {
+      "word": "nação",
+      "normalized": "nacao",
+      "freq": 32.500504
+    },
+    {
+      "word": "deter",
+      "normalized": "deter",
+      "freq": 32.288889
+    },
+    {
+      "word": "criou",
+      "normalized": "criou",
+      "freq": 32.07199
+    },
+    {
+      "word": "artes",
+      "normalized": "artes",
+      "freq": 31.945957
+    },
+    {
+      "word": "atuar",
+      "normalized": "atuar",
+      "freq": 31.665658
+    },
+    {
+      "word": "pediu",
+      "normalized": "pediu",
+      "freq": 31.441823
+    },
+    {
+      "word": "notas",
+      "normalized": "notas",
+      "freq": 31.436782
+    },
+    {
+      "word": "gosto",
+      "normalized": "gosto",
+      "freq": 31.287558
+    },
+    {
+      "word": "vocês",
+      "normalized": "voces",
+      "freq": 31.284533
+    },
+    {
+      "word": "entra",
+      "normalized": "entra",
+      "freq": 31.27445
+    },
+    {
+      "word": "morto",
+      "normalized": "morto",
+      "freq": 31.014317
+    },
+    {
+      "word": "salas",
+      "normalized": "salas",
+      "freq": 30.722928
+    },
+    {
+      "word": "curva",
+      "normalized": "curva",
+      "freq": 30.519258
+    },
+    {
+      "word": "navio",
+      "normalized": "navio",
+      "freq": 30.444444
+    },
+    {
+      "word": "folha",
+      "normalized": "folha",
+      "freq": 30.228877
+    },
+    {
+      "word": "pobre",
+      "normalized": "pobre",
+      "freq": 30.165356
+    },
+    {
+      "word": "somos",
+      "normalized": "somos",
+      "freq": 30.159306
+    },
+    {
+      "word": "negro",
+      "normalized": "negro",
+      "freq": 30.063521
+    },
+    {
+      "word": "vivem",
+      "normalized": "vivem",
+      "freq": 29.972777
+    },
+    {
+      "word": "serve",
+      "normalized": "serve",
+      "freq": 29.93043
+    },
+    {
+      "word": "verão",
+      "normalized": "verao",
+      "freq": 29.911111
+    },
+    {
+      "word": "bloco",
+      "normalized": "bloco",
+      "freq": 29.823553
+    },
+    {
+      "word": "votar",
+      "normalized": "votar",
+      "freq": 29.774148
+    },
+    {
+      "word": "breve",
+      "normalized": "breve",
+      "freq": 29.193386
+    },
+    {
+      "word": "posso",
+      "normalized": "posso",
+      "freq": 28.942327
+    },
+    {
+      "word": "vídeo",
+      "normalized": "video",
+      "freq": 28.916112
+    },
+    {
+      "word": "motor",
+      "normalized": "motor",
+      "freq": 28.704376
+    },
+    {
+      "word": "danos",
+      "normalized": "danos",
+      "freq": 28.650938
+    },
+    {
+      "word": "vazio",
+      "normalized": "vazio",
+      "freq": 28.644444
+    },
+    {
+      "word": "calor",
+      "normalized": "calor",
+      "freq": 28.565235
+    },
+    {
+      "word": "diabo",
+      "normalized": "diabo",
+      "freq": 28.377778
+    },
+    {
+      "word": "cores",
+      "normalized": "cores",
+      "freq": 28.309135
+    },
+    {
+      "word": "cujas",
+      "normalized": "cujas",
+      "freq": 28.204275
+    },
+    {
+      "word": "fotos",
+      "normalized": "fotos",
+      "freq": 28.151845
+    },
+    {
+      "word": "praia",
+      "normalized": "praia",
+      "freq": 27.929018
+    },
+    {
+      "word": "metal",
+      "normalized": "metal",
+      "freq": 27.8
+    },
+    {
+      "word": "norma",
+      "normalized": "norma",
+      "freq": 27.637629
+    },
+    {
+      "word": "dizia",
+      "normalized": "dizia",
+      "freq": 27.536802
+    },
+    {
+      "word": "natal",
+      "normalized": "natal",
+      "freq": 27.535794
+    },
+    {
+      "word": "ramos",
+      "normalized": "ramos",
+      "freq": 27.530752
+    },
+    {
+      "word": "reúne",
+      "normalized": "reune",
+      "freq": 27.434967
+    },
+    {
+      "word": "verde",
+      "normalized": "verde",
+      "freq": 27.1829
+    },
+    {
+      "word": "modos",
+      "normalized": "modos",
+      "freq": 27.158701
+    },
+    {
+      "word": "resto",
+      "normalized": "resto",
+      "freq": 26.974188
+    },
+    {
+      "word": "tende",
+      "normalized": "tende",
+      "freq": 26.954023
+    },
+    {
+      "word": "sabia",
+      "normalized": "sabia",
+      "freq": 26.844122
+    },
+    {
+      "word": "forem",
+      "normalized": "forem",
+      "freq": 26.810849
+    },
+    {
+      "word": "surge",
+      "normalized": "surge",
+      "freq": 26.553741
+    },
+    {
+      "word": "dever",
+      "normalized": "dever",
+      "freq": 26.5366
+    },
+    {
+      "word": "lábio",
+      "normalized": "labio",
+      "freq": 26.466667
+    },
+    {
+      "word": "junta",
+      "normalized": "junta",
+      "freq": 26.244444
+    },
+    {
+      "word": "varia",
+      "normalized": "varia",
+      "freq": 26.156483
+    },
+    {
+      "word": "sítio",
+      "normalized": "sitio",
+      "freq": 26.075822
+    },
+    {
+      "word": "sonho",
+      "normalized": "sonho",
+      "freq": 25.930631
+    },
+    {
+      "word": "ferir",
+      "normalized": "ferir",
+      "freq": 25.911111
+    },
+    {
+      "word": "custa",
+      "normalized": "custa",
+      "freq": 25.841904
+    },
+    {
+      "word": "vinha",
+      "normalized": "vinha",
+      "freq": 25.784432
+    },
+    {
+      "word": "lazer",
+      "normalized": "lazer",
+      "freq": 25.737044
+    },
+    {
+      "word": "arroz",
+      "normalized": "arroz",
+      "freq": 25.717887
+    },
+    {
+      "word": "pauta",
+      "normalized": "pauta",
+      "freq": 25.579754
+    },
+    {
+      "word": "culpa",
+      "normalized": "culpa",
+      "freq": 25.511111
+    },
+    {
+      "word": "turma",
+      "normalized": "turma",
+      "freq": 25.432547
+    },
+    {
+      "word": "casal",
+      "normalized": "casal",
+      "freq": 25.431539
+    },
+    {
+      "word": "sabem",
+      "normalized": "sabem",
+      "freq": 25.400282
+    },
+    {
+      "word": "jeito",
+      "normalized": "jeito",
+      "freq": 25.397258
+    },
+    {
+      "word": "enfim",
+      "normalized": "enfim",
+      "freq": 25.396249
+    },
+    {
+      "word": "plena",
+      "normalized": "plena",
+      "freq": 25.35491
+    },
+    {
+      "word": "atriz",
+      "normalized": "atriz",
+      "freq": 25.339786
+    },
+    {
+      "word": "apelo",
+      "normalized": "apelo",
+      "freq": 25.236943
+    },
+    {
+      "word": "pleno",
+      "normalized": "pleno",
+      "freq": 24.989917
+    },
+    {
+      "word": "frase",
+      "normalized": "frase",
+      "freq": 24.966727
+    },
+    {
+      "word": "perde",
+      "normalized": "perde",
+      "freq": 24.829603
+    },
+    {
+      "word": "álbum",
+      "normalized": "album",
+      "freq": 24.730792
+    },
+    {
+      "word": "droga",
+      "normalized": "droga",
+      "freq": 24.729784
+    },
+    {
+      "word": "levam",
+      "normalized": "levam",
+      "freq": 24.718693
+    },
+    {
+      "word": "cases",
+      "normalized": "cases",
+      "freq": 24.717685
+    },
+    {
+      "word": "placa",
+      "normalized": "placa",
+      "freq": 24.625933
+    },
+    {
+      "word": "praça",
+      "normalized": "praca",
+      "freq": 24.593668
+    },
+    {
+      "word": "times",
+      "normalized": "times",
+      "freq": 24.588627
+    },
+    {
+      "word": "atuam",
+      "normalized": "atuam",
+      "freq": 24.520065
+    },
+    {
+      "word": "ativo",
+      "normalized": "ativo",
+      "freq": 24.347651
+    },
+    {
+      "word": "ratos",
+      "normalized": "ratos",
+      "freq": 24.251865
+    },
+    {
+      "word": "chuva",
+      "normalized": "chuva",
+      "freq": 24.234725
+    },
+    {
+      "word": "rocha",
+      "normalized": "rocha",
+      "freq": 24.2
+    },
+    {
+      "word": "pares",
+      "normalized": "pares",
+      "freq": 24.020972
+    },
+    {
+      "word": "civis",
+      "normalized": "civis",
+      "freq": 23.961484
+    },
+    {
+      "word": "basta",
+      "normalized": "basta",
+      "freq": 23.958459
+    },
+    {
+      "word": "senão",
+      "normalized": "senao",
+      "freq": 23.796128
+    },
+    {
+      "word": "elite",
+      "normalized": "elite",
+      "freq": 23.630772
+    },
+    {
+      "word": "senso",
+      "normalized": "senso",
+      "freq": 23.469449
+    },
+    {
+      "word": "chico",
+      "normalized": "chico",
+      "freq": 23.361565
+    },
+    {
+      "word": "expor",
+      "normalized": "expor",
+      "freq": 23.177778
+    },
+    {
+      "word": "ricos",
+      "normalized": "ricos",
+      "freq": 23.067151
+    },
+    {
+      "word": "sofre",
+      "normalized": "sofre",
+      "freq": 23.061101
+    },
+    {
+      "word": "padre",
+      "normalized": "padre",
+      "freq": 22.96834
+    },
+    {
+      "word": "falou",
+      "normalized": "falou",
+      "freq": 22.947167
+    },
+    {
+      "word": "ração",
+      "normalized": "racao",
+      "freq": 22.92196
+    },
+    {
+      "word": "aérea",
+      "normalized": "aerea",
+      "freq": 22.835249
+    },
+    {
+      "word": "avião",
+      "normalized": "aviao",
+      "freq": 22.753579
+    },
+    {
+      "word": "leste",
+      "normalized": "leste",
+      "freq": 22.733414
+    },
+    {
+      "word": "lança",
+      "normalized": "lanca",
+      "freq": 22.637629
+    },
+    {
+      "word": "ponta",
+      "normalized": "ponta",
+      "freq": 22.594273
+    },
+    {
+      "word": "hotel",
+      "normalized": "hotel",
+      "freq": 22.562008
+    },
+    {
+      "word": "genes",
+      "normalized": "genes",
+      "freq": 22.49143
+    },
+    {
+      "word": "deram",
+      "normalized": "deram",
+      "freq": 22.404719
+    },
+    {
+      "word": "ocupa",
+      "normalized": "ocupa",
+      "freq": 22.381529
+    },
+    {
+      "word": "mudou",
+      "normalized": "mudou",
+      "freq": 22.315991
+    },
+    {
+      "word": "pista",
+      "normalized": "pista",
+      "freq": 22.300867
+    },
+    {
+      "word": "gasto",
+      "normalized": "gasto",
+      "freq": 22.294818
+    },
+    {
+      "word": "negra",
+      "normalized": "negra",
+      "freq": 22.25852
+    },
+    {
+      "word": "renal",
+      "normalized": "renal",
+      "freq": 22.257512
+    },
+    {
+      "word": "fibra",
+      "normalized": "fibra",
+      "freq": 21.992337
+    },
+    {
+      "word": "letra",
+      "normalized": "letra",
+      "freq": 21.803791
+    },
+    {
+      "word": "acaso",
+      "normalized": "acaso",
+      "freq": 21.788667
+    },
+    {
+      "word": "lidar",
+      "normalized": "lidar",
+      "freq": 21.74027
+    },
+    {
+      "word": "palco",
+      "normalized": "palco",
+      "freq": 21.733333
+    },
+    {
+      "word": "feliz",
+      "normalized": "feliz",
+      "freq": 21.601129
+    },
+    {
+      "word": "falha",
+      "normalized": "falha",
+      "freq": 21.583989
+    },
+    {
+      "word": "chave",
+      "normalized": "chave",
+      "freq": 21.56584
+    },
+    {
+      "word": "sorte",
+      "normalized": "sorte",
+      "freq": 21.432749
+    },
+    {
+      "word": "tomou",
+      "normalized": "tomou",
+      "freq": 21.361162
+    },
+    {
+      "word": "solar",
+      "normalized": "solar",
+      "freq": 21.333333
+    },
+    {
+      "word": "pensa",
+      "normalized": "pensa",
+      "freq": 21.291591
+    },
+    {
+      "word": "sódio",
+      "normalized": "sodio",
+      "freq": 21.255293
+    },
+    {
+      "word": "safra",
+      "normalized": "safra",
+      "freq": 21.1464
+    },
+    {
+      "word": "unido",
+      "normalized": "unido",
+      "freq": 20.918532
+    },
+    {
+      "word": "parar",
+      "normalized": "parar",
+      "freq": 20.89635
+    },
+    {
+      "word": "dança",
+      "normalized": "danca",
+      "freq": 20.658399
+    },
+    {
+      "word": "assis",
+      "normalized": "assis",
+      "freq": 20.546481
+    },
+    {
+      "word": "óssea",
+      "normalized": "ossea",
+      "freq": 20.500101
+    },
+    {
+      "word": "tumor",
+      "normalized": "tumor",
+      "freq": 20.317604
+    },
+    {
+      "word": "trigo",
+      "normalized": "trigo",
+      "freq": 20.313571
+    },
+    {
+      "word": "multa",
+      "normalized": "multa",
+      "freq": 20.248034
+    },
+    {
+      "word": "lutas",
+      "normalized": "lutas",
+      "freq": 20.166364
+    },
+    {
+      "word": "tiver",
+      "normalized": "tiver",
+      "freq": 20.165356
+    },
+    {
+      "word": "aguda",
+      "normalized": "aguda",
+      "freq": 20.033273
+    },
+    {
+      "word": "terço",
+      "normalized": "terco",
+      "freq": 19.985884
+    },
+    {
+      "word": "vacas",
+      "normalized": "vacas",
+      "freq": 19.702561
+    },
+    {
+      "word": "vivos",
+      "normalized": "vivos",
+      "freq": 19.590643
+    },
+    {
+      "word": "humor",
+      "normalized": "humor",
+      "freq": 19.585602
+    },
+    {
+      "word": "sexta",
+      "normalized": "sexta",
+      "freq": 19.574511
+    },
+    {
+      "word": "sério",
+      "normalized": "serio",
+      "freq": 19.543255
+    },
+    {
+      "word": "reduz",
+      "normalized": "reduz",
+      "freq": 19.532164
+    },
+    {
+      "word": "golpe",
+      "normalized": "golpe",
+      "freq": 19.408147
+    },
+    {
+      "word": "honra",
+      "normalized": "honra",
+      "freq": 19.40613
+    },
+    {
+      "word": "matar",
+      "normalized": "matar",
+      "freq": 19.328494
+    },
+    {
+      "word": "êxito",
+      "normalized": "exito",
+      "freq": 19.273039
+    },
+    {
+      "word": "velha",
+      "normalized": "velha",
+      "freq": 19.272031
+    },
+    {
+      "word": "abriu",
+      "normalized": "abriu",
+      "freq": 19.182295
+    },
+    {
+      "word": "ponte",
+      "normalized": "ponte",
+      "freq": 19.00484
+    },
+    {
+      "word": "vidas",
+      "normalized": "vidas",
+      "freq": 18.989716
+    },
+    {
+      "word": "fusão",
+      "normalized": "fusao",
+      "freq": 18.959468
+    },
+    {
+      "word": "notar",
+      "normalized": "notar",
+      "freq": 18.935269
+    },
+    {
+      "word": "areia",
+      "normalized": "areia",
+      "freq": 18.834442
+    },
+    {
+      "word": "vidro",
+      "normalized": "vidro",
+      "freq": 18.819318
+    },
+    {
+      "word": "barra",
+      "normalized": "barra",
+      "freq": 18.769913
+    },
+    {
+      "word": "daqui",
+      "normalized": "daqui",
+      "freq": 18.677153
+    },
+    {
+      "word": "cenas",
+      "normalized": "cenas",
+      "freq": 18.540028
+    },
+    {
+      "word": "cobre",
+      "normalized": "cobre",
+      "freq": 18.526921
+    },
+    {
+      "word": "invés",
+      "normalized": "inves",
+      "freq": 18.365598
+    },
+    {
+      "word": "gosta",
+      "normalized": "gosta",
+      "freq": 18.311151
+    },
+    {
+      "word": "lados",
+      "normalized": "lados",
+      "freq": 18.294011
+    },
+    {
+      "word": "sente",
+      "normalized": "sente",
+      "freq": 18.23049
+    },
+    {
+      "word": "bruta",
+      "normalized": "bruta",
+      "freq": 17.950192
+    },
+    {
+      "word": "calça",
+      "normalized": "calca",
+      "freq": 17.6
+    },
+    {
+      "word": "febre",
+      "normalized": "febre",
+      "freq": 17.530752
+    },
+    {
+      "word": "justo",
+      "normalized": "justo",
+      "freq": 17.501512
+    },
+    {
+      "word": "alemã",
+      "normalized": "alema",
+      "freq": 17.427909
+    },
+    {
+      "word": "úteis",
+      "normalized": "uteis",
+      "freq": 17.404719
+    },
+    {
+      "word": "subiu",
+      "normalized": "subiu",
+      "freq": 17.399677
+    },
+    {
+      "word": "lotes",
+      "normalized": "lotes",
+      "freq": 17.391611
+    },
+    {
+      "word": "cento",
+      "normalized": "cento",
+      "freq": 17.359347
+    },
+    {
+      "word": "comer",
+      "normalized": "comer",
+      "freq": 17.353297
+    },
+    {
+      "word": "samba",
+      "normalized": "samba",
+      "freq": 17.34019
+    },
+    {
+      "word": "rigor",
+      "normalized": "rigor",
+      "freq": 17.336156
+    },
+    {
+      "word": "tanta",
+      "normalized": "tanta",
+      "freq": 17.118371
+    },
+    {
+      "word": "penal",
+      "normalized": "penal",
+      "freq": 17.08409
+    },
+    {
+      "word": "curta",
+      "normalized": "curta",
+      "freq": 17.057875
+    },
+    {
+      "word": "dadas",
+      "normalized": "dadas",
+      "freq": 16.981246
+    },
+    {
+      "word": "passe",
+      "normalized": "passe",
+      "freq": 16.970155
+    },
+    {
+      "word": "micro",
+      "normalized": "micro",
+      "freq": 16.968139
+    },
+    {
+      "word": "feira",
+      "normalized": "feira",
+      "freq": 16.946965
+    },
+    {
+      "word": "mudas",
+      "normalized": "mudas",
+      "freq": 16.870337
+    },
+    {
+      "word": "justa",
+      "normalized": "justa",
+      "freq": 16.826981
+    },
+    {
+      "word": "zonas",
+      "normalized": "zonas",
+      "freq": 16.825973
+    },
+    {
+      "word": "verba",
+      "normalized": "verba",
+      "freq": 16.79875
+    },
+    {
+      "word": "vimos",
+      "normalized": "vimos",
+      "freq": 16.720105
+    },
+    {
+      "word": "tocar",
+      "normalized": "tocar",
+      "freq": 16.629361
+    },
+    {
+      "word": "coroa",
+      "normalized": "coroa",
+      "freq": 16.577778
+    },
+    {
+      "word": "pegar",
+      "normalized": "pegar",
+      "freq": 16.546683
+    },
+    {
+      "word": "trato",
+      "normalized": "trato",
+      "freq": 16.440815
+    },
+    {
+      "word": "vinho",
+      "normalized": "vinho",
+      "freq": 16.404517
+    },
+    {
+      "word": "pedra",
+      "normalized": "pedra",
+      "freq": 16.377294
+    },
+    {
+      "word": "abuso",
+      "normalized": "abuso",
+      "freq": 16.342004
+    },
+    {
+      "word": "pesos",
+      "normalized": "pesos",
+      "freq": 16.266384
+    },
+    {
+      "word": "medir",
+      "normalized": "medir",
+      "freq": 16.229078
+    },
+    {
+      "word": "vasos",
+      "normalized": "vasos",
+      "freq": 16.217987
+    },
+    {
+      "word": "ondas",
+      "normalized": "ondas",
+      "freq": 16.025408
+    },
+    {
+      "word": "tiros",
+      "normalized": "tiros",
+      "freq": 15.986086
+    },
+    {
+      "word": "saldo",
+      "normalized": "saldo",
+      "freq": 15.939706
+    },
+    {
+      "word": "vetor",
+      "normalized": "vetor",
+      "freq": 15.847953
+    },
+    {
+      "word": "canto",
+      "normalized": "canto",
+      "freq": 15.838879
+    },
+    {
+      "word": "ótimo",
+      "normalized": "otimo",
+      "freq": 15.823755
+    },
+    {
+      "word": "casca",
+      "normalized": "casca",
+      "freq": 15.817705
+    },
+    {
+      "word": "ótica",
+      "normalized": "otica",
+      "freq": 15.800565
+    },
+    {
+      "word": "larga",
+      "normalized": "larga",
+      "freq": 15.639242
+    },
+    {
+      "word": "vento",
+      "normalized": "vento",
+      "freq": 15.582779
+    },
+    {
+      "word": "abreu",
+      "normalized": "abreu",
+      "freq": 15.519258
+    },
+    {
+      "word": "óbito",
+      "normalized": "obito",
+      "freq": 15.499093
+    },
+    {
+      "word": "anexo",
+      "normalized": "anexo",
+      "freq": 15.382133
+    },
+    {
+      "word": "bomba",
+      "normalized": "bomba",
+      "freq": 15.369026
+    },
+    {
+      "word": "cópia",
+      "normalized": "copia",
+      "freq": 15.368018
+    },
+    {
+      "word": "museu",
+      "normalized": "museu",
+      "freq": 15.359952
+    },
+    {
+      "word": "duplo",
+      "normalized": "duplo",
+      "freq": 15.30248
+    },
+    {
+      "word": "sexos",
+      "normalized": "sexos",
+      "freq": 15.296431
+    },
+    {
+      "word": "bacia",
+      "normalized": "bacia",
+      "freq": 15.295422
+    },
+    {
+      "word": "venha",
+      "normalized": "venha",
+      "freq": 15.292398
+    },
+    {
+      "word": "roupa",
+      "normalized": "roupa",
+      "freq": 15.189554
+    },
+    {
+      "word": "afeta",
+      "normalized": "afeta",
+      "freq": 15.169389
+    },
+    {
+      "word": "vemos",
+      "normalized": "vemos",
+      "freq": 15.149224
+    },
+    {
+      "word": "lutar",
+      "normalized": "lutar",
+      "freq": 15.116959
+    },
+    {
+      "word": "bento",
+      "normalized": "bento",
+      "freq": 15.113934
+    },
+    {
+      "word": "graça",
+      "normalized": "graca",
+      "freq": 15.082678
+    },
+    {
+      "word": "negou",
+      "normalized": "negou",
+      "freq": 15.065537
+    },
+    {
+      "word": "fugir",
+      "normalized": "fugir",
+      "freq": 14.986893
+    },
+    {
+      "word": "suíça",
+      "normalized": "suica",
+      "freq": 14.975802
+    },
+    {
+      "word": "censo",
+      "normalized": "censo",
+      "freq": 14.940512
+    },
+    {
+      "word": "acham",
+      "normalized": "acham",
+      "freq": 14.883041
+    },
+    {
+      "word": "fetal",
+      "normalized": "fetal",
+      "freq": 14.850776
+    },
+    {
+      "word": "poema",
+      "normalized": "poema",
+      "freq": 14.815487
+    },
+    {
+      "word": "preto",
+      "normalized": "preto",
+      "freq": 14.700544
+    },
+    {
+      "word": "falam",
+      "normalized": "falam",
+      "freq": 14.576528
+    },
+    {
+      "word": "virou",
+      "normalized": "virou",
+      "freq": 14.508974
+    },
+    {
+      "word": "donos",
+      "normalized": "donos",
+      "freq": 14.423271
+    },
+    {
+      "word": "subir",
+      "normalized": "subir",
+      "freq": 14.386973
+    },
+    {
+      "word": "corre",
+      "normalized": "corre",
+      "freq": 14.315386
+    },
+    {
+      "word": "impõe",
+      "normalized": "impoe",
+      "freq": 14.293204
+    },
+    {
+      "word": "pagos",
+      "normalized": "pagos",
+      "freq": 14.204477
+    },
+    {
+      "word": "russo",
+      "normalized": "russo",
+      "freq": 14.18532
+    },
+    {
+      "word": "raças",
+      "normalized": "racas",
+      "freq": 14.134906
+    },
+    {
+      "word": "peito",
+      "normalized": "peito",
+      "freq": 14.112724
+    },
+    {
+      "word": "somar",
+      "normalized": "somar",
+      "freq": 14.066667
+    },
+    {
+      "word": "disto",
+      "normalized": "disto",
+      "freq": 14.023997
+    },
+    {
+      "word": "vapor",
+      "normalized": "vapor",
+      "freq": 14.0
+    },
+    {
+      "word": "soube",
+      "normalized": "soube",
+      "freq": 13.918129
+    },
+    {
+      "word": "teses",
+      "normalized": "teses",
+      "freq": 13.815285
+    },
+    {
+      "word": "índio",
+      "normalized": "indio",
+      "freq": 13.810244
+    },
+    {
+      "word": "laços",
+      "normalized": "lacos",
+      "freq": 13.799153
+    },
+    {
+      "word": "achar",
+      "normalized": "achar",
+      "freq": 13.649929
+    },
+    {
+      "word": "exibe",
+      "normalized": "exibe",
+      "freq": 13.561202
+    },
+    {
+      "word": "impor",
+      "normalized": "impor",
+      "freq": 13.526921
+    },
+    {
+      "word": "vindo",
+      "normalized": "vindo",
+      "freq": 13.523896
+    },
+    {
+      "word": "devia",
+      "normalized": "devia",
+      "freq": 13.468441
+    },
+    {
+      "word": "culto",
+      "normalized": "culto",
+      "freq": 13.449284
+    },
+    {
+      "word": "vital",
+      "normalized": "vital",
+      "freq": 13.432144
+    },
+    {
+      "word": "ápice",
+      "normalized": "apice",
+      "freq": 13.426094
+    },
+    {
+      "word": "mapas",
+      "normalized": "mapas",
+      "freq": 13.367614
+    },
+    {
+      "word": "negar",
+      "normalized": "negar",
+      "freq": 13.36459
+    },
+    {
+      "word": "palha",
+      "normalized": "palha",
+      "freq": 13.266667
+    },
+    {
+      "word": "firme",
+      "normalized": "firme",
+      "freq": 13.213349
+    },
+    {
+      "word": "dores",
+      "normalized": "dores",
+      "freq": 13.210325
+    },
+    {
+      "word": "gerou",
+      "normalized": "gerou",
+      "freq": 13.175035
+    },
+    {
+      "word": "gesto",
+      "normalized": "gesto",
+      "freq": 13.174027
+    },
+    {
+      "word": "vozes",
+      "normalized": "vozes",
+      "freq": 13.123614
+    },
+    {
+      "word": "pesca",
+      "normalized": "pesca",
+      "freq": 13.063118
+    },
+    {
+      "word": "cesta",
+      "normalized": "cesta",
+      "freq": 13.058076
+    },
+    {
+      "word": "vendo",
+      "normalized": "vendo",
+      "freq": 13.054043
+    },
+    {
+      "word": "costa",
+      "normalized": "costa",
+      "freq": 13.014721
+    },
+    {
+      "word": "juízo",
+      "normalized": "juizo",
+      "freq": 13.001613
+    },
+    {
+      "word": "lenta",
+      "normalized": "lenta",
+      "freq": 12.782819
+    },
+    {
+      "word": "banho",
+      "normalized": "banho",
+      "freq": 12.749546
+    },
+    {
+      "word": "penas",
+      "normalized": "penas",
+      "freq": 12.681992
+    },
+    {
+      "word": "grade",
+      "normalized": "grade",
+      "freq": 12.641662
+    },
+    {
+      "word": "matou",
+      "normalized": "matou",
+      "freq": 12.627546
+    },
+    {
+      "word": "fique",
+      "normalized": "fique",
+      "freq": 12.624521
+    },
+    {
+      "word": "briga",
+      "normalized": "briga",
+      "freq": 12.588223
+    },
+    {
+      "word": "sabor",
+      "normalized": "sabor",
+      "freq": 12.574108
+    },
+    {
+      "word": "faria",
+      "normalized": "faria",
+      "freq": 12.573099
+    },
+    {
+      "word": "amiga",
+      "normalized": "amiga",
+      "freq": 12.479331
+    },
+    {
+      "word": "laser",
+      "normalized": "laser",
+      "freq": 12.457149
+    },
+    {
+      "word": "pasta",
+      "normalized": "pasta",
+      "freq": 12.423876
+    },
+    {
+      "word": "fraco",
+      "normalized": "fraco",
+      "freq": 12.360355
+    },
+    {
+      "word": "major",
+      "normalized": "major",
+      "freq": 12.311958
+    },
+    {
+      "word": "idoso",
+      "normalized": "idoso",
+      "freq": 12.307925
+    },
+    {
+      "word": "herói",
+      "normalized": "heroi",
+      "freq": 12.305908
+    },
+    {
+      "word": "polpa",
+      "normalized": "polpa",
+      "freq": 12.28776
+    },
+    {
+      "word": "cheio",
+      "normalized": "cheio",
+      "freq": 12.280702
+    },
+    {
+      "word": "ruído",
+      "normalized": "ruido",
+      "freq": 12.237346
+    },
+    {
+      "word": "falas",
+      "normalized": "falas",
+      "freq": 12.15366
+    },
+    {
+      "word": "gases",
+      "normalized": "gases",
+      "freq": 12.149627
+    },
+    {
+      "word": "nasal",
+      "normalized": "nasal",
+      "freq": 12.140553
+    },
+    {
+      "word": "bateu",
+      "normalized": "bateu",
+      "freq": 12.131478
+    },
+    {
+      "word": "salto",
+      "normalized": "salto",
+      "freq": 12.100222
+    },
+    {
+      "word": "nisso",
+      "normalized": "nisso",
+      "freq": 11.984271
+    },
+    {
+      "word": "traço",
+      "normalized": "traco",
+      "freq": 11.958056
+    },
+    {
+      "word": "viveu",
+      "normalized": "viveu",
+      "freq": 11.915709
+    },
+    {
+      "word": "eixos",
+      "normalized": "eixos",
+      "freq": 11.914701
+    },
+    {
+      "word": "rapaz",
+      "normalized": "rapaz",
+      "freq": 11.836056
+    },
+    {
+      "word": "tubos",
+      "normalized": "tubos",
+      "freq": 11.805808
+    },
+    {
+      "word": "couro",
+      "normalized": "couro",
+      "freq": 11.8
+    },
+    {
+      "word": "bucal",
+      "normalized": "bucal",
+      "freq": 11.753378
+    },
+    {
+      "word": "trama",
+      "normalized": "trama",
+      "freq": 11.737245
+    },
+    {
+      "word": "prata",
+      "normalized": "prata",
+      "freq": 11.71708
+    },
+    {
+      "word": "bispo",
+      "normalized": "bispo",
+      "freq": 11.685824
+    },
+    {
+      "word": "preta",
+      "normalized": "preta",
+      "freq": 11.654567
+    },
+    {
+      "word": "opera",
+      "normalized": "opera",
+      "freq": 11.642468
+    },
+    {
+      "word": "datas",
+      "normalized": "datas",
+      "freq": 11.63541
+    },
+    {
+      "word": "ótima",
+      "normalized": "otima",
+      "freq": 11.631377
+    },
+    {
+      "word": "malha",
+      "normalized": "malha",
+      "freq": 11.617262
+    },
+    {
+      "word": "raios",
+      "normalized": "raios",
+      "freq": 11.564832
+    },
+    {
+      "word": "cunho",
+      "normalized": "cunho",
+      "freq": 11.541641
+    },
+    {
+      "word": "reino",
+      "normalized": "reino",
+      "freq": 11.51946
+    },
+    {
+      "word": "sócio",
+      "normalized": "socio",
+      "freq": 11.514418
+    },
+    {
+      "word": "verbo",
+      "normalized": "verbo",
+      "freq": 11.481145
+    },
+    {
+      "word": "digno",
+      "normalized": "digno",
+      "freq": 11.466667
+    },
+    {
+      "word": "rumos",
+      "normalized": "rumos",
+      "freq": 11.464005
+    },
+    {
+      "word": "morar",
+      "normalized": "morar",
+      "freq": 11.428715
+    },
+    {
+      "word": "lento",
+      "normalized": "lento",
+      "freq": 11.427707
+    },
+    {
+      "word": "supor",
+      "normalized": "supor",
+      "freq": 11.419641
+    },
+    {
+      "word": "vende",
+      "normalized": "vende",
+      "freq": 11.364186
+    },
+    {
+      "word": "cheia",
+      "normalized": "cheia",
+      "freq": 11.342004
+    },
+    {
+      "word": "lagoa",
+      "normalized": "lagoa",
+      "freq": 11.323856
+    },
+    {
+      "word": "manga",
+      "normalized": "manga",
+      "freq": 11.266667
+    },
+    {
+      "word": "vence",
+      "normalized": "vence",
+      "freq": 11.258318
+    },
+    {
+      "word": "salvo",
+      "normalized": "salvo",
+      "freq": 11.191773
+    },
+    {
+      "word": "edema",
+      "normalized": "edema",
+      "freq": 11.176649
+    },
+    {
+      "word": "dente",
+      "normalized": "dente",
+      "freq": 11.142367
+    },
+    {
+      "word": "largo",
+      "normalized": "largo",
+      "freq": 11.141359
+    },
+    {
+      "word": "falsa",
+      "normalized": "falsa",
+      "freq": 11.139343
+    },
+    {
+      "word": "conto",
+      "normalized": "conto",
+      "freq": 11.116152
+    },
+    {
+      "word": "bater",
+      "normalized": "bater",
+      "freq": 11.089937
+    },
+    {
+      "word": "falso",
+      "normalized": "falso",
+      "freq": 11.058681
+    },
+    {
+      "word": "fezes",
+      "normalized": "fezes",
+      "freq": 11.058681
+    },
+    {
+      "word": "móvel",
+      "normalized": "movel",
+      "freq": 11.028433
+    },
+    {
+      "word": "ossos",
+      "normalized": "ossos",
+      "freq": 11.00121
+    },
+    {
+      "word": "perna",
+      "normalized": "perna",
+      "freq": 10.949788
+    },
+    {
+      "word": "drama",
+      "normalized": "drama",
+      "freq": 10.931639
+    },
+    {
+      "word": "tênis",
+      "normalized": "tenis",
+      "freq": 10.86711
+    },
+    {
+      "word": "fiéis",
+      "normalized": "fieis",
+      "freq": 10.862069
+    },
+    {
+      "word": "tange",
+      "normalized": "tange",
+      "freq": 10.719903
+    },
+    {
+      "word": "males",
+      "normalized": "males",
+      "freq": 10.717887
+    },
+    {
+      "word": "resta",
+      "normalized": "resta",
+      "freq": 10.713854
+    },
+    {
+      "word": "visam",
+      "normalized": "visam",
+      "freq": 10.705787
+    },
+    {
+      "word": "vazão",
+      "normalized": "vazao",
+      "freq": 10.625126
+    },
+    {
+      "word": "vôlei",
+      "normalized": "volei",
+      "freq": 10.551522
+    },
+    {
+      "word": "rival",
+      "normalized": "rival",
+      "freq": 10.505142
+    },
+    {
+      "word": "daria",
+      "normalized": "daria",
+      "freq": 10.45977
+    },
+    {
+      "word": "dobro",
+      "normalized": "dobro",
+      "freq": 10.458762
+    },
+    {
+      "word": "cotas",
+      "normalized": "cotas",
+      "freq": 10.447671
+    },
+    {
+      "word": "diria",
+      "normalized": "diria",
+      "freq": 10.437588
+    },
+    {
+      "word": "roubo",
+      "normalized": "roubo",
+      "freq": 10.403307
+    },
+    {
+      "word": "durou",
+      "normalized": "durou",
+      "freq": 10.395241
+    },
+    {
+      "word": "virar",
+      "normalized": "virar",
+      "freq": 10.383142
+    },
+    {
+      "word": "fixos",
+      "normalized": "fixos",
+      "freq": 10.353902
+    },
+    {
+      "word": "pacto",
+      "normalized": "pacto",
+      "freq": 10.347852
+    },
+    {
+      "word": "envio",
+      "normalized": "envio",
+      "freq": 10.335753
+    },
+    {
+      "word": "carmo",
+      "normalized": "carmo",
+      "freq": 10.332728
+    },
+    {
+      "word": "toque",
+      "normalized": "toque",
+      "freq": 10.324662
+    },
+    {
+      "word": "ilhas",
+      "normalized": "ilhas",
+      "freq": 10.303489
+    },
+    {
+      "word": "rever",
+      "normalized": "rever",
+      "freq": 10.27929
+    },
+    {
+      "word": "firma",
+      "normalized": "firma",
+      "freq": 10.277274
+    },
+    {
+      "word": "usina",
+      "normalized": "usina",
+      "freq": 10.277274
+    },
+    {
+      "word": "morre",
+      "normalized": "morre",
+      "freq": 10.247026
+    },
+    {
+      "word": "abate",
+      "normalized": "abate",
+      "freq": 10.236943
+    },
+    {
+      "word": "leves",
+      "normalized": "leves",
+      "freq": 10.210728
+    },
+    {
+      "word": "óbvio",
+      "normalized": "obvio",
+      "freq": 10.171406
+    },
+    {
+      "word": "nasce",
+      "normalized": "nasce",
+      "freq": 10.15729
+    },
+    {
+      "word": "valer",
+      "normalized": "valer",
+      "freq": 10.109901
+    },
+    {
+      "word": "fixar",
+      "normalized": "fixar",
+      "freq": 10.10486
+    },
+    {
+      "word": "ficha",
+      "normalized": "ficha",
+      "freq": 10.09881
+    },
+    {
+      "word": "fitas",
+      "normalized": "fitas",
+      "freq": 10.094777
+    },
+    {
+      "word": "amido",
+      "normalized": "amido",
+      "freq": 10.089736
+    },
+    {
+      "word": "optar",
+      "normalized": "optar",
+      "freq": 10.077637
+    },
+    {
+      "word": "raras",
+      "normalized": "raras",
+      "freq": 10.042347
+    },
+    {
+      "word": "pulso",
+      "normalized": "pulso",
+      "freq": 10.022222
+    },
+    {
+      "word": "extra",
+      "normalized": "extra",
+      "freq": 10.014116
+    },
+    {
+      "word": "fomos",
+      "normalized": "fomos",
+      "freq": 10.002017
+    },
+    {
+      "word": "agudo",
+      "normalized": "agudo",
+      "freq": 9.974793
+    },
+    {
+      "word": "fauna",
+      "normalized": "fauna",
+      "freq": 9.964711
+    },
+    {
+      "word": "bonde",
+      "normalized": "bonde",
+      "freq": 9.955556
+    },
+    {
+      "word": "leito",
+      "normalized": "leito",
+      "freq": 9.94757
+    },
+    {
+      "word": "faces",
+      "normalized": "faces",
+      "freq": 9.922363
+    },
+    {
+      "word": "bebês",
+      "normalized": "bebes",
+      "freq": 9.911272
+    },
+    {
+      "word": "óxido",
+      "normalized": "oxido",
+      "freq": 9.904215
+    },
+    {
+      "word": "ouviu",
+      "normalized": "ouviu",
+      "freq": 9.903206
+    },
+    {
+      "word": "jogou",
+      "normalized": "jogou",
+      "freq": 9.858843
+    },
+    {
+      "word": "presa",
+      "normalized": "presa",
+      "freq": 9.838677
+    },
+    {
+      "word": "ético",
+      "normalized": "etico",
+      "freq": 9.831619
+    },
+    {
+      "word": "aorta",
+      "normalized": "aorta",
+      "freq": 9.826578
+    },
+    {
+      "word": "bueno",
+      "normalized": "bueno",
+      "freq": 9.822545
+    },
+    {
+      "word": "venho",
+      "normalized": "venho",
+      "freq": 9.807421
+    },
+    {
+      "word": "geram",
+      "normalized": "geram",
+      "freq": 9.805404
+    },
+    {
+      "word": "uréia",
+      "normalized": "ureia",
+      "freq": 9.758016
+    },
+    {
+      "word": "expõe",
+      "normalized": "expoe",
+      "freq": 9.740875
+    },
+    {
+      "word": "sinto",
+      "normalized": "sinto",
+      "freq": 9.706594
+    },
+    {
+      "word": "terça",
+      "normalized": "terca",
+      "freq": 9.692478
+    },
+    {
+      "word": "morro",
+      "normalized": "morro",
+      "freq": 9.689454
+    },
+    {
+      "word": "manda",
+      "normalized": "manda",
+      "freq": 9.661222
+    },
+    {
+      "word": "cobra",
+      "normalized": "cobra",
+      "freq": 9.643073
+    },
+    {
+      "word": "lição",
+      "normalized": "licao",
+      "freq": 9.599718
+    },
+    {
+      "word": "apóia",
+      "normalized": "apoia",
+      "freq": 9.591652
+    },
+    {
+      "word": "vivia",
+      "normalized": "vivia",
+      "freq": 9.573503
+    },
+    {
+      "word": "focos",
+      "normalized": "focos",
+      "freq": 9.567453
+    },
+    {
+      "word": "zinco",
+      "normalized": "zinco",
+      "freq": 9.529139
+    },
+    {
+      "word": "viram",
+      "normalized": "viram",
+      "freq": 9.520065
+    },
+    {
+      "word": "fecha",
+      "normalized": "fecha",
+      "freq": 9.476709
+    },
+    {
+      "word": "mitos",
+      "normalized": "mitos",
+      "freq": 9.471668
+    },
+    {
+      "word": "criam",
+      "normalized": "criam",
+      "freq": 9.453519
+    },
+    {
+      "word": "temor",
+      "normalized": "temor",
+      "freq": 9.427304
+    },
+    {
+      "word": "fraca",
+      "normalized": "fraca",
+      "freq": 9.394031
+    },
+    {
+      "word": "detém",
+      "normalized": "detem",
+      "freq": 9.370841
+    },
+    {
+      "word": "bordo",
+      "normalized": "bordo",
+      "freq": 9.334543
+    },
+    {
+      "word": "façam",
+      "normalized": "facam",
+      "freq": 9.326477
+    },
+    {
+      "word": "vinda",
+      "normalized": "vinda",
+      "freq": 9.316394
+    },
+    {
+      "word": "pagou",
+      "normalized": "pagou",
+      "freq": 9.273039
+    },
+    {
+      "word": "salão",
+      "normalized": "salao",
+      "freq": 9.246824
+    },
+    {
+      "word": "bruto",
+      "normalized": "bruto",
+      "freq": 9.193386
+    },
+    {
+      "word": "penso",
+      "normalized": "penso",
+      "freq": 9.184311
+    },
+    {
+      "word": "morta",
+      "normalized": "morta",
+      "freq": 9.176245
+    },
+    {
+      "word": "couto",
+      "normalized": "couto",
+      "freq": 9.174229
+    },
+    {
+      "word": "urina",
+      "normalized": "urina",
+      "freq": 9.158096
+    },
+    {
+      "word": "barco",
+      "normalized": "barco",
+      "freq": 9.143981
+    },
+    {
+      "word": "beira",
+      "normalized": "beira",
+      "freq": 9.129865
+    },
+    {
+      "word": "exato",
+      "normalized": "exato",
+      "freq": 9.128857
+    },
+    {
+      "word": "fêmea",
+      "normalized": "femea",
+      "freq": 9.116757
+    },
+    {
+      "word": "borda",
+      "normalized": "borda",
+      "freq": 9.111716
+    },
+    {
+      "word": "sexto",
+      "normalized": "sexto",
+      "freq": 9.10365
+    },
+    {
+      "word": "picos",
+      "normalized": "picos",
+      "freq": 9.094576
+    },
+    {
+      "word": "atuou",
+      "normalized": "atuou",
+      "freq": 9.081468
+    },
+    {
+      "word": "grego",
+      "normalized": "grego",
+      "freq": 9.044162
+    },
+    {
+      "word": "macho",
+      "normalized": "macho",
+      "freq": 9.02803
+    },
+    {
+      "word": "cause",
+      "normalized": "cause",
+      "freq": 9.013914
+    },
+    {
+      "word": "egito",
+      "normalized": "egito",
+      "freq": 8.999798
+    },
+    {
+      "word": "chapa",
+      "normalized": "chapa",
+      "freq": 8.99274
+    },
+    {
+      "word": "laudo",
+      "normalized": "laudo",
+      "freq": 8.955435
+    },
+    {
+      "word": "metrô",
+      "normalized": "metro",
+      "freq": 8.933253
+    },
+    {
+      "word": "telas",
+      "normalized": "telas",
+      "freq": 8.886872
+    },
+    {
+      "word": "pólos",
+      "normalized": "polos",
+      "freq": 8.858641
+    },
+    {
+      "word": "botão",
+      "normalized": "botao",
+      "freq": 8.804194
+    },
+    {
+      "word": "viria",
+      "normalized": "viria",
+      "freq": 8.773946
+    },
+    {
+      "word": "dedos",
+      "normalized": "dedos",
+      "freq": 8.764872
+    },
+    {
+      "word": "jejum",
+      "normalized": "jejum",
+      "freq": 8.691268
+    },
+    {
+      "word": "gerir",
+      "normalized": "gerir",
+      "freq": 8.688889
+    },
+    {
+      "word": "secas",
+      "normalized": "secas",
+      "freq": 8.687235
+    },
+    {
+      "word": "pagam",
+      "normalized": "pagam",
+      "freq": 8.676144
+    },
+    {
+      "word": "flora",
+      "normalized": "flora",
+      "freq": 8.579351
+    },
+    {
+      "word": "rodas",
+      "normalized": "rodas",
+      "freq": 8.572293
+    },
+    {
+      "word": "russa",
+      "normalized": "russa",
+      "freq": 8.572293
+    },
+    {
+      "word": "misto",
+      "normalized": "misto",
+      "freq": 8.555556
+    },
+    {
+      "word": "raros",
+      "normalized": "raros",
+      "freq": 8.519863
+    },
+    {
+      "word": "prato",
+      "normalized": "prato",
+      "freq": 8.489615
+    },
+    {
+      "word": "secar",
+      "normalized": "secar",
+      "freq": 8.466667
+    },
+    {
+      "word": "acusa",
+      "normalized": "acusa",
+      "freq": 8.423069
+    },
+    {
+      "word": "bolso",
+      "normalized": "bolso",
+      "freq": 8.395846
+    },
+    {
+      "word": "creio",
+      "normalized": "creio",
+      "freq": 8.382738
+    },
+    {
+      "word": "missa",
+      "normalized": "missa",
+      "freq": 8.372656
+    },
+    {
+      "word": "orais",
+      "normalized": "orais",
+      "freq": 8.35854
+    },
+    {
+      "word": "beber",
+      "normalized": "beber",
+      "freq": 8.346441
+    },
+    {
+      "word": "parou",
+      "normalized": "parou",
+      "freq": 8.279895
+    },
+    {
+      "word": "autos",
+      "normalized": "autos",
+      "freq": 8.270821
+    },
+    {
+      "word": "serra",
+      "normalized": "serra",
+      "freq": 8.225449
+    },
+    {
+      "word": "bares",
+      "normalized": "bares",
+      "freq": 8.166969
+    },
+    {
+      "word": "votei",
+      "normalized": "votei",
+      "freq": 8.157895
+    },
+    {
+      "word": "neles",
+      "normalized": "neles",
+      "freq": 8.146804
+    },
+    {
+      "word": "fungo",
+      "normalized": "fungo",
+      "freq": 8.126638
+    },
+    {
+      "word": "piano",
+      "normalized": "piano",
+      "freq": 8.113531
+    },
+    {
+      "word": "ricas",
+      "normalized": "ricas",
+      "freq": 8.101432
+    },
+    {
+      "word": "moram",
+      "normalized": "moram",
+      "freq": 8.036903
+    },
+    {
+      "word": "latim",
+      "normalized": "latim",
+      "freq": 7.977778
+    },
+    {
+      "word": "cação",
+      "normalized": "cacao",
+      "freq": 7.973382
+    },
+    {
+      "word": "situa",
+      "normalized": "situa",
+      "freq": 7.957249
+    },
+    {
+      "word": "aveia",
+      "normalized": "aveia",
+      "freq": 7.953216
+    },
+    {
+      "word": "tórax",
+      "normalized": "torax",
+      "freq": 7.946158
+    },
+    {
+      "word": "ligar",
+      "normalized": "ligar",
+      "freq": 7.935068
+    },
+    {
+      "word": "tomam",
+      "normalized": "tomam",
+      "freq": 7.896753
+    },
+    {
+      "word": "grama",
+      "normalized": "grama",
+      "freq": 7.890704
+    },
+    {
+      "word": "matas",
+      "normalized": "matas",
+      "freq": 7.886671
+    },
+    {
+      "word": "supõe",
+      "normalized": "supoe",
+      "freq": 7.877596
+    },
+    {
+      "word": "nervo",
+      "normalized": "nervo",
+      "freq": 7.853398
+    },
+    {
+      "word": "evita",
+      "normalized": "evita",
+      "freq": 7.811051
+    },
+    {
+      "word": "pegou",
+      "normalized": "pegou",
+      "freq": 7.79996
+    },
+    {
+      "word": "usual",
+      "normalized": "usual",
+      "freq": 7.789877
+    },
+    {
+      "word": "adota",
+      "normalized": "adota",
+      "freq": 7.77677
+    },
+    {
+      "word": "exata",
+      "normalized": "exata",
+      "freq": 7.763662
+    },
+    {
+      "word": "urnas",
+      "normalized": "urnas",
+      "freq": 7.760637
+    },
+    {
+      "word": "calmo",
+      "normalized": "calmo",
+      "freq": 7.755556
+    },
+    {
+      "word": "falei",
+      "normalized": "falei",
+      "freq": 7.701149
+    },
+    {
+      "word": "bicho",
+      "normalized": "bicho",
+      "freq": 7.697116
+    },
+    {
+      "word": "fórum",
+      "normalized": "forum",
+      "freq": 7.690058
+    },
+    {
+      "word": "frota",
+      "normalized": "frota",
+      "freq": 7.666868
+    },
+    {
+      "word": "túnel",
+      "normalized": "tunel",
+      "freq": 7.653761
+    },
+    {
+      "word": "nariz",
+      "normalized": "nariz",
+      "freq": 7.651744
+    },
+    {
+      "word": "cinza",
+      "normalized": "cinza",
+      "freq": 7.645695
+    },
+    {
+      "word": "sonda",
+      "normalized": "sonda",
+      "freq": 7.612422
+    },
+    {
+      "word": "fumar",
+      "normalized": "fumar",
+      "freq": 7.605364
+    },
+    {
+      "word": "digna",
+      "normalized": "digna",
+      "freq": 7.594273
+    },
+    {
+      "word": "achou",
+      "normalized": "achou",
+      "freq": 7.591248
+    },
+    {
+      "word": "raiva",
+      "normalized": "raiva",
+      "freq": 7.579149
+    },
+    {
+      "word": "sêmen",
+      "normalized": "semen",
+      "freq": 7.568058
+    },
+    {
+      "word": "aéreo",
+      "normalized": "aereo",
+      "freq": 7.501512
+    },
+    {
+      "word": "deixe",
+      "normalized": "deixe",
+      "freq": 7.500504
+    },
+    {
+      "word": "vasta",
+      "normalized": "vasta",
+      "freq": 7.461182
+    },
+    {
+      "word": "tirou",
+      "normalized": "tirou",
+      "freq": 7.40976
+    },
+    {
+      "word": "pedem",
+      "normalized": "pedem",
+      "freq": 7.407743
+    },
+    {
+      "word": "grifo",
+      "normalized": "grifo",
+      "freq": 7.38657
+    },
+    {
+      "word": "alvos",
+      "normalized": "alvos",
+      "freq": 7.375479
+    },
+    {
+      "word": "signo",
+      "normalized": "signo",
+      "freq": 7.365396
+    },
+    {
+      "word": "lance",
+      "normalized": "lance",
+      "freq": 7.348256
+    },
+    {
+      "word": "prima",
+      "normalized": "prima",
+      "freq": 7.330107
+    },
+    {
+      "word": "mista",
+      "normalized": "mista",
+      "freq": 7.329099
+    },
+    {
+      "word": "sacos",
+      "normalized": "sacos",
+      "freq": 7.294818
+    },
+    {
+      "word": "imune",
+      "normalized": "imune",
+      "freq": 7.280702
+    },
+    {
+      "word": "ósseo",
+      "normalized": "osseo",
+      "freq": 7.249445
+    },
+    {
+      "word": "forno",
+      "normalized": "forno",
+      "freq": 7.247429
+    },
+    {
+      "word": "turnê",
+      "normalized": "turne",
+      "freq": 7.225247
+    },
+    {
+      "word": "nelas",
+      "normalized": "nelas",
+      "freq": 7.169792
+    },
+    {
+      "word": "saiba",
+      "normalized": "saiba",
+      "freq": 7.135511
+    },
+    {
+      "word": "tropa",
+      "normalized": "tropa",
+      "freq": 7.100222
+    },
+    {
+      "word": "monte",
+      "normalized": "monte",
+      "freq": 7.093164
+    },
+    {
+      "word": "vácuo",
+      "normalized": "vacuo",
+      "freq": 7.076023
+    },
+    {
+      "word": "optou",
+      "normalized": "optou",
+      "freq": 7.066949
+    },
+    {
+      "word": "aluna",
+      "normalized": "aluna",
+      "freq": 7.030651
+    },
+    {
+      "word": "caras",
+      "normalized": "caras",
+      "freq": 7.024602
+    },
+    {
+      "word": "óleos",
+      "normalized": "oleos",
+      "freq": 7.023593
+    },
+    {
+      "word": "verso",
+      "normalized": "verso",
+      "freq": 7.008469
+    },
+    {
+      "word": "cuida",
+      "normalized": "cuida",
+      "freq": 7.005445
+    },
+    {
+      "word": "irmãs",
+      "normalized": "irmas",
+      "freq": 6.999395
+    },
+    {
+      "word": "dicas",
+      "normalized": "dicas",
+      "freq": 6.964106
+    },
+    {
+      "word": "gasta",
+      "normalized": "gasta",
+      "freq": 6.928816
+    },
+    {
+      "word": "grega",
+      "normalized": "grega",
+      "freq": 6.928816
+    },
+    {
+      "word": "pátio",
+      "normalized": "patio",
+      "freq": 6.923775
+    },
+    {
+      "word": "iriam",
+      "normalized": "iriam",
+      "freq": 6.908651
+    },
+    {
+      "word": "casar",
+      "normalized": "casar",
+      "freq": 6.902601
+    },
+    {
+      "word": "caros",
+      "normalized": "caros",
+      "freq": 6.873362
+    },
+    {
+      "word": "super",
+      "normalized": "super",
+      "freq": 6.873362
+    },
+    {
+      "word": "úmido",
+      "normalized": "umido",
+      "freq": 6.864287
+    },
+    {
+      "word": "tomás",
+      "normalized": "tomas",
+      "freq": 6.850171
+    },
+    {
+      "word": "posta",
+      "normalized": "posta",
+      "freq": 6.838072
+    },
+    {
+      "word": "caule",
+      "normalized": "caule",
+      "freq": 6.835047
+    },
+    {
+      "word": "farão",
+      "normalized": "farao",
+      "freq": 6.832023
+    },
+    {
+      "word": "sigla",
+      "normalized": "sigla",
+      "freq": 6.824965
+    },
+    {
+      "word": "entes",
+      "normalized": "entes",
+      "freq": 6.776568
+    },
+    {
+      "word": "punir",
+      "normalized": "punir",
+      "freq": 6.77556
+    },
+    {
+      "word": "tinta",
+      "normalized": "tinta",
+      "freq": 6.738254
+    },
+    {
+      "word": "poros",
+      "normalized": "poros",
+      "freq": 6.725146
+    },
+    {
+      "word": "pesar",
+      "normalized": "pesar",
+      "freq": 6.698931
+    },
+    {
+      "word": "etnia",
+      "normalized": "etnia",
+      "freq": 6.656584
+    },
+    {
+      "word": "feixe",
+      "normalized": "feixe",
+      "freq": 6.651543
+    },
+    {
+      "word": "vivas",
+      "normalized": "vivas",
+      "freq": 6.55979
+    },
+    {
+      "word": "pneus",
+      "normalized": "pneus",
+      "freq": 6.531559
+    },
+    {
+      "word": "mesas",
+      "normalized": "mesas",
+      "freq": 6.51946
+    },
+    {
+      "word": "torne",
+      "normalized": "torne",
+      "freq": 6.500302
+    },
+    {
+      "word": "beiço",
+      "normalized": "beico",
+      "freq": 6.488889
+    },
+    {
+      "word": "vilas",
+      "normalized": "vilas",
+      "freq": 6.479129
+    },
+    {
+      "word": "depor",
+      "normalized": "depor",
+      "freq": 6.436782
+    },
+    {
+      "word": "pagas",
+      "normalized": "pagas",
+      "freq": 6.428715
+    },
+    {
+      "word": "fatal",
+      "normalized": "fatal",
+      "freq": 6.418633
+    },
+    {
+      "word": "abrem",
+      "normalized": "abrem",
+      "freq": 6.404517
+    },
+    {
+      "word": "bônus",
+      "normalized": "bonus",
+      "freq": 6.358137
+    },
+    {
+      "word": "guias",
+      "normalized": "guias",
+      "freq": 6.35612
+    },
+    {
+      "word": "piora",
+      "normalized": "piora",
+      "freq": 6.348054
+    },
+    {
+      "word": "vasto",
+      "normalized": "vasto",
+      "freq": 6.329905
+    },
+    {
+      "word": "mútua",
+      "normalized": "mutua",
+      "freq": 6.318814
+    },
+    {
+      "word": "canta",
+      "normalized": "canta",
+      "freq": 6.304699
+    },
+    {
+      "word": "ataca",
+      "normalized": "ataca",
+      "freq": 6.289575
+    },
+    {
+      "word": "útero",
+      "normalized": "utero",
+      "freq": 6.28655
+    },
+    {
+      "word": "viúva",
+      "normalized": "viuva",
+      "freq": 6.27445
+    },
+    {
+      "word": "luzes",
+      "normalized": "luzes",
+      "freq": 6.235128
+    },
+    {
+      "word": "afeto",
+      "normalized": "afeto",
+      "freq": 6.230087
+    },
+    {
+      "word": "árabe",
+      "normalized": "arabe",
+      "freq": 6.206897
+    },
+    {
+      "word": "tribo",
+      "normalized": "tribo",
+      "freq": 6.206897
+    },
+    {
+      "word": "obtém",
+      "normalized": "obtem",
+      "freq": 6.159508
+    },
+    {
+      "word": "almas",
+      "normalized": "almas",
+      "freq": 6.150434
+    },
+    {
+      "word": "torre",
+      "normalized": "torre",
+      "freq": 6.141359
+    },
+    {
+      "word": "belas",
+      "normalized": "belas",
+      "freq": 6.132285
+    },
+    {
+      "word": "ditos",
+      "normalized": "ditos",
+      "freq": 6.128252
+    },
+    {
+      "word": "banca",
+      "normalized": "banca",
+      "freq": 6.118169
+    },
+    {
+      "word": "poços",
+      "normalized": "pocos",
+      "freq": 6.111111
+    },
+    {
+      "word": "suave",
+      "normalized": "suave",
+      "freq": 6.055656
+    },
+    {
+      "word": "alega",
+      "normalized": "alega",
+      "freq": 6.023392
+    },
+    {
+      "word": "sales",
+      "normalized": "sales",
+      "freq": 6.023392
+    },
+    {
+      "word": "sobra",
+      "normalized": "sobra",
+      "freq": 6.020367
+    },
+    {
+      "word": "usava",
+      "normalized": "usava",
+      "freq": 6.014317
+    },
+    {
+      "word": "donde",
+      "normalized": "donde",
+      "freq": 5.993144
+    },
+    {
+      "word": "durar",
+      "normalized": "durar",
+      "freq": 5.980036
+    },
+    {
+      "word": "ditas",
+      "normalized": "ditas",
+      "freq": 5.970962
+    },
+    {
+      "word": "cruel",
+      "normalized": "cruel",
+      "freq": 5.958863
+    },
+    {
+      "word": "gatos",
+      "normalized": "gatos",
+      "freq": 5.943739
+    },
+    {
+      "word": "bolas",
+      "normalized": "bolas",
+      "freq": 5.924582
+    },
+    {
+      "word": "cabos",
+      "normalized": "cabos",
+      "freq": 5.922565
+    },
+    {
+      "word": "recuo",
+      "normalized": "recuo",
+      "freq": 5.897358
+    },
+    {
+      "word": "filas",
+      "normalized": "filas",
+      "freq": 5.895342
+    },
+    {
+      "word": "afins",
+      "normalized": "afins",
+      "freq": 5.887276
+    },
+    {
+      "word": "litro",
+      "normalized": "litro",
+      "freq": 5.871143
+    },
+    {
+      "word": "davam",
+      "normalized": "davam",
+      "freq": 5.866102
+    },
+    {
+      "word": "jogam",
+      "normalized": "jogam",
+      "freq": 5.862069
+    },
+    {
+      "word": "artur",
+      "normalized": "artur",
+      "freq": 5.860052
+    },
+    {
+      "word": "vício",
+      "normalized": "vicio",
+      "freq": 5.860052
+    },
+    {
+      "word": "calma",
+      "normalized": "calma",
+      "freq": 5.850978
+    },
+    {
+      "word": "secos",
+      "normalized": "secos",
+      "freq": 5.818713
+    },
+    {
+      "word": "primo",
+      "normalized": "primo",
+      "freq": 5.803589
+    },
+    {
+      "word": "ajude",
+      "normalized": "ajude",
+      "freq": 5.792498
+    },
+    {
+      "word": "citou",
+      "normalized": "citou",
+      "freq": 5.792498
+    },
+    {
+      "word": "ceder",
+      "normalized": "ceder",
+      "freq": 5.775358
+    },
+    {
+      "word": "mágoa",
+      "normalized": "magoa",
+      "freq": 5.755556
+    },
+    {
+      "word": "viaja",
+      "normalized": "viaja",
+      "freq": 5.748135
+    },
+    {
+      "word": "mudam",
+      "normalized": "mudam",
+      "freq": 5.741077
+    },
+    {
+      "word": "puder",
+      "normalized": "puder",
+      "freq": 5.718895
+    },
+    {
+      "word": "eleva",
+      "normalized": "eleva",
+      "freq": 5.711837
+    },
+    {
+      "word": "ombro",
+      "normalized": "ombro",
+      "freq": 5.708812
+    },
+    {
+      "word": "tocou",
+      "normalized": "tocou",
+      "freq": 5.708812
+    },
+    {
+      "word": "surto",
+      "normalized": "surto",
+      "freq": 5.668482
+    },
+    {
+      "word": "terno",
+      "normalized": "terno",
+      "freq": 5.666667
+    },
+    {
+      "word": "balão",
+      "normalized": "balao",
+      "freq": 5.660415
+    },
+    {
+      "word": "fizer",
+      "normalized": "fizer",
+      "freq": 5.654366
+    },
+    {
+      "word": "limpa",
+      "normalized": "limpa",
+      "freq": 5.643275
+    },
+    {
+      "word": "afora",
+      "normalized": "afora",
+      "freq": 5.641258
+    },
+    {
+      "word": "treze",
+      "normalized": "treze",
+      "freq": 5.638234
+    },
+    {
+      "word": "induz",
+      "normalized": "induz",
+      "freq": 5.632184
+    },
+    {
+      "word": "rotas",
+      "normalized": "rotas",
+      "freq": 5.632184
+    },
+    {
+      "word": "fruta",
+      "normalized": "fruta",
+      "freq": 5.614035
+    },
+    {
+      "word": "louco",
+      "normalized": "louco",
+      "freq": 5.612019
+    },
+    {
+      "word": "surdo",
+      "normalized": "surdo",
+      "freq": 5.61101
+    },
+    {
+      "word": "corda",
+      "normalized": "corda",
+      "freq": 5.610002
+    },
+    {
+      "word": "moças",
+      "normalized": "mocas",
+      "freq": 5.603952
+    },
+    {
+      "word": "viena",
+      "normalized": "viena",
+      "freq": 5.600928
+    },
+    {
+      "word": "folga",
+      "normalized": "folga",
+      "freq": 5.59387
+    },
+    {
+      "word": "macro",
+      "normalized": "macro",
+      "freq": 5.571688
+    },
+    {
+      "word": "oxide",
+      "normalized": "oxide",
+      "freq": 5.551522
+    },
+    {
+      "word": "valia",
+      "normalized": "valia",
+      "freq": 5.546481
+    },
+    {
+      "word": "somam",
+      "normalized": "somam",
+      "freq": 5.545473
+    },
+    {
+      "word": "lendo",
+      "normalized": "lendo",
+      "freq": 5.531357
+    },
+    {
+      "word": "clero",
+      "normalized": "clero",
+      "freq": 5.529341
+    },
+    {
+      "word": "saque",
+      "normalized": "saque",
+      "freq": 5.522283
+    },
+    {
+      "word": "achei",
+      "normalized": "achei",
+      "freq": 5.517241
+    },
+    {
+      "word": "leque",
+      "normalized": "leque",
+      "freq": 5.496068
+    },
+    {
+      "word": "atrai",
+      "normalized": "atrai",
+      "freq": 5.483969
+    },
+    {
+      "word": "aviso",
+      "normalized": "aviso",
+      "freq": 5.477919
+    },
+    {
+      "word": "limpo",
+      "normalized": "limpo",
+      "freq": 5.475902
+    },
+    {
+      "word": "senti",
+      "normalized": "senti",
+      "freq": 5.427506
+    },
+    {
+      "word": "trará",
+      "normalized": "trara",
+      "freq": 5.424481
+    },
+    {
+      "word": "lutam",
+      "normalized": "lutam",
+      "freq": 5.421456
+    },
+    {
+      "word": "julga",
+      "normalized": "julga",
+      "freq": 5.418431
+    },
+    {
+      "word": "gênio",
+      "normalized": "genio",
+      "freq": 5.40734
+    },
+    {
+      "word": "félix",
+      "normalized": "felix",
+      "freq": 5.389191
+    },
+    {
+      "word": "envia",
+      "normalized": "envia",
+      "freq": 5.388183
+    },
+    {
+      "word": "densa",
+      "normalized": "densa",
+      "freq": 5.386167
+    },
+    {
+      "word": "aonde",
+      "normalized": "aonde",
+      "freq": 5.375076
+    },
+    {
+      "word": "mexer",
+      "normalized": "mexer",
+      "freq": 5.343819
+    },
+    {
+      "word": "votou",
+      "normalized": "votou",
+      "freq": 5.32567
+    },
+    {
+      "word": "arena",
+      "normalized": "arena",
+      "freq": 5.320629
+    },
+    {
+      "word": "molar",
+      "normalized": "molar",
+      "freq": 5.318613
+    },
+    {
+      "word": "prosa",
+      "normalized": "prosa",
+      "freq": 5.312563
+    },
+    {
+      "word": "duras",
+      "normalized": "duras",
+      "freq": 5.300464
+    },
+    {
+      "word": "risos",
+      "normalized": "risos",
+      "freq": 5.294414
+    },
+    {
+      "word": "testa",
+      "normalized": "testa",
+      "freq": 5.269208
+    },
+    {
+      "word": "lavar",
+      "normalized": "lavar",
+      "freq": 5.268199
+    },
+    {
+      "word": "trens",
+      "normalized": "trens",
+      "freq": 5.268199
+    },
+    {
+      "word": "aquém",
+      "normalized": "aquem",
+      "freq": 5.2561
+    },
+    {
+      "word": "circo",
+      "normalized": "circo",
+      "freq": 5.251059
+    },
+    {
+      "word": "axial",
+      "normalized": "axial",
+      "freq": 5.242993
+    },
+    {
+      "word": "judeu",
+      "normalized": "judeu",
+      "freq": 5.218794
+    },
+    {
+      "word": "balas",
+      "normalized": "balas",
+      "freq": 5.18653
+    },
+    {
+      "word": "anéis",
+      "normalized": "aneis",
+      "freq": 5.160315
+    },
+    {
+      "word": "tosse",
+      "normalized": "tosse",
+      "freq": 5.133091
+    },
+    {
+      "word": "saído",
+      "normalized": "saido",
+      "freq": 5.103852
+    },
+    {
+      "word": "range",
+      "normalized": "range",
+      "freq": 5.100827
+    },
+    {
+      "word": "monta",
+      "normalized": "monta",
+      "freq": 5.079653
+    },
+    {
+      "word": "fugiu",
+      "normalized": "fugiu",
+      "freq": 5.048397
+    },
+    {
+      "word": "finos",
+      "normalized": "finos",
+      "freq": 5.024198
+    },
+    {
+      "word": "lepra",
+      "normalized": "lepra",
+      "freq": 5.012099
+    },
+    {
+      "word": "magia",
+      "normalized": "magia",
+      "freq": 4.998992
+    },
+    {
+      "word": "lenda",
+      "normalized": "lenda",
+      "freq": 4.997983
+    },
+    {
+      "word": "pasto",
+      "normalized": "pasto",
+      "freq": 4.969752
+    },
+    {
+      "word": "caput",
+      "normalized": "caput",
+      "freq": 4.95362
+    },
+    {
+      "word": "lápis",
+      "normalized": "lapis",
+      "freq": 4.948578
+    },
+    {
+      "word": "mando",
+      "normalized": "mando",
+      "freq": 4.937487
+    },
+    {
+      "word": "mútuo",
+      "normalized": "mutuo",
+      "freq": 4.934463
+    },
+    {
+      "word": "adiar",
+      "normalized": "adiar",
+      "freq": 4.925388
+    },
+    {
+      "word": "praga",
+      "normalized": "praga",
+      "freq": 4.907239
+    },
+    {
+      "word": "fatia",
+      "normalized": "fatia",
+      "freq": 4.892115
+    },
+    {
+      "word": "farol",
+      "normalized": "farol",
+      "freq": 4.888889
+    },
+    {
+      "word": "globo",
+      "normalized": "globo",
+      "freq": 4.873967
+    },
+    {
+      "word": "pinos",
+      "normalized": "pinos",
+      "freq": 4.872958
+    },
+    {
+      "word": "choro",
+      "normalized": "choro",
+      "freq": 4.869933
+    },
+    {
+      "word": "caldo",
+      "normalized": "caldo",
+      "freq": 4.863884
+    },
+    {
+      "word": "volte",
+      "normalized": "volte",
+      "freq": 4.849768
+    },
+    {
+      "word": "barro",
+      "normalized": "barro",
+      "freq": 4.84876
+    },
+    {
+      "word": "gesso",
+      "normalized": "gesso",
+      "freq": 4.844727
+    },
+    {
+      "word": "juíza",
+      "normalized": "juiza",
+      "freq": 4.833636
+    },
+    {
+      "word": "veias",
+      "normalized": "veias",
+      "freq": 4.82557
+    },
+    {
+      "word": "ritos",
+      "normalized": "ritos",
+      "freq": 4.814479
+    },
+    {
+      "word": "máfia",
+      "normalized": "mafia",
+      "freq": 4.803388
+    },
+    {
+      "word": "pecar",
+      "normalized": "pecar",
+      "freq": 4.8
+    },
+    {
+      "word": "úmida",
+      "normalized": "umida",
+      "freq": 4.735834
+    },
+    {
+      "word": "labor",
+      "normalized": "labor",
+      "freq": 4.723735
+    },
+    {
+      "word": "síria",
+      "normalized": "siria",
+      "freq": 4.711111
+    },
+    {
+      "word": "narra",
+      "normalized": "narra",
+      "freq": 4.704578
+    },
+    {
+      "word": "pausa",
+      "normalized": "pausa",
+      "freq": 4.676346
+    },
+    {
+      "word": "finas",
+      "normalized": "finas",
+      "freq": 4.672313
+    },
+    {
+      "word": "louça",
+      "normalized": "louca",
+      "freq": 4.666667
+    },
+    {
+      "word": "mania",
+      "normalized": "mania",
+      "freq": 4.628957
+    },
+    {
+      "word": "fecal",
+      "normalized": "fecal",
+      "freq": 4.603751
+    },
+    {
+      "word": "lares",
+      "normalized": "lares",
+      "freq": 4.583585
+    },
+    {
+      "word": "netos",
+      "normalized": "netos",
+      "freq": 4.583585
+    },
+    {
+      "word": "aroma",
+      "normalized": "aroma",
+      "freq": 4.575519
+    },
+    {
+      "word": "valem",
+      "normalized": "valem",
+      "freq": 4.562412
+    },
+    {
+      "word": "solta",
+      "normalized": "solta",
+      "freq": 4.560395
+    },
+    {
+      "word": "tripa",
+      "normalized": "tripa",
+      "freq": 4.555556
+    },
+    {
+      "word": "cerne",
+      "normalized": "cerne",
+      "freq": 4.555354
+    },
+    {
+      "word": "seios",
+      "normalized": "seios",
+      "freq": 4.546279
+    },
+    {
+      "word": "molho",
+      "normalized": "molho",
+      "freq": 4.539222
+    },
+    {
+      "word": "trono",
+      "normalized": "trono",
+      "freq": 4.515023
+    },
+    {
+      "word": "gripe",
+      "normalized": "gripe",
+      "freq": 4.513007
+    },
+    {
+      "word": "mercê",
+      "normalized": "merce",
+      "freq": 4.513007
+    },
+    {
+      "word": "ruins",
+      "normalized": "ruins",
+      "freq": 4.513007
+    },
+    {
+      "word": "sutil",
+      "normalized": "sutil",
+      "freq": 4.51099
+    },
+    {
+      "word": "pedia",
+      "normalized": "pedia",
+      "freq": 4.504941
+    },
+    {
+      "word": "temem",
+      "normalized": "temem",
+      "freq": 4.489816
+    },
+    {
+      "word": "muros",
+      "normalized": "muros",
+      "freq": 4.4878
+    },
+    {
+      "word": "refém",
+      "normalized": "refem",
+      "freq": 4.473684
+    },
+    {
+      "word": "ídolo",
+      "normalized": "idolo",
+      "freq": 4.466667
+    },
+    {
+      "word": "aptos",
+      "normalized": "aptos",
+      "freq": 4.466626
+    },
+    {
+      "word": "senha",
+      "normalized": "senha",
+      "freq": 4.463602
+    },
+    {
+      "word": "vazia",
+      "normalized": "vazia",
+      "freq": 4.440411
+    },
+    {
+      "word": "recém",
+      "normalized": "recem",
+      "freq": 4.420246
+    },
+    {
+      "word": "adubo",
+      "normalized": "adubo",
+      "freq": 4.40613
+    },
+    {
+      "word": "prega",
+      "normalized": "prega",
+      "freq": 4.405122
+    },
+    {
+      "word": "átomo",
+      "normalized": "atomo",
+      "freq": 4.395039
+    },
+    {
+      "word": "lente",
+      "normalized": "lente",
+      "freq": 4.33656
+    },
+    {
+      "word": "corta",
+      "normalized": "corta",
+      "freq": 4.323452
+    },
+    {
+      "word": "haste",
+      "normalized": "haste",
+      "freq": 4.320428
+    },
+    {
+      "word": "ânimo",
+      "normalized": "animo",
+      "freq": 4.318411
+    },
+    {
+      "word": "fixas",
+      "normalized": "fixas",
+      "freq": 4.306312
+    },
+    {
+      "word": "bando",
+      "normalized": "bando",
+      "freq": 4.291188
+    },
+    {
+      "word": "meias",
+      "normalized": "meias",
+      "freq": 4.280097
+    },
+    {
+      "word": "berço",
+      "normalized": "berco",
+      "freq": 4.279089
+    },
+    {
+      "word": "cauda",
+      "normalized": "cauda",
+      "freq": 4.274047
+    },
+    {
+      "word": "coçar",
+      "normalized": "cocar",
+      "freq": 4.266667
+    },
+    {
+      "word": "jóias",
+      "normalized": "joias",
+      "freq": 4.26094
+    },
+    {
+      "word": "impôs",
+      "normalized": "impos",
+      "freq": 4.249849
+    },
+    {
+      "word": "devam",
+      "normalized": "devam",
+      "freq": 4.247832
+    },
+    {
+      "word": "temer",
+      "normalized": "temer",
+      "freq": 4.245816
+    },
+    {
+      "word": "gotas",
+      "normalized": "gotas",
+      "freq": 4.230692
+    },
+    {
+      "word": "capim",
+      "normalized": "capim",
+      "freq": 4.191369
+    },
+    {
+      "word": "fetos",
+      "normalized": "fetos",
+      "freq": 4.170196
+    },
+    {
+      "word": "curar",
+      "normalized": "curar",
+      "freq": 4.162129
+    },
+    {
+      "word": "lenha",
+      "normalized": "lenha",
+      "freq": 4.160113
+    },
+    {
+      "word": "creme",
+      "normalized": "creme",
+      "freq": 4.152047
+    },
+    {
+      "word": "caído",
+      "normalized": "caido",
+      "freq": 4.142972
+    },
+    {
+      "word": "cafés",
+      "normalized": "cafes",
+      "freq": 4.137931
+    },
+    {
+      "word": "ligou",
+      "normalized": "ligou",
+      "freq": 4.134906
+    },
+    {
+      "word": "ácida",
+      "normalized": "acida",
+      "freq": 4.125832
+    },
+    {
+      "word": "hábil",
+      "normalized": "habil",
+      "freq": 4.113733
+    },
+    {
+      "word": "quilo",
+      "normalized": "quilo",
+      "freq": 4.091551
+    },
+    {
+      "word": "louro",
+      "normalized": "louro",
+      "freq": 4.088889
+    },
+    {
+      "word": "porco",
+      "normalized": "porco",
+      "freq": 4.087518
+    },
+    {
+      "word": "clone",
+      "normalized": "clone",
+      "freq": 4.085501
+    },
+    {
+      "word": "névoa",
+      "normalized": "nevoa",
+      "freq": 4.066667
+    },
+    {
+      "word": "arcos",
+      "normalized": "arcos",
+      "freq": 4.063319
+    },
+    {
+      "word": "fogos",
+      "normalized": "fogos",
+      "freq": 4.050212
+    },
+    {
+      "word": "relva",
+      "normalized": "relva",
+      "freq": 4.022222
+    },
+    {
+      "word": "arcar",
+      "normalized": "arcar",
+      "freq": 3.986691
+    },
+    {
+      "word": "rombo",
+      "normalized": "rombo",
+      "freq": 3.967534
+    },
+    {
+      "word": "cinto",
+      "normalized": "cinto",
+      "freq": 3.964509
+    },
+    {
+      "word": "ervas",
+      "normalized": "ervas",
+      "freq": 3.962492
+    },
+    {
+      "word": "sueco",
+      "normalized": "sueco",
+      "freq": 3.956443
+    },
+    {
+      "word": "gemas",
+      "normalized": "gemas",
+      "freq": 3.948377
+    },
+    {
+      "word": "óbvia",
+      "normalized": "obvia",
+      "freq": 3.943335
+    },
+    {
+      "word": "cedeu",
+      "normalized": "cedeu",
+      "freq": 3.937286
+    },
+    {
+      "word": "plana",
+      "normalized": "plana",
+      "freq": 3.932244
+    },
+    {
+      "word": "citam",
+      "normalized": "citam",
+      "freq": 3.930228
+    },
+    {
+      "word": "êxodo",
+      "normalized": "exodo",
+      "freq": 3.922162
+    },
+    {
+      "word": "águia",
+      "normalized": "aguia",
+      "freq": 3.911111
+    },
+    {
+      "word": "puros",
+      "normalized": "puros",
+      "freq": 3.890905
+    },
+    {
+      "word": "tidos",
+      "normalized": "tidos",
+      "freq": 3.886872
+    },
+    {
+      "word": "negam",
+      "normalized": "negam",
+      "freq": 3.885864
+    },
+    {
+      "word": "pilar",
+      "normalized": "pilar",
+      "freq": 3.849566
+    },
+    {
+      "word": "sobem",
+      "normalized": "sobem",
+      "freq": 3.844525
+    },
+    {
+      "word": "apura",
+      "normalized": "apura",
+      "freq": 3.835451
+    },
+    {
+      "word": "cloro",
+      "normalized": "cloro",
+      "freq": 3.830409
+    },
+    {
+      "word": "tecer",
+      "normalized": "tecer",
+      "freq": 3.829401
+    },
+    {
+      "word": "ligas",
+      "normalized": "ligas",
+      "freq": 3.828393
+    },
+    {
+      "word": "baile",
+      "normalized": "baile",
+      "freq": 3.821335
+    },
+    {
+      "word": "cifra",
+      "normalized": "cifra",
+      "freq": 3.819318
+    },
+    {
+      "word": "pênis",
+      "normalized": "penis",
+      "freq": 3.800161
+    },
+    {
+      "word": "idosa",
+      "normalized": "idosa",
+      "freq": 3.78907
+    },
+    {
+      "word": "lagos",
+      "normalized": "lagos",
+      "freq": 3.788062
+    },
+    {
+      "word": "áureo",
+      "normalized": "aureo",
+      "freq": 3.777778
+    },
+    {
+      "word": "asilo",
+      "normalized": "asilo",
+      "freq": 3.764872
+    },
+    {
+      "word": "dunga",
+      "normalized": "dunga",
+      "freq": 3.757814
+    },
+    {
+      "word": "cólon",
+      "normalized": "colon",
+      "freq": 3.73664
+    },
+    {
+      "word": "altar",
+      "normalized": "altar",
+      "freq": 3.728574
+    },
+    {
+      "word": "cisão",
+      "normalized": "cisao",
+      "freq": 3.717483
+    },
+    {
+      "word": "cerco",
+      "normalized": "cerco",
+      "freq": 3.708409
+    },
+    {
+      "word": "sulco",
+      "normalized": "sulco",
+      "freq": 3.708409
+    },
+    {
+      "word": "levem",
+      "normalized": "levem",
+      "freq": 3.700343
+    },
+    {
+      "word": "meigo",
+      "normalized": "meigo",
+      "freq": 3.688889
+    },
+    {
+      "word": "piada",
+      "normalized": "piada",
+      "freq": 3.683202
+    },
+    {
+      "word": "deixo",
+      "normalized": "deixo",
+      "freq": 3.682194
+    },
+    {
+      "word": "suíço",
+      "normalized": "suico",
+      "freq": 3.680177
+    },
+    {
+      "word": "ligam",
+      "normalized": "ligam",
+      "freq": 3.677153
+    },
+    {
+      "word": "golfo",
+      "normalized": "golfo",
+      "freq": 3.676144
+    },
+    {
+      "word": "belga",
+      "normalized": "belga",
+      "freq": 3.670095
+    },
+    {
+      "word": "tampa",
+      "normalized": "tampa",
+      "freq": 3.668078
+    },
+    {
+      "word": "freio",
+      "normalized": "freio",
+      "freq": 3.666667
+    },
+    {
+      "word": "andam",
+      "normalized": "andam",
+      "freq": 3.664045
+    },
+    {
+      "word": "moles",
+      "normalized": "moles",
+      "freq": 3.659004
+    },
+    {
+      "word": "amado",
+      "normalized": "amado",
+      "freq": 3.645896
+    },
+    {
+      "word": "matam",
+      "normalized": "matam",
+      "freq": 3.640855
+    },
+    {
+      "word": "soros",
+      "normalized": "soros",
+      "freq": 3.640855
+    },
+    {
+      "word": "solto",
+      "normalized": "solto",
+      "freq": 3.636822
+    },
+    {
+      "word": "mover",
+      "normalized": "mover",
+      "freq": 3.623714
+    },
+    {
+      "word": "látex",
+      "normalized": "latex",
+      "freq": 3.62069
+    },
+    {
+      "word": "casou",
+      "normalized": "casou",
+      "freq": 3.604557
+    },
+    {
+      "word": "denso",
+      "normalized": "denso",
+      "freq": 3.604557
+    },
+    {
+      "word": "pinho",
+      "normalized": "pinho",
+      "freq": 3.6
+    },
+    {
+      "word": "linda",
+      "normalized": "linda",
+      "freq": 3.595483
+    },
+    {
+      "word": "dúzia",
+      "normalized": "duzia",
+      "freq": 3.59145
+    },
+    {
+      "word": "regem",
+      "normalized": "regem",
+      "freq": 3.587417
+    },
+    {
+      "word": "duelo",
+      "normalized": "duelo",
+      "freq": 3.586409
+    },
+    {
+      "word": "reter",
+      "normalized": "reter",
+      "freq": 3.577334
+    },
+    {
+      "word": "colar",
+      "normalized": "colar",
+      "freq": 3.567251
+    },
+    {
+      "word": "errou",
+      "normalized": "errou",
+      "freq": 3.56221
+    },
+    {
+      "word": "botar",
+      "normalized": "botar",
+      "freq": 3.549103
+    },
+    {
+      "word": "rompe",
+      "normalized": "rompe",
+      "freq": 3.529946
+    },
+    {
+      "word": "lidos",
+      "normalized": "lidos",
+      "freq": 3.524904
+    },
+    {
+      "word": "viola",
+      "normalized": "viola",
+      "freq": 3.495664
+    },
+    {
+      "word": "param",
+      "normalized": "param",
+      "freq": 3.493648
+    },
+    {
+      "word": "selva",
+      "normalized": "selva",
+      "freq": 3.489615
+    },
+    {
+      "word": "inibe",
+      "normalized": "inibe",
+      "freq": 3.473483
+    },
+    {
+      "word": "coube",
+      "normalized": "coube",
+      "freq": 3.469449
+    },
+    {
+      "word": "árido",
+      "normalized": "arido",
+      "freq": 3.466667
+    },
+    {
+      "word": "vigia",
+      "normalized": "vigia",
+      "freq": 3.466667
+    },
+    {
+      "word": "noiva",
+      "normalized": "noiva",
+      "freq": 3.465416
+    },
+    {
+      "word": "beijo",
+      "normalized": "beijo",
+      "freq": 3.459367
+    },
+    {
+      "word": "valeu",
+      "normalized": "valeu",
+      "freq": 3.452309
+    },
+    {
+      "word": "repor",
+      "normalized": "repor",
+      "freq": 3.444444
+    },
+    {
+      "word": "virão",
+      "normalized": "virao",
+      "freq": 3.433152
+    },
+    {
+      "word": "fossa",
+      "normalized": "fossa",
+      "freq": 3.424077
+    },
+    {
+      "word": "visem",
+      "normalized": "visem",
+      "freq": 3.419036
+    },
+    {
+      "word": "tutor",
+      "normalized": "tutor",
+      "freq": 3.402904
+    },
+    {
+      "word": "sedes",
+      "normalized": "sedes",
+      "freq": 3.388788
+    },
+    {
+      "word": "apego",
+      "normalized": "apego",
+      "freq": 3.375681
+    },
+    {
+      "word": "pouso",
+      "normalized": "pouso",
+      "freq": 3.373664
+    },
+    {
+      "word": "setas",
+      "normalized": "setas",
+      "freq": 3.369631
+    },
+    {
+      "word": "sucos",
+      "normalized": "sucos",
+      "freq": 3.365598
+    },
+    {
+      "word": "fogem",
+      "normalized": "fogem",
+      "freq": 3.361565
+    },
+    {
+      "word": "fêmur",
+      "normalized": "femur",
+      "freq": 3.348457
+    },
+    {
+      "word": "funda",
+      "normalized": "funda",
+      "freq": 3.347449
+    },
+    {
+      "word": "azuis",
+      "normalized": "azuis",
+      "freq": 3.337366
+    },
+    {
+      "word": "átrio",
+      "normalized": "atrio",
+      "freq": 3.323251
+    },
+    {
+      "word": "prelo",
+      "normalized": "prelo",
+      "freq": 3.303085
+    },
+    {
+      "word": "algas",
+      "normalized": "algas",
+      "freq": 3.302077
+    },
+    {
+      "word": "sirva",
+      "normalized": "sirva",
+      "freq": 3.290986
+    },
+    {
+      "word": "perca",
+      "normalized": "perca",
+      "freq": 3.284936
+    },
+    {
+      "word": "sábio",
+      "normalized": "sabio",
+      "freq": 3.27687
+    },
+    {
+      "word": "ninho",
+      "normalized": "ninho",
+      "freq": 3.273846
+    },
+    {
+      "word": "furto",
+      "normalized": "furto",
+      "freq": 3.272837
+    },
+    {
+      "word": "latas",
+      "normalized": "latas",
+      "freq": 3.270821
+    },
+    {
+      "word": "amada",
+      "normalized": "amada",
+      "freq": 3.25973
+    },
+    {
+      "word": "volto",
+      "normalized": "volto",
+      "freq": 3.254688
+    },
+    {
+      "word": "ícone",
+      "normalized": "icone",
+      "freq": 3.251664
+    },
+    {
+      "word": "pondo",
+      "normalized": "pondo",
+      "freq": 3.248639
+    },
+    {
+      "word": "susto",
+      "normalized": "susto",
+      "freq": 3.248639
+    },
+    {
+      "word": "ímpar",
+      "normalized": "impar",
+      "freq": 3.245614
+    },
+    {
+      "word": "lobos",
+      "normalized": "lobos",
+      "freq": 3.243597
+    },
+    {
+      "word": "farsa",
+      "normalized": "farsa",
+      "freq": 3.238556
+    },
+    {
+      "word": "chute",
+      "normalized": "chute",
+      "freq": 3.232507
+    },
+    {
+      "word": "cabia",
+      "normalized": "cabia",
+      "freq": 3.226457
+    },
+    {
+      "word": "conde",
+      "normalized": "conde",
+      "freq": 3.212341
+    },
+    {
+      "word": "ocupo",
+      "normalized": "ocupo",
+      "freq": 3.2073
+    },
+    {
+      "word": "vales",
+      "normalized": "vales",
+      "freq": 3.205283
+    },
+    {
+      "word": "zelar",
+      "normalized": "zelar",
+      "freq": 3.205283
+    },
+    {
+      "word": "frias",
+      "normalized": "frias",
+      "freq": 3.198225
+    },
+    {
+      "word": "modem",
+      "normalized": "modem",
+      "freq": 3.198225
+    },
+    {
+      "word": "salva",
+      "normalized": "salva",
+      "freq": 3.195201
+    },
+    {
+      "word": "traça",
+      "normalized": "traca",
+      "freq": 3.195201
+    },
+    {
+      "word": "vilão",
+      "normalized": "vilao",
+      "freq": 3.193184
+    },
+    {
+      "word": "melão",
+      "normalized": "melao",
+      "freq": 3.190159
+    },
+    {
+      "word": "leigo",
+      "normalized": "leigo",
+      "freq": 3.189151
+    },
+    {
+      "word": "meros",
+      "normalized": "meros",
+      "freq": 3.186126
+    },
+    {
+      "word": "tocam",
+      "normalized": "tocam",
+      "freq": 3.18411
+    },
+    {
+      "word": "alise",
+      "normalized": "alise",
+      "freq": 3.17806
+    },
+    {
+      "word": "olhou",
+      "normalized": "olhou",
+      "freq": 3.17806
+    },
+    {
+      "word": "nuvem",
+      "normalized": "nuvem",
+      "freq": 3.158903
+    },
+    {
+      "word": "celas",
+      "normalized": "celas",
+      "freq": 3.149829
+    },
+    {
+      "word": "malta",
+      "normalized": "malta",
+      "freq": 3.149829
+    },
+    {
+      "word": "trate",
+      "normalized": "trate",
+      "freq": 3.139746
+    },
+    {
+      "word": "lavra",
+      "normalized": "lavra",
+      "freq": 3.133696
+    },
+    {
+      "word": "dorso",
+      "normalized": "dorso",
+      "freq": 3.128655
+    },
+    {
+      "word": "molde",
+      "normalized": "molde",
+      "freq": 3.128655
+    },
+    {
+      "word": "retas",
+      "normalized": "retas",
+      "freq": 3.126638
+    },
+    {
+      "word": "recai",
+      "normalized": "recai",
+      "freq": 3.103448
+    },
+    {
+      "word": "sacas",
+      "normalized": "sacas",
+      "freq": 3.098407
+    },
+    {
+      "word": "luvas",
+      "normalized": "luvas",
+      "freq": 3.094374
+    },
+    {
+      "word": "aspas",
+      "normalized": "aspas",
+      "freq": 3.089333
+    },
+    {
+      "word": "cegos",
+      "normalized": "cegos",
+      "freq": 3.085299
+    },
+    {
+      "word": "advém",
+      "normalized": "advem",
+      "freq": 3.083283
+    },
+    {
+      "word": "force",
+      "normalized": "force",
+      "freq": 3.0732
+    },
+    {
+      "word": "sopro",
+      "normalized": "sopro",
+      "freq": 3.0732
+    },
+    {
+      "word": "frios",
+      "normalized": "frios",
+      "freq": 3.063118
+    },
+    {
+      "word": "sabão",
+      "normalized": "sabao",
+      "freq": 3.057068
+    },
+    {
+      "word": "velas",
+      "normalized": "velas",
+      "freq": 3.049002
+    },
+    {
+      "word": "fixou",
+      "normalized": "fixou",
+      "freq": 3.045977
+    },
+    {
+      "word": "cerro",
+      "normalized": "cerro",
+      "freq": 3.044444
+    },
+    {
+      "word": "tente",
+      "normalized": "tente",
+      "freq": 3.027828
+    },
+    {
+      "word": "rogar",
+      "normalized": "rogar",
+      "freq": 3.022222
+    },
+    {
+      "word": "lutou",
+      "normalized": "lutou",
+      "freq": 3.019762
+    },
+    {
+      "word": "errar",
+      "normalized": "errar",
+      "freq": 3.015729
+    },
+    {
+      "word": "guiar",
+      "normalized": "guiar",
+      "freq": 3.015729
+    },
+    {
+      "word": "manto",
+      "normalized": "manto",
+      "freq": 3.013712
+    },
+    {
+      "word": "atlas",
+      "normalized": "atlas",
+      "freq": 3.00363
+    },
+    {
+      "word": "pense",
+      "normalized": "pense",
+      "freq": 3.000605
+    },
+    {
+      "word": "trave",
+      "normalized": "trave",
+      "freq": 3.0
+    },
+    {
+      "word": "tomem",
+      "normalized": "tomem",
+      "freq": 2.998588
+    },
+    {
+      "word": "dobra",
+      "normalized": "dobra",
+      "freq": 2.996572
+    },
+    {
+      "word": "lidam",
+      "normalized": "lidam",
+      "freq": 2.995564
+    },
+    {
+      "word": "medos",
+      "normalized": "medos",
+      "freq": 2.981448
+    },
+    {
+      "word": "bossa",
+      "normalized": "bossa",
+      "freq": 2.979431
+    },
+    {
+      "word": "praxe",
+      "normalized": "praxe",
+      "freq": 2.975398
+    },
+    {
+      "word": "anjos",
+      "normalized": "anjos",
+      "freq": 2.970357
+    },
+    {
+      "word": "emite",
+      "normalized": "emite",
+      "freq": 2.969349
+    },
+    {
+      "word": "mares",
+      "normalized": "mares",
+      "freq": 2.96834
+    },
+    {
+      "word": "fosso",
+      "normalized": "fosso",
+      "freq": 2.955556
+    },
+    {
+      "word": "xeque",
+      "normalized": "xeque",
+      "freq": 2.9512
+    },
+    {
+      "word": "peste",
+      "normalized": "peste",
+      "freq": 2.948175
+    },
+    {
+      "word": "vulto",
+      "normalized": "vulto",
+      "freq": 2.94515
+    },
+    {
+      "word": "recua",
+      "normalized": "recua",
+      "freq": 2.944142
+    },
+    {
+      "word": "puras",
+      "normalized": "puras",
+      "freq": 2.938092
+    },
+    {
+      "word": "delta",
+      "normalized": "delta",
+      "freq": 2.929018
+    },
+    {
+      "word": "abuse",
+      "normalized": "abuse",
+      "freq": 2.92801
+    },
+    {
+      "word": "pilha",
+      "normalized": "pilha",
+      "freq": 2.924985
+    },
+    {
+      "word": "naval",
+      "normalized": "naval",
+      "freq": 2.920952
+    },
+    {
+      "word": "rende",
+      "normalized": "rende",
+      "freq": 2.914902
+    },
+    {
+      "word": "votam",
+      "normalized": "votam",
+      "freq": 2.901795
+    },
+    {
+      "word": "chato",
+      "normalized": "chato",
+      "freq": 2.900786
+    },
+    {
+      "word": "sonha",
+      "normalized": "sonha",
+      "freq": 2.894737
+    },
+    {
+      "word": "chamo",
+      "normalized": "chamo",
+      "freq": 2.89272
+    },
+    {
+      "word": "sairá",
+      "normalized": "saira",
+      "freq": 2.885662
+    },
+    {
+      "word": "cabem",
+      "normalized": "cabem",
+      "freq": 2.881629
+    },
+    {
+      "word": "astro",
+      "normalized": "astro",
+      "freq": 2.877596
+    },
+    {
+      "word": "desce",
+      "normalized": "desce",
+      "freq": 2.870538
+    },
+    {
+      "word": "pomar",
+      "normalized": "pomar",
+      "freq": 2.870538
+    },
+    {
+      "word": "limão",
+      "normalized": "limao",
+      "freq": 2.857431
+    },
+    {
+      "word": "avisa",
+      "normalized": "avisa",
+      "freq": 2.854406
+    },
+    {
+      "word": "palma",
+      "normalized": "palma",
+      "freq": 2.827183
+    },
+    {
+      "word": "punho",
+      "normalized": "punho",
+      "freq": 2.814075
+    },
+    {
+      "word": "belos",
+      "normalized": "belos",
+      "freq": 2.801976
+    },
+    {
+      "word": "lindo",
+      "normalized": "lindo",
+      "freq": 2.79391
+    },
+    {
+      "word": "pizza",
+      "normalized": "pizza",
+      "freq": 2.790885
+    },
+    {
+      "word": "garra",
+      "normalized": "garra",
+      "freq": 2.782819
+    },
+    {
+      "word": "unhas",
+      "normalized": "unhas",
+      "freq": 2.782819
+    },
+    {
+      "word": "seita",
+      "normalized": "seita",
+      "freq": 2.781811
+    },
+    {
+      "word": "furor",
+      "normalized": "furor",
+      "freq": 2.777778
+    },
+    {
+      "word": "mamão",
+      "normalized": "mamao",
+      "freq": 2.774753
+    },
+    {
+      "word": "fenda",
+      "normalized": "fenda",
+      "freq": 2.771728
+    },
+    {
+      "word": "trago",
+      "normalized": "trago",
+      "freq": 2.734422
+    },
+    {
+      "word": "ratas",
+      "normalized": "ratas",
+      "freq": 2.729381
+    },
+    {
+      "word": "tidas",
+      "normalized": "tidas",
+      "freq": 2.723331
+    },
+    {
+      "word": "tenso",
+      "normalized": "tenso",
+      "freq": 2.722323
+    },
+    {
+      "word": "barba",
+      "normalized": "barba",
+      "freq": 2.71829
+    },
+    {
+      "word": "burro",
+      "normalized": "burro",
+      "freq": 2.711232
+    },
+    {
+      "word": "ouvia",
+      "normalized": "ouvia",
+      "freq": 2.690058
+    },
+    {
+      "word": "inter",
+      "normalized": "inter",
+      "freq": 2.683001
+    },
+    {
+      "word": "copos",
+      "normalized": "copos",
+      "freq": 2.670901
+    },
+    {
+      "word": "arfar",
+      "normalized": "arfar",
+      "freq": 2.666667
+    },
+    {
+      "word": "podar",
+      "normalized": "podar",
+      "freq": 2.666667
+    },
+    {
+      "word": "fugas",
+      "normalized": "fugas",
+      "freq": 2.663844
+    },
+    {
+      "word": "darão",
+      "normalized": "darao",
+      "freq": 2.660819
+    },
+    {
+      "word": "calda",
+      "normalized": "calda",
+      "freq": 2.655777
+    },
+    {
+      "word": "nulos",
+      "normalized": "nulos",
+      "freq": 2.655777
+    },
+    {
+      "word": "coral",
+      "normalized": "coral",
+      "freq": 2.644686
+    },
+    {
+      "word": "sacra",
+      "normalized": "sacra",
+      "freq": 2.639645
+    },
+    {
+      "word": "chora",
+      "normalized": "chora",
+      "freq": 2.626538
+    },
+    {
+      "word": "turvo",
+      "normalized": "turvo",
+      "freq": 2.622222
+    },
+    {
+      "word": "sutis",
+      "normalized": "sutis",
+      "freq": 2.618471
+    },
+    {
+      "word": "sugar",
+      "normalized": "sugar",
+      "freq": 2.609397
+    },
+    {
+      "word": "opõem",
+      "normalized": "opoem",
+      "freq": 2.605364
+    },
+    {
+      "word": "pular",
+      "normalized": "pular",
+      "freq": 2.595281
+    },
+    {
+      "word": "nicho",
+      "normalized": "nicho",
+      "freq": 2.59024
+    },
+    {
+      "word": "vigas",
+      "normalized": "vigas",
+      "freq": 2.587215
+    },
+    {
+      "word": "leram",
+      "normalized": "leram",
+      "freq": 2.586207
+    },
+    {
+      "word": "evoca",
+      "normalized": "evoca",
+      "freq": 2.58419
+    },
+    {
+      "word": "cesso",
+      "normalized": "cesso",
+      "freq": 2.574108
+    },
+    {
+      "word": "dorme",
+      "normalized": "dorme",
+      "freq": 2.556967
+    },
+    {
+      "word": "régua",
+      "normalized": "regua",
+      "freq": 2.555959
+    },
+    {
+      "word": "adora",
+      "normalized": "adora",
+      "freq": 2.552934
+    },
+    {
+      "word": "abono",
+      "normalized": "abono",
+      "freq": 2.547893
+    },
+    {
+      "word": "surda",
+      "normalized": "surda",
+      "freq": 2.541843
+    },
+    {
+      "word": "fadas",
+      "normalized": "fadas",
+      "freq": 2.539827
+    },
+    {
+      "word": "moído",
+      "normalized": "moido",
+      "freq": 2.534785
+    },
+    {
+      "word": "árdua",
+      "normalized": "ardua",
+      "freq": 2.532769
+    },
+    {
+      "word": "notou",
+      "normalized": "notou",
+      "freq": 2.529744
+    },
+    {
+      "word": "damos",
+      "normalized": "damos",
+      "freq": 2.528736
+    },
+    {
+      "word": "demos",
+      "normalized": "demos",
+      "freq": 2.528736
+    },
+    {
+      "word": "cromo",
+      "normalized": "cromo",
+      "freq": 2.519661
+    },
+    {
+      "word": "elege",
+      "normalized": "elege",
+      "freq": 2.519661
+    },
+    {
+      "word": "grava",
+      "normalized": "grava",
+      "freq": 2.517645
+    },
+    {
+      "word": "magra",
+      "normalized": "magra",
+      "freq": 2.51462
+    },
+    {
+      "word": "sanar",
+      "normalized": "sanar",
+      "freq": 2.51462
+    },
+    {
+      "word": "virem",
+      "normalized": "virem",
+      "freq": 2.509579
+    },
+    {
+      "word": "morou",
+      "normalized": "morou",
+      "freq": 2.502521
+    },
+    {
+      "word": "curve",
+      "normalized": "curve",
+      "freq": 2.501512
+    },
+    {
+      "word": "fúria",
+      "normalized": "furia",
+      "freq": 2.501512
+    },
+    {
+      "word": "gordo",
+      "normalized": "gordo",
+      "freq": 2.495463
+    },
+    {
+      "word": "sinta",
+      "normalized": "sinta",
+      "freq": 2.495463
+    },
+    {
+      "word": "arame",
+      "normalized": "arame",
+      "freq": 2.477314
+    },
+    {
+      "word": "fogão",
+      "normalized": "fogao",
+      "freq": 2.471264
+    },
+    {
+      "word": "bulbo",
+      "normalized": "bulbo",
+      "freq": 2.470256
+    },
+    {
+      "word": "duros",
+      "normalized": "duros",
+      "freq": 2.470256
+    },
+    {
+      "word": "motos",
+      "normalized": "motos",
+      "freq": 2.470256
+    },
+    {
+      "word": "sismo",
+      "normalized": "sismo",
+      "freq": 2.466667
+    },
+    {
+      "word": "perdi",
+      "normalized": "perdi",
+      "freq": 2.466223
+    },
+    {
+      "word": "vossa",
+      "normalized": "vossa",
+      "freq": 2.460173
+    },
+    {
+      "word": "expôs",
+      "normalized": "expos",
+      "freq": 2.45614
+    },
+    {
+      "word": "épico",
+      "normalized": "epico",
+      "freq": 2.455132
+    },
+    {
+      "word": "dotar",
+      "normalized": "dotar",
+      "freq": 2.454124
+    },
+    {
+      "word": "feriu",
+      "normalized": "feriu",
+      "freq": 2.447066
+    },
+    {
+      "word": "tiras",
+      "normalized": "tiras",
+      "freq": 2.436983
+    },
+    {
+      "word": "veloz",
+      "normalized": "veloz",
+      "freq": 2.436983
+    },
+    {
+      "word": "touro",
+      "normalized": "touro",
+      "freq": 2.435975
+    },
+    {
+      "word": "sadia",
+      "normalized": "sadia",
+      "freq": 2.427909
+    },
+    {
+      "word": "capas",
+      "normalized": "capas",
+      "freq": 2.422868
+    },
+    {
+      "word": "troco",
+      "normalized": "troco",
+      "freq": 2.421859
+    },
+    {
+      "word": "unida",
+      "normalized": "unida",
+      "freq": 2.414801
+    },
+    {
+      "word": "vogal",
+      "normalized": "vogal",
+      "freq": 2.413793
+    },
+    {
+      "word": "veste",
+      "normalized": "veste",
+      "freq": 2.412785
+    },
+    {
+      "word": "anima",
+      "normalized": "anima",
+      "freq": 2.411777
+    },
+    {
+      "word": "tecla",
+      "normalized": "tecla",
+      "freq": 2.408752
+    },
+    {
+      "word": "roças",
+      "normalized": "rocas",
+      "freq": 2.405727
+    },
+    {
+      "word": "salta",
+      "normalized": "salta",
+      "freq": 2.40371
+    },
+    {
+      "word": "mamas",
+      "normalized": "mamas",
+      "freq": 2.401694
+    },
+    {
+      "word": "puxar",
+      "normalized": "puxar",
+      "freq": 2.393628
+    },
+    {
+      "word": "tento",
+      "normalized": "tento",
+      "freq": 2.387578
+    },
+    {
+      "word": "tomei",
+      "normalized": "tomei",
+      "freq": 2.384553
+    },
+    {
+      "word": "anais",
+      "normalized": "anais",
+      "freq": 2.374471
+    },
+    {
+      "word": "patas",
+      "normalized": "patas",
+      "freq": 2.374471
+    },
+    {
+      "word": "lítio",
+      "normalized": "litio",
+      "freq": 2.367413
+    },
+    {
+      "word": "rezar",
+      "normalized": "rezar",
+      "freq": 2.367413
+    },
+    {
+      "word": "quota",
+      "normalized": "quota",
+      "freq": 2.362371
+    },
+    {
+      "word": "perua",
+      "normalized": "perua",
+      "freq": 2.361363
+    },
+    {
+      "word": "deusa",
+      "normalized": "deusa",
+      "freq": 2.353297
+    },
+    {
+      "word": "furos",
+      "normalized": "furos",
+      "freq": 2.348256
+    },
+    {
+      "word": "pague",
+      "normalized": "pague",
+      "freq": 2.34019
+    },
+    {
+      "word": "dunas",
+      "normalized": "dunas",
+      "freq": 2.332123
+    },
+    {
+      "word": "boate",
+      "normalized": "boate",
+      "freq": 2.324057
+    },
+    {
+      "word": "ruína",
+      "normalized": "ruina",
+      "freq": 2.324057
+    },
+    {
+      "word": "grafo",
+      "normalized": "grafo",
+      "freq": 2.323049
+    },
+    {
+      "word": "rindo",
+      "normalized": "rindo",
+      "freq": 2.321032
+    },
+    {
+      "word": "medem",
+      "normalized": "medem",
+      "freq": 2.316999
+    },
+    {
+      "word": "trava",
+      "normalized": "trava",
+      "freq": 2.313975
+    },
+    {
+      "word": "cruza",
+      "normalized": "cruza",
+      "freq": 2.306917
+    },
+    {
+      "word": "rodar",
+      "normalized": "rodar",
+      "freq": 2.303892
+    },
+    {
+      "word": "gozar",
+      "normalized": "gozar",
+      "freq": 2.293809
+    },
+    {
+      "word": "torta",
+      "normalized": "torta",
+      "freq": 2.27566
+    },
+    {
+      "word": "frete",
+      "normalized": "frete",
+      "freq": 2.274652
+    },
+    {
+      "word": "ciúme",
+      "normalized": "ciume",
+      "freq": 2.272636
+    },
+    {
+      "word": "acabe",
+      "normalized": "acabe",
+      "freq": 2.270619
+    },
+    {
+      "word": "farei",
+      "normalized": "farei",
+      "freq": 2.270619
+    },
+    {
+      "word": "revés",
+      "normalized": "reves",
+      "freq": 2.266667
+    },
+    {
+      "word": "tiram",
+      "normalized": "tiram",
+      "freq": 2.265578
+    },
+    {
+      "word": "barão",
+      "normalized": "barao",
+      "freq": 2.262553
+    },
+    {
+      "word": "papai",
+      "normalized": "papai",
+      "freq": 2.255495
+    },
+    {
+      "word": "turba",
+      "normalized": "turba",
+      "freq": 2.244444
+    },
+    {
+      "word": "rosas",
+      "normalized": "rosas",
+      "freq": 2.244404
+    },
+    {
+      "word": "larva",
+      "normalized": "larva",
+      "freq": 2.243396
+    },
+    {
+      "word": "robôs",
+      "normalized": "robos",
+      "freq": 2.239363
+    },
+    {
+      "word": "culta",
+      "normalized": "culta",
+      "freq": 2.238355
+    },
+    {
+      "word": "grife",
+      "normalized": "grife",
+      "freq": 2.234321
+    },
+    {
+      "word": "genro",
+      "normalized": "genro",
+      "freq": 2.232305
+    },
+    {
+      "word": "mural",
+      "normalized": "mural",
+      "freq": 2.232305
+    },
+    {
+      "word": "rasos",
+      "normalized": "rasos",
+      "freq": 2.231297
+    },
+    {
+      "word": "andou",
+      "normalized": "andou",
+      "freq": 2.227264
+    },
+    {
+      "word": "dance",
+      "normalized": "dance",
+      "freq": 2.227264
+    },
+    {
+      "word": "traga",
+      "normalized": "traga",
+      "freq": 2.219197
+    },
+    {
+      "word": "malas",
+      "normalized": "malas",
+      "freq": 2.217181
+    },
+    {
+      "word": "tíbia",
+      "normalized": "tibia",
+      "freq": 2.215164
+    },
+    {
+      "word": "rampa",
+      "normalized": "rampa",
+      "freq": 2.210123
+    },
+    {
+      "word": "magro",
+      "normalized": "magro",
+      "freq": 2.203065
+    },
+    {
+      "word": "ânsia",
+      "normalized": "ansia",
+      "freq": 2.20004
+    },
+    {
+      "word": "cofre",
+      "normalized": "cofre",
+      "freq": 2.198024
+    },
+    {
+      "word": "hiato",
+      "normalized": "hiato",
+      "freq": 2.188949
+    },
+    {
+      "word": "limbo",
+      "normalized": "limbo",
+      "freq": 2.183908
+    },
+    {
+      "word": "pudor",
+      "normalized": "pudor",
+      "freq": 2.1829
+    },
+    {
+      "word": "darem",
+      "normalized": "darem",
+      "freq": 2.179875
+    },
+    {
+      "word": "versa",
+      "normalized": "versa",
+      "freq": 2.179875
+    },
+    {
+      "word": "magno",
+      "normalized": "magno",
+      "freq": 2.177778
+    },
+    {
+      "word": "doado",
+      "normalized": "doado",
+      "freq": 2.171809
+    },
+    {
+      "word": "selos",
+      "normalized": "selos",
+      "freq": 2.166767
+    },
+    {
+      "word": "grita",
+      "normalized": "grita",
+      "freq": 2.15971
+    },
+    {
+      "word": "armar",
+      "normalized": "armar",
+      "freq": 2.157693
+    },
+    {
+      "word": "maçãs",
+      "normalized": "macas",
+      "freq": 2.157693
+    },
+    {
+      "word": "forme",
+      "normalized": "forme",
+      "freq": 2.154668
+    },
+    {
+      "word": "mamãe",
+      "normalized": "mamae",
+      "freq": 2.150635
+    },
+    {
+      "word": "girar",
+      "normalized": "girar",
+      "freq": 2.146602
+    },
+    {
+      "word": "lidas",
+      "normalized": "lidas",
+      "freq": 2.141561
+    },
+    {
+      "word": "rolar",
+      "normalized": "rolar",
+      "freq": 2.139544
+    },
+    {
+      "word": "cabra",
+      "normalized": "cabra",
+      "freq": 2.135511
+    },
+    {
+      "word": "feder",
+      "normalized": "feder",
+      "freq": 2.133333
+    },
+    {
+      "word": "farta",
+      "normalized": "farta",
+      "freq": 2.132486
+    },
+    {
+      "word": "comem",
+      "normalized": "comem",
+      "freq": 2.129462
+    },
+    {
+      "word": "radar",
+      "normalized": "radar",
+      "freq": 2.125429
+    },
+    {
+      "word": "serei",
+      "normalized": "serei",
+      "freq": 2.122404
+    },
+    {
+      "word": "rouba",
+      "normalized": "rouba",
+      "freq": 2.116354
+    },
+    {
+      "word": "capta",
+      "normalized": "capta",
+      "freq": 2.113329
+    },
+    {
+      "word": "talha",
+      "normalized": "talha",
+      "freq": 2.111111
+    },
+    {
+      "word": "sadio",
+      "normalized": "sadio",
+      "freq": 2.097197
+    },
+    {
+      "word": "temia",
+      "normalized": "temia",
+      "freq": 2.097197
+    },
+    {
+      "word": "cones",
+      "normalized": "cones",
+      "freq": 2.096189
+    },
+    {
+      "word": "polar",
+      "normalized": "polar",
+      "freq": 2.094172
+    },
+    {
+      "word": "calar",
+      "normalized": "calar",
+      "freq": 2.092156
+    },
+    {
+      "word": "banal",
+      "normalized": "banal",
+      "freq": 2.088123
+    },
+    {
+      "word": "vejam",
+      "normalized": "vejam",
+      "freq": 2.088123
+    },
+    {
+      "word": "canoa",
+      "normalized": "canoa",
+      "freq": 2.077032
+    },
+    {
+      "word": "quite",
+      "normalized": "quite",
+      "freq": 2.076023
+    },
+    {
+      "word": "deveu",
+      "normalized": "deveu",
+      "freq": 2.070982
+    },
+    {
+      "word": "esqui",
+      "normalized": "esqui",
+      "freq": 2.060899
+    },
+    {
+      "word": "suíno",
+      "normalized": "suino",
+      "freq": 2.060899
+    },
+    {
+      "word": "prole",
+      "normalized": "prole",
+      "freq": 2.049808
+    },
+    {
+      "word": "bolha",
+      "normalized": "bolha",
+      "freq": 2.045775
+    },
+    {
+      "word": "oásis",
+      "normalized": "oasis",
+      "freq": 2.044444
+    },
+    {
+      "word": "ouvem",
+      "normalized": "ouvem",
+      "freq": 2.033676
+    },
+    {
+      "word": "lisas",
+      "normalized": "lisas",
+      "freq": 2.03166
+    },
+    {
+      "word": "tédio",
+      "normalized": "tedio",
+      "freq": 2.026618
+    },
+    {
+      "word": "abria",
+      "normalized": "abria",
+      "freq": 2.022585
+    },
+    {
+      "word": "pinta",
+      "normalized": "pinta",
+      "freq": 2.015527
+    },
+    {
+      "word": "noivo",
+      "normalized": "noivo",
+      "freq": 2.014519
+    },
+    {
+      "word": "tênue",
+      "normalized": "tenue",
+      "freq": 2.013511
+    },
+    {
+      "word": "terei",
+      "normalized": "terei",
+      "freq": 2.013511
+    },
+    {
+      "word": "saíam",
+      "normalized": "saiam",
+      "freq": 2.010486
+    },
+    {
+      "word": "teles",
+      "normalized": "teles",
+      "freq": 2.00242
+    },
+    {
+      "word": "horta",
+      "normalized": "horta",
+      "freq": 2.001412
+    },
+    {
+      "word": "botas",
+      "normalized": "botas",
+      "freq": 1.99637
+    },
+    {
+      "word": "nadar",
+      "normalized": "nadar",
+      "freq": 1.994354
+    },
+    {
+      "word": "tábua",
+      "normalized": "tabua",
+      "freq": 1.986288
+    },
+    {
+      "word": "pódio",
+      "normalized": "podio",
+      "freq": 1.976205
+    },
+    {
+      "word": "movem",
+      "normalized": "movem",
+      "freq": 1.966122
+    },
+    {
+      "word": "batem",
+      "normalized": "batem",
+      "freq": 1.965114
+    },
+    {
+      "word": "moção",
+      "normalized": "mocao",
+      "freq": 1.963097
+    },
+    {
+      "word": "pixel",
+      "normalized": "pixel",
+      "freq": 1.959064
+    },
+    {
+      "word": "anexa",
+      "normalized": "anexa",
+      "freq": 1.953015
+    },
+    {
+      "word": "tensa",
+      "normalized": "tensa",
+      "freq": 1.952006
+    },
+    {
+      "word": "supra",
+      "normalized": "supra",
+      "freq": 1.947973
+    },
+    {
+      "word": "suína",
+      "normalized": "suina",
+      "freq": 1.94394
+    },
+    {
+      "word": "senta",
+      "normalized": "senta",
+      "freq": 1.938899
+    },
+    {
+      "word": "érico",
+      "normalized": "erico",
+      "freq": 1.937891
+    },
+    {
+      "word": "lombo",
+      "normalized": "lombo",
+      "freq": 1.933858
+    },
+    {
+      "word": "viril",
+      "normalized": "viril",
+      "freq": 1.933333
+    },
+    {
+      "word": "sogro",
+      "normalized": "sogro",
+      "freq": 1.930833
+    },
+    {
+      "word": "anula",
+      "normalized": "anula",
+      "freq": 1.929825
+    },
+    {
+      "word": "banha",
+      "normalized": "banha",
+      "freq": 1.928816
+    },
+    {
+      "word": "árduo",
+      "normalized": "arduo",
+      "freq": 1.927808
+    },
+    {
+      "word": "folia",
+      "normalized": "folia",
+      "freq": 1.923775
+    },
+    {
+      "word": "ienes",
+      "normalized": "ienes",
+      "freq": 1.919742
+    },
+    {
+      "word": "bingo",
+      "normalized": "bingo",
+      "freq": 1.917725
+    },
+    {
+      "word": "feroz",
+      "normalized": "feroz",
+      "freq": 1.914701
+    },
+    {
+      "word": "fiado",
+      "normalized": "fiado",
+      "freq": 1.911111
+    },
+    {
+      "word": "pulou",
+      "normalized": "pulou",
+      "freq": 1.910667
+    },
+    {
+      "word": "evite",
+      "normalized": "evite",
+      "freq": 1.909659
+    },
+    {
+      "word": "somas",
+      "normalized": "somas",
+      "freq": 1.900585
+    },
+    {
+      "word": "vetar",
+      "normalized": "vetar",
+      "freq": 1.895543
+    },
+    {
+      "word": "zeros",
+      "normalized": "zeros",
+      "freq": 1.894535
+    },
+    {
+      "word": "caçar",
+      "normalized": "cacar",
+      "freq": 1.89151
+    },
+    {
+      "word": "bicos",
+      "normalized": "bicos",
+      "freq": 1.890502
+    },
+    {
+      "word": "sacar",
+      "normalized": "sacar",
+      "freq": 1.890502
+    },
+    {
+      "word": "peles",
+      "normalized": "peles",
+      "freq": 1.887477
+    },
+    {
+      "word": "visou",
+      "normalized": "visou",
+      "freq": 1.879411
+    },
+    {
+      "word": "mosca",
+      "normalized": "mosca",
+      "freq": 1.87437
+    },
+    {
+      "word": "bravo",
+      "normalized": "bravo",
+      "freq": 1.864287
+    },
+    {
+      "word": "pardo",
+      "normalized": "pardo",
+      "freq": 1.864287
+    },
+    {
+      "word": "trevo",
+      "normalized": "trevo",
+      "freq": 1.863279
+    },
+    {
+      "word": "lousa",
+      "normalized": "lousa",
+      "freq": 1.858238
+    },
+    {
+      "word": "digam",
+      "normalized": "digam",
+      "freq": 1.844122
+    },
+    {
+      "word": "dogma",
+      "normalized": "dogma",
+      "freq": 1.843114
+    },
+    {
+      "word": "porão",
+      "normalized": "porao",
+      "freq": 1.843114
+    },
+    {
+      "word": "sogra",
+      "normalized": "sogra",
+      "freq": 1.834039
+    },
+    {
+      "word": "acabo",
+      "normalized": "acabo",
+      "freq": 1.82799
+    },
+    {
+      "word": "fisco",
+      "normalized": "fisco",
+      "freq": 1.825973
+    },
+    {
+      "word": "remar",
+      "normalized": "remar",
+      "freq": 1.822222
+    },
+    {
+      "word": "ganhe",
+      "normalized": "ganhe",
+      "freq": 1.820932
+    },
+    {
+      "word": "forró",
+      "normalized": "forro",
+      "freq": 1.818915
+    },
+    {
+      "word": "datam",
+      "normalized": "datam",
+      "freq": 1.817907
+    },
+    {
+      "word": "provê",
+      "normalized": "prove",
+      "freq": 1.817907
+    },
+    {
+      "word": "bambu",
+      "normalized": "bambu",
+      "freq": 1.807824
+    },
+    {
+      "word": "parda",
+      "normalized": "parda",
+      "freq": 1.807824
+    },
+    {
+      "word": "lemos",
+      "normalized": "lemos",
+      "freq": 1.806816
+    },
+    {
+      "word": "sueca",
+      "normalized": "sueca",
+      "freq": 1.800766
+    },
+    {
+      "word": "gaita",
+      "normalized": "gaita",
+      "freq": 1.8
+    },
+    {
+      "word": "aptas",
+      "normalized": "aptas",
+      "freq": 1.799758
+    },
+    {
+      "word": "poste",
+      "normalized": "poste",
+      "freq": 1.799758
+    },
+    {
+      "word": "sudão",
+      "normalized": "sudao",
+      "freq": 1.788667
+    },
+    {
+      "word": "alças",
+      "normalized": "alcas",
+      "freq": 1.787659
+    },
+    {
+      "word": "aliar",
+      "normalized": "aliar",
+      "freq": 1.786651
+    },
+    {
+      "word": "frear",
+      "normalized": "frear",
+      "freq": 1.786651
+    },
+    {
+      "word": "meras",
+      "normalized": "meras",
+      "freq": 1.776568
+    },
+    {
+      "word": "tenor",
+      "normalized": "tenor",
+      "freq": 1.772535
+    },
+    {
+      "word": "comeu",
+      "normalized": "comeu",
+      "freq": 1.768502
+    },
+    {
+      "word": "racha",
+      "normalized": "racha",
+      "freq": 1.765477
+    },
+    {
+      "word": "apela",
+      "normalized": "apela",
+      "freq": 1.759427
+    },
+    {
+      "word": "calos",
+      "normalized": "calos",
+      "freq": 1.752369
+    },
+    {
+      "word": "peões",
+      "normalized": "peoes",
+      "freq": 1.750353
+    },
+    {
+      "word": "donas",
+      "normalized": "donas",
+      "freq": 1.749345
+    },
+    {
+      "word": "fuzis",
+      "normalized": "fuzis",
+      "freq": 1.74632
+    },
+    {
+      "word": "facas",
+      "normalized": "facas",
+      "freq": 1.745312
+    },
+    {
+      "word": "vagos",
+      "normalized": "vagos",
+      "freq": 1.737245
+    },
+    {
+      "word": "copas",
+      "normalized": "copas",
+      "freq": 1.728171
+    },
+    {
+      "word": "risca",
+      "normalized": "risca",
+      "freq": 1.721113
+    },
+    {
+      "word": "tango",
+      "normalized": "tango",
+      "freq": 1.720105
+    },
+    {
+      "word": "oliva",
+      "normalized": "oliva",
+      "freq": 1.718088
+    },
+    {
+      "word": "conte",
+      "normalized": "conte",
+      "freq": 1.713047
+    },
+    {
+      "word": "nudez",
+      "normalized": "nudez",
+      "freq": 1.713047
+    },
+    {
+      "word": "cupim",
+      "normalized": "cupim",
+      "freq": 1.711111
+    },
+    {
+      "word": "mande",
+      "normalized": "mande",
+      "freq": 1.710022
+    },
+    {
+      "word": "camas",
+      "normalized": "camas",
+      "freq": 1.69994
+    },
+    {
+      "word": "gorda",
+      "normalized": "gorda",
+      "freq": 1.692882
+    },
+    {
+      "word": "nasci",
+      "normalized": "nasci",
+      "freq": 1.691873
+    },
+    {
+      "word": "crivo",
+      "normalized": "crivo",
+      "freq": 1.690865
+    },
+    {
+      "word": "verem",
+      "normalized": "verem",
+      "freq": 1.684815
+    },
+    {
+      "word": "ronda",
+      "normalized": "ronda",
+      "freq": 1.683807
+    },
+    {
+      "word": "trote",
+      "normalized": "trote",
+      "freq": 1.682799
+    },
+    {
+      "word": "libra",
+      "normalized": "libra",
+      "freq": 1.681791
+    },
+    {
+      "word": "pesam",
+      "normalized": "pesam",
+      "freq": 1.681791
+    },
+    {
+      "word": "adeus",
+      "normalized": "adeus",
+      "freq": 1.6707
+    },
+    {
+      "word": "somou",
+      "normalized": "somou",
+      "freq": 1.666667
+    },
+    {
+      "word": "grana",
+      "normalized": "grana",
+      "freq": 1.66465
+    },
+    {
+      "word": "jatos",
+      "normalized": "jatos",
+      "freq": 1.663642
+    },
+    {
+      "word": "rente",
+      "normalized": "rente",
+      "freq": 1.660617
+    },
+    {
+      "word": "tetos",
+      "normalized": "tetos",
+      "freq": 1.658601
+    },
+    {
+      "word": "levei",
+      "normalized": "levei",
+      "freq": 1.653559
+    },
+    {
+      "word": "envie",
+      "normalized": "envie",
+      "freq": 1.651543
+    },
+    {
+      "word": "acena",
+      "normalized": "acena",
+      "freq": 1.649526
+    },
+    {
+      "word": "adiou",
+      "normalized": "adiou",
+      "freq": 1.64751
+    },
+    {
+      "word": "giram",
+      "normalized": "giram",
+      "freq": 1.644485
+    },
+    {
+      "word": "servo",
+      "normalized": "servo",
+      "freq": 1.639443
+    },
+    {
+      "word": "panos",
+      "normalized": "panos",
+      "freq": 1.638435
+    },
+    {
+      "word": "anglo",
+      "normalized": "anglo",
+      "freq": 1.637427
+    },
+    {
+      "word": "silos",
+      "normalized": "silos",
+      "freq": 1.63541
+    },
+    {
+      "word": "solda",
+      "normalized": "solda",
+      "freq": 1.634402
+    },
+    {
+      "word": "educa",
+      "normalized": "educa",
+      "freq": 1.632386
+    },
+    {
+      "word": "âmago",
+      "normalized": "amago",
+      "freq": 1.631377
+    },
+    {
+      "word": "duram",
+      "normalized": "duram",
+      "freq": 1.631377
+    },
+    {
+      "word": "amava",
+      "normalized": "amava",
+      "freq": 1.629361
+    },
+    {
+      "word": "lenço",
+      "normalized": "lenco",
+      "freq": 1.621295
+    },
+    {
+      "word": "sócia",
+      "normalized": "socia",
+      "freq": 1.617262
+    },
+    {
+      "word": "optam",
+      "normalized": "optam",
+      "freq": 1.61222
+    },
+    {
+      "word": "turco",
+      "normalized": "turco",
+      "freq": 1.61222
+    },
+    {
+      "word": "nisto",
+      "normalized": "nisto",
+      "freq": 1.611212
+    },
+    {
+      "word": "olham",
+      "normalized": "olham",
+      "freq": 1.611212
+    },
+    {
+      "word": "éguas",
+      "normalized": "eguas",
+      "freq": 1.600121
+    },
+    {
+      "word": "capar",
+      "normalized": "capar",
+      "freq": 1.6
+    },
+    {
+      "word": "adote",
+      "normalized": "adote",
+      "freq": 1.597096
+    },
+    {
+      "word": "moída",
+      "normalized": "moida",
+      "freq": 1.594071
+    },
+    {
+      "word": "depõe",
+      "normalized": "depoe",
+      "freq": 1.592055
+    },
+    {
+      "word": "pavor",
+      "normalized": "pavor",
+      "freq": 1.592055
+    },
+    {
+      "word": "duque",
+      "normalized": "duque",
+      "freq": 1.584997
+    },
+    {
+      "word": "broca",
+      "normalized": "broca",
+      "freq": 1.580964
+    },
+    {
+      "word": "coxas",
+      "normalized": "coxas",
+      "freq": 1.575923
+    },
+    {
+      "word": "crêem",
+      "normalized": "creem",
+      "freq": 1.569873
+    },
+    {
+      "word": "bocas",
+      "normalized": "bocas",
+      "freq": 1.567856
+    },
+    {
+      "word": "sumiu",
+      "normalized": "sumiu",
+      "freq": 1.563823
+    },
+    {
+      "word": "retos",
+      "normalized": "retos",
+      "freq": 1.558782
+    },
+    {
+      "word": "toras",
+      "normalized": "toras",
+      "freq": 1.558782
+    },
+    {
+      "word": "saias",
+      "normalized": "saias",
+      "freq": 1.557774
+    },
+    {
+      "word": "vaias",
+      "normalized": "vaias",
+      "freq": 1.555757
+    },
+    {
+      "word": "pinça",
+      "normalized": "pinca",
+      "freq": 1.551724
+    },
+    {
+      "word": "colas",
+      "normalized": "colas",
+      "freq": 1.543658
+    },
+    {
+      "word": "focar",
+      "normalized": "focar",
+      "freq": 1.543658
+    },
+    {
+      "word": "lajes",
+      "normalized": "lajes",
+      "freq": 1.543658
+    },
+    {
+      "word": "batia",
+      "normalized": "batia",
+      "freq": 1.54265
+    },
+    {
+      "word": "enche",
+      "normalized": "enche",
+      "freq": 1.54265
+    },
+    {
+      "word": "grata",
+      "normalized": "grata",
+      "freq": 1.54265
+    },
+    {
+      "word": "casco",
+      "normalized": "casco",
+      "freq": 1.537608
+    },
+    {
+      "word": "pulse",
+      "normalized": "pulse",
+      "freq": 1.5366
+    },
+    {
+      "word": "chego",
+      "normalized": "chego",
+      "freq": 1.533575
+    },
+    {
+      "word": "varas",
+      "normalized": "varas",
+      "freq": 1.533575
+    },
+    {
+      "word": "vazar",
+      "normalized": "vazar",
+      "freq": 1.533333
+    },
+    {
+      "word": "lapso",
+      "normalized": "lapso",
+      "freq": 1.532567
+    },
+    {
+      "word": "adoro",
+      "normalized": "adoro",
+      "freq": 1.530551
+    },
+    {
+      "word": "feras",
+      "normalized": "feras",
+      "freq": 1.529542
+    },
+    {
+      "word": "cacho",
+      "normalized": "cacho",
+      "freq": 1.528534
+    },
+    {
+      "word": "germe",
+      "normalized": "germe",
+      "freq": 1.528534
+    },
+    {
+      "word": "roles",
+      "normalized": "roles",
+      "freq": 1.521476
+    },
+    {
+      "word": "vosso",
+      "normalized": "vosso",
+      "freq": 1.517443
+    },
+    {
+      "word": "sorri",
+      "normalized": "sorri",
+      "freq": 1.512402
+    },
+    {
+      "word": "birra",
+      "normalized": "birra",
+      "freq": 1.511111
+    },
+    {
+      "word": "cisma",
+      "normalized": "cisma",
+      "freq": 1.511111
+    },
+    {
+      "word": "baias",
+      "normalized": "baias",
+      "freq": 1.505344
+    },
+    {
+      "word": "cessa",
+      "normalized": "cessa",
+      "freq": 1.503327
+    },
+    {
+      "word": "fardo",
+      "normalized": "fardo",
+      "freq": 1.503327
+    },
+    {
+      "word": "depôs",
+      "normalized": "depos",
+      "freq": 1.500302
+    },
+    {
+      "word": "funil",
+      "normalized": "funil",
+      "freq": 1.499294
+    },
+    {
+      "word": "açude",
+      "normalized": "acude",
+      "freq": 1.496269
+    },
+    {
+      "word": "loira",
+      "normalized": "loira",
+      "freq": 1.491228
+    },
+    {
+      "word": "dreno",
+      "normalized": "dreno",
+      "freq": 1.487195
+    },
+    {
+      "word": "edita",
+      "normalized": "edita",
+      "freq": 1.487195
+    },
+    {
+      "word": "imita",
+      "normalized": "imita",
+      "freq": 1.483162
+    },
+    {
+      "word": "exija",
+      "normalized": "exija",
+      "freq": 1.481145
+    },
+    {
+      "word": "pegam",
+      "normalized": "pegam",
+      "freq": 1.479129
+    },
+    {
+      "word": "reina",
+      "normalized": "reina",
+      "freq": 1.477112
+    },
+    {
+      "word": "criem",
+      "normalized": "criem",
+      "freq": 1.476104
+    },
+    {
+      "word": "gleba",
+      "normalized": "gleba",
+      "freq": 1.475096
+    },
+    {
+      "word": "comia",
+      "normalized": "comia",
+      "freq": 1.472071
+    },
+    {
+      "word": "usará",
+      "normalized": "usara",
+      "freq": 1.471063
+    },
+    {
+      "word": "gados",
+      "normalized": "gados",
+      "freq": 1.470054
+    },
+    {
+      "word": "friso",
+      "normalized": "friso",
+      "freq": 1.466667
+    },
+    {
+      "word": "vespa",
+      "normalized": "vespa",
+      "freq": 1.466667
+    },
+    {
+      "word": "ágeis",
+      "normalized": "ageis",
+      "freq": 1.461988
+    },
+    {
+      "word": "potes",
+      "normalized": "potes",
+      "freq": 1.455939
+    },
+    {
+      "word": "acesa",
+      "normalized": "acesa",
+      "freq": 1.45493
+    },
+    {
+      "word": "fluir",
+      "normalized": "fluir",
+      "freq": 1.453922
+    },
+    {
+      "word": "inata",
+      "normalized": "inata",
+      "freq": 1.452914
+    },
+    {
+      "word": "julgo",
+      "normalized": "julgo",
+      "freq": 1.448881
+    },
+    {
+      "word": "atuem",
+      "normalized": "atuem",
+      "freq": 1.447873
+    },
+    {
+      "word": "tinto",
+      "normalized": "tinto",
+      "freq": 1.444848
+    },
+    {
+      "word": "tenda",
+      "normalized": "tenda",
+      "freq": 1.439806
+    },
+    {
+      "word": "casta",
+      "normalized": "casta",
+      "freq": 1.432749
+    },
+    {
+      "word": "ponha",
+      "normalized": "ponha",
+      "freq": 1.427707
+    },
+    {
+      "word": "puxou",
+      "normalized": "puxou",
+      "freq": 1.427707
+    },
+    {
+      "word": "táxis",
+      "normalized": "taxis",
+      "freq": 1.420649
+    },
+    {
+      "word": "sofra",
+      "normalized": "sofra",
+      "freq": 1.418633
+    },
+    {
+      "word": "monge",
+      "normalized": "monge",
+      "freq": 1.417625
+    },
+    {
+      "word": "cosas",
+      "normalized": "cosas",
+      "freq": 1.415608
+    },
+    {
+      "word": "credo",
+      "normalized": "credo",
+      "freq": 1.409558
+    },
+    {
+      "word": "reger",
+      "normalized": "reger",
+      "freq": 1.40855
+    },
+    {
+      "word": "telão",
+      "normalized": "telao",
+      "freq": 1.405525
+    },
+    {
+      "word": "grato",
+      "normalized": "grato",
+      "freq": 1.401492
+    },
+    {
+      "word": "óvulo",
+      "normalized": "ovulo",
+      "freq": 1.401492
+    },
+    {
+      "word": "vagem",
+      "normalized": "vagem",
+      "freq": 1.398467
+    },
+    {
+      "word": "corno",
+      "normalized": "corno",
+      "freq": 1.396451
+    },
+    {
+      "word": "punha",
+      "normalized": "punha",
+      "freq": 1.393426
+    },
+    {
+      "word": "besta",
+      "normalized": "besta",
+      "freq": 1.39141
+    },
+    {
+      "word": "dutos",
+      "normalized": "dutos",
+      "freq": 1.39141
+    },
+    {
+      "word": "anime",
+      "normalized": "anime",
+      "freq": 1.390401
+    },
+    {
+      "word": "vetou",
+      "normalized": "vetou",
+      "freq": 1.389393
+    },
+    {
+      "word": "nodal",
+      "normalized": "nodal",
+      "freq": 1.388385
+    },
+    {
+      "word": "pisar",
+      "normalized": "pisar",
+      "freq": 1.384352
+    },
+    {
+      "word": "agido",
+      "normalized": "agido",
+      "freq": 1.382335
+    },
+    {
+      "word": "bruxa",
+      "normalized": "bruxa",
+      "freq": 1.381327
+    },
+    {
+      "word": "gozam",
+      "normalized": "gozam",
+      "freq": 1.381327
+    },
+    {
+      "word": "apaga",
+      "normalized": "apaga",
+      "freq": 1.372252
+    },
+    {
+      "word": "leões",
+      "normalized": "leoes",
+      "freq": 1.372252
+    },
+    {
+      "word": "advir",
+      "normalized": "advir",
+      "freq": 1.370236
+    },
+    {
+      "word": "edite",
+      "normalized": "edite",
+      "freq": 1.370236
+    },
+    {
+      "word": "nulas",
+      "normalized": "nulas",
+      "freq": 1.364186
+    },
+    {
+      "word": "cairá",
+      "normalized": "caira",
+      "freq": 1.360153
+    },
+    {
+      "word": "torce",
+      "normalized": "torce",
+      "freq": 1.360153
+    },
+    {
+      "word": "alude",
+      "normalized": "alude",
+      "freq": 1.358137
+    },
+    {
+      "word": "fuzil",
+      "normalized": "fuzil",
+      "freq": 1.35612
+    },
+    {
+      "word": "macia",
+      "normalized": "macia",
+      "freq": 1.355112
+    },
+    {
+      "word": "boato",
+      "normalized": "boato",
+      "freq": 1.348054
+    },
+    {
+      "word": "balde",
+      "normalized": "balde",
+      "freq": 1.347046
+    },
+    {
+      "word": "abalo",
+      "normalized": "abalo",
+      "freq": 1.343013
+    },
+    {
+      "word": "adere",
+      "normalized": "adere",
+      "freq": 1.339988
+    },
+    {
+      "word": "leiga",
+      "normalized": "leiga",
+      "freq": 1.33898
+    },
+    {
+      "word": "quiçá",
+      "normalized": "quica",
+      "freq": 1.33898
+    },
+    {
+      "word": "farra",
+      "normalized": "farra",
+      "freq": 1.337971
+    },
+    {
+      "word": "atira",
+      "normalized": "atira",
+      "freq": 1.336963
+    },
+    {
+      "word": "hinos",
+      "normalized": "hinos",
+      "freq": 1.33293
+    },
+    {
+      "word": "trios",
+      "normalized": "trios",
+      "freq": 1.331922
+    },
+    {
+      "word": "calha",
+      "normalized": "calha",
+      "freq": 1.329905
+    },
+    {
+      "word": "galos",
+      "normalized": "galos",
+      "freq": 1.328897
+    },
+    {
+      "word": "servi",
+      "normalized": "servi",
+      "freq": 1.328897
+    },
+    {
+      "word": "visar",
+      "normalized": "visar",
+      "freq": 1.327889
+    },
+    {
+      "word": "moços",
+      "normalized": "mocos",
+      "freq": 1.323856
+    },
+    {
+      "word": "traje",
+      "normalized": "traje",
+      "freq": 1.323856
+    },
+    {
+      "word": "chove",
+      "normalized": "chove",
+      "freq": 1.322847
+    },
+    {
+      "word": "foros",
+      "normalized": "foros",
+      "freq": 1.321839
+    },
+    {
+      "word": "cegas",
+      "normalized": "cegas",
+      "freq": 1.315789
+    },
+    {
+      "word": "pavão",
+      "normalized": "pavao",
+      "freq": 1.312765
+    },
+    {
+      "word": "ditar",
+      "normalized": "ditar",
+      "freq": 1.30974
+    },
+    {
+      "word": "bolos",
+      "normalized": "bolos",
+      "freq": 1.308732
+    },
+    {
+      "word": "chata",
+      "normalized": "chata",
+      "freq": 1.307723
+    },
+    {
+      "word": "régia",
+      "normalized": "regia",
+      "freq": 1.306715
+    },
+    {
+      "word": "seiva",
+      "normalized": "seiva",
+      "freq": 1.302682
+    },
+    {
+      "word": "guisa",
+      "normalized": "guisa",
+      "freq": 1.289575
+    },
+    {
+      "word": "trace",
+      "normalized": "trace",
+      "freq": 1.28655
+    },
+    {
+      "word": "cravo",
+      "normalized": "cravo",
+      "freq": 1.284533
+    },
+    {
+      "word": "fobia",
+      "normalized": "fobia",
+      "freq": 1.283525
+    },
+    {
+      "word": "lasca",
+      "normalized": "lasca",
+      "freq": 1.282517
+    },
+    {
+      "word": "emana",
+      "normalized": "emana",
+      "freq": 1.2805
+    },
+    {
+      "word": "molas",
+      "normalized": "molas",
+      "freq": 1.2805
+    },
+    {
+      "word": "ousar",
+      "normalized": "ousar",
+      "freq": 1.2805
+    },
+    {
+      "word": "ferem",
+      "normalized": "ferem",
+      "freq": 1.279492
+    },
+    {
+      "word": "anões",
+      "normalized": "anoes",
+      "freq": 1.278484
+    },
+    {
+      "word": "dotes",
+      "normalized": "dotes",
+      "freq": 1.277475
+    },
+    {
+      "word": "brava",
+      "normalized": "brava",
+      "freq": 1.275459
+    },
+    {
+      "word": "chuta",
+      "normalized": "chuta",
+      "freq": 1.275459
+    },
+    {
+      "word": "dardo",
+      "normalized": "dardo",
+      "freq": 1.266667
+    },
+    {
+      "word": "débil",
+      "normalized": "debil",
+      "freq": 1.262351
+    },
+    {
+      "word": "diodo",
+      "normalized": "diodo",
+      "freq": 1.255293
+    },
+    {
+      "word": "comes",
+      "normalized": "comes",
+      "freq": 1.254285
+    },
+    {
+      "word": "curas",
+      "normalized": "curas",
+      "freq": 1.252269
+    },
+    {
+      "word": "notes",
+      "normalized": "notes",
+      "freq": 1.247227
+    },
+    {
+      "word": "cansa",
+      "normalized": "cansa",
+      "freq": 1.243194
+    },
+    {
+      "word": "colhe",
+      "normalized": "colhe",
+      "freq": 1.242186
+    },
+    {
+      "word": "galho",
+      "normalized": "galho",
+      "freq": 1.242186
+    },
+    {
+      "word": "xerox",
+      "normalized": "xerox",
+      "freq": 1.242186
+    },
+    {
+      "word": "épica",
+      "normalized": "epica",
+      "freq": 1.241178
+    },
+    {
+      "word": "caber",
+      "normalized": "caber",
+      "freq": 1.237145
+    },
+    {
+      "word": "cubos",
+      "normalized": "cubos",
+      "freq": 1.235128
+    },
+    {
+      "word": "ergue",
+      "normalized": "ergue",
+      "freq": 1.235128
+    },
+    {
+      "word": "ardor",
+      "normalized": "ardor",
+      "freq": 1.23412
+    },
+    {
+      "word": "ácaro",
+      "normalized": "acaro",
+      "freq": 1.233112
+    },
+    {
+      "word": "linho",
+      "normalized": "linho",
+      "freq": 1.232103
+    },
+    {
+      "word": "sujas",
+      "normalized": "sujas",
+      "freq": 1.232103
+    },
+    {
+      "word": "clama",
+      "normalized": "clama",
+      "freq": 1.230087
+    },
+    {
+      "word": "minar",
+      "normalized": "minar",
+      "freq": 1.22807
+    },
+    {
+      "word": "motel",
+      "normalized": "motel",
+      "freq": 1.226054
+    },
+    {
+      "word": "choco",
+      "normalized": "choco",
+      "freq": 1.222222
+    },
+    {
+      "word": "fruir",
+      "normalized": "fruir",
+      "freq": 1.222222
+    },
+    {
+      "word": "blusa",
+      "normalized": "blusa",
+      "freq": 1.222021
+    },
+    {
+      "word": "couve",
+      "normalized": "couve",
+      "freq": 1.222021
+    },
+    {
+      "word": "balsa",
+      "normalized": "balsa",
+      "freq": 1.215971
+    },
+    {
+      "word": "talão",
+      "normalized": "talao",
+      "freq": 1.214963
+    },
+    {
+      "word": "urine",
+      "normalized": "urine",
+      "freq": 1.207905
+    },
+    {
+      "word": "gueto",
+      "normalized": "gueto",
+      "freq": 1.205888
+    },
+    {
+      "word": "pique",
+      "normalized": "pique",
+      "freq": 1.205888
+    },
+    {
+      "word": "pompa",
+      "normalized": "pompa",
+      "freq": 1.20488
+    },
+    {
+      "word": "retém",
+      "normalized": "retem",
+      "freq": 1.203872
+    },
+    {
+      "word": "farto",
+      "normalized": "farto",
+      "freq": 1.201855
+    },
+    {
+      "word": "rolos",
+      "normalized": "rolos",
+      "freq": 1.200847
+    },
+    {
+      "word": "círio",
+      "normalized": "cirio",
+      "freq": 1.2
+    },
+    {
+      "word": "dália",
+      "normalized": "dalia",
+      "freq": 1.2
+    },
+    {
+      "word": "visse",
+      "normalized": "visse",
+      "freq": 1.19883
+    },
+    {
+      "word": "busto",
+      "normalized": "busto",
+      "freq": 1.196814
+    },
+    {
+      "word": "órfãs",
+      "normalized": "orfas",
+      "freq": 1.196814
+    },
+    {
+      "word": "vença",
+      "normalized": "venca",
+      "freq": 1.195806
+    },
+    {
+      "word": "coeso",
+      "normalized": "coeso",
+      "freq": 1.194797
+    },
+    {
+      "word": "farda",
+      "normalized": "farda",
+      "freq": 1.193789
+    },
+    {
+      "word": "gíria",
+      "normalized": "giria",
+      "freq": 1.18169
+    },
+    {
+      "word": "botou",
+      "normalized": "botou",
+      "freq": 1.178665
+    },
+    {
+      "word": "paira",
+      "normalized": "paira",
+      "freq": 1.178665
+    },
+    {
+      "word": "capuz",
+      "normalized": "capuz",
+      "freq": 1.177778
+    },
+    {
+      "word": "subia",
+      "normalized": "subia",
+      "freq": 1.177657
+    },
+    {
+      "word": "tigre",
+      "normalized": "tigre",
+      "freq": 1.177657
+    },
+    {
+      "word": "sinos",
+      "normalized": "sinos",
+      "freq": 1.17564
+    },
+    {
+      "word": "quina",
+      "normalized": "quina",
+      "freq": 1.172615
+    },
+    {
+      "word": "parei",
+      "normalized": "parei",
+      "freq": 1.170599
+    },
+    {
+      "word": "persa",
+      "normalized": "persa",
+      "freq": 1.168582
+    },
+    {
+      "word": "bunda",
+      "normalized": "bunda",
+      "freq": 1.167574
+    },
+    {
+      "word": "fecho",
+      "normalized": "fecho",
+      "freq": 1.167574
+    },
+    {
+      "word": "furar",
+      "normalized": "furar",
+      "freq": 1.164549
+    },
+    {
+      "word": "ótico",
+      "normalized": "otico",
+      "freq": 1.1585
+    },
+    {
+      "word": "úrico",
+      "normalized": "urico",
+      "freq": 1.157491
+    },
+    {
+      "word": "rimas",
+      "normalized": "rimas",
+      "freq": 1.155475
+    },
+    {
+      "word": "geada",
+      "normalized": "geada",
+      "freq": 1.151442
+    },
+    {
+      "word": "merda",
+      "normalized": "merda",
+      "freq": 1.151442
+    },
+    {
+      "word": "tório",
+      "normalized": "torio",
+      "freq": 1.147409
+    },
+    {
+      "word": "entro",
+      "normalized": "entro",
+      "freq": 1.137326
+    },
+    {
+      "word": "tapar",
+      "normalized": "tapar",
+      "freq": 1.137326
+    },
+    {
+      "word": "turbo",
+      "normalized": "turbo",
+      "freq": 1.136318
+    },
+    {
+      "word": "burla",
+      "normalized": "burla",
+      "freq": 1.133333
+    },
+    {
+      "word": "modas",
+      "normalized": "modas",
+      "freq": 1.133293
+    },
+    {
+      "word": "pesem",
+      "normalized": "pesem",
+      "freq": 1.131276
+    },
+    {
+      "word": "órfão",
+      "normalized": "orfao",
+      "freq": 1.130268
+    },
+    {
+      "word": "choca",
+      "normalized": "choca",
+      "freq": 1.12926
+    },
+    {
+      "word": "platô",
+      "normalized": "plato",
+      "freq": 1.128252
+    },
+    {
+      "word": "obeso",
+      "normalized": "obeso",
+      "freq": 1.126235
+    },
+    {
+      "word": "íamos",
+      "normalized": "iamos",
+      "freq": 1.12321
+    },
+    {
+      "word": "sírio",
+      "normalized": "sirio",
+      "freq": 1.122202
+    },
+    {
+      "word": "ameno",
+      "normalized": "ameno",
+      "freq": 1.110103
+    },
+    {
+      "word": "votem",
+      "normalized": "votem",
+      "freq": 1.110103
+    },
+    {
+      "word": "manos",
+      "normalized": "manos",
+      "freq": 1.109095
+    },
+    {
+      "word": "filão",
+      "normalized": "filao",
+      "freq": 1.108086
+    },
+    {
+      "word": "mudei",
+      "normalized": "mudei",
+      "freq": 1.108086
+    },
+    {
+      "word": "falho",
+      "normalized": "falho",
+      "freq": 1.102037
+    },
+    {
+      "word": "files",
+      "normalized": "files",
+      "freq": 1.095987
+    },
+    {
+      "word": "socos",
+      "normalized": "socos",
+      "freq": 1.094979
+    },
+    {
+      "word": "abala",
+      "normalized": "abala",
+      "freq": 1.093971
+    },
+    {
+      "word": "miolo",
+      "normalized": "miolo",
+      "freq": 1.092962
+    },
+    {
+      "word": "telha",
+      "normalized": "telha",
+      "freq": 1.092962
+    },
+    {
+      "word": "cursa",
+      "normalized": "cursa",
+      "freq": 1.091954
+    },
+    {
+      "word": "salsa",
+      "normalized": "salsa",
+      "freq": 1.090946
+    },
+    {
+      "word": "mulas",
+      "normalized": "mulas",
+      "freq": 1.088929
+    },
+    {
+      "word": "taipa",
+      "normalized": "taipa",
+      "freq": 1.088889
+    },
+    {
+      "word": "seduz",
+      "normalized": "seduz",
+      "freq": 1.086913
+    },
+    {
+      "word": "nexos",
+      "normalized": "nexos",
+      "freq": 1.08288
+    },
+    {
+      "word": "opina",
+      "normalized": "opina",
+      "freq": 1.081871
+    },
+    {
+      "word": "poupa",
+      "normalized": "poupa",
+      "freq": 1.081871
+    },
+    {
+      "word": "covas",
+      "normalized": "covas",
+      "freq": 1.080863
+    },
+    {
+      "word": "beija",
+      "normalized": "beija",
+      "freq": 1.078847
+    },
+    {
+      "word": "posar",
+      "normalized": "posar",
+      "freq": 1.077838
+    },
+    {
+      "word": "soldo",
+      "normalized": "soldo",
+      "freq": 1.07683
+    },
+    {
+      "word": "prego",
+      "normalized": "prego",
+      "freq": 1.075822
+    },
+    {
+      "word": "veria",
+      "normalized": "veria",
+      "freq": 1.072797
+    },
+    {
+      "word": "hindu",
+      "normalized": "hindu",
+      "freq": 1.071789
+    },
+    {
+      "word": "ovais",
+      "normalized": "ovais",
+      "freq": 1.071789
+    },
+    {
+      "word": "doada",
+      "normalized": "doada",
+      "freq": 1.069772
+    },
+    {
+      "word": "fixam",
+      "normalized": "fixam",
+      "freq": 1.068764
+    },
+    {
+      "word": "rosca",
+      "normalized": "rosca",
+      "freq": 1.066667
+    },
+    {
+      "word": "sujos",
+      "normalized": "sujos",
+      "freq": 1.064731
+    },
+    {
+      "word": "arado",
+      "normalized": "arado",
+      "freq": 1.063723
+    },
+    {
+      "word": "gruta",
+      "normalized": "gruta",
+      "freq": 1.062714
+    },
+    {
+      "word": "verme",
+      "normalized": "verme",
+      "freq": 1.061706
+    },
+    {
+      "word": "rugas",
+      "normalized": "rugas",
+      "freq": 1.056665
+    },
+    {
+      "word": "judia",
+      "normalized": "judia",
+      "freq": 1.054648
+    },
+    {
+      "word": "lisos",
+      "normalized": "lisos",
+      "freq": 1.054648
+    },
+    {
+      "word": "foice",
+      "normalized": "foice",
+      "freq": 1.048599
+    },
+    {
+      "word": "pesou",
+      "normalized": "pesou",
+      "freq": 1.048599
+    },
+    {
+      "word": "cunha",
+      "normalized": "cunha",
+      "freq": 1.04759
+    },
+    {
+      "word": "haras",
+      "normalized": "haras",
+      "freq": 1.046582
+    },
+    {
+      "word": "falem",
+      "normalized": "falem",
+      "freq": 1.044565
+    },
+    {
+      "word": "moveu",
+      "normalized": "moveu",
+      "freq": 1.042549
+    },
+    {
+      "word": "seara",
+      "normalized": "seara",
+      "freq": 1.039524
+    },
+    {
+      "word": "torto",
+      "normalized": "torto",
+      "freq": 1.037508
+    },
+    {
+      "word": "mexeu",
+      "normalized": "mexeu",
+      "freq": 1.034483
+    },
+    {
+      "word": "morse",
+      "normalized": "morse",
+      "freq": 1.033474
+    },
+    {
+      "word": "crias",
+      "normalized": "crias",
+      "freq": 1.031458
+    },
+    {
+      "word": "brejo",
+      "normalized": "brejo",
+      "freq": 1.03045
+    },
+    {
+      "word": "lunar",
+      "normalized": "lunar",
+      "freq": 1.028433
+    },
+    {
+      "word": "mediu",
+      "normalized": "mediu",
+      "freq": 1.028433
+    },
+    {
+      "word": "isola",
+      "normalized": "isola",
+      "freq": 1.027425
+    },
+    {
+      "word": "omite",
+      "normalized": "omite",
+      "freq": 1.027425
+    },
+    {
+      "word": "matos",
+      "normalized": "matos",
+      "freq": 1.025408
+    },
+    {
+      "word": "naves",
+      "normalized": "naves",
+      "freq": 1.025408
+    },
+    {
+      "word": "carão",
+      "normalized": "carao",
+      "freq": 1.022222
+    },
+    {
+      "word": "leais",
+      "normalized": "leais",
+      "freq": 1.020367
+    },
+    {
+      "word": "doido",
+      "normalized": "doido",
+      "freq": 1.01835
+    },
+    {
+      "word": "tenra",
+      "normalized": "tenra",
+      "freq": 1.01835
+    },
+    {
+      "word": "burra",
+      "normalized": "burra",
+      "freq": 1.017342
+    },
+    {
+      "word": "magna",
+      "normalized": "magna",
+      "freq": 1.015326
+    },
+    {
+      "word": "busco",
+      "normalized": "busco",
+      "freq": 1.013309
+    },
+    {
+      "word": "baila",
+      "normalized": "baila",
+      "freq": 1.012301
+    },
+    {
+      "word": "menus",
+      "normalized": "menus",
+      "freq": 1.011293
+    },
+    {
+      "word": "parti",
+      "normalized": "parti",
+      "freq": 1.010284
+    },
+    {
+      "word": "bário",
+      "normalized": "bario",
+      "freq": 1.009276
+    },
+    {
+      "word": "papas",
+      "normalized": "papas",
+      "freq": 1.00726
+    },
+    {
+      "word": "graxo",
+      "normalized": "graxo",
+      "freq": 1.005243
+    },
+    {
+      "word": "finge",
+      "normalized": "finge",
+      "freq": 1.004235
+    },
+    {
+      "word": "jogue",
+      "normalized": "jogue",
+      "freq": 1.002218
+    },
+    {
+      "word": "anota",
+      "normalized": "anota",
+      "freq": 1.00121
+    }
+  ]
+}

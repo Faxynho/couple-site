@@ -17,6 +17,7 @@ import { CROSSWORD_DIFFICULTIES, CrosswordDifficulty } from "@/lib/crosswordType
 import { WORDSEARCH_DIFFICULTIES, WordSearchDifficulty } from "@/lib/wordsearchTypes";
 import { QUIZ_DIFFICULTIES, QuizDifficulty } from "@/lib/quizTypes";
 import { MEMORY_DIFFICULTIES, MemoryDifficulty } from "@/lib/memoryTypes";
+import { TERMO_VARIANTS, TermoVariant } from "@/lib/termoTypes";
 import { fetchAccounts } from "@/lib/accountApi";
 import { getActiveAccount } from "@/lib/accountSession";
 
@@ -60,7 +61,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
   const { error, loading, createRoom, setConfig, startGame } = useRoom();
   const { images, loading: imagesLoading } = usePuzzleImages();
 
-  const [difficulty, setDifficulty] = useState<string>("medium");
+  const [difficulty, setDifficulty] = useState<string>(() => (gameId === "termo" ? "one" : "medium"));
   const [imageId, setImageId] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<{ width: number; height: number } | null>(null);
   const [starting, setStarting] = useState(false);
@@ -110,6 +111,8 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
     } else if (gameId === "rpg") {
       setConfig({ matchMode: "soloBot" });
     } else if (gameId === "memory") {
+      setConfig({ difficulty, matchMode: "solo" });
+    } else if (gameId === "termo") {
       setConfig({ difficulty, matchMode: "solo" });
     } else {
       setConfig({ difficulty });
@@ -237,6 +240,17 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
             <DifficultyGrid
               entries={Object.entries(MEMORY_DIFFICULTIES) as [MemoryDifficulty, (typeof MEMORY_DIFFICULTIES)[MemoryDifficulty]][]}
               selected={difficulty as MemoryDifficulty}
+              onSelect={setDifficulty}
+            />
+          </div>
+        )}
+
+        {gameId === "termo" && (
+          <div className="text-left">
+            <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">Variante</p>
+            <DifficultyGrid
+              entries={Object.entries(TERMO_VARIANTS) as [TermoVariant, (typeof TERMO_VARIANTS)[TermoVariant]][]}
+              selected={difficulty as TermoVariant}
               onSelect={setDifficulty}
             />
           </div>
