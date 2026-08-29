@@ -18,6 +18,7 @@ import { WORDSEARCH_DIFFICULTIES, WordSearchDifficulty } from "@/lib/wordsearchT
 import { QUIZ_DIFFICULTIES, QuizDifficulty } from "@/lib/quizTypes";
 import { MEMORY_DIFFICULTIES, MemoryDifficulty } from "@/lib/memoryTypes";
 import { TERMO_VARIANTS, TermoVariant } from "@/lib/termoTypes";
+import { AIR_HOCKEY_DIFFICULTIES, AirHockeyDifficulty } from "@/lib/airHockeyTypes";
 import { fetchAccounts } from "@/lib/accountApi";
 import { getActiveAccount } from "@/lib/accountSession";
 
@@ -113,6 +114,8 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
     } else if (gameId === "memory") {
       setConfig({ difficulty, matchMode: "solo" });
     } else if (gameId === "termo") {
+      setConfig({ difficulty, matchMode: "solo" });
+    } else if (gameId === "airhockey") {
       setConfig({ difficulty, matchMode: "solo" });
     } else {
       setConfig({ difficulty });
@@ -251,6 +254,17 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
             <DifficultyGrid
               entries={Object.entries(TERMO_VARIANTS) as [TermoVariant, (typeof TERMO_VARIANTS)[TermoVariant]][]}
               selected={difficulty as TermoVariant}
+              onSelect={setDifficulty}
+            />
+          </div>
+        )}
+
+        {gameId === "airhockey" && (
+          <div className="text-left">
+            <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">Dificuldade do BOT</p>
+            <DifficultyGrid
+              entries={Object.entries(AIR_HOCKEY_DIFFICULTIES) as [AirHockeyDifficulty, (typeof AIR_HOCKEY_DIFFICULTIES)[AirHockeyDifficulty]][]}
+              selected={difficulty as AirHockeyDifficulty}
               onSelect={setDifficulty}
             />
           </div>

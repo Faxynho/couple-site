@@ -20,7 +20,12 @@ export type SoundEffect =
   | "termoReveal"
   | "termoWord"
   | "termoDefeat"
-  | "termoDraw";
+  | "termoDraw"
+  | "airHockeyWall"
+  | "airHockeyHit"
+  | "airHockeyGoal"
+  | "airHockeyCountdown"
+  | "airHockeyDefeat";
 
 const SOUND_EVENT = "couple-site:sound-change";
 const SOUND_STORAGE_KEY = "couple-site:sound-enabled";
@@ -128,6 +133,11 @@ export function playSoundEffect(effect: SoundEffect) {
       case "termoWord": tone(context, 523, 0.075, 0, 0.045); tone(context, 659, 0.09, 0.06, 0.045); tone(context, 784, 0.11, 0.13, 0.05); break;
       case "termoDefeat": tone(context, 294, 0.11, 0, 0.04, "triangle"); tone(context, 220, 0.15, 0.1, 0.035); break;
       case "termoDraw": tone(context, 392, 0.09, 0, 0.04); tone(context, 440, 0.1, 0.08, 0.04); break;
+      case "airHockeyWall": tone(context, 230, 0.035, 0, 0.025, "triangle"); break;
+      case "airHockeyHit": tone(context, 520, 0.035, 0, 0.04, "square"); tone(context, 720, 0.055, 0.018, 0.025, "triangle"); break;
+      case "airHockeyGoal": tone(context, 370, 0.09, 0, 0.045); tone(context, 554, 0.1, 0.07, 0.05); tone(context, 831, 0.18, 0.15, 0.055); break;
+      case "airHockeyCountdown": tone(context, 610, 0.055, 0, 0.035, "triangle"); break;
+      case "airHockeyDefeat": tone(context, 294, 0.09, 0, 0.04, "triangle"); tone(context, 196, 0.15, 0.08, 0.035); break;
     }
   } catch {
     // Áudio é apenas um extra decorativo; falhas silenciosas não afetam o jogo.

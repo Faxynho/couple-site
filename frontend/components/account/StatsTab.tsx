@@ -44,6 +44,7 @@ export default function StatsTab({ overview, error }: StatsTabProps) {
             const participation = duoPerAccount[id];
             const topWin = pickTopEntry(participation.gameWinCounts);
             const topLoss = pickTopEntry(participation.gameLossCounts);
+            const hockeyGoals = participation.gameGoals?.airhockey;
             return (
               <div key={id} className="rounded-xl2 bg-surface/60 p-4">
                 <p className="font-display text-sm font-semibold text-ink">{profiles[id].name}</p>
@@ -58,6 +59,7 @@ export default function StatsTab({ overview, error }: StatsTabProps) {
                     label="Mais perde em"
                     value={topLoss ? `${gameName(topLoss.key)} (${topLoss.count})` : "—"}
                   />
+                  {hockeyGoals && <Row label="Gols no Air Hockey" value={`${hockeyGoals.scored} feitos · ${hockeyGoals.conceded} sofridos`} />}
                 </dl>
               </div>
             );
@@ -73,6 +75,7 @@ export default function StatsTab({ overview, error }: StatsTabProps) {
             const stats = solo[id];
             const topGame = pickTopEntry(stats.gamePlayCounts);
             const topDifficulty = pickTopEntry(stats.difficultyCounts);
+            const hockeyGoals = stats.gameGoals?.airhockey;
             return (
               <div key={id} className="rounded-xl2 bg-surface/60 p-4">
                 <p className="font-display text-sm font-semibold text-ink">{profiles[id].name}</p>
@@ -86,6 +89,7 @@ export default function StatsTab({ overview, error }: StatsTabProps) {
                     label="Dificuldade mais jogada"
                     value={topDifficulty ? genericRankLabel(topDifficulty.key) : "—"}
                   />
+                  {hockeyGoals && <Row label="Gols no Air Hockey" value={`${hockeyGoals.scored} feitos · ${hockeyGoals.conceded} sofridos`} />}
                 </dl>
               </div>
             );

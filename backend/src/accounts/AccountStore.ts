@@ -42,11 +42,11 @@ function defaultProfile(id: AccountId): AccountProfile {
 }
 
 function defaultSoloStats(): AccountSoloStats {
-  return { timeMs: 0, gamePlayCounts: {}, difficultyCounts: {} };
+  return { timeMs: 0, gamePlayCounts: {}, difficultyCounts: {}, gameGoals: {} };
 }
 
 function defaultDuoParticipation(): AccountDuoParticipation {
-  return { duelWins: 0, duelLosses: 0, duelDraws: 0, gameWinCounts: {}, gameLossCounts: {} };
+  return { duelWins: 0, duelLosses: 0, duelDraws: 0, gameWinCounts: {}, gameLossCounts: {}, gameGoals: {} };
 }
 
 function defaultRecords(): AccountRecords {
@@ -89,6 +89,7 @@ function mergeWithDefaults(loaded: Partial<AccountsData> | null): AccountsData {
         ...loaded.solo[id],
         gamePlayCounts: { ...loaded.solo[id].gamePlayCounts },
         difficultyCounts: { ...loaded.solo[id].difficultyCounts },
+        gameGoals: { ...loaded.solo[id].gameGoals },
       };
     }
     if (loaded.duoPerAccount?.[id]) {
@@ -97,6 +98,7 @@ function mergeWithDefaults(loaded: Partial<AccountsData> | null): AccountsData {
         ...loaded.duoPerAccount[id],
         gameWinCounts: { ...loaded.duoPerAccount[id].gameWinCounts },
         gameLossCounts: { ...loaded.duoPerAccount[id].gameLossCounts },
+        gameGoals: { ...loaded.duoPerAccount[id].gameGoals },
       };
     }
     if (loaded.records?.[id]) {
@@ -278,6 +280,13 @@ class AccountStore {
     if (metricValue !== null) {
       this.tryUpdateRecord(this.data.records[accountId].duo, gameId, rank, metricValue, scoreType);
     }
+    this.scheduleSave();
+  }
+
+  recordGameGoals(bucket: "solo" | "duel", accountId: AccountId, gameId: GameId, scored: number, conceded: number) {
+    const target = bucket === "solo" ? this.data.solo[accountId].gameGoals : this.data.duoPerAccount[accountId].gameGoals;
+    const current = target[gameId] ?? { scored: 0, conceded: 0 };
+    target[gameId] = { scored: current.scored + Math.max(0, scored), conceded: current.conceded + Math.max(0, conceded) };
     this.scheduleSave();
   }
 

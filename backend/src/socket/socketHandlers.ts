@@ -15,6 +15,7 @@ import { isValidQuizMode, QUIZ_REVEAL_DURATION_MS } from "../games/quiz/QuizGame
 import { isValidRPGMode, RPG_INTRO_DURATION_MS, RPG_RESOLVE_PAUSE_MS } from "../games/rpg/RPGGame";
 import { isValidMemoryDifficulty, isValidMemoryMode, MemoryState } from "../games/memory/MemoryGame";
 import { isValidTermoMode, isValidTermoVariant, TermoState } from "../games/termo/TermoGame";
+import { AirHockeyState, isValidAirHockeyDifficulty, isValidAirHockeyMode } from "../games/airhockey/AirHockeyGame";
 import { isAccountId } from "../accounts/types";
 
 interface SocketData {
@@ -683,13 +684,15 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
             isValidRPGMode(payload.matchMode) ||
             isValidSudokuMode(payload.matchMode) ||
             isValidMemoryMode(payload.matchMode) ||
-            isValidTermoMode(payload.matchMode))
+            isValidTermoMode(payload.matchMode) ||
+            isValidAirHockeyMode(payload.matchMode))
         ) {
           options.matchMode = payload.matchMode;
         }
 
         const baseOptions = sanitizeStartOptions(payload);
         if (payload?.difficulty && isValidTermoVariant(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
+        if (payload?.difficulty && isValidAirHockeyDifficulty(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         room.setPendingConfig({ ...baseOptions, ...options });
         broadcastRoom(io, code!, roomManager);
       }
@@ -781,8 +784,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         callback?.({ ok: false, error: "Escolha uma imagem antes de começar." });
         return;
       }
-      if (room.gameId === "termo" && room.roomMode === "duo" && !room.bothConnected()) {
-        callback?.({ ok: false, error: "O Duelo de Termo precisa dos dois jogadores conectados." });
+      if ((room.gameId === "termo" || room.gameId === "airhockey") && room.roomMode === "duo" && !room.bothConnected()) {
+        callback?.({ ok: false, error: room.gameId === "termo" ? "O Duelo de Termo precisa dos dois jogadores conectados." : "O Duelo de Air Hockey precisa dos dois jogadores conectados." });
         return;
       }
       // Sem exigência de "os dois conectados": o host pode jogar sozinho —
@@ -1138,6 +1141,29 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       broadcastGameState(io, code!, roomManager);
     });
 
+    // ---- Eventos exclusivos do Air Hockey ----
+    // A posição da raquete é limitada pelo motor autoritativo. O cliente só
+    // informa a intenção de movimento; placar, gols e física ficam no servidor.
+    socket.on("airhockey:move", (payload: { x: number; y: number }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "airhockey" || !Number.isFinite(payload?.x) || !Number.isFinite(payload?.y)) return;
+      room.applyAction({ type: "move", x: payload.x, y: payload.y }, socket.data.playerId ?? socket.id);
+    });
+
+    socket.on("airhockey:newGame", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "airhockey" || room.status !== "finished" || (room.roomMode === "duo" && !room.bothConnected())) return;
+      const current = room.gameState as { difficulty?: string; mode?: string } | null;
+      const options: Record<string, unknown> = {};
+      if (current?.difficulty && isValidAirHockeyDifficulty(current.difficulty)) options.difficulty = current.difficulty;
+      if (current?.mode && isValidAirHockeyMode(current.mode)) options.mode = current.mode;
+      room.startGame(options);
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
     // ---- Eventos exclusivos do Quiz ----
 
     // Envia a alternativa escolhida para a pergunta atual. Ignorado se não for
@@ -1328,4 +1354,24 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
     }
   }, 400);
+
+  // ---- Simulação autoritativa do Air Hockey ----
+  // A física roda em passos curtos no servidor. Clientes recebem snapshots a
+  // ~30 Hz e interpolam a outra raquete, sem esperar uma viagem de rede para
+  // movimentar a própria raquete.
+  const airHockeyLastBroadcast = new Map<string, number>();
+  setInterval(() => {
+    const now = Date.now();
+    for (const room of roomManager.getAllRooms()) {
+      if (room.gameId !== "airhockey" || room.status !== "playing" || !room.gameState) continue;
+      room.applyAction({ type: "tick", now }, "system");
+      const state = room.gameState as AirHockeyState;
+      const lastBroadcast = airHockeyLastBroadcast.get(room.code) ?? 0;
+      if (now - lastBroadcast >= 33 || state.phase === "finished") {
+        airHockeyLastBroadcast.set(room.code, now);
+        broadcastGameState(io, room.code, roomManager);
+      }
+      if ((room.status as string) === "finished") broadcastRoom(io, room.code, roomManager);
+    }
+  }, 16);
 }

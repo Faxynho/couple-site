@@ -57,6 +57,8 @@ export interface AccountSoloStats {
   timeMs: number;
   gamePlayCounts: Partial<Record<GameId, number>>;
   difficultyCounts: Partial<Record<RankKey, number>>;
+  /** Métricas específicas de partidas que têm placar por gol (Air Hockey). */
+  gameGoals: Partial<Record<GameId, { scored: number; conceded: number }>>;
 }
 
 /** Parte das estatísticas de Duo que é individual de cada conta — só o que
@@ -68,6 +70,7 @@ export interface AccountDuoParticipation {
   duelDraws: number;
   gameWinCounts: Partial<Record<GameId, number>>;
   gameLossCounts: Partial<Record<GameId, number>>;
+  gameGoals: Partial<Record<GameId, { scored: number; conceded: number }>>;
 }
 
 /** Estatísticas de Duo que pertencem à dupla, não a uma conta isolada — só

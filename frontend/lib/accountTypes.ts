@@ -33,6 +33,7 @@ export interface AccountSoloStats {
   timeMs: number;
   gamePlayCounts: Partial<Record<GameId, number>>;
   difficultyCounts: Partial<Record<string, number>>;
+  gameGoals: Partial<Record<GameId, { scored: number; conceded: number }>>;
 }
 
 export interface AccountDuoParticipation {
@@ -41,6 +42,7 @@ export interface AccountDuoParticipation {
   duelDraws: number;
   gameWinCounts: Partial<Record<GameId, number>>;
   gameLossCounts: Partial<Record<GameId, number>>;
+  gameGoals: Partial<Record<GameId, { scored: number; conceded: number }>>;
 }
 
 export interface DuoSharedStats {

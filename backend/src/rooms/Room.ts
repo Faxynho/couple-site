@@ -184,6 +184,7 @@ export class Room {
   private defaultMatchModeFor(gameId: GameId): string {
     if (gameId === "quiz" || gameId === "memory") return this.roomMode === "solo" ? "solo" : "together";
     if (gameId === "termo") return this.roomMode === "solo" ? "solo" : "duel";
+    if (gameId === "airhockey") return this.roomMode === "solo" ? "solo" : "duel";
     if (gameId === "rpg") return this.roomMode === "solo" ? "soloBot" : "1v1";
     return "together"; // crossword / wordsearch / sudoku — puzzle/colors ignoram este campo
   }
@@ -287,7 +288,8 @@ export class Room {
       this.gameId === "rpg" ||
       this.gameId === "sudoku" ||
       this.gameId === "memory" ||
-      this.gameId === "termo"
+      this.gameId === "termo" ||
+      this.gameId === "airhockey"
         ? this.pendingMatchMode
         : undefined;
 

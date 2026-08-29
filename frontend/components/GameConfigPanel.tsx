@@ -320,5 +320,11 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
     );
   }
 
+  if (room.gameId === "airhockey") {
+    return (
+      <p className="text-center text-xs text-ink-soft">🏒 Duelo 1x1 — primeiro a 7 gols vence.</p>
+    );
+  }
+
   return null;
 }

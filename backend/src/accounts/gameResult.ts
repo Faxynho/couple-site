@@ -24,6 +24,7 @@ interface PlayerOutcome {
   metricValue: number | null;
   scoreType: RecordScoreType;
   result: "win" | "loss" | "draw" | "solo";
+  goals?: { scored: number; conceded: number };
 }
 
 interface MatchOutcome {
@@ -222,6 +223,35 @@ interface TermoStateShape {
   }[];
 }
 
+interface AirHockeyStateShape {
+  difficulty?: string;
+  mode?: string;
+  startedAt: number;
+  finishedAt: number | null;
+  results: { playerId: string; outcome: "win" | "loss" | "draw" | "solo"; score: number; conceded: number }[];
+}
+
+function extractAirHockey(state: AirHockeyStateShape, accountByPlayerId: Map<string, AccountId | undefined>): MatchOutcome {
+  const durationMs = Math.max(0, (state.finishedAt ?? Date.now()) - state.startedAt);
+  const bucket: Bucket = state.mode === "duel" ? "duel" : "solo";
+  const players: PlayerOutcome[] = [];
+  for (const result of state.results ?? []) {
+    const accountId = accountFor(result.playerId, accountByPlayerId);
+    if (!accountId) continue;
+    const won = bucket === "duel" ? result.outcome === "win" : result.score > result.conceded;
+    players.push({
+      accountId,
+      // A marca é o menor tempo para vencer. Guardar apenas "7 pontos"
+      // seria redundante: toda vitória termina exatamente nesse placar.
+      metricValue: won ? durationMs : null,
+      scoreType: "time",
+      result: bucket === "duel" ? result.outcome : "solo",
+      goals: { scored: result.score, conceded: result.conceded },
+    });
+  }
+  return { rank: state.difficulty ?? NO_RANK, durationMs, bucket, players };
+}
+
 /** O recorde do Termo usa o menor tempo de uma partida efetivamente concluída.
  * A variante (1, 2 ou 4 palavras) é o rank, preservando o formato genérico
  * de recordes já usado pela aplicação. */
@@ -375,6 +405,8 @@ function extractGameOutcome(
       return extractTermo(gameState as TermoStateShape, accountByPlayerId);
     case "rpg":
       return extractRPG(gameState as RPGStateShape, accountByPlayerId);
+    case "airhockey":
+      return extractAirHockey(gameState as AirHockeyStateShape, accountByPlayerId);
     default:
       return null;
   }
@@ -401,6 +433,7 @@ export function recordFinishedMatch(params: {
   if (params.roomMode === "solo") {
     for (const p of outcome.players) {
       accountStore.recordSoloMatch(p.accountId, params.gameId, outcome.rank, outcome.durationMs, p.metricValue, p.scoreType);
+      if (p.goals) accountStore.recordGameGoals("solo", p.accountId, params.gameId, p.goals.scored, p.goals.conceded);
     }
     return;
   }
@@ -429,6 +462,7 @@ export function recordFinishedMatch(params: {
   if (outcome.bucket === "duel") {
     for (const p of outcome.players) {
       accountStore.recordDuelOutcome(p.accountId, params.gameId, outcome.rank, p.result as "win" | "loss" | "draw", p.metricValue, p.scoreType);
+      if (p.goals) accountStore.recordGameGoals("duel", p.accountId, params.gameId, p.goals.scored, p.goals.conceded);
     }
   }
 }
