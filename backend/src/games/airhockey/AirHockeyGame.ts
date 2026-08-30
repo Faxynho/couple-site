@@ -34,7 +34,8 @@ export interface AirHockeyState {
 
 export type AirHockeyAction =
   | { type: "move"; x: number; y: number }
-  | { type: "tick"; now: number };
+  | { type: "tick"; now: number }
+  | { type: "completeSolo"; score: number; conceded: number; now: number };
 
 const WORLD_WIDTH = 1.6;
 const WORLD_HEIGHT = 1;
@@ -340,6 +341,13 @@ export class AirHockeyGame implements GameEngine<AirHockeyState, AirHockeyAction
 
   applyAction(state: AirHockeyState, action: AirHockeyAction, playerId: string): AirHockeyState {
     if (state.phase === "finished") return state;
+    if (action.type === "completeSolo") {
+      if (state.mode !== "solo" || playerId !== state.playerIds[0] || action.score !== GOAL_TO_WIN || !Number.isInteger(action.conceded) || action.conceded < 0 || action.conceded >= GOAL_TO_WIN) return state;
+      const next = structuredClone(state); const [human, bot] = next.playerIds;
+      next.scores[human] = action.score; next.scores[bot] = action.conceded; next.phase = "finished"; next.finishedAt = action.now; next.phaseEndsAt = null;
+      next.results = [{ playerId: human, outcome: "solo", score: action.score, conceded: action.conceded }];
+      return next;
+    }
     if (action.type === "move") {
       if (!state.humanPlayerIds.includes(playerId) || !Number.isFinite(action.x) || !Number.isFinite(action.y)) return state;
       const next = structuredClone(state);

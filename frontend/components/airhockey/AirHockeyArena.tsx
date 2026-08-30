@@ -24,9 +24,6 @@ export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: P
   const goalFx = useRef<{ serial: number; startedAt: number; x: number; y: number; color: string; final: boolean } | null>(null);
   const sentAt = useRef(0);
   const events = useRef({ impact: -1, goal: -1, countdown: -1 });
-  const localContacts = useRef<Record<string, boolean>>({});
-  const predictionGraceUntil = useRef(0);
-  const lastPredictedImpactAt = useRef(0);
 
   useEffect(() => {
     const update = () => setPortrait(window.innerHeight > window.innerWidth || window.innerWidth < 640);
@@ -91,85 +88,6 @@ export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: P
       nextX = puck.x + nx * radius;
       nextY = puck.y + ny * radius;
       return { x: nextX, y: nextY };
-    };
-    const predictPaddleImpact = (
-      paddleId: string,
-      previousPaddle: { x: number; y: number },
-      paddle: { x: number; y: number },
-      previousPuck: { x: number; y: number },
-      puck: { x: number; y: number; vx: number; vy: number },
-      dt: number
-    ) => {
-      const radius = PADDLE_RADIUS + PUCK_RADIUS;
-      const startX = previousPuck.x - previousPaddle.x;
-      const startY = previousPuck.y - previousPaddle.y;
-      const endX = puck.x - paddle.x;
-      const endY = puck.y - paddle.y;
-      const moveX = endX - startX;
-      const moveY = endY - startY;
-      const currentDistance = Math.hypot(endX, endY);
-      if (localContacts.current[paddleId]) {
-        if (Math.hypot(startX, startY) > radius + .014 && currentDistance > radius + .014) localContacts.current[paddleId] = false;
-        else return false;
-      }
-      const a = moveX * moveX + moveY * moveY;
-      const b = 2 * (startX * moveX + startY * moveY);
-      const c = startX * startX + startY * startY - radius * radius;
-      let impactT: number | null = c <= 0 ? 0 : null;
-      if (impactT === null && a > .000000001) {
-        const discriminant = b * b - 4 * a * c;
-        if (discriminant >= 0) {
-          const first = (-b - Math.sqrt(discriminant)) / (2 * a);
-          if (first >= 0 && first <= 1) impactT = first;
-        }
-      }
-      if (impactT === null) return false;
-      const hitX = startX + moveX * impactT;
-      const hitY = startY + moveY * impactT;
-      const hitLength = Math.hypot(hitX, hitY) || 1;
-      const nx = hitX / hitLength;
-      const ny = hitY / hitLength;
-      const paddleX = previousPaddle.x + (paddle.x - previousPaddle.x) * impactT;
-      const paddleY = previousPaddle.y + (paddle.y - previousPaddle.y) * impactT;
-      const paddleVx = (paddle.x - previousPaddle.x) / Math.max(dt, .001);
-      const paddleVy = (paddle.y - previousPaddle.y) / Math.max(dt, .001);
-      puck.x = paddleX + nx * (radius + .001);
-      puck.y = paddleY + ny * (radius + .001);
-      const approach = (puck.vx - paddleVx) * nx + (puck.vy - paddleVy) * ny;
-      if (approach < 0) { puck.vx -= 1.88 * approach * nx; puck.vy -= 1.88 * approach * ny; }
-      puck.vx += paddleVx * .39 + nx * .11;
-      puck.vy += paddleVy * .39 + ny * .11;
-      const speed = Math.hypot(puck.vx, puck.vy);
-      if (speed > 2.45) { puck.vx = puck.vx / speed * 2.45; puck.vy = puck.vy / speed * 2.45; }
-      else if (speed < .5) { puck.vx += nx * .42; puck.vy += ny * .42; }
-      localContacts.current[paddleId] = true;
-      predictionGraceUntil.current = performance.now() + 420;
-      if (performance.now() - lastPredictedImpactAt.current > 75) {
-        lastPredictedImpactAt.current = performance.now();
-        onEffect("hit");
-      }
-      return true;
-    };
-    const predictPuckBounds = (puck: { x: number; y: number; vx: number; vy: number }) => {
-      let bounced = false;
-      if (puck.y - PUCK_RADIUS < 0) { puck.y = PUCK_RADIUS; puck.vy = Math.abs(puck.vy); bounced = true; }
-      if (puck.y + PUCK_RADIUS > HEIGHT) { puck.y = HEIGHT - PUCK_RADIUS; puck.vy = -Math.abs(puck.vy); bounced = true; }
-      const inGoal = puck.y > .34 && puck.y < .66;
-      if (puck.x - PUCK_RADIUS < 0) {
-        if (inGoal) { puck.x = PUCK_RADIUS; puck.vx = 0; }
-        else { puck.x = PUCK_RADIUS; puck.vx = Math.abs(puck.vx); bounced = true; }
-      }
-      if (puck.x + PUCK_RADIUS > WIDTH) {
-        if (inGoal) { puck.x = WIDTH - PUCK_RADIUS; puck.vx = 0; }
-        else { puck.x = WIDTH - PUCK_RADIUS; puck.vx = -Math.abs(puck.vx); bounced = true; }
-      }
-      if (bounced) {
-        predictionGraceUntil.current = performance.now() + 260;
-        if (performance.now() - lastPredictedImpactAt.current > 75) {
-          lastPredictedImpactAt.current = performance.now();
-          onEffect("wall");
-        }
-      }
     };
 
     const drawGoal = (side: "left" | "right" | "top" | "bottom", color: string, dark: boolean, playX: number, playY: number, playW: number, playH: number, shortest: number, middleX: number, middleY: number) => {
@@ -239,35 +157,26 @@ export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: P
       if (portrait) for (const y of [playY,playY+playH]) { context.beginPath();context.arc(middleX,y,playW*.33,y===playY?0:Math.PI,y===playY?Math.PI:Math.PI*2);context.stroke(); }
       else for (const x of [playX,playX+playW]) { context.beginPath();context.arc(x,middleY,playH*.33,x===playX?-Math.PI/2:Math.PI/2,x===playX?Math.PI/2:Math.PI*1.5);context.stroke(); } context.restore();
       if(portrait){drawPlate(playX+playW*.08,playY+shortest*.012,playW*.22,shortest*.035,pinkLine,shortest);drawPlate(playX+playW*.7,playY+playH-shortest*.047,playW*.22,shortest*.035,pinkLine,shortest);} else {drawPlate(playX+playW*.08,playY+shortest*.012,playW*.13,shortest*.035,pinkLine,shortest);drawPlate(playX+playW*.79,playY+playH-shortest*.047,playW*.13,shortest*.035,pinkLine,shortest);}
-      // A física e os gols continuam autoritativos no servidor. Para não
-      // renderizar a posição já envelhecida pelo RTT, o Canvas extrapola cada
-      // snapshot até o relógio atual e só então o reconcilia suavemente.
+      // O servidor envia snapshots em frequência moderada; entre eles o
+      // Canvas integra a velocidade e corrige suavemente para o snapshot mais
+      // recente, evitando que o disco salte a cada pacote sem criar uma física
+      // paralela. Mudanças de fase (gol/saída) fazem snap intencional.
       const visual = puckVisual.current;
-      const previousPuck = { x: visual.x, y: visual.y };
-      const snapshotAge = state.phase === "playing" ? Math.max(0, Math.min(.55, ((Date.now() + (state.clockOffsetMs ?? 0)) - state.lastTickAt) / 1000)) : 0;
-      const snapshotPuck = { x: state.puck.x + state.puck.vx * snapshotAge, y: state.puck.y + state.puck.vy * snapshotAge };
-      if (!visual.initialized || lastVisualPhase.current !== state.phase) { visual.x=snapshotPuck.x; visual.y=snapshotPuck.y; visual.vx=state.puck.vx; visual.vy=state.puck.vy; visual.initialized=true; }
-      else { visual.x += visual.vx * renderDt; visual.y += visual.vy * renderDt; const correction = Math.min(1, renderDt * (performance.now() < predictionGraceUntil.current ? 3.2 : 9)); visual.x += (snapshotPuck.x - visual.x) * correction; visual.y += (snapshotPuck.y - visual.y) * correction; visual.vx += (state.puck.vx - visual.vx) * correction; visual.vy += (state.puck.vy - visual.vy) * correction; }
+      if (!visual.initialized || lastVisualPhase.current !== state.phase) { visual.x=state.puck.x; visual.y=state.puck.y; visual.vx=state.puck.vx; visual.vy=state.puck.vy; visual.initialized=true; }
+      else { visual.x += visual.vx * renderDt; visual.y += visual.vy * renderDt; const correction = Math.min(1, renderDt * 16); visual.x += (state.puck.x - visual.x) * correction; visual.y += (state.puck.y - visual.y) * correction; visual.vx += (state.puck.vx - visual.vx) * correction; visual.vy += (state.puck.vy - visual.vy) * correction; }
       lastVisualPhase.current = state.phase;
-      const unit = portrait ? playW : playH;
+      const unit = portrait ? playW : playH; const puckPoint = map(visual.x, visual.y, selfIsLeft);
       for (const id of state.playerIds) {
         const paddle = state.paddles[id]; if (!paddle) continue;
         const previous = paddleVisuals.current[id] ?? { x: paddle.x, y: paddle.y };
-        const projectedX = Math.max(PADDLE_RADIUS, Math.min(WIDTH - PADDLE_RADIUS, paddle.x + paddle.vx * snapshotAge));
-        const projectedY = Math.max(PADDLE_RADIUS, Math.min(HEIGHT - PADDLE_RADIUS, paddle.y + paddle.vy * snapshotAge));
         const display = id === selfId && localPaddle.current
           ? advanceLocalPaddle(previous, localPaddle.current, visual, renderDt)
-          : id === "BOT" && state.mode === "solo"
-            ? (() => { const speed = state.difficulty === "easy" ? .62 : state.difficulty === "hard" ? 1.22 : .95; const dx=paddle.targetX-previous.x; const dy=paddle.targetY-previous.y; const distance=Math.hypot(dx,dy); const step=Math.min(distance,speed*renderDt); return distance ? { x: previous.x+dx/distance*step, y: previous.y+dy/distance*step } : previous; })()
-            : { x: previous.x + (projectedX - previous.x) * Math.min(1, renderDt * 17), y: previous.y + (projectedY - previous.y) * Math.min(1, renderDt * 17) };
+          : { x: previous.x + (paddle.x - previous.x) * .24, y: previous.y + (paddle.y - previous.y) * .24 };
         paddleVisuals.current[id] = display;
-        if (renderDt > 0 && (id === selfId || (state.mode === "solo" && id === "BOT"))) predictPaddleImpact(id, previous, display, previousPuck, visual, renderDt);
         const point=map(display.x,display.y,selfIsLeft);const radius=unit*PADDLE_RADIUS;const local=id===selfId;const color=local?blush:(id==="BOT"?violet:"#7657cf");context.save();context.shadowColor="rgba(44,16,31,.52)";context.shadowBlur=radius*.38;context.shadowOffsetY=radius*.24;const base=context.createRadialGradient(point.x-radius*.28,point.y-radius*.35,radius*.05,point.x,point.y,radius);base.addColorStop(0,"#ffe0e6");base.addColorStop(.32,local?"#fb7696":"#ad95ff");base.addColorStop(.76,color);base.addColorStop(1,dark?"#371929":"#8d2a51");context.fillStyle=base;context.beginPath();context.arc(point.x,point.y,radius,0,Math.PI*2);context.fill();context.restore();context.strokeStyle="rgba(255,231,233,.88)";context.lineWidth=Math.max(1.4,radius*.08);context.beginPath();context.arc(point.x,point.y,radius*.7,0,Math.PI*2);context.stroke();const cap=context.createRadialGradient(point.x-radius*.14,point.y-radius*.2,radius*.04,point.x,point.y,radius*.47);cap.addColorStop(0,"#fff0f1");cap.addColorStop(.42,local?"#ff6d91":"#9d80f3");cap.addColorStop(1,local?"#b92751":"#49338a");context.fillStyle=cap;context.beginPath();context.arc(point.x,point.y,radius*.47,0,Math.PI*2);context.fill();
       }
-      if (renderDt > 0 && state.phase === "playing") predictPuckBounds(visual);
-      const puckPoint = map(visual.x, visual.y, selfIsLeft);
       const puckR=unit*PUCK_RADIUS;context.save();context.shadowColor="rgba(65,25,43,.45)";context.shadowBlur=puckR*.75;context.shadowOffsetY=puckR*.26;context.fillStyle="#fdf6f0";context.beginPath();context.arc(puckPoint.x,puckPoint.y,puckR,0,Math.PI*2);context.fill();context.restore();context.strokeStyle="#d5aaa8";context.lineWidth=Math.max(1,puckR*.11);context.beginPath();context.arc(puckPoint.x,puckPoint.y,puckR*.75,0,Math.PI*2);context.stroke();context.fillStyle="rgba(255,255,255,.95)";context.beginPath();context.arc(puckPoint.x-puckR*.22,puckPoint.y-puckR*.25,puckR*.24,0,Math.PI*2);context.fill();
-      if (events.current.impact !== state.impactSerial) { events.current.impact=state.impactSerial; if(state.impactKind && performance.now()-lastPredictedImpactAt.current>260) onEffect(state.impactKind==="paddle"?"hit":"wall"); }
+      if (events.current.impact !== state.impactSerial) { events.current.impact=state.impactSerial; if(state.impactKind) onEffect(state.impactKind==="paddle"?"hit":"wall"); }
       if (events.current.goal !== state.goalSerial) {
         events.current.goal=state.goalSerial;
         if(state.goalSerial) {

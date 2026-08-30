@@ -1153,10 +1153,12 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (!room || room.gameId !== "airhockey" || !Number.isFinite(payload?.x) || !Number.isFinite(payload?.y)) return;
       room.applyAction({ type: "move", x: payload.x, y: payload.y }, socket.data.playerId ?? socket.id);
     });
-
-    // Não participa da física nem dos resultados. Serve somente para o
-    // cliente estimar o tempo do snapshot e renderizar entre as atualizações.
-    socket.on("airhockey:ping", (callback?: AckCallback) => callback?.({ serverNow: Date.now() }));
+    socket.on("airhockey:soloComplete", (payload: { score: number; conceded: number }) => {
+      const code=socket.data.roomCode; const room=code?roomManager.getRoom(code):undefined;
+      if (!room || room.gameId!=="airhockey") return;
+      room.applyAction({ type:"completeSolo", score:payload?.score, conceded:payload?.conceded, now:Date.now() }, socket.data.playerId ?? socket.id);
+      if (room.status === "finished") { broadcastRoom(io, code!, roomManager); broadcastGameState(io, code!, roomManager); }
+    });
 
     socket.on("airhockey:newGame", () => {
       const code = socket.data.roomCode;
@@ -1371,6 +1373,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     const now = Date.now();
     for (const room of roomManager.getAllRooms()) {
       if (room.gameId !== "airhockey" || room.status !== "playing" || !room.gameState) continue;
+      if ((room.gameState as AirHockeyState).mode === "solo") continue;
       room.applyAction({ type: "tick", now }, "system");
       const state = room.gameState as AirHockeyState;
       const lastBroadcast = airHockeyLastBroadcast.get(room.code) ?? 0;
