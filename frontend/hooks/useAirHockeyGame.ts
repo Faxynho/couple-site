@@ -11,10 +11,13 @@ export function useAirHockeyGame(roomCode: string) {
   const [meta, setMeta] = useState<AirHockeyState | null>(null);
   const engineRef = useRef(new AirHockeyGame());
   const soloFinished = useRef(false);
+  const lastDuoTick = useRef(0);
 
   useEffect(() => {
     const socket = getSocket();
     const accept = (next: AirHockeyState | null) => {
+      if (next?.mode === "duel" && next.lastTickAt !== undefined && next.lastTickAt < lastDuoTick.current) return;
+      if (next?.mode === "duel" && next.lastTickAt !== undefined) lastDuoTick.current = next.lastTickAt;
       if (next?.mode === "solo" && stateRef.current?.mode === "solo" && next.startedAt === stateRef.current.startedAt) return;
       if (next?.mode === "solo") soloFinished.current = false;
       stateRef.current = next;

@@ -23,6 +23,8 @@ export interface AirHockeyState {
   phaseEndsAt: number | null;
   startedAt: number;
   finishedAt: number | null;
+  /** Monótono no servidor; impede um sync atrasado de regredir o Duo. */
+  lastTickAt?: number;
   lastGoalBy: string | null;
   goalSerial: number;
   impactSerial: number;
