@@ -8,6 +8,7 @@ import { AirHockeyGame } from "../../backend/src/games/airhockey/AirHockeyGame";
 
 type PendingInput = { x: number; y: number; sequence: number };
 type PaddleIntent = { x: number; y: number };
+type PredictedImpact = { serial: number; startedAt: number };
 
 // O servidor publica o estado a cada ~33 ms. Esta pequena antecipação cobre a
 // idade normal de um snapshot sem depender do relógio de parede do dispositivo.
@@ -50,12 +51,16 @@ export function useAirHockeyGame(roomCode: string) {
   const localIntentRef = useRef<PaddleIntent | null>(null);
   const pendingInputs = useRef<PendingInput[]>([]);
   const nextInputSequence = useRef(0);
+  const predictedLocalImpact = useRef<PredictedImpact | null>(null);
+  const lastLocalIntentAt = useRef<number | null>(null);
 
   useEffect(() => {
     const socket = getSocket();
     lastDuoTick.current = 0;
     pendingInputs.current = [];
     nextInputSequence.current = 0;
+    predictedLocalImpact.current = null;
+    lastLocalIntentAt.current = null;
 
     const updateMeta = (next: AirHockeyState) => {
       setMeta((previous) => {
@@ -88,6 +93,26 @@ export function useAirHockeyGame(roomCode: string) {
         const confirmed = next.lastProcessedInputSequence?.[selfId] ?? 0;
         pendingInputs.current = pendingInputs.current.filter((input) => input.sequence > confirmed);
         nextInputSequence.current = Math.max(nextInputSequence.current, confirmed);
+
+        const pendingImpact = predictedLocalImpact.current;
+        const confirmsPredictedImpact = !pendingImpact || next.impactSerial >= pendingImpact.serial;
+        if (confirmsPredictedImpact) predictedLocalImpact.current = null;
+
+        // Enquanto a colisão local ainda não chegou do servidor, o snapshot
+        // atualiza metadados/raquete remota, mas não pode apagar o puck que já
+        // reagiu no cliente. Isso é separado dos inputs apenas "ackados".
+        if (!confirmsPredictedImpact && predictedLocalRef.current && next.phase === "playing") {
+          const preserved = cloneState(predictedLocalRef.current);
+          const remoteId = next.playerIds[0] === selfId ? next.playerIds[1] : next.playerIds[0];
+          preserved.paddles[remoteId] = cloneState(next).paddles[remoteId];
+          preserved.lastProcessedInputSequence = next.lastProcessedInputSequence;
+          authoritativeRef.current = next;
+          predictedLocalRef.current = preserved;
+          predictedPuckRef.current = { ...preserved.puck };
+          stateRef.current = preserved;
+          updateMeta(next);
+          return;
+        }
 
         // Reconciliação: servidor primeiro; depois apenas intenções ainda não
         // processadas. Nenhum impulso é copiado do cliente para o servidor.
@@ -134,6 +159,12 @@ export function useAirHockeyGame(roomCode: string) {
       } else if (state?.mode === "duel" && state.phase !== "finished") {
         // O estado renderizado é esta previsão, não o último pacote recebido.
         const predicted = advancePrediction(engineRef.current, state, frameMs);
+        const selfId = getPlayerId();
+        const beforeContact = (state as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
+        const afterContact = (predicted as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
+        if (!beforeContact && afterContact && predicted.impactKind === "paddle" && predicted.impactSerial > state.impactSerial) {
+          predictedLocalImpact.current = { serial: predicted.impactSerial, startedAt: performance.now() };
+        }
         predictedLocalRef.current = predicted;
         predictedPuckRef.current = { ...predicted.puck };
         stateRef.current = predicted;
@@ -174,6 +205,30 @@ export function useAirHockeyGame(roomCode: string) {
     getSocket().emit("airhockey:move", input);
   }, []);
 
+  const previewMove = useCallback((x: number, y: number) => {
+    localIntentRef.current = { x, y };
+    const state = predictedLocalRef.current ?? stateRef.current;
+    if (!state || state.mode !== "duel" || state.phase !== "playing") return;
+
+    const now = performance.now();
+    const inputDt = Math.min(.033, Math.max(.001, lastLocalIntentAt.current === null ? 1 / 60 : (now - lastLocalIntentAt.current) / 1000));
+    lastLocalIntentAt.current = now;
+    const predicted = engineRef.current.applyAction(
+      cloneState(state) as never,
+      { type: "predictMove", x, y, now: state.lastTickAt ?? Date.now(), inputDt },
+      getPlayerId()
+    ) as AirHockeyState;
+    const selfId = getPlayerId();
+    const beforeContact = (state as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
+    const afterContact = (predicted as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
+    if (!beforeContact && afterContact && predicted.impactKind === "paddle" && predicted.impactSerial > state.impactSerial) {
+      predictedLocalImpact.current = { serial: predicted.impactSerial, startedAt: now };
+    }
+    predictedLocalRef.current = predicted;
+    predictedPuckRef.current = { ...predicted.puck };
+    stateRef.current = predicted;
+  }, []);
+
   const newGame = useCallback(() => getSocket().emit("airhockey:newGame"), []);
-  return { stateRef, authoritativeRef, predictedLocalRef, predictedPuckRef, localIntentRef, meta, move, newGame };
+  return { stateRef, authoritativeRef, predictedLocalRef, predictedPuckRef, localIntentRef, meta, move, previewMove, newGame };
 }

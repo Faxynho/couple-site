@@ -8,9 +8,9 @@ const HEIGHT = 1;
 const PADDLE_RADIUS = 0.075;
 const PUCK_RADIUS = 0.034;
 type Effect = "wall" | "hit" | "goal" | "countdown";
-type Props = { stateRef: React.MutableRefObject<AirHockeyState | null>; localIntentRef: React.MutableRefObject<{ x: number; y: number } | null>; selfId: string; onMove: (x: number, y: number) => void; onEffect: (effect: Effect) => void };
+type Props = { stateRef: React.MutableRefObject<AirHockeyState | null>; predictedPuckRef: React.MutableRefObject<AirHockeyState["puck"] | null>; localIntentRef: React.MutableRefObject<{ x: number; y: number } | null>; selfId: string; onLocalIntent: (x: number, y: number) => void; onMove: (x: number, y: number) => void; onEffect: (effect: Effect) => void };
 
-export default function AirHockeyArena({ stateRef, localIntentRef, selfId, onMove, onEffect }: Props) {
+export default function AirHockeyArena({ stateRef, predictedPuckRef, localIntentRef, selfId, onLocalIntent, onMove, onEffect }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [portrait, setPortrait] = useState(false);
   const dragging = useRef(false);
@@ -106,6 +106,9 @@ export default function AirHockeyArena({ stateRef, localIntentRef, selfId, onMov
     const draw = () => {
       const state = stateRef.current;
       if (!state) { frame = requestAnimationFrame(draw); return; }
+      // No Duo o puck visual nasce da cópia predita; state.puck é usado no
+      // Solo e apenas como fallback durante a primeira sincronização do Duo.
+      const puck = state.mode === "duel" ? predictedPuckRef.current ?? state.puck : state.puck;
       const now = Date.now(); const frameNow = performance.now(); const renderDt = lastFrameAt.current ? Math.min((frameNow - lastFrameAt.current) / 1000, .025) : 0; lastFrameAt.current = frameNow;
       const shortest = Math.min(width, height); const dark = document.documentElement.classList.contains("dark");
       const blush = "#e8567d"; const violet = "#7657cf";
@@ -139,14 +142,14 @@ export default function AirHockeyArena({ stateRef, localIntentRef, selfId, onMov
       // estado predito; este RAF o transforma em movimento contínuo.
       const visual = puckVisual.current;
       if (!visual.initialized || lastVisualPhase.current !== state.phase) {
-        visual.x=state.puck.x; visual.y=state.puck.y; visual.vx=state.puck.vx; visual.vy=state.puck.vy; visual.impactSerial=state.impactSerial; visual.initialized=true;
+        visual.x=puck.x; visual.y=puck.y; visual.vx=puck.vx; visual.vy=puck.vy; visual.impactSerial=state.impactSerial; visual.initialized=true;
         paddleVisuals.current = {};
       } else if (state.mode === "solo") {
         // Caminho visual original do Solo, mantido sem alterações.
         visual.x += visual.vx * renderDt; visual.y += visual.vy * renderDt;
         const correction = Math.min(1, renderDt * 16);
-        visual.x += (state.puck.x - visual.x) * correction; visual.y += (state.puck.y - visual.y) * correction;
-        visual.vx += (state.puck.vx - visual.vx) * correction; visual.vy += (state.puck.vy - visual.vy) * correction;
+        visual.x += (puck.x - visual.x) * correction; visual.y += (puck.y - visual.y) * correction;
+        visual.vx += (puck.vx - visual.vx) * correction; visual.vy += (puck.vy - visual.vy) * correction;
         visual.impactSerial = state.impactSerial;
       } else {
         visual.x += visual.vx * renderDt; visual.y += visual.vy * renderDt;
@@ -154,10 +157,10 @@ export default function AirHockeyArena({ stateRef, localIntentRef, selfId, onMov
         const impactStarted = state.mode === "duel" && state.impactSerial > visual.impactSerial;
         if (impactStarted) {
           // A resposta a uma colisão local predita não ganha latência visual.
-          visual.x=state.puck.x; visual.y=state.puck.y; visual.vx=state.puck.vx; visual.vy=state.puck.vy;
+          visual.x=puck.x; visual.y=puck.y; visual.vx=puck.vx; visual.vy=puck.vy;
         } else {
-          visual.x += (state.puck.x - visual.x) * blend; visual.y += (state.puck.y - visual.y) * blend;
-          visual.vx += (state.puck.vx - visual.vx) * blend; visual.vy += (state.puck.vy - visual.vy) * blend;
+          visual.x += (puck.x - visual.x) * blend; visual.y += (puck.y - visual.y) * blend;
+          visual.vx += (puck.vx - visual.vx) * blend; visual.vy += (puck.vy - visual.vy) * blend;
         }
         visual.impactSerial = Math.max(visual.impactSerial, state.impactSerial);
       }
@@ -216,7 +219,7 @@ export default function AirHockeyArena({ stateRef, localIntentRef, selfId, onMov
       frame=requestAnimationFrame(draw);
     };
     frame=requestAnimationFrame(draw); return () => { cancelAnimationFrame(frame); observer.disconnect(); };
-  }, [onEffect, portrait, selfId, stateRef]);
+  }, [onEffect, portrait, predictedPuckRef, selfId, stateRef]);
 
   const toWorld = (event: PointerEvent<HTMLCanvasElement>) => {
     const box=event.currentTarget.getBoundingClientRect();const pointX=event.clientX-box.left;const pointY=event.clientY-box.top;const field=fieldRef.current;const selfIsLeft=stateRef.current?.playerIds[0]===selfId;
@@ -224,7 +227,7 @@ export default function AirHockeyArena({ stateRef, localIntentRef, selfId, onMov
     return selfIsLeft ? {x:(1-(pointY-field.y)/field.height)*WIDTH,y:(pointX-field.x)/field.width}:{x:(pointY-field.y)/field.height*WIDTH,y:1-(pointX-field.x)/field.width};
   };
   const movePointer = (event: PointerEvent<HTMLCanvasElement>) => {
-    if(!dragging.current)return;event.preventDefault();const state=stateRef.current;if(!state||state.phase!=="playing")return;const raw=toWorld(event);const left=state.playerIds[0]===selfId;const minX=left?PADDLE_RADIUS:.8+PADDLE_RADIUS*.25;const maxX=left ? .8-PADDLE_RADIUS*.25 : WIDTH-PADDLE_RADIUS;const x=Math.max(minX,Math.min(maxX,raw.x));const y=Math.max(PADDLE_RADIUS,Math.min(HEIGHT-PADDLE_RADIUS,raw.y));if(state.mode==="solo")localPaddle.current={x,y};else localIntentRef.current={x,y};const now=performance.now();if(state.mode==="solo"||now-sentAt.current>16){sentAt.current=now;onMove(x,y);}
+    if(!dragging.current)return;event.preventDefault();const state=stateRef.current;if(!state||state.phase!=="playing")return;const raw=toWorld(event);const left=state.playerIds[0]===selfId;const minX=left?PADDLE_RADIUS:.8+PADDLE_RADIUS*.25;const maxX=left ? .8-PADDLE_RADIUS*.25 : WIDTH-PADDLE_RADIUS;const x=Math.max(minX,Math.min(maxX,raw.x));const y=Math.max(PADDLE_RADIUS,Math.min(HEIGHT-PADDLE_RADIUS,raw.y));if(state.mode==="solo")localPaddle.current={x,y};else {localIntentRef.current={x,y};onLocalIntent(x,y);}const now=performance.now();if(state.mode==="solo"||now-sentAt.current>16){sentAt.current=now;onMove(x,y);}
   };
   return <canvas ref={canvasRef} onPointerDown={(event)=>{dragging.current=true;event.currentTarget.setPointerCapture(event.pointerId);movePointer(event);}} onPointerMove={movePointer} onPointerUp={(event)=>{dragging.current=false;localPaddle.current=null;event.currentTarget.releasePointerCapture(event.pointerId);}} onPointerCancel={()=>{dragging.current=false;localPaddle.current=null;}} className="block h-full w-full touch-none select-none" aria-label="Mesa de Air Hockey" />;
 }

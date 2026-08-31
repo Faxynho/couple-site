@@ -35,6 +35,10 @@ export interface AirHockeyState {
 
 export type AirHockeyAction =
   | { type: "move"; x: number; y: number; sequence?: number }
+  // Ação privada do cliente: aplica a mesma CCD/impulso da engine no instante
+  // do ponteiro. Ela nunca é recebida pelo Socket.IO nem altera a simulação
+  // autoritativa do servidor.
+  | { type: "predictMove"; x: number; y: number; now: number; inputDt: number }
   | { type: "tick"; now: number }
   | { type: "completeSolo"; score: number; conceded: number; now: number };
 
@@ -360,6 +364,31 @@ export class AirHockeyGame implements GameEngine<AirHockeyState, AirHockeyAction
       paddle.targetY = action.y;
       if (state.mode === "duel") next.lastProcessedInputSequence[playerId] = action.sequence as number;
       clampTarget(paddle, playerId === next.playerIds[0] ? 0 : 1);
+      return next;
+    }
+    if (action.type === "predictMove") {
+      if (state.mode !== "duel" || !state.humanPlayerIds.includes(playerId) || !Number.isFinite(action.x) || !Number.isFinite(action.y) || !Number.isFinite(action.now)) return state;
+      const next = structuredClone(state);
+      if (next.phase !== "playing") return next;
+      const paddle = next.paddles[playerId];
+      if (!paddle) return state;
+      const previousPaddles = {
+        [next.playerIds[0]]: { ...next.paddles[next.playerIds[0]] },
+        [next.playerIds[1]]: { ...next.paddles[next.playerIds[1]] },
+      };
+      const side = playerId === next.playerIds[0] ? 0 : 1;
+      paddle.targetX = action.x;
+      paddle.targetY = action.y;
+      clampTarget(paddle, side);
+      const inputDt = clamp(action.inputDt, 0.001, 0.033);
+      paddle.x = paddle.targetX;
+      paddle.y = paddle.targetY;
+      paddle.vx = (paddle.x - previousPaddles[playerId].x) / inputDt;
+      paddle.vy = (paddle.y - previousPaddles[playerId].y) / inputDt;
+      // dt zero evita avançar o relógio/física duas vezes entre RAFs. A CCD
+      // ainda analisa o segmento da paddle anterior até a intenção atual e
+      // aplica o mesmo normal, impulso, trava de contato e limite de velocidade.
+      stepPuck(next, 0, action.now, previousPaddles);
       return next;
     }
     if (action.type !== "tick" || !Number.isFinite(action.now)) return state;
