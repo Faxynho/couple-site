@@ -330,7 +330,7 @@ export function useAirHockeyGame(roomCode: string) {
     predictedLocalRef.current = predicted;
     predictedPuckRef.current = { ...predicted.puck };
     stateRef.current = predicted;
-    getSocket().emit("airhockey:move", { x, y, sequence });
+    getSocket().emit("airhockey:move", { x, y, sequence, simulationTick });
   }, []);
 
   const newGame = useCallback(() => getSocket().emit("airhockey:newGame"), []);

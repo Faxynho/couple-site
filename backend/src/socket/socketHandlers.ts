@@ -16,6 +16,7 @@ import { isValidRPGMode, RPG_INTRO_DURATION_MS, RPG_RESOLVE_PAUSE_MS } from "../
 import { isValidMemoryDifficulty, isValidMemoryMode, MemoryState } from "../games/memory/MemoryGame";
 import { isValidTermoMode, isValidTermoVariant, TermoState } from "../games/termo/TermoGame";
 import { AirHockeyState, isValidAirHockeyDifficulty, isValidAirHockeyMode } from "../games/airhockey/AirHockeyGame";
+import { advanceAirHockeyInputTimeline, AIR_HOCKEY_AUTHORITATIVE_DELAY_MS, QueuedAirHockeyInput } from "../games/airhockey/AirHockeyInputTimeline";
 import { isAccountId } from "../accounts/types";
 
 interface SocketData {
@@ -560,6 +561,40 @@ function getTermoStateForPlayer(state: unknown, playerId: string): unknown {
 }
 
 export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
+  const airHockeyInputQueues = new Map<string, {
+    startedAt: number;
+    nextReceivedOrder: number;
+    inputs: QueuedAirHockeyInput[];
+  }>();
+  // Diagnóstico opt-in para comparar a linha do tempo do pacote com a do
+  // simulador. Não participa da decisão física nem altera a ordem das ações.
+  const airHockeyPhysicsDebug = process.env.AIR_HOCKEY_DEBUG === "1";
+  const airHockeyInputsSincePreviousTick = new Map<string, Array<{
+    receivedAt: number;
+    sequence?: number;
+    playerId: string;
+    previousServerTick: number;
+    target: { x: number; y: number };
+  }>>();
+
+  const airHockeyQueueFor = (roomCode: string, state: AirHockeyState) => {
+    const existing = airHockeyInputQueues.get(roomCode);
+    if (existing?.startedAt === state.startedAt) return existing;
+    const queue = { startedAt: state.startedAt, nextReceivedOrder: 0, inputs: [] as QueuedAirHockeyInput[] };
+    airHockeyInputQueues.set(roomCode, queue);
+    return queue;
+  };
+
+  const beginDelayedAirHockeyTimeline = (room: { code: string; gameState: unknown }) => {
+    const state = room.gameState as AirHockeyState | null;
+    if (!state || state.mode !== "duel") return;
+    // O primeiro snapshot já representa o começo da linha física atrasada;
+    // assim lastTickAt nunca salta para trás depois de ter sido enviado.
+    state.lastTickAt -= AIR_HOCKEY_AUTHORITATIVE_DELAY_MS;
+    airHockeyInputQueues.delete(room.code);
+    airHockeyInputsSincePreviousTick.delete(room.code);
+  };
+
   io.on("connection", (socket: Socket<any, any, any, SocketData>) => {
     socket.on(
       "room:create",
@@ -793,6 +828,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       // Usa a configuração já sincronizada da sala; um payload aqui (se vier)
       // só serve como um ajuste de última hora, nunca como fonte principal.
       room.startGame(sanitizeStartOptions(payload));
+      if (room.gameId === "airhockey") beginDelayedAirHockeyTimeline(room);
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);
       callback?.({ ok: true });
@@ -1147,11 +1183,45 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     // ---- Eventos exclusivos do Air Hockey ----
     // A posição da raquete é limitada pelo motor autoritativo. O cliente só
     // informa a intenção de movimento; placar, gols e física ficam no servidor.
-    socket.on("airhockey:move", (payload: { x: number; y: number; sequence?: number }) => {
+    socket.on("airhockey:move", (payload: { x: number; y: number; sequence?: number; simulationTick?: number }) => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || room.gameId !== "airhockey" || !Number.isFinite(payload?.x) || !Number.isFinite(payload?.y)) return;
-      room.applyAction({ type: "move", x: payload.x, y: payload.y, sequence: payload.sequence }, socket.data.playerId ?? socket.id);
+      if (!room || room.gameId !== "airhockey" || !Number.isFinite(payload?.x) || !Number.isFinite(payload?.y) || !Number.isInteger(payload?.sequence) || !Number.isFinite(payload?.simulationTick)) return;
+      const playerId = socket.data.playerId ?? socket.id;
+      const state = room.gameState as AirHockeyState | null;
+      if (!state || state.mode !== "duel" || !state.humanPlayerIds.includes(playerId)) return;
+      // O relógio do input pertence ao mesmo domínio epoch de lastTickAt. Um
+      // limite amplo só rejeita payload claramente corrompido, não latência.
+      const receivedAt = Date.now();
+      if (Math.abs((payload.simulationTick as number) - receivedAt) > 5_000) return;
+      const queue = airHockeyQueueFor(room.code, state);
+      const processed = state.lastProcessedInputSequence[playerId] ?? 0;
+      const highestKnownSequence = queue.inputs
+        .filter((input) => input.playerId === playerId)
+        .reduce((highest, input) => Math.max(highest, input.sequence), processed);
+      if ((payload.sequence as number) <= highestKnownSequence) return;
+
+      const input: QueuedAirHockeyInput = {
+        playerId,
+        x: payload.x,
+        y: payload.y,
+        sequence: payload.sequence as number,
+        simulationTick: payload.simulationTick as number,
+        receivedAt,
+        receivedOrder: ++queue.nextReceivedOrder,
+      };
+      queue.inputs.push(input);
+      if (airHockeyPhysicsDebug) {
+        const inputs = airHockeyInputsSincePreviousTick.get(room.code) ?? [];
+        inputs.push({
+          receivedAt,
+          sequence: payload.sequence,
+          playerId,
+          previousServerTick: state.lastTickAt,
+          target: { x: payload.x, y: payload.y },
+        });
+        airHockeyInputsSincePreviousTick.set(room.code, inputs);
+      }
     });
     // Fornece uma amostra do mesmo domínio de tempo de `lastTickAt` (epoch do
     // servidor). O cliente estima o offset pelo menor RTT, sem mudar a
@@ -1175,6 +1245,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (current?.difficulty && isValidAirHockeyDifficulty(current.difficulty)) options.difficulty = current.difficulty;
       if (current?.mode && isValidAirHockeyMode(current.mode)) options.mode = current.mode;
       room.startGame(options);
+      beginDelayedAirHockeyTimeline(room);
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);
     });
@@ -1377,14 +1448,72 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
   const airHockeyLastBroadcast = new Map<string, number>();
   setInterval(() => {
     const now = Date.now();
+    // Duo simula deliberadamente atrás do relógio real. A margem dá tempo de
+    // receber a intenção antes de a linha física alcançar seu simulationTick.
+    const authoritativeTick = now - AIR_HOCKEY_AUTHORITATIVE_DELAY_MS;
     for (const room of roomManager.getAllRooms()) {
       if (room.gameId !== "airhockey" || room.status !== "playing" || !room.gameState) continue;
       if ((room.gameState as AirHockeyState).mode === "solo") continue;
-      room.applyAction({ type: "tick", now }, "system");
+      const current = room.gameState as AirHockeyState;
+      // Nos primeiros 80 ms de uma partida, a simulação ainda não alcançou o
+      // instante inicial. Nunca movemos lastTickAt para trás.
+      if (authoritativeTick < current.lastTickAt) continue;
+      const inputQueue = airHockeyQueueFor(room.code, current);
+      const physicsBefore = airHockeyPhysicsDebug ? (() => {
+        const before = room.gameState as AirHockeyState;
+        const tickStart = before.lastTickAt;
+        return {
+          inputs: airHockeyInputsSincePreviousTick.get(room.code) ?? [],
+          tickStart,
+          dt: Math.max(0, Math.min(33, authoritativeTick - tickStart)),
+          puck: { ...before.puck },
+          paddles: Object.fromEntries(Object.entries(before.paddles).map(([id, paddle]) => [id, { x: paddle.x, y: paddle.y, vx: paddle.vx, vy: paddle.vy, targetX: paddle.targetX, targetY: paddle.targetY }])),
+          impactSerial: before.impactSerial,
+        };
+      })() : null;
+      const timeline = advanceAirHockeyInputTimeline({
+        getState: () => room.gameState as AirHockeyState,
+        apply: (action, playerId) => room.applyAction(action, playerId),
+      }, inputQueue.inputs, authoritativeTick);
+      inputQueue.inputs = timeline.remaining;
+      for (const lateInput of timeline.lateInputs) {
+        console.warn("[airhockey] LATE INPUT", JSON.stringify({
+          room: room.code,
+          sequence: lateInput.sequence,
+          simulationTick: lateInput.simulationTick,
+          authoritativeTick: lateInput.authoritativeTick,
+          latenessMs: lateInput.latenessMs,
+        }));
+      }
       const state = room.gameState as AirHockeyState;
+      if (physicsBefore) {
+        console.info("[airhockey] SERVER PHYSICS", JSON.stringify({
+          room: room.code,
+          tickStart: physicsBefore.tickStart,
+          tickEnd: authoritativeTick,
+          dt: physicsBefore.dt,
+          inputsSincePreviousTick: physicsBefore.inputs,
+          puckBefore: physicsBefore.puck,
+          puckAfter: state.puck,
+          paddlesBefore: physicsBefore.paddles,
+          paddlesAfter: state.paddles,
+          impactSerialBefore: physicsBefore.impactSerial,
+          impactSerialAfter: state.impactSerial,
+          impactOccurred: state.impactSerial > physicsBefore.impactSerial,
+        }));
+        airHockeyInputsSincePreviousTick.delete(room.code);
+      }
       const lastBroadcast = airHockeyLastBroadcast.get(room.code) ?? 0;
       if (now - lastBroadcast >= 33 || state.phase === "finished") {
         airHockeyLastBroadcast.set(room.code, now);
+        if (airHockeyPhysicsDebug) {
+          console.info("[airhockey] SERVER SNAPSHOT", JSON.stringify({
+            room: room.code,
+            snapshotTick: state.lastTickAt,
+            lastProcessedInputSequence: state.lastProcessedInputSequence,
+            impactSerial: state.impactSerial,
+          }));
+        }
         broadcastGameState(io, room.code, roomManager);
       }
       if ((room.status as string) === "finished") broadcastRoom(io, room.code, roomManager);
