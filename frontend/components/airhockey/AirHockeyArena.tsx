@@ -9,7 +9,7 @@ const PADDLE_RADIUS = 0.075;
 const PUCK_RADIUS = 0.034;
 const LOCAL_PADDLE_SPEED = 3.45;
 type Effect = "wall" | "hit" | "goal" | "countdown";
-type Props = { stateRef: React.MutableRefObject<AirHockeyState | null>; selfId: string; onMove: (x: number, y: number) => void; onEffect: (effect: Effect) => void };
+type Props = { stateRef: React.MutableRefObject<AirHockeyState | null>; selfId: string; onMove: (x: number, y: number, sequence?: number) => void; onEffect: (effect: Effect) => void };
 
 export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,6 +23,7 @@ export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: P
   const lastVisualPhase = useRef<string | null>(null);
   const goalFx = useRef<{ serial: number; startedAt: number; x: number; y: number; color: string; final: boolean } | null>(null);
   const sentAt = useRef(0);
+  const inputSequence = useRef(0);
   const events = useRef({ impact: -1, goal: -1, countdown: -1 });
 
   useEffect(() => {
@@ -222,7 +223,7 @@ export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: P
     return selfIsLeft ? {x:(1-(pointY-field.y)/field.height)*WIDTH,y:(pointX-field.x)/field.width}:{x:(pointY-field.y)/field.height*WIDTH,y:1-(pointX-field.x)/field.width};
   };
   const movePointer = (event: PointerEvent<HTMLCanvasElement>) => {
-    if(!dragging.current)return;event.preventDefault();const state=stateRef.current;if(!state||state.phase!=="playing")return;const raw=toWorld(event);const left=state.playerIds[0]===selfId;const minX=left?PADDLE_RADIUS:.8+PADDLE_RADIUS*.25;const maxX=left ? .8-PADDLE_RADIUS*.25 : WIDTH-PADDLE_RADIUS;const x=Math.max(minX,Math.min(maxX,raw.x));const y=Math.max(PADDLE_RADIUS,Math.min(HEIGHT-PADDLE_RADIUS,raw.y));localPaddle.current={x,y};const now=performance.now();if(state.mode==="solo"||now-sentAt.current>16){sentAt.current=now;onMove(x,y);}
+    if(!dragging.current)return;event.preventDefault();const state=stateRef.current;if(!state||state.phase!=="playing")return;const raw=toWorld(event);const left=state.playerIds[0]===selfId;const minX=left?PADDLE_RADIUS:.8+PADDLE_RADIUS*.25;const maxX=left ? .8-PADDLE_RADIUS*.25 : WIDTH-PADDLE_RADIUS;const x=Math.max(minX,Math.min(maxX,raw.x));const y=Math.max(PADDLE_RADIUS,Math.min(HEIGHT-PADDLE_RADIUS,raw.y));localPaddle.current={x,y};const now=performance.now();if(state.mode==="solo"||now-sentAt.current>16){sentAt.current=now;onMove(x,y,state.mode==="duel"?++inputSequence.current:undefined);}
   };
   return <canvas ref={canvasRef} onPointerDown={(event)=>{dragging.current=true;event.currentTarget.setPointerCapture(event.pointerId);movePointer(event);}} onPointerMove={movePointer} onPointerUp={(event)=>{dragging.current=false;localPaddle.current=null;event.currentTarget.releasePointerCapture(event.pointerId);}} onPointerCancel={()=>{dragging.current=false;localPaddle.current=null;}} className="block h-full w-full touch-none select-none" aria-label="Mesa de Air Hockey" />;
 }

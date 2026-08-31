@@ -31,4 +31,5 @@ export interface AirHockeyState {
   impactStrength: number;
   impactKind: "wall" | "paddle" | null;
   results: AirHockeyResult[];
+  lastProcessedInputSequence?: Record<string, number>;
 }

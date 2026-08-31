@@ -1147,11 +1147,11 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     // ---- Eventos exclusivos do Air Hockey ----
     // A posição da raquete é limitada pelo motor autoritativo. O cliente só
     // informa a intenção de movimento; placar, gols e física ficam no servidor.
-    socket.on("airhockey:move", (payload: { x: number; y: number }) => {
+    socket.on("airhockey:move", (payload: { x: number; y: number; sequence?: number }) => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
       if (!room || room.gameId !== "airhockey" || !Number.isFinite(payload?.x) || !Number.isFinite(payload?.y)) return;
-      room.applyAction({ type: "move", x: payload.x, y: payload.y }, socket.data.playerId ?? socket.id);
+      room.applyAction({ type: "move", x: payload.x, y: payload.y, sequence: payload.sequence }, socket.data.playerId ?? socket.id);
     });
     socket.on("airhockey:soloComplete", (payload: { score: number; conceded: number }) => {
       const code=socket.data.roomCode; const room=code?roomManager.getRoom(code):undefined;

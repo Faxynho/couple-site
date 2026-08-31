@@ -12,12 +12,27 @@ export function useAirHockeyGame(roomCode: string) {
   const engineRef = useRef(new AirHockeyGame());
   const soloFinished = useRef(false);
   const lastDuoTick = useRef(0);
+  const authoritativeRef = useRef<AirHockeyState | null>(null);
+  const predictedLocalRef = useRef<AirHockeyState | null>(null);
+  // Estrutura isolada para a etapa de prediction do disco. Por enquanto ela
+  // apenas espelha a base autoritativa: não participa de render nem física.
+  const predictedPuckRef = useRef<AirHockeyState["puck"] | null>(null);
+  const pendingInputs = useRef<Array<{ x: number; y: number; sequence: number }>>([]);
 
   useEffect(() => {
     const socket = getSocket();
     const accept = (next: AirHockeyState | null) => {
       if (next?.mode === "duel" && next.lastTickAt !== undefined && next.lastTickAt < lastDuoTick.current) return;
       if (next?.mode === "duel" && next.lastTickAt !== undefined) lastDuoTick.current = next.lastTickAt;
+      if (next?.mode === "duel") {
+        authoritativeRef.current = next;
+        predictedPuckRef.current = { ...next.puck };
+        const confirmed = next.lastProcessedInputSequence?.[getPlayerId()] ?? 0;
+        pendingInputs.current = pendingInputs.current.filter((input) => input.sequence > confirmed);
+        let predicted = structuredClone(next);
+        for (const input of pendingInputs.current) predicted = engineRef.current.applyAction(predicted as never, { type: "move", ...input }, getPlayerId()) as AirHockeyState;
+        predictedLocalRef.current = predicted;
+      }
       if (next?.mode === "solo" && stateRef.current?.mode === "solo" && next.startedAt === stateRef.current.startedAt) return;
       if (next?.mode === "solo") soloFinished.current = false;
       stateRef.current = next;
@@ -40,7 +55,7 @@ export function useAirHockeyGame(roomCode: string) {
     return () => { cancelAnimationFrame(frame); socket.off("game:state", accept); socket.off("connect", sync); };
   }, [roomCode]);
 
-  const move = useCallback((x: number, y: number) => { const state=stateRef.current; if(state?.mode==="solo"){ stateRef.current=engineRef.current.applyAction(state as never,{type:"move",x,y},getPlayerId()) as AirHockeyState; return; } getSocket().emit("airhockey:move", { x, y }); }, []);
+  const move = useCallback((x: number, y: number, sequence?: number) => { const state=stateRef.current; if(state?.mode==="solo"){ stateRef.current=engineRef.current.applyAction(state as never,{type:"move",x,y},getPlayerId()) as AirHockeyState; return; } if(state?.mode==="duel"&&sequence!==undefined){const input={x,y,sequence};pendingInputs.current.push(input);const base=predictedLocalRef.current??authoritativeRef.current??state;predictedLocalRef.current=engineRef.current.applyAction(structuredClone(base) as never,{type:"move",...input},getPlayerId()) as AirHockeyState;} getSocket().emit("airhockey:move", { x, y, sequence }); }, []);
   const newGame = useCallback(() => getSocket().emit("airhockey:newGame"), []);
-  return { stateRef, meta, move, newGame };
+  return { stateRef, authoritativeRef, predictedLocalRef, predictedPuckRef, meta, move, newGame };
 }

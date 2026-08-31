@@ -30,10 +30,11 @@ export interface AirHockeyState {
   paddleContactNormals: Record<string, { x: number; y: number } | null>;
   botNextThinkAt: number;
   results: AirHockeyResult[];
+  lastProcessedInputSequence: Record<string, number>;
 }
 
 export type AirHockeyAction =
-  | { type: "move"; x: number; y: number }
+  | { type: "move"; x: number; y: number; sequence?: number }
   | { type: "tick"; now: number }
   | { type: "completeSolo"; score: number; conceded: number; now: number };
 
@@ -335,6 +336,7 @@ export class AirHockeyGame implements GameEngine<AirHockeyState, AirHockeyAction
       lastGoalBy: null, goalSerial: 0, impactSerial: 0, impactStrength: 0, impactKind: null,
       paddleContact: { [first]: false, [second]: false },
       paddleContactNormals: { [first]: null, [second]: null }, botNextThinkAt: now, results: [],
+      lastProcessedInputSequence: { [first]: 0, [second]: 0 },
     };
     return state;
   }
@@ -350,11 +352,13 @@ export class AirHockeyGame implements GameEngine<AirHockeyState, AirHockeyAction
     }
     if (action.type === "move") {
       if (!state.humanPlayerIds.includes(playerId) || !Number.isFinite(action.x) || !Number.isFinite(action.y)) return state;
+      if (state.mode === "duel" && (!Number.isInteger(action.sequence) || (action.sequence as number) <= (state.lastProcessedInputSequence[playerId] ?? 0))) return state;
       const next = structuredClone(state);
       const paddle = next.paddles[playerId];
       if (!paddle) return state;
       paddle.targetX = action.x;
       paddle.targetY = action.y;
+      if (state.mode === "duel") next.lastProcessedInputSequence[playerId] = action.sequence as number;
       clampTarget(paddle, playerId === next.playerIds[0] ? 0 : 1);
       return next;
     }
