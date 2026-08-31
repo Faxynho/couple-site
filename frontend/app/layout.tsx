@@ -4,6 +4,7 @@ import "./globals.css";
 import { themeInitScript } from "@/lib/theme";
 import ThemeToggleGate from "@/components/ThemeToggleGate";
 import AccountPanelGate from "@/components/account/AccountPanelGate";
+import PWARegister from "@/components/PWARegister";
 
 const fredoka = Fredoka({
   subsets: ["latin"],
@@ -20,6 +21,17 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: "Nós Dois • Jogos Cooperativos",
   description: "Uma salinha só nossa para jogar juntos, onde quer que estejamos.",
+
+  manifest: "/manifest.webmanifest",
+
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Lovie",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <ThemeToggleGate />
         <AccountPanelGate />
+        <PWARegister />
         {children}
       </body>
     </html>

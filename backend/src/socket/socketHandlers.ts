@@ -1153,6 +1153,14 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (!room || room.gameId !== "airhockey" || !Number.isFinite(payload?.x) || !Number.isFinite(payload?.y)) return;
       room.applyAction({ type: "move", x: payload.x, y: payload.y, sequence: payload.sequence }, socket.data.playerId ?? socket.id);
     });
+    // Amostra do relógio da própria simulação, não do relógio de parede. Assim
+    // o cliente mede a idade de um snapshot no mesmo domínio de tempo do tick.
+    socket.on("airhockey:clock", (callback?: (response: { serverNow: number }) => void) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const state = room?.gameId === "airhockey" ? room.gameState as AirHockeyState | null : null;
+      callback?.({ serverNow: state?.lastTickAt ?? Date.now() });
+    });
     socket.on("airhockey:soloComplete", (payload: { score: number; conceded: number }) => {
       const code=socket.data.roomCode; const room=code?roomManager.getRoom(code):undefined;
       if (!room || room.gameId!=="airhockey") return;
@@ -1369,12 +1377,16 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
   // ~30 Hz e interpolam a outra raquete, sem esperar uma viagem de rede para
   // movimentar a própria raquete.
   const airHockeyLastBroadcast = new Map<string, number>();
+  const AIR_HOCKEY_STEP_MS = 16;
   setInterval(() => {
     const now = Date.now();
     for (const room of roomManager.getAllRooms()) {
       if (room.gameId !== "airhockey" || room.status !== "playing" || !room.gameState) continue;
       if ((room.gameState as AirHockeyState).mode === "solo") continue;
-      room.applyAction({ type: "tick", now }, "system");
+      const stateBeforeTick = room.gameState as AirHockeyState;
+      // Cliente e servidor integram a mesma engine com o mesmo passo fixo.
+      // O relógio real continua sendo usado para a cadência de broadcast.
+      room.applyAction({ type: "tick", now: stateBeforeTick.lastTickAt + AIR_HOCKEY_STEP_MS }, "system");
       const state = room.gameState as AirHockeyState;
       const lastBroadcast = airHockeyLastBroadcast.get(room.code) ?? 0;
       if (now - lastBroadcast >= 33 || state.phase === "finished") {

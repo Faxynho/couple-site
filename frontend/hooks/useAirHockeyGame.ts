@@ -8,33 +8,24 @@ import { AirHockeyGame } from "../../backend/src/games/airhockey/AirHockeyGame";
 
 type PendingInput = { x: number; y: number; sequence: number };
 type PaddleIntent = { x: number; y: number };
-type PredictedImpact = { serial: number; startedAt: number };
 
-// O servidor publica o estado a cada ~33 ms. Esta pequena antecipação cobre a
-// idade normal de um snapshot sem depender do relógio de parede do dispositivo.
-const DUEL_PREDICTION_LEAD_MS = 48;
-const MAX_CLIENT_FRAME_MS = 33;
-const CLIENT_SIMULATION_STEP_MS = 1000 / 60;
+// Também usado pelo tick autoritativo. Renderização continua livre em RAF;
+// somente a simulação anda por múltiplos inteiros deste passo.
+const PHYSICS_STEP_MS = 16;
+const MAX_CATCH_UP_STEPS = 12;
 
 function cloneState(state: AirHockeyState) {
   return structuredClone(state) as AirHockeyState;
 }
 
-/**
- * Avança exclusivamente a cópia privada do cliente. O relógio usado é o
- * lastTickAt do próprio estado, portanto um relógio local adiantado/atrasado
- * não altera o tamanho dos passos nem a física que a engine executa.
- */
-function advancePrediction(engine: AirHockeyGame, state: AirHockeyState, elapsedMs: number) {
+function advanceFixed(engine: AirHockeyGame, state: AirHockeyState, elapsedMs: number, maxSteps = Number.POSITIVE_INFINITY) {
   let next = state;
-  let remaining = Math.max(0, elapsedMs);
-  while (remaining > 0.001 && next.phase !== "finished") {
-    const step = Math.min(CLIENT_SIMULATION_STEP_MS, remaining);
+  const steps = Math.min(maxSteps, Math.floor(Math.max(0, elapsedMs) / PHYSICS_STEP_MS));
+  for (let step = 0; step < steps && next.phase !== "finished"; step += 1) {
     const lastTickAt = next.lastTickAt ?? Date.now();
-    next = engine.applyAction(next as never, { type: "tick", now: lastTickAt + step }, "system") as AirHockeyState;
-    remaining -= step;
+    next = engine.applyAction(next as never, { type: "tick", now: lastTickAt + PHYSICS_STEP_MS }, "system") as AirHockeyState;
   }
-  return next;
+  return { state: next, consumedMs: steps * PHYSICS_STEP_MS };
 }
 
 export function useAirHockeyGame(roomCode: string) {
@@ -46,45 +37,46 @@ export function useAirHockeyGame(roomCode: string) {
   const authoritativeRef = useRef<AirHockeyState | null>(null);
   const predictedLocalRef = useRef<AirHockeyState | null>(null);
   const predictedPuckRef = useRef<AirHockeyState["puck"] | null>(null);
-  // Estado de renderização: não participa da física nem da reconciliação.
-  // A arena o usa para desenhar a própria paddle no mesmo frame do ponteiro.
   const localIntentRef = useRef<PaddleIntent | null>(null);
   const pendingInputs = useRef<PendingInput[]>([]);
   const nextInputSequence = useRef(0);
-  const predictedLocalImpact = useRef<PredictedImpact | null>(null);
-  const lastLocalIntentAt = useRef<number | null>(null);
+  const predictionRemainderMs = useRef(0);
+  // serverNow - clientNow; escolhido pela amostra de menor RTT.
+  const serverClockOffsetMs = useRef(0);
+  const bestClockRttMs = useRef(Number.POSITIVE_INFINITY);
 
   useEffect(() => {
     const socket = getSocket();
     lastDuoTick.current = 0;
     pendingInputs.current = [];
     nextInputSequence.current = 0;
-    predictedLocalImpact.current = null;
-    lastLocalIntentAt.current = null;
+    predictionRemainderMs.current = 0;
+    bestClockRttMs.current = Number.POSITIVE_INFINITY;
 
     const updateMeta = (next: AirHockeyState) => {
       setMeta((previous) => {
-        if (
-          previous &&
-          previous.phase === next.phase &&
-          previous.goalSerial === next.goalSerial &&
-          previous.scores[next.playerIds[0]] === next.scores[next.playerIds[0]] &&
-          previous.scores[next.playerIds[1]] === next.scores[next.playerIds[1]]
-        ) return previous;
+        if (previous && previous.phase === next.phase && previous.goalSerial === next.goalSerial && previous.scores[next.playerIds[0]] === next.scores[next.playerIds[0]] && previous.scores[next.playerIds[1]] === next.scores[next.playerIds[1]]) return previous;
         return next;
       });
     };
 
-    const accept = (next: AirHockeyState | null) => {
-      if (!next) {
-        stateRef.current = null;
-        return;
-      }
+    const syncClock = () => {
+      const sentAt = Date.now();
+      socket.emit("airhockey:clock", (response: { serverNow?: number }) => {
+        const receivedAt = Date.now();
+        if (!Number.isFinite(response?.serverNow)) return;
+        const rtt = receivedAt - sentAt;
+        if (rtt <= bestClockRttMs.current) {
+          bestClockRttMs.current = rtt;
+          serverClockOffsetMs.current = (response.serverNow as number) - (sentAt + receivedAt) / 2;
+        }
+      });
+    };
 
+    const accept = (next: AirHockeyState | null) => {
+      if (!next) { stateRef.current = null; return; }
       if (next.mode === "duel") {
         const snapshotTick = next.lastTickAt ?? 0;
-        // A ordem de entrega não é garantida após reconexão; um snapshot que
-        // não avançou o tick não pode desfazer previsão já confirmada.
         if (snapshotTick <= lastDuoTick.current) return;
         lastDuoTick.current = snapshotTick;
         authoritativeRef.current = next;
@@ -94,33 +86,17 @@ export function useAirHockeyGame(roomCode: string) {
         pendingInputs.current = pendingInputs.current.filter((input) => input.sequence > confirmed);
         nextInputSequence.current = Math.max(nextInputSequence.current, confirmed);
 
-        const pendingImpact = predictedLocalImpact.current;
-        const confirmsPredictedImpact = !pendingImpact || next.impactSerial >= pendingImpact.serial;
-        if (confirmsPredictedImpact) predictedLocalImpact.current = null;
-
-        // Enquanto a colisão local ainda não chegou do servidor, o snapshot
-        // atualiza metadados/raquete remota, mas não pode apagar o puck que já
-        // reagiu no cliente. Isso é separado dos inputs apenas "ackados".
-        if (!confirmsPredictedImpact && predictedLocalRef.current && next.phase === "playing") {
-          const preserved = cloneState(predictedLocalRef.current);
-          const remoteId = next.playerIds[0] === selfId ? next.playerIds[1] : next.playerIds[0];
-          preserved.paddles[remoteId] = cloneState(next).paddles[remoteId];
-          preserved.lastProcessedInputSequence = next.lastProcessedInputSequence;
-          authoritativeRef.current = next;
-          predictedLocalRef.current = preserved;
-          predictedPuckRef.current = { ...preserved.puck };
-          stateRef.current = preserved;
-          updateMeta(next);
-          return;
-        }
-
-        // Reconciliação: servidor primeiro; depois apenas intenções ainda não
-        // processadas. Nenhum impulso é copiado do cliente para o servidor.
+        // Rebase autoritativo, replay somente das intenções ainda pendentes e
+        // avanço até o presente usando a idade real deste snapshot.
         let predicted = cloneState(next);
         for (const input of pendingInputs.current) {
           predicted = engineRef.current.applyAction(predicted as never, { type: "move", ...input }, selfId) as AirHockeyState;
         }
-        predicted = advancePrediction(engineRef.current, predicted, DUEL_PREDICTION_LEAD_MS);
+        const serverNowInClientClock = Date.now() + serverClockOffsetMs.current;
+        const snapshotAgeMs = Math.max(0, serverNowInClientClock - snapshotTick);
+        const advanced = advanceFixed(engineRef.current, predicted, snapshotAgeMs);
+        predicted = advanced.state;
+        predictionRemainderMs.current = snapshotAgeMs - advanced.consumedMs;
         predictedLocalRef.current = predicted;
         predictedPuckRef.current = { ...predicted.puck };
         stateRef.current = predicted;
@@ -136,18 +112,21 @@ export function useAirHockeyGame(roomCode: string) {
       updateMeta(next);
     };
 
-    const sync = () => socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (response: { ok: boolean; gameState?: AirHockeyState }) => {
-      if (response.ok && response.gameState) accept(response.gameState);
-    });
+    const sync = () => {
+      syncClock();
+      socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (response: { ok: boolean; gameState?: AirHockeyState }) => {
+        if (response.ok && response.gameState) accept(response.gameState);
+      });
+    };
     sync();
+    const clockInterval = window.setInterval(syncClock, 2000);
 
     let frame = 0;
     let previous = performance.now();
     const localTick = (time: number) => {
       const state = stateRef.current;
-      const frameMs = Math.min(Math.max(0, time - previous), MAX_CLIENT_FRAME_MS);
+      const frameMs = Math.max(0, Math.min(100, time - previous));
       previous = time;
-
       if (state?.mode === "solo" && state.phase !== "finished") {
         stateRef.current = engineRef.current.applyAction(state as never, { type: "tick", now: Date.now() }, "system") as AirHockeyState;
         const current = stateRef.current;
@@ -157,19 +136,13 @@ export function useAirHockeyGame(roomCode: string) {
           getSocket().emit("airhockey:soloComplete", { score: current.scores[current.playerIds[0]], conceded: current.scores[current.playerIds[1]] });
         }
       } else if (state?.mode === "duel" && state.phase !== "finished") {
-        // O estado renderizado é esta previsão, não o último pacote recebido.
-        const predicted = advancePrediction(engineRef.current, state, frameMs);
-        const selfId = getPlayerId();
-        const beforeContact = (state as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
-        const afterContact = (predicted as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
-        if (!beforeContact && afterContact && predicted.impactKind === "paddle" && predicted.impactSerial > state.impactSerial) {
-          predictedLocalImpact.current = { serial: predicted.impactSerial, startedAt: performance.now() };
-        }
-        predictedLocalRef.current = predicted;
-        predictedPuckRef.current = { ...predicted.puck };
-        stateRef.current = predicted;
+        predictionRemainderMs.current += frameMs;
+        const advanced = advanceFixed(engineRef.current, state, predictionRemainderMs.current, MAX_CATCH_UP_STEPS);
+        predictionRemainderMs.current -= advanced.consumedMs;
+        predictedLocalRef.current = advanced.state;
+        predictedPuckRef.current = { ...advanced.state.puck };
+        stateRef.current = advanced.state;
       }
-
       frame = requestAnimationFrame(localTick);
     };
     frame = requestAnimationFrame(localTick);
@@ -177,22 +150,26 @@ export function useAirHockeyGame(roomCode: string) {
     socket.on("game:state", accept);
     socket.on("connect", sync);
     return () => {
+      clearInterval(clockInterval);
       cancelAnimationFrame(frame);
       socket.off("game:state", accept);
       socket.off("connect", sync);
     };
   }, [roomCode]);
 
+  const previewMove = useCallback((x: number, y: number) => {
+    // Caminho exclusivamente visual da paddle local; não mexe no relógio nem
+    // inventa um passo físico diferente da simulação autoritativa.
+    localIntentRef.current = { x, y };
+  }, []);
+
   const move = useCallback((x: number, y: number) => {
     const state = stateRef.current;
     if (!state) return;
-
     if (state.mode === "solo") {
       stateRef.current = engineRef.current.applyAction(state as never, { type: "move", x, y }, getPlayerId()) as AirHockeyState;
       return;
     }
-
-    // Não altera a simulação: é apenas a posição desenhada da paddle local.
     localIntentRef.current = { x, y };
     const sequence = ++nextInputSequence.current;
     const input = { x, y, sequence };
@@ -203,30 +180,6 @@ export function useAirHockeyGame(roomCode: string) {
     predictedPuckRef.current = { ...predicted.puck };
     stateRef.current = predicted;
     getSocket().emit("airhockey:move", input);
-  }, []);
-
-  const previewMove = useCallback((x: number, y: number) => {
-    localIntentRef.current = { x, y };
-    const state = predictedLocalRef.current ?? stateRef.current;
-    if (!state || state.mode !== "duel" || state.phase !== "playing") return;
-
-    const now = performance.now();
-    const inputDt = Math.min(.033, Math.max(.001, lastLocalIntentAt.current === null ? 1 / 60 : (now - lastLocalIntentAt.current) / 1000));
-    lastLocalIntentAt.current = now;
-    const predicted = engineRef.current.applyAction(
-      cloneState(state) as never,
-      { type: "predictMove", x, y, now: state.lastTickAt ?? Date.now(), inputDt },
-      getPlayerId()
-    ) as AirHockeyState;
-    const selfId = getPlayerId();
-    const beforeContact = (state as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
-    const afterContact = (predicted as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
-    if (!beforeContact && afterContact && predicted.impactKind === "paddle" && predicted.impactSerial > state.impactSerial) {
-      predictedLocalImpact.current = { serial: predicted.impactSerial, startedAt: now };
-    }
-    predictedLocalRef.current = predicted;
-    predictedPuckRef.current = { ...predicted.puck };
-    stateRef.current = predicted;
   }, []);
 
   const newGame = useCallback(() => getSocket().emit("airhockey:newGame"), []);
