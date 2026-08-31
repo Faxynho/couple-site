@@ -1153,6 +1153,12 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (!room || room.gameId !== "airhockey" || !Number.isFinite(payload?.x) || !Number.isFinite(payload?.y)) return;
       room.applyAction({ type: "move", x: payload.x, y: payload.y, sequence: payload.sequence }, socket.data.playerId ?? socket.id);
     });
+    // Fornece uma amostra do mesmo domínio de tempo de `lastTickAt` (epoch do
+    // servidor). O cliente estima o offset pelo menor RTT, sem mudar a
+    // cadência autoritativa.
+    socket.on("airhockey:clock", (callback?: (response: { serverNow: number }) => void) => {
+      callback?.({ serverNow: Date.now() });
+    });
     socket.on("airhockey:soloComplete", (payload: { score: number; conceded: number }) => {
       const code=socket.data.roomCode; const room=code?roomManager.getRoom(code):undefined;
       if (!room || room.gameId!=="airhockey") return;

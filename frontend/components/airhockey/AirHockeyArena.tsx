@@ -172,8 +172,11 @@ export default function AirHockeyArena({ stateRef, predictedPuckRef, selfId, onM
         const paddle = state.paddles[id]; if (!paddle) continue;
         const previous = paddleVisuals.current[id] ?? { x: paddle.x, y: paddle.y };
         const local = id === selfId;
+        // A paddle local acompanha somente a posição física prevista. O
+        // filtro visual absorve correções de snapshot sem devolver qualquer
+        // posição para a engine ou antecipar uma colisão.
         const display = state.mode === "duel" && local
-          ? { x: paddle.x, y: paddle.y }
+          ? { x: previous.x + (paddle.x - previous.x) * (1 - Math.exp(-renderDt * 24)), y: previous.y + (paddle.y - previous.y) * (1 - Math.exp(-renderDt * 24)) }
           : state.mode === "solo" && local && localPaddle.current
             ? advanceSoloLocalPaddle(previous, localPaddle.current, visual, renderDt)
             : state.mode === "solo"
