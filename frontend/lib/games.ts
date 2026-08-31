@@ -86,6 +86,14 @@ export const GAMES: GameDefinition[] = [
     image: "/images/air-hockey-card.png",
     available: true,
   },
+  {
+    id: "chess",
+    name: "Xadrez",
+    description: "O clássico em uma mesa elegante: enfrente o BOT ou dispute uma partida em tempo real.",
+    emoji: "♟",
+    image: "/images/chess-card.png",
+    available: true,
+  },
 ];
 
 /**

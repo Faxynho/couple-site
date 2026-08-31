@@ -51,6 +51,8 @@ export class Room {
   pendingSeerId: string | null = null;
   /** Específico dos jogos com modo de partida (incluindo Termo em Duelo). */
   pendingMatchMode = "together";
+  /** Id do jogador que será Rosa no Xadrez Duo. Rosa equivale às brancas. */
+  pendingChessPinkPlayerId: string | null = null;
 
   /** Sugestão de sequência de jogos (só relevante em salas Duo). */
   sequence: GameId[] = [];
@@ -185,6 +187,7 @@ export class Room {
     if (gameId === "quiz" || gameId === "memory") return this.roomMode === "solo" ? "solo" : "together";
     if (gameId === "termo") return this.roomMode === "solo" ? "solo" : "duel";
     if (gameId === "airhockey") return this.roomMode === "solo" ? "solo" : "duel";
+    if (gameId === "chess") return this.roomMode === "solo" ? "solo" : "duel";
     if (gameId === "rpg") return this.roomMode === "solo" ? "soloBot" : "1v1";
     return "together"; // crossword / wordsearch / sudoku — puzzle/colors ignoram este campo
   }
@@ -202,6 +205,9 @@ export class Room {
     this.pendingColorMode = "competitive";
     this.pendingSeerId = null;
     this.pendingMatchMode = this.defaultMatchModeFor(gameId);
+    this.pendingChessPinkPlayerId = gameId === "chess" && this.roomMode === "duo"
+      ? [...this.players.keys()][0] ?? null
+      : null;
     this.status = this.players.size === this.maxPlayers ? "ready" : "waiting";
   }
 
@@ -248,6 +254,7 @@ export class Room {
     colorMode?: string;
     seerId?: string | null;
     matchMode?: string;
+    chessPinkPlayerId?: string | null;
   }) {
     if (config.imageId !== undefined) this.pendingImageId = config.imageId;
     if (config.imageWidth !== undefined) this.pendingImageWidth = config.imageWidth;
@@ -256,6 +263,7 @@ export class Room {
     if (config.colorMode !== undefined) this.pendingColorMode = config.colorMode;
     if (config.seerId !== undefined) this.pendingSeerId = config.seerId;
     if (config.matchMode !== undefined) this.pendingMatchMode = config.matchMode;
+    if (config.chessPinkPlayerId !== undefined) this.pendingChessPinkPlayerId = config.chessPinkPlayerId;
   }
 
   startGame(overrides?: Record<string, unknown>) {
@@ -290,6 +298,7 @@ export class Room {
       this.gameId === "memory" ||
       this.gameId === "termo" ||
       this.gameId === "airhockey"
+        || this.gameId === "chess"
         ? this.pendingMatchMode
         : undefined;
 
@@ -304,6 +313,7 @@ export class Room {
       // Fixado no início da partida — usado pelo Palavras Cruzadas/Caça-Palavras
       // para saber quantos jogadores precisam terminar antes de encerrar o duelo.
       playerIds: connectedIds,
+      pinkPlayerId: this.gameId === "chess" && this.roomMode === "duo" ? this.pendingChessPinkPlayerId : undefined,
       ...overrides,
     };
     this.gameState = engine.createInitialState(options);
@@ -363,6 +373,7 @@ export class Room {
       pendingColorMode: this.pendingColorMode,
       pendingSeerId: this.pendingSeerId,
       pendingMatchMode: this.pendingMatchMode,
+      pendingChessPinkPlayerId: this.pendingChessPinkPlayerId,
       sequence: this.sequence,
       sequenceProgress: this.sequenceProgress,
     };

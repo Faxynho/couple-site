@@ -19,6 +19,7 @@ import { QUIZ_DIFFICULTIES, QuizDifficulty } from "@/lib/quizTypes";
 import { MEMORY_DIFFICULTIES, MemoryDifficulty } from "@/lib/memoryTypes";
 import { TERMO_VARIANTS, TermoVariant } from "@/lib/termoTypes";
 import { AIR_HOCKEY_DIFFICULTIES, AirHockeyDifficulty } from "@/lib/airHockeyTypes";
+import { CHESS_DIFFICULTIES, ChessDifficulty } from "@/lib/chessTypes";
 import { fetchAccounts } from "@/lib/accountApi";
 import { getActiveAccount } from "@/lib/accountSession";
 
@@ -116,6 +117,8 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
     } else if (gameId === "termo") {
       setConfig({ difficulty, matchMode: "solo" });
     } else if (gameId === "airhockey") {
+      setConfig({ difficulty, matchMode: "solo" });
+    } else if (gameId === "chess") {
       setConfig({ difficulty, matchMode: "solo" });
     } else {
       setConfig({ difficulty });
@@ -265,6 +268,17 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
             <DifficultyGrid
               entries={Object.entries(AIR_HOCKEY_DIFFICULTIES) as [AirHockeyDifficulty, (typeof AIR_HOCKEY_DIFFICULTIES)[AirHockeyDifficulty]][]}
               selected={difficulty as AirHockeyDifficulty}
+              onSelect={setDifficulty}
+            />
+          </div>
+        )}
+
+        {gameId === "chess" && (
+          <div className="text-left">
+            <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">Dificuldade do BOT</p>
+            <DifficultyGrid
+              entries={Object.entries(CHESS_DIFFICULTIES) as [ChessDifficulty, (typeof CHESS_DIFFICULTIES)[ChessDifficulty]][]}
+              selected={difficulty as ChessDifficulty}
               onSelect={setDifficulty}
             />
           </div>

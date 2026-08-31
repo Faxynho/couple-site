@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
@@ -14,6 +14,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 import { useRoomSession } from "@/hooks/useRoomSession";
 import { GAMES } from "@/lib/games";
 import { GameDefinition } from "@/lib/types";
+import GameSearch, { normalizeGameSearch } from "@/components/GameSearch";
 
 export default function DuoRoomPage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -31,6 +32,12 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
     kickPlayer,
     shuffleSequence,
   } = useRoomSession(code);
+  const [search, setSearch] = useState("");
+  const filteredGames = useMemo(() => {
+    const query = normalizeGameSearch(search);
+    if (!query) return GAMES;
+    return GAMES.filter((item) => normalizeGameSearch(`${item.name} ${item.description}`).includes(query));
+  }, [search]);
 
   useEffect(() => {
     if (room?.status === "playing" || room?.status === "finished") {
@@ -101,10 +108,20 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             </div>
 
             {isHost ? (
-              <div className="grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
-                {GAMES.map((g, i) => (
-                  <GameCard key={g.id} game={g} index={i} ctaLabel="Escolher" onPlay={(gd: GameDefinition) => selectGame(gd.id)} />
-                ))}
+              <div className="w-full">
+                <GameSearch value={search} onChange={setSearch} />
+                {filteredGames.length > 0 ? (
+                  <div className="mt-5 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
+                    {filteredGames.map((g, i) => (
+                      <GameCard key={g.id} game={g} index={i} ctaLabel="Escolher" onPlay={(gd: GameDefinition) => selectGame(gd.id)} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-8 rounded-xl3 border border-surface/70 bg-surface/45 px-5 py-10 text-center">
+                    <p className="font-display text-base font-semibold text-ink">Nenhum jogo encontrado</p>
+                    <p className="mt-1 text-sm text-ink-soft">Tente pesquisar outro nome.</p>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-center text-sm text-ink-soft">Aguardando o anfitrião escolher o jogo...</p>

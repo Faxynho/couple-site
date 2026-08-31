@@ -106,6 +106,7 @@ export function useRoomSession(code: string) {
       colorMode?: string;
       seerId?: string | null;
       matchMode?: string;
+      chessPinkPlayerId?: string | null;
     }) => {
       getSocket().emit("room:setConfig", payload);
     },

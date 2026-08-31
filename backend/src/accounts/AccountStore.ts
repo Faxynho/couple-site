@@ -42,11 +42,11 @@ function defaultProfile(id: AccountId): AccountProfile {
 }
 
 function defaultSoloStats(): AccountSoloStats {
-  return { timeMs: 0, gamePlayCounts: {}, difficultyCounts: {}, gameGoals: {} };
+  return { timeMs: 0, gamePlayCounts: {}, difficultyCounts: {}, gameGoals: {}, gameOutcomeCounts: {} };
 }
 
 function defaultDuoParticipation(): AccountDuoParticipation {
-  return { duelWins: 0, duelLosses: 0, duelDraws: 0, gameWinCounts: {}, gameLossCounts: {}, gameGoals: {} };
+  return { duelWins: 0, duelLosses: 0, duelDraws: 0, gameWinCounts: {}, gameLossCounts: {}, gameGoals: {}, gameOutcomeCounts: {} };
 }
 
 function defaultRecords(): AccountRecords {
@@ -90,6 +90,7 @@ function mergeWithDefaults(loaded: Partial<AccountsData> | null): AccountsData {
         gamePlayCounts: { ...loaded.solo[id].gamePlayCounts },
         difficultyCounts: { ...loaded.solo[id].difficultyCounts },
         gameGoals: { ...loaded.solo[id].gameGoals },
+        gameOutcomeCounts: { ...loaded.solo[id].gameOutcomeCounts },
       };
     }
     if (loaded.duoPerAccount?.[id]) {
@@ -99,6 +100,7 @@ function mergeWithDefaults(loaded: Partial<AccountsData> | null): AccountsData {
         gameWinCounts: { ...loaded.duoPerAccount[id].gameWinCounts },
         gameLossCounts: { ...loaded.duoPerAccount[id].gameLossCounts },
         gameGoals: { ...loaded.duoPerAccount[id].gameGoals },
+        gameOutcomeCounts: { ...loaded.duoPerAccount[id].gameOutcomeCounts },
       };
     }
     if (loaded.records?.[id]) {
@@ -287,6 +289,20 @@ class AccountStore {
     const target = bucket === "solo" ? this.data.solo[accountId].gameGoals : this.data.duoPerAccount[accountId].gameGoals;
     const current = target[gameId] ?? { scored: 0, conceded: 0 };
     target[gameId] = { scored: current.scored + Math.max(0, scored), conceded: current.conceded + Math.max(0, conceded) };
+    this.scheduleSave();
+  }
+
+  recordGameOutcome(bucket: "solo" | "duel", accountId: AccountId, gameId: GameId, rank: string, result: "win" | "loss" | "draw" | "solo") {
+    const owner = bucket === "solo" ? this.data.solo[accountId] : this.data.duoPerAccount[accountId];
+    const gameCounts = owner.gameOutcomeCounts[gameId] ?? {};
+    const current = gameCounts[rank] ?? { games: 0, wins: 0, losses: 0, draws: 0 };
+    // Em Solo, "solo" só representa vitória quando o extract do jogo gerou
+    // métrica de recorde; o Xadrez passa o resultado concreto abaixo.
+    const next = { ...current, games: current.games + 1 };
+    if (result === "win" || result === "solo") next.wins += 1;
+    else if (result === "loss") next.losses += 1;
+    else next.draws += 1;
+    owner.gameOutcomeCounts[gameId] = { ...gameCounts, [rank]: next };
     this.scheduleSave();
   }
 

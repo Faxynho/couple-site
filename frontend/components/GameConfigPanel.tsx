@@ -13,6 +13,8 @@ import { RPG_MODES, RPGMode } from "@/lib/rpgTypes";
 import { MEMORY_DIFFICULTIES, MEMORY_MODES, MemoryDifficulty, MemoryMode } from "@/lib/memoryTypes";
 import { TERMO_VARIANTS, TermoVariant } from "@/lib/termoTypes";
 import { RoomSnapshot } from "@/lib/types";
+import { useAccountPhotos } from "@/hooks/useAccountPhotos";
+import AccountAvatar from "@/components/account/AccountAvatar";
 
 interface GameConfigPanelProps {
   room: RoomSnapshot;
@@ -26,6 +28,7 @@ interface GameConfigPanelProps {
     colorMode?: string;
     seerId?: string | null;
     matchMode?: string;
+    chessPinkPlayerId?: string | null;
   }) => void;
 }
 
@@ -326,5 +329,54 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
     );
   }
 
+  if (room.gameId === "chess") {
+    return <ChessColorConfig
+      room={room}
+      isHost={isHost}
+      setConfig={setConfig}
+      connectedPlayers={connectedPlayers}
+    />;
+  }
+
   return null;
+}
+
+function ChessColorConfig({ room, isHost, setConfig, connectedPlayers }: { room: RoomSnapshot; isHost: boolean; setConfig: GameConfigPanelProps["setConfig"]; connectedPlayers: RoomSnapshot["players"] }) {
+    const photos = useAccountPhotos();
+    const pinkPlayerId = room.pendingChessPinkPlayerId ?? connectedPlayers[0]?.id ?? null;
+    const pinkPlayer = connectedPlayers.find((player) => player.id === pinkPlayerId);
+    return (
+      <div className="text-left">
+        <SectionLabel>{isHost ? "Escolha quem joga de Rosa" : "Cores escolhidas pelo anfitrião"}</SectionLabel>
+        {isHost ? (
+          <div className="grid grid-cols-2 gap-2">
+            {connectedPlayers.map((player) => {
+              const selected = player.id === pinkPlayerId;
+              const photo = player.accountId ? photos[player.accountId] : undefined;
+              return (
+                <button
+                  key={player.id}
+                  type="button"
+                  disabled={connectedPlayers.length !== 2}
+                  onClick={() => setConfig({ chessPinkPlayerId: player.id })}
+                  className={`flex items-center gap-2 rounded-xl2 border px-3 py-2.5 text-left transition-colors ${selected ? "border-rose bg-rose/10 text-ink shadow-sm" : "border-surface/70 bg-surface/50 text-ink-soft hover:bg-surface/70"}`}
+                >
+                  <AccountAvatar name={player.name} photo={photo} accountId={player.accountId} fallbackColor={player.color} size={34} />
+                  <span className="min-w-0"><span className="block truncate text-xs font-semibold">{player.name}</span><span className="block text-[10px] text-ink-soft">{selected ? "Rosa · começa" : "Azul"}</span></span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xl2 border border-surface/70 bg-surface/50 p-3">
+            <p className="text-center text-xs text-ink-soft">{pinkPlayer ? `${pinkPlayer.name} escolheu as cores` : "Aguardando o anfitrião escolher as cores"}</p>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-center text-[11px]">
+              {connectedPlayers.map((player) => <div key={player.id} className={`flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 ${player.id === pinkPlayerId ? "bg-rose/15 text-ink" : "bg-sky-200/20 text-ink-soft"}`}><AccountAvatar name={player.name} photo={player.accountId ? photos[player.accountId] : undefined} accountId={player.accountId} fallbackColor={player.color} size={24} /><span className="truncate font-medium">{player.name}</span><span>· {player.id === pinkPlayerId ? "Rosa" : "Azul"}</span></div>)}
+            </div>
+          </div>
+        )}
+        {connectedPlayers.length !== 2 && <p className="mt-2 text-center text-[11px] text-ink-soft">A escolha fica disponível quando os dois jogadores estiverem conectados.</p>}
+        <p className="mt-3 text-center text-[11px] text-ink-soft">Rosa usa as peças brancas e sempre começa. Azul responde.</p>
+      </div>
+    );
 }

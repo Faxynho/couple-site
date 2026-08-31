@@ -25,7 +25,12 @@ export type SoundEffect =
   | "airHockeyHit"
   | "airHockeyGoal"
   | "airHockeyCountdown"
-  | "airHockeyDefeat";
+  | "airHockeyDefeat"
+  | "chessMove"
+  | "chessCapture"
+  | "chessCheck"
+  | "chessPromotion"
+  | "chessDefeat";
 
 const SOUND_EVENT = "couple-site:sound-change";
 const SOUND_STORAGE_KEY = "couple-site:sound-enabled";
@@ -138,6 +143,11 @@ export function playSoundEffect(effect: SoundEffect) {
       case "airHockeyGoal": tone(context, 370, 0.09, 0, 0.045); tone(context, 554, 0.1, 0.07, 0.05); tone(context, 831, 0.18, 0.15, 0.055); break;
       case "airHockeyCountdown": tone(context, 610, 0.055, 0, 0.035, "triangle"); break;
       case "airHockeyDefeat": tone(context, 294, 0.09, 0, 0.04, "triangle"); tone(context, 196, 0.15, 0.08, 0.035); break;
+      case "chessMove": tone(context, 440, 0.05, 0, 0.035, "triangle"); break;
+      case "chessCapture": tone(context, 230, 0.07, 0, 0.04, "square"); tone(context, 330, 0.06, 0.04, 0.03); break;
+      case "chessCheck": tone(context, 620, 0.09, 0, 0.045); tone(context, 790, 0.1, 0.075, 0.04); break;
+      case "chessPromotion": tone(context, 523, 0.07, 0, 0.04); tone(context, 659, 0.08, 0.06, 0.045); tone(context, 784, 0.1, 0.12, 0.045); break;
+      case "chessDefeat": tone(context, 260, 0.1, 0, 0.04, "triangle"); tone(context, 196, 0.16, 0.09, 0.035); break;
     }
   } catch {
     // Áudio é apenas um extra decorativo; falhas silenciosas não afetam o jogo.

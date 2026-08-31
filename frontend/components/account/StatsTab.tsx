@@ -61,6 +61,7 @@ export default function StatsTab({ overview, error }: StatsTabProps) {
                   />
                   {hockeyGoals && <Row label="Gols no Air Hockey" value={`${hockeyGoals.scored} feitos · ${hockeyGoals.conceded} sofridos`} />}
                 </dl>
+                <ChessStats counts={participation.gameOutcomeCounts?.chess} />
               </div>
             );
           })}
@@ -91,6 +92,7 @@ export default function StatsTab({ overview, error }: StatsTabProps) {
                   />
                   {hockeyGoals && <Row label="Gols no Air Hockey" value={`${hockeyGoals.scored} feitos · ${hockeyGoals.conceded} sofridos`} />}
                 </dl>
+                <ChessStats counts={stats.gameOutcomeCounts?.chess} />
               </div>
             );
           })}
@@ -116,4 +118,11 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
       <dd className="text-right font-medium text-ink">{value}</dd>
     </div>
   );
+}
+
+function ChessStats({ counts }: { counts?: Partial<Record<string, { games: number; wins: number; losses: number; draws: number }>> }) {
+  const rows = ["easy", "medium", "hard"].map((difficulty) => [difficulty, counts?.[difficulty]] as const).filter(([, data]) => Boolean(data));
+  if (!rows.length) return null;
+  const labels: Record<string, string> = { easy: "Fácil", medium: "Médio", hard: "Difícil" };
+  return <div className="mt-3 border-t border-ink/10 pt-3"><p className="text-xs font-semibold text-ink">♟ Xadrez</p>{rows.map(([difficulty, data]) => <p key={difficulty} className="mt-1 text-[11px] text-ink-soft"><span className="font-medium text-ink">{labels[difficulty]}:</span> {data!.games} partidas · {data!.wins}V {data!.losses}D {data!.draws}E</p>)}</div>;
 }

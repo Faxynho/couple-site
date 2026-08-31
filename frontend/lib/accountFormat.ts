@@ -8,6 +8,7 @@ import { QUIZ_DIFFICULTIES } from "@/lib/quizTypes";
 import { MEMORY_DIFFICULTIES } from "@/lib/memoryTypes";
 import { TERMO_VARIANTS } from "@/lib/termoTypes";
 import { AIR_HOCKEY_DIFFICULTIES } from "@/lib/airHockeyTypes";
+import { CHESS_DIFFICULTIES } from "@/lib/chessTypes";
 import { NO_RANK } from "@/lib/accountTypes";
 
 type RankInfo = { label: string; emoji: string };
@@ -24,6 +25,7 @@ const RANK_MAPS: Partial<Record<GameId, Record<string, RankInfo>>> = {
   memory: MEMORY_DIFFICULTIES,
   termo: TERMO_VARIANTS,
   airhockey: AIR_HOCKEY_DIFFICULTIES,
+  chess: CHESS_DIFFICULTIES,
 };
 
 /** Ordem de exibição dos ranks de cada jogo nas abas de Estatísticas/Recordes. */
@@ -38,6 +40,7 @@ export const GAME_RANKS: Record<GameId, string[]> = {
   termo: ["one", "dueto", "quarteto"],
   rpg: [NO_RANK],
   airhockey: ["easy", "medium", "hard"],
+  chess: ["easy", "medium", "hard"],
 };
 
 /** O Quebra-cabeça é o único jogo sem nenhum modo de Duelo — usado pela aba

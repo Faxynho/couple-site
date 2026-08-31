@@ -231,6 +231,31 @@ interface AirHockeyStateShape {
   results: { playerId: string; outcome: "win" | "loss" | "draw" | "solo"; score: number; conceded: number }[];
 }
 
+interface ChessStateShape {
+  mode: "solo" | "duel";
+  difficulty: string;
+  startedAt: number;
+  finishedAt: number | null;
+  humanPlayerIds: string[];
+  result: { winnerId: string | null } | null;
+}
+
+function extractChess(state: ChessStateShape, accountByPlayerId: Map<string, AccountId | undefined>): MatchOutcome {
+  const durationMs = Math.max(0, (state.finishedAt ?? Date.now()) - state.startedAt);
+  const bucket: Bucket = state.mode === "duel" ? "duel" : "solo";
+  const playerIds = state.humanPlayerIds;
+  const players: PlayerOutcome[] = [];
+  for (const playerId of playerIds) {
+    const accountId = accountFor(playerId, accountByPlayerId);
+    if (!accountId) continue;
+    const won = state.result?.winnerId === playerId;
+    const result = state.result?.winnerId === null ? "draw" : won ? "win" : "loss";
+    // No Solo, a marca só existe se o humano realmente venceu o bot.
+    players.push({ accountId, metricValue: won ? durationMs : null, scoreType: "time", result });
+  }
+  return { rank: state.difficulty, durationMs, bucket, players };
+}
+
 function extractAirHockey(state: AirHockeyStateShape, accountByPlayerId: Map<string, AccountId | undefined>): MatchOutcome {
   const durationMs = Math.max(0, (state.finishedAt ?? Date.now()) - state.startedAt);
   const bucket: Bucket = state.mode === "duel" ? "duel" : "solo";
@@ -407,6 +432,8 @@ function extractGameOutcome(
       return extractRPG(gameState as RPGStateShape, accountByPlayerId);
     case "airhockey":
       return extractAirHockey(gameState as AirHockeyStateShape, accountByPlayerId);
+    case "chess":
+      return extractChess(gameState as ChessStateShape, accountByPlayerId);
     default:
       return null;
   }
@@ -434,6 +461,9 @@ export function recordFinishedMatch(params: {
     for (const p of outcome.players) {
       accountStore.recordSoloMatch(p.accountId, params.gameId, outcome.rank, outcome.durationMs, p.metricValue, p.scoreType);
       if (p.goals) accountStore.recordGameGoals("solo", p.accountId, params.gameId, p.goals.scored, p.goals.conceded);
+      if (params.gameId === "chess") {
+        accountStore.recordGameOutcome("solo", p.accountId, params.gameId, outcome.rank, p.result);
+      }
     }
     return;
   }
@@ -463,6 +493,7 @@ export function recordFinishedMatch(params: {
     for (const p of outcome.players) {
       accountStore.recordDuelOutcome(p.accountId, params.gameId, outcome.rank, p.result as "win" | "loss" | "draw", p.metricValue, p.scoreType);
       if (p.goals) accountStore.recordGameGoals("duel", p.accountId, params.gameId, p.goals.scored, p.goals.conceded);
+      if (params.gameId === "chess") accountStore.recordGameOutcome("duel", p.accountId, params.gameId, outcome.rank, p.result);
     }
   }
 }

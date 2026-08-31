@@ -34,6 +34,7 @@ export interface AccountSoloStats {
   gamePlayCounts: Partial<Record<GameId, number>>;
   difficultyCounts: Partial<Record<string, number>>;
   gameGoals: Partial<Record<GameId, { scored: number; conceded: number }>>;
+  gameOutcomeCounts: Partial<Record<GameId, Partial<Record<string, { games: number; wins: number; losses: number; draws: number }>>>>;
 }
 
 export interface AccountDuoParticipation {
@@ -43,6 +44,7 @@ export interface AccountDuoParticipation {
   gameWinCounts: Partial<Record<GameId, number>>;
   gameLossCounts: Partial<Record<GameId, number>>;
   gameGoals: Partial<Record<GameId, { scored: number; conceded: number }>>;
+  gameOutcomeCounts: Partial<Record<GameId, Partial<Record<string, { games: number; wins: number; losses: number; draws: number }>>>>;
 }
 
 export interface DuoSharedStats {

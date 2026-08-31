@@ -16,6 +16,7 @@ import { isValidRPGMode, RPG_INTRO_DURATION_MS, RPG_RESOLVE_PAUSE_MS } from "../
 import { isValidMemoryDifficulty, isValidMemoryMode, MemoryState } from "../games/memory/MemoryGame";
 import { isValidTermoMode, isValidTermoVariant, TermoState } from "../games/termo/TermoGame";
 import { AirHockeyState, isValidAirHockeyDifficulty, isValidAirHockeyMode } from "../games/airhockey/AirHockeyGame";
+import { ChessState, isValidChessDifficulty, isValidChessMode } from "../games/chess/ChessGame";
 import { advanceAirHockeyInputTimeline, AIR_HOCKEY_AUTHORITATIVE_DELAY_MS, QueuedAirHockeyInput } from "../games/airhockey/AirHockeyInputTimeline";
 import { isAccountId } from "../accounts/types";
 
@@ -561,6 +562,7 @@ function getTermoStateForPlayer(state: unknown, playerId: string): unknown {
 }
 
 export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
+  const chessBotTimers = new Map<string, ReturnType<typeof setTimeout>>();
   const airHockeyInputQueues = new Map<string, {
     startedAt: number;
     nextReceivedOrder: number;
@@ -701,12 +703,12 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     // recebendo a atualização em tempo real via room:update.
     socket.on(
       "room:setConfig",
-      (payload: StartPayload & { colorMode?: string; seerId?: string | null; matchMode?: string }) => {
+      (payload: StartPayload & { colorMode?: string; seerId?: string | null; matchMode?: string; chessPinkPlayerId?: string | null }) => {
         const code = socket.data.roomCode;
         const room = code ? roomManager.getRoom(code) : undefined;
         if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
 
-        const options: { colorMode?: string; seerId?: string | null; matchMode?: string } = {};
+        const options: { colorMode?: string; seerId?: string | null; matchMode?: string; chessPinkPlayerId?: string } = {};
         if (payload?.colorMode && isValidColorMode(payload.colorMode)) options.colorMode = payload.colorMode;
         if (payload?.seerId === null || (payload?.seerId && room.players.has(payload.seerId))) {
           options.seerId = payload.seerId;
@@ -720,7 +722,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
             isValidSudokuMode(payload.matchMode) ||
             isValidMemoryMode(payload.matchMode) ||
             isValidTermoMode(payload.matchMode) ||
-            isValidAirHockeyMode(payload.matchMode))
+            isValidAirHockeyMode(payload.matchMode) ||
+            isValidChessMode(payload.matchMode))
         ) {
           options.matchMode = payload.matchMode;
         }
@@ -728,6 +731,20 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         const baseOptions = sanitizeStartOptions(payload);
         if (payload?.difficulty && isValidTermoVariant(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         if (payload?.difficulty && isValidAirHockeyDifficulty(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
+        if (payload?.difficulty && isValidChessDifficulty(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
+        // A escolha de cores só existe no Duo e só pode ser feita antes de
+        // iniciar. O servidor valida a associação inteira, não o cliente.
+        if (payload?.chessPinkPlayerId !== undefined) {
+          if (
+            room.gameId !== "chess" ||
+            room.roomMode !== "duo" ||
+            room.status !== "waiting" && room.status !== "ready" ||
+            room.players.size !== 2 ||
+            typeof payload.chessPinkPlayerId !== "string" ||
+            !room.players.has(payload.chessPinkPlayerId)
+          ) return;
+          options.chessPinkPlayerId = payload.chessPinkPlayerId;
+        }
         room.setPendingConfig({ ...baseOptions, ...options });
         broadcastRoom(io, code!, roomManager);
       }
@@ -819,8 +836,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         callback?.({ ok: false, error: "Escolha uma imagem antes de começar." });
         return;
       }
-      if ((room.gameId === "termo" || room.gameId === "airhockey") && room.roomMode === "duo" && !room.bothConnected()) {
-        callback?.({ ok: false, error: room.gameId === "termo" ? "O Duelo de Termo precisa dos dois jogadores conectados." : "O Duelo de Air Hockey precisa dos dois jogadores conectados." });
+      if ((room.gameId === "termo" || room.gameId === "airhockey" || room.gameId === "chess") && room.roomMode === "duo" && !room.bothConnected()) {
+        callback?.({ ok: false, error: room.gameId === "termo" ? "O Duelo de Termo precisa dos dois jogadores conectados." : room.gameId === "airhockey" ? "O Duelo de Air Hockey precisa dos dois jogadores conectados." : "O Duelo de Xadrez precisa dos dois jogadores conectados." });
         return;
       }
       // Sem exigência de "os dois conectados": o host pode jogar sozinho —
@@ -832,6 +849,54 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);
       callback?.({ ok: true });
+    });
+
+    // Xadrez é inteiramente autoritativo: o cliente envia apenas origem,
+    // destino e eventual promoção. A posição/FEN nunca é aceita do navegador.
+    socket.on("chess:move", (payload: { from?: string; to?: string; promotion?: string }, callback?: AckCallback) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "chess" || room.status !== "playing") {
+        callback?.({ ok: false, error: "Partida indisponível." });
+        return;
+      }
+      if (typeof payload?.from !== "string" || typeof payload?.to !== "string") {
+        callback?.({ ok: false, error: "Movimento inválido." });
+        return;
+      }
+      const before = room.gameState as ChessState;
+      room.applyAction({ type: "move", from: payload.from, to: payload.to, promotion: payload.promotion }, socket.data.playerId ?? socket.id);
+      const state = room.gameState as ChessState;
+      const moved = state.fen !== before.fen;
+      callback?.({ ok: moved, error: moved ? undefined : "Esse movimento não é permitido agora." });
+      if (!moved) return;
+      broadcastGameState(io, code!, roomManager);
+      if (state.result) {
+        broadcastRoom(io, code!, roomManager);
+        return;
+      }
+      if (state.mode === "solo" && state.turn === "b") {
+        const previousTimer = chessBotTimers.get(code!);
+        if (previousTimer) clearTimeout(previousTimer);
+        chessBotTimers.set(code!, setTimeout(() => {
+          const currentRoom = roomManager.getRoom(code!);
+          const current = currentRoom?.gameState as ChessState | null;
+          if (!currentRoom || currentRoom.gameId !== "chess" || currentRoom.status !== "playing" || current?.mode !== "solo" || current.turn !== "b") return;
+          currentRoom.applyAction({ type: "botMove" }, "BOT");
+          broadcastGameState(io, code!, roomManager);
+          if ((currentRoom.gameState as ChessState).result) broadcastRoom(io, code!, roomManager);
+        }, 330));
+      }
+    });
+
+    socket.on("chess:newGame", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "chess" || room.status !== "finished" || (room.roomMode === "duo" && !room.bothConnected())) return;
+      const current = room.gameState as ChessState | null;
+      room.startGame({ mode: current?.mode, difficulty: current?.difficulty });
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
     });
 
     socket.on("game:pickup", (payload: { groupId: string }) => {

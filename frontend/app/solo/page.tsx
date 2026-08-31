@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
@@ -7,9 +8,16 @@ import Logo from "@/components/Logo";
 import GameCard from "@/components/GameCard";
 import { GAMES } from "@/lib/games";
 import { GameDefinition } from "@/lib/types";
+import GameSearch, { normalizeGameSearch } from "@/components/GameSearch";
 
 export default function SoloPickerPage() {
   const router = useRouter();
+  const [search, setSearch] = useState("");
+  const filteredGames = useMemo(() => {
+    const query = normalizeGameSearch(search);
+    if (!query) return GAMES;
+    return GAMES.filter((game) => normalizeGameSearch(`${game.name} ${game.description}`).includes(query));
+  }, [search]);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center px-5 py-14 sm:py-20">
@@ -41,8 +49,11 @@ export default function SoloPickerPage() {
         Escolha um jogo — só o modo solo aparece aqui, sem duelo ou modo juntos.
       </motion.p>
 
-      <div className="mt-10 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
-        {GAMES.map((game, i) => (
+      <div className="mt-10 w-full">
+        <GameSearch value={search} onChange={setSearch} />
+        {filteredGames.length > 0 ? (
+          <div className="mt-5 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
+            {filteredGames.map((game, i) => (
           <GameCard
             key={game.id}
             game={game}
@@ -50,7 +61,14 @@ export default function SoloPickerPage() {
             ctaLabel="Jogar sozinho"
             onPlay={(g: GameDefinition) => router.push(`/solo/${g.id}`)}
           />
-        ))}
+            ))}
+          </div>
+        ) : (
+          <div className="mt-8 rounded-xl3 border border-surface/70 bg-surface/45 px-5 py-10 text-center">
+            <p className="font-display text-base font-semibold text-ink">Nenhum jogo encontrado</p>
+            <p className="mt-1 text-sm text-ink-soft">Tente pesquisar outro nome.</p>
+          </div>
+        )}
       </div>
     </main>
   );

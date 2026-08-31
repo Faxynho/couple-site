@@ -5,11 +5,11 @@
  * cooperativo for adicionado à plataforma (Jogo da Velha, Forca, Sudoku...).
  */
 
-export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "rpg" | "airhockey"; // adicione novos ids aqui
+export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "rpg" | "airhockey" | "chess"; // adicione novos ids aqui
 
 /** Lista de todos os ids de jogo, na mesma ordem do catálogo — usada para
  *  sortear a sugestão de sequência de jogos da sala Duo. */
-export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "rpg", "airhockey"];
+export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "rpg", "airhockey", "chess"];
 
 /** "solo": sessão de um único jogador, sem convite nem convidado — a sala
  *  existe só para reaproveitar a mesma infraestrutura de motor de jogo.
@@ -69,6 +69,8 @@ export interface RoomSnapshot {
    *  O Quiz reaproveita o mesmo campo com valores "solo" | "together" | "duel".
    *  O Mini RPG reaproveita o mesmo campo com valores "1v1" | "soloBot" | "duoBot". */
   pendingMatchMode: string;
+  /** Somente para Xadrez Duo: id do jogador escolhido pelo host para ser Rosa (brancas). */
+  pendingChessPinkPlayerId: string | null;
   /** Sugestão de sequência de jogos da sala Duo: uma ordem sorteada com todos
    *  os jogos do catálogo. Sem efeito numa sala Solo. */
   sequence: GameId[];

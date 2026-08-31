@@ -1,8 +1,8 @@
-export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "rpg" | "airhockey";
+export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "rpg" | "airhockey" | "chess";
 
 /** Mesma ordem do catálogo (`GAMES`, em games.ts) — usada para sortear a
  *  sugestão de sequência de jogos da sala Duo. */
-export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "rpg", "airhockey"];
+export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "rpg", "airhockey", "chess"];
 
 /** "solo": sessão de um único jogador — sem convite, sem convidado, sem sala
  *  persistente. "duo": sala pensada para dois jogadores, criada ANTES de
@@ -40,6 +40,8 @@ export interface RoomSnapshot {
   pendingColorMode: string;
   pendingSeerId: string | null;
   pendingMatchMode: string;
+  /** Id escolhido pelo host para jogar de Rosa no Xadrez Duo. */
+  pendingChessPinkPlayerId?: string | null;
   /** Sugestão de sequência de jogos da sala Duo (sem efeito numa sala Solo). */
   sequence: GameId[];
   /** Ids (dentro de `sequence`) já jogados até o fim desde o último sorteio. */
