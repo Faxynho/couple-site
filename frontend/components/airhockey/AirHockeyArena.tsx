@@ -7,23 +7,21 @@ const WIDTH = 1.6;
 const HEIGHT = 1;
 const PADDLE_RADIUS = 0.075;
 const PUCK_RADIUS = 0.034;
-const LOCAL_PADDLE_SPEED = 3.45;
 type Effect = "wall" | "hit" | "goal" | "countdown";
-type Props = { stateRef: React.MutableRefObject<AirHockeyState | null>; selfId: string; onMove: (x: number, y: number, sequence?: number) => void; onEffect: (effect: Effect) => void };
+type Props = { stateRef: React.MutableRefObject<AirHockeyState | null>; localIntentRef: React.MutableRefObject<{ x: number; y: number } | null>; selfId: string; onMove: (x: number, y: number) => void; onEffect: (effect: Effect) => void };
 
-export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: Props) {
+export default function AirHockeyArena({ stateRef, localIntentRef, selfId, onMove, onEffect }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [portrait, setPortrait] = useState(false);
   const dragging = useRef(false);
   const localPaddle = useRef<{ x: number; y: number } | null>(null);
   const paddleVisuals = useRef<Record<string, { x: number; y: number }>>({});
   const fieldRef = useRef({ x: 0, y: 0, width: 1, height: 1 });
-  const puckVisual = useRef<{ x: number; y: number; vx: number; vy: number; initialized: boolean }>({ x: 0, y: 0, vx: 0, vy: 0, initialized: false });
+  const puckVisual = useRef({ x: 0, y: 0, vx: 0, vy: 0, impactSerial: -1, initialized: false });
   const lastFrameAt = useRef(0);
   const lastVisualPhase = useRef<string | null>(null);
   const goalFx = useRef<{ serial: number; startedAt: number; x: number; y: number; color: string; final: boolean } | null>(null);
   const sentAt = useRef(0);
-  const inputSequence = useRef(0);
   const events = useRef({ impact: -1, goal: -1, countdown: -1 });
 
   useEffect(() => {
@@ -52,45 +50,24 @@ export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: P
         ? { x: field.x + y * field.width, y: field.y + (1 - x / WIDTH) * field.height }
         : { x: field.x + (1 - y) * field.width, y: field.y + x / WIDTH * field.height };
     };
-    // A raquete local segue a intenção do ponteiro, mas nunca é desenhada
-    // atravessando o disco entre dois snapshots. É a mesma geometria circular
-    // do servidor e apenas impede uma previsão visual impossível; o impulso e
-    // a posição final do disco continuam vindo da física autoritativa.
-    const advanceLocalPaddle = (from: { x: number; y: number }, target: { x: number; y: number }, puck: { x: number; y: number }, dt: number) => {
-      const targetX = target.x - from.x;
-      const targetY = target.y - from.y;
-      const targetDistance = Math.hypot(targetX, targetY);
-      const maxDistance = LOCAL_PADDLE_SPEED * dt;
+    // Mantém exatamente o comportamento visual já usado pelo Solo. Esta é
+    // apenas uma limitação de desenho: a colisão continua na engine.
+    const advanceSoloLocalPaddle = (from: { x: number; y: number }, target: { x: number; y: number }, puck: { x: number; y: number }, dt: number) => {
+      const targetX = target.x - from.x; const targetY = target.y - from.y;
+      const targetDistance = Math.hypot(targetX, targetY); const maxDistance = 3.45 * dt;
       let nextX = targetDistance > maxDistance && targetDistance > 0 ? from.x + targetX / targetDistance * maxDistance : target.x;
       let nextY = targetDistance > maxDistance && targetDistance > 0 ? from.y + targetY / targetDistance * maxDistance : target.y;
-      const startX = from.x - puck.x;
-      const startY = from.y - puck.y;
-      const moveX = nextX - from.x;
-      const moveY = nextY - from.y;
-      const radius = PADDLE_RADIUS + PUCK_RADIUS + 0.001;
-      const startDistanceSq = startX * startX + startY * startY;
-      const moveLengthSq = moveX * moveX + moveY * moveY;
-      const c = startDistanceSq - radius * radius;
-      let hitT: number | null = c <= 0 ? 0 : null;
-      if (hitT === null && moveLengthSq > 0.0000001) {
-        const b = 2 * (startX * moveX + startY * moveY);
-        const discriminant = b * b - 4 * moveLengthSq * c;
-        if (discriminant >= 0) {
-          const first = (-b - Math.sqrt(discriminant)) / (2 * moveLengthSq);
-          if (first >= 0 && first <= 1) hitT = first;
-        }
-      }
+      const startX = from.x - puck.x; const startY = from.y - puck.y;
+      const moveX = nextX - from.x; const moveY = nextY - from.y; const radius = PADDLE_RADIUS + PUCK_RADIUS + .001;
+      const startDistanceSq = startX * startX + startY * startY; const moveLengthSq = moveX * moveX + moveY * moveY;
+      const c = startDistanceSq - radius * radius; let hitT: number | null = c <= 0 ? 0 : null;
+      if (hitT === null && moveLengthSq > .0000001) { const b = 2 * (startX * moveX + startY * moveY); const discriminant = b * b - 4 * moveLengthSq * c; if (discriminant >= 0) { const first = (-b - Math.sqrt(discriminant)) / (2 * moveLengthSq); if (first >= 0 && first <= 1) hitT = first; } }
       if (hitT === null) return { x: nextX, y: nextY };
-      const contactX = startX + moveX * hitT;
-      const contactY = startY + moveY * hitT;
-      const contactDistance = Math.hypot(contactX, contactY);
-      const nx = contactDistance > 0.000001 ? contactX / contactDistance : (startDistanceSq > 0.000001 ? startX / Math.sqrt(startDistanceSq) : -1);
-      const ny = contactDistance > 0.000001 ? contactY / contactDistance : (startDistanceSq > 0.000001 ? startY / Math.sqrt(startDistanceSq) : 0);
-      nextX = puck.x + nx * radius;
-      nextY = puck.y + ny * radius;
-      return { x: nextX, y: nextY };
+      const contactX = startX + moveX * hitT; const contactY = startY + moveY * hitT; const contactDistance = Math.hypot(contactX, contactY);
+      const nx = contactDistance > .000001 ? contactX / contactDistance : (startDistanceSq > .000001 ? startX / Math.sqrt(startDistanceSq) : -1);
+      const ny = contactDistance > .000001 ? contactY / contactDistance : (startDistanceSq > .000001 ? startY / Math.sqrt(startDistanceSq) : 0);
+      return { x: puck.x + nx * radius, y: puck.y + ny * radius };
     };
-
     const drawGoal = (side: "left" | "right" | "top" | "bottom", color: string, dark: boolean, playX: number, playY: number, playW: number, playH: number, shortest: number, middleX: number, middleY: number) => {
       const vertical = side === "left" || side === "right";
       const length = vertical ? playH * .34 : playW * .34;
@@ -158,27 +135,51 @@ export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: P
       if (portrait) for (const y of [playY,playY+playH]) { context.beginPath();context.arc(middleX,y,playW*.33,y===playY?0:Math.PI,y===playY?Math.PI:Math.PI*2);context.stroke(); }
       else for (const x of [playX,playX+playW]) { context.beginPath();context.arc(x,middleY,playH*.33,x===playX?-Math.PI/2:Math.PI/2,x===playX?Math.PI/2:Math.PI*1.5);context.stroke(); } context.restore();
       if(portrait){drawPlate(playX+playW*.08,playY+shortest*.012,playW*.22,shortest*.035,pinkLine,shortest);drawPlate(playX+playW*.7,playY+playH-shortest*.047,playW*.22,shortest*.035,pinkLine,shortest);} else {drawPlate(playX+playW*.08,playY+shortest*.012,playW*.13,shortest*.035,pinkLine,shortest);drawPlate(playX+playW*.79,playY+playH-shortest*.047,playW*.13,shortest*.035,pinkLine,shortest);}
-      // O servidor envia snapshots em frequência moderada; entre eles o
-      // Canvas integra a velocidade e corrige suavemente para o snapshot mais
-      // recente, evitando que o disco salte a cada pacote sem criar uma física
-      // paralela. Mudanças de fase (gol/saída) fazem snap intencional.
+      // Renderização é independente da simulação. A engine publica o próximo
+      // estado predito; este RAF o transforma em movimento contínuo.
       const visual = puckVisual.current;
-      if (!visual.initialized || lastVisualPhase.current !== state.phase) { visual.x=state.puck.x; visual.y=state.puck.y; visual.vx=state.puck.vx; visual.vy=state.puck.vy; visual.initialized=true; }
-      else { visual.x += visual.vx * renderDt; visual.y += visual.vy * renderDt; const correction = Math.min(1, renderDt * 16); visual.x += (state.puck.x - visual.x) * correction; visual.y += (state.puck.y - visual.y) * correction; visual.vx += (state.puck.vx - visual.vx) * correction; visual.vy += (state.puck.vy - visual.vy) * correction; }
+      if (!visual.initialized || lastVisualPhase.current !== state.phase) {
+        visual.x=state.puck.x; visual.y=state.puck.y; visual.vx=state.puck.vx; visual.vy=state.puck.vy; visual.impactSerial=state.impactSerial; visual.initialized=true;
+        paddleVisuals.current = {};
+      } else if (state.mode === "solo") {
+        // Caminho visual original do Solo, mantido sem alterações.
+        visual.x += visual.vx * renderDt; visual.y += visual.vy * renderDt;
+        const correction = Math.min(1, renderDt * 16);
+        visual.x += (state.puck.x - visual.x) * correction; visual.y += (state.puck.y - visual.y) * correction;
+        visual.vx += (state.puck.vx - visual.vx) * correction; visual.vy += (state.puck.vy - visual.vy) * correction;
+        visual.impactSerial = state.impactSerial;
+      } else {
+        visual.x += visual.vx * renderDt; visual.y += visual.vy * renderDt;
+        const blend = 1 - Math.exp(-renderDt * 18);
+        const impactStarted = state.mode === "duel" && state.impactSerial > visual.impactSerial;
+        if (impactStarted) {
+          // A resposta a uma colisão local predita não ganha latência visual.
+          visual.x=state.puck.x; visual.y=state.puck.y; visual.vx=state.puck.vx; visual.vy=state.puck.vy;
+        } else {
+          visual.x += (state.puck.x - visual.x) * blend; visual.y += (state.puck.y - visual.y) * blend;
+          visual.vx += (state.puck.vx - visual.vx) * blend; visual.vy += (state.puck.vy - visual.vy) * blend;
+        }
+        visual.impactSerial = Math.max(visual.impactSerial, state.impactSerial);
+      }
       lastVisualPhase.current = state.phase;
       const unit = portrait ? playW : playH; const puckPoint = map(visual.x, visual.y, selfIsLeft);
       for (const id of state.playerIds) {
         const paddle = state.paddles[id]; if (!paddle) continue;
         const previous = paddleVisuals.current[id] ?? { x: paddle.x, y: paddle.y };
-        const display = id === selfId && localPaddle.current
-          ? advanceLocalPaddle(previous, localPaddle.current, visual, renderDt)
-          : { x: previous.x + (paddle.x - previous.x) * .24, y: previous.y + (paddle.y - previous.y) * .24 };
+        const local = id === selfId;
+        const display = state.mode === "duel" && local && localIntentRef.current
+          ? localIntentRef.current
+          : state.mode === "solo" && local && localPaddle.current
+            ? advanceSoloLocalPaddle(previous, localPaddle.current, visual, renderDt)
+            : state.mode === "solo"
+              ? { x: previous.x + (paddle.x - previous.x) * .24, y: previous.y + (paddle.y - previous.y) * .24 }
+              : { x: previous.x + (paddle.x - previous.x) * (1 - Math.exp(-renderDt * 20)), y: previous.y + (paddle.y - previous.y) * (1 - Math.exp(-renderDt * 20)) };
         paddleVisuals.current[id] = display;
-        const point=map(display.x,display.y,selfIsLeft);const radius=unit*PADDLE_RADIUS;const local=id===selfId;const color=local?blush:(id==="BOT"?violet:"#7657cf");context.save();context.shadowColor="rgba(44,16,31,.52)";context.shadowBlur=radius*.38;context.shadowOffsetY=radius*.24;const base=context.createRadialGradient(point.x-radius*.28,point.y-radius*.35,radius*.05,point.x,point.y,radius);base.addColorStop(0,"#ffe0e6");base.addColorStop(.32,local?"#fb7696":"#ad95ff");base.addColorStop(.76,color);base.addColorStop(1,dark?"#371929":"#8d2a51");context.fillStyle=base;context.beginPath();context.arc(point.x,point.y,radius,0,Math.PI*2);context.fill();context.restore();context.strokeStyle="rgba(255,231,233,.88)";context.lineWidth=Math.max(1.4,radius*.08);context.beginPath();context.arc(point.x,point.y,radius*.7,0,Math.PI*2);context.stroke();const cap=context.createRadialGradient(point.x-radius*.14,point.y-radius*.2,radius*.04,point.x,point.y,radius*.47);cap.addColorStop(0,"#fff0f1");cap.addColorStop(.42,local?"#ff6d91":"#9d80f3");cap.addColorStop(1,local?"#b92751":"#49338a");context.fillStyle=cap;context.beginPath();context.arc(point.x,point.y,radius*.47,0,Math.PI*2);context.fill();
+        const point=map(display.x,display.y,selfIsLeft);const radius=unit*PADDLE_RADIUS;const color=local?blush:(id==="BOT"?violet:"#7657cf");context.save();context.shadowColor="rgba(44,16,31,.52)";context.shadowBlur=radius*.38;context.shadowOffsetY=radius*.24;const base=context.createRadialGradient(point.x-radius*.28,point.y-radius*.35,radius*.05,point.x,point.y,radius);base.addColorStop(0,"#ffe0e6");base.addColorStop(.32,local?"#fb7696":"#ad95ff");base.addColorStop(.76,color);base.addColorStop(1,dark?"#371929":"#8d2a51");context.fillStyle=base;context.beginPath();context.arc(point.x,point.y,radius,0,Math.PI*2);context.fill();context.restore();context.strokeStyle="rgba(255,231,233,.88)";context.lineWidth=Math.max(1.4,radius*.08);context.beginPath();context.arc(point.x,point.y,radius*.7,0,Math.PI*2);context.stroke();const cap=context.createRadialGradient(point.x-radius*.14,point.y-radius*.2,radius*.04,point.x,point.y,radius*.47);cap.addColorStop(0,"#fff0f1");cap.addColorStop(.42,local?"#ff6d91":"#9d80f3");cap.addColorStop(1,local?"#b92751":"#49338a");context.fillStyle=cap;context.beginPath();context.arc(point.x,point.y,radius*.47,0,Math.PI*2);context.fill();
       }
       const puckR=unit*PUCK_RADIUS;context.save();context.shadowColor="rgba(65,25,43,.45)";context.shadowBlur=puckR*.75;context.shadowOffsetY=puckR*.26;context.fillStyle="#fdf6f0";context.beginPath();context.arc(puckPoint.x,puckPoint.y,puckR,0,Math.PI*2);context.fill();context.restore();context.strokeStyle="#d5aaa8";context.lineWidth=Math.max(1,puckR*.11);context.beginPath();context.arc(puckPoint.x,puckPoint.y,puckR*.75,0,Math.PI*2);context.stroke();context.fillStyle="rgba(255,255,255,.95)";context.beginPath();context.arc(puckPoint.x-puckR*.22,puckPoint.y-puckR*.25,puckR*.24,0,Math.PI*2);context.fill();
-      if (events.current.impact !== state.impactSerial) { events.current.impact=state.impactSerial; if(state.impactKind) onEffect(state.impactKind==="paddle"?"hit":"wall"); }
-      if (events.current.goal !== state.goalSerial) {
+      if (state.impactSerial > events.current.impact) { events.current.impact=state.impactSerial; if(state.impactKind) onEffect(state.impactKind==="paddle"?"hit":"wall"); }
+      if (state.goalSerial > events.current.goal) {
         events.current.goal=state.goalSerial;
         if(state.goalSerial) {
           onEffect("goal");
@@ -223,7 +224,7 @@ export default function AirHockeyArena({ stateRef, selfId, onMove, onEffect }: P
     return selfIsLeft ? {x:(1-(pointY-field.y)/field.height)*WIDTH,y:(pointX-field.x)/field.width}:{x:(pointY-field.y)/field.height*WIDTH,y:1-(pointX-field.x)/field.width};
   };
   const movePointer = (event: PointerEvent<HTMLCanvasElement>) => {
-    if(!dragging.current)return;event.preventDefault();const state=stateRef.current;if(!state||state.phase!=="playing")return;const raw=toWorld(event);const left=state.playerIds[0]===selfId;const minX=left?PADDLE_RADIUS:.8+PADDLE_RADIUS*.25;const maxX=left ? .8-PADDLE_RADIUS*.25 : WIDTH-PADDLE_RADIUS;const x=Math.max(minX,Math.min(maxX,raw.x));const y=Math.max(PADDLE_RADIUS,Math.min(HEIGHT-PADDLE_RADIUS,raw.y));localPaddle.current={x,y};const now=performance.now();if(state.mode==="solo"||now-sentAt.current>16){sentAt.current=now;onMove(x,y,state.mode==="duel"?++inputSequence.current:undefined);}
+    if(!dragging.current)return;event.preventDefault();const state=stateRef.current;if(!state||state.phase!=="playing")return;const raw=toWorld(event);const left=state.playerIds[0]===selfId;const minX=left?PADDLE_RADIUS:.8+PADDLE_RADIUS*.25;const maxX=left ? .8-PADDLE_RADIUS*.25 : WIDTH-PADDLE_RADIUS;const x=Math.max(minX,Math.min(maxX,raw.x));const y=Math.max(PADDLE_RADIUS,Math.min(HEIGHT-PADDLE_RADIUS,raw.y));if(state.mode==="solo")localPaddle.current={x,y};else localIntentRef.current={x,y};const now=performance.now();if(state.mode==="solo"||now-sentAt.current>16){sentAt.current=now;onMove(x,y);}
   };
   return <canvas ref={canvasRef} onPointerDown={(event)=>{dragging.current=true;event.currentTarget.setPointerCapture(event.pointerId);movePointer(event);}} onPointerMove={movePointer} onPointerUp={(event)=>{dragging.current=false;localPaddle.current=null;event.currentTarget.releasePointerCapture(event.pointerId);}} onPointerCancel={()=>{dragging.current=false;localPaddle.current=null;}} className="block h-full w-full touch-none select-none" aria-label="Mesa de Air Hockey" />;
 }
