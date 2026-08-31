@@ -7,7 +7,6 @@ import { getSocket } from "@/lib/socket";
 import { AirHockeyGame } from "../../backend/src/games/airhockey/AirHockeyGame";
 
 type PendingInput = { x: number; y: number; sequence: number };
-type PaddleIntent = { x: number; y: number };
 type PredictedImpact = { serial: number; startedAt: number };
 
 // O servidor publica o estado a cada ~33 ms. Esta pequena antecipação cobre a
@@ -46,13 +45,9 @@ export function useAirHockeyGame(roomCode: string) {
   const authoritativeRef = useRef<AirHockeyState | null>(null);
   const predictedLocalRef = useRef<AirHockeyState | null>(null);
   const predictedPuckRef = useRef<AirHockeyState["puck"] | null>(null);
-  // Estado de renderização: não participa da física nem da reconciliação.
-  // A arena o usa para desenhar a própria paddle no mesmo frame do ponteiro.
-  const localIntentRef = useRef<PaddleIntent | null>(null);
   const pendingInputs = useRef<PendingInput[]>([]);
   const nextInputSequence = useRef(0);
   const predictedLocalImpact = useRef<PredictedImpact | null>(null);
-  const lastLocalIntentAt = useRef<number | null>(null);
 
   useEffect(() => {
     const socket = getSocket();
@@ -60,7 +55,6 @@ export function useAirHockeyGame(roomCode: string) {
     pendingInputs.current = [];
     nextInputSequence.current = 0;
     predictedLocalImpact.current = null;
-    lastLocalIntentAt.current = null;
 
     const updateMeta = (next: AirHockeyState) => {
       setMeta((previous) => {
@@ -124,14 +118,12 @@ export function useAirHockeyGame(roomCode: string) {
         predictedLocalRef.current = predicted;
         predictedPuckRef.current = { ...predicted.puck };
         stateRef.current = predicted;
-        if (next.phase !== "playing") localIntentRef.current = null;
         updateMeta(next);
         return;
       }
 
       if (stateRef.current?.mode === "solo" && next.startedAt === stateRef.current.startedAt) return;
       soloFinished.current = false;
-      localIntentRef.current = null;
       stateRef.current = next;
       updateMeta(next);
     };
@@ -192,8 +184,8 @@ export function useAirHockeyGame(roomCode: string) {
       return;
     }
 
-    // Não altera a simulação: é apenas a posição desenhada da paddle local.
-    localIntentRef.current = { x, y };
+    // A previsão local recebe a mesma intenção que o servidor: somente o
+    // alvo muda aqui. A posição, velocidade e colisões avançam no tick comum.
     const sequence = ++nextInputSequence.current;
     const input = { x, y, sequence };
     pendingInputs.current.push(input);
@@ -205,30 +197,6 @@ export function useAirHockeyGame(roomCode: string) {
     getSocket().emit("airhockey:move", input);
   }, []);
 
-  const previewMove = useCallback((x: number, y: number) => {
-    localIntentRef.current = { x, y };
-    const state = predictedLocalRef.current ?? stateRef.current;
-    if (!state || state.mode !== "duel" || state.phase !== "playing") return;
-
-    const now = performance.now();
-    const inputDt = Math.min(.033, Math.max(.001, lastLocalIntentAt.current === null ? 1 / 60 : (now - lastLocalIntentAt.current) / 1000));
-    lastLocalIntentAt.current = now;
-    const predicted = engineRef.current.applyAction(
-      cloneState(state) as never,
-      { type: "predictMove", x, y, now: state.lastTickAt ?? Date.now(), inputDt },
-      getPlayerId()
-    ) as AirHockeyState;
-    const selfId = getPlayerId();
-    const beforeContact = (state as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
-    const afterContact = (predicted as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
-    if (!beforeContact && afterContact && predicted.impactKind === "paddle" && predicted.impactSerial > state.impactSerial) {
-      predictedLocalImpact.current = { serial: predicted.impactSerial, startedAt: now };
-    }
-    predictedLocalRef.current = predicted;
-    predictedPuckRef.current = { ...predicted.puck };
-    stateRef.current = predicted;
-  }, []);
-
   const newGame = useCallback(() => getSocket().emit("airhockey:newGame"), []);
-  return { stateRef, authoritativeRef, predictedLocalRef, predictedPuckRef, localIntentRef, meta, move, previewMove, newGame };
+  return { stateRef, authoritativeRef, predictedLocalRef, predictedPuckRef, meta, move, newGame };
 }

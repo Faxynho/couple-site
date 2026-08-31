@@ -8,9 +8,9 @@ const HEIGHT = 1;
 const PADDLE_RADIUS = 0.075;
 const PUCK_RADIUS = 0.034;
 type Effect = "wall" | "hit" | "goal" | "countdown";
-type Props = { stateRef: React.MutableRefObject<AirHockeyState | null>; predictedPuckRef: React.MutableRefObject<AirHockeyState["puck"] | null>; localIntentRef: React.MutableRefObject<{ x: number; y: number } | null>; selfId: string; onLocalIntent: (x: number, y: number) => void; onMove: (x: number, y: number) => void; onEffect: (effect: Effect) => void };
+type Props = { stateRef: React.MutableRefObject<AirHockeyState | null>; predictedPuckRef: React.MutableRefObject<AirHockeyState["puck"] | null>; selfId: string; onMove: (x: number, y: number) => void; onEffect: (effect: Effect) => void };
 
-export default function AirHockeyArena({ stateRef, predictedPuckRef, localIntentRef, selfId, onLocalIntent, onMove, onEffect }: Props) {
+export default function AirHockeyArena({ stateRef, predictedPuckRef, selfId, onMove, onEffect }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [portrait, setPortrait] = useState(false);
   const dragging = useRef(false);
@@ -22,6 +22,8 @@ export default function AirHockeyArena({ stateRef, predictedPuckRef, localIntent
   const lastVisualPhase = useRef<string | null>(null);
   const goalFx = useRef<{ serial: number; startedAt: number; x: number; y: number; color: string; final: boolean } | null>(null);
   const sentAt = useRef(0);
+  const latestDuelIntent = useRef<{ x: number; y: number } | null>(null);
+  const lastSentDuelIntent = useRef<{ x: number; y: number } | null>(null);
   const events = useRef({ impact: -1, goal: -1, countdown: -1 });
 
   useEffect(() => {
@@ -170,8 +172,8 @@ export default function AirHockeyArena({ stateRef, predictedPuckRef, localIntent
         const paddle = state.paddles[id]; if (!paddle) continue;
         const previous = paddleVisuals.current[id] ?? { x: paddle.x, y: paddle.y };
         const local = id === selfId;
-        const display = state.mode === "duel" && local && localIntentRef.current
-          ? localIntentRef.current
+        const display = state.mode === "duel" && local
+          ? { x: paddle.x, y: paddle.y }
           : state.mode === "solo" && local && localPaddle.current
             ? advanceSoloLocalPaddle(previous, localPaddle.current, visual, renderDt)
             : state.mode === "solo"
@@ -226,8 +228,28 @@ export default function AirHockeyArena({ stateRef, predictedPuckRef, localIntent
     if(!portrait) return {x:(pointX-field.x)/field.width*WIDTH,y:(pointY-field.y)/field.height};
     return selfIsLeft ? {x:(1-(pointY-field.y)/field.height)*WIDTH,y:(pointX-field.x)/field.width}:{x:(pointY-field.y)/field.height*WIDTH,y:1-(pointX-field.x)/field.width};
   };
-  const movePointer = (event: PointerEvent<HTMLCanvasElement>) => {
-    if(!dragging.current)return;event.preventDefault();const state=stateRef.current;if(!state||state.phase!=="playing")return;const raw=toWorld(event);const left=state.playerIds[0]===selfId;const minX=left?PADDLE_RADIUS:.8+PADDLE_RADIUS*.25;const maxX=left ? .8-PADDLE_RADIUS*.25 : WIDTH-PADDLE_RADIUS;const x=Math.max(minX,Math.min(maxX,raw.x));const y=Math.max(PADDLE_RADIUS,Math.min(HEIGHT-PADDLE_RADIUS,raw.y));if(state.mode==="solo")localPaddle.current={x,y};else {localIntentRef.current={x,y};onLocalIntent(x,y);}const now=performance.now();if(state.mode==="solo"||now-sentAt.current>16){sentAt.current=now;onMove(x,y);}
+  const sendDuelIntent = (intent: { x: number; y: number }, force = false) => {
+    const now = performance.now();
+    if (!force && now - sentAt.current <= 16) return;
+    sentAt.current = now;
+    lastSentDuelIntent.current = intent;
+    onMove(intent.x, intent.y);
   };
-  return <canvas ref={canvasRef} onPointerDown={(event)=>{dragging.current=true;event.currentTarget.setPointerCapture(event.pointerId);movePointer(event);}} onPointerMove={movePointer} onPointerUp={(event)=>{dragging.current=false;localPaddle.current=null;event.currentTarget.releasePointerCapture(event.pointerId);}} onPointerCancel={()=>{dragging.current=false;localPaddle.current=null;}} className="block h-full w-full touch-none select-none" aria-label="Mesa de Air Hockey" />;
+  const flushDuelIntent = () => {
+    const intent = latestDuelIntent.current;
+    const sent = lastSentDuelIntent.current;
+    if (intent && (!sent || intent.x !== sent.x || intent.y !== sent.y)) sendDuelIntent(intent, true);
+  };
+  const movePointer = (event: PointerEvent<HTMLCanvasElement>) => {
+    if(!dragging.current)return;event.preventDefault();const state=stateRef.current;if(!state||state.phase!=="playing")return;const raw=toWorld(event);const left=state.playerIds[0]===selfId;const minX=left?PADDLE_RADIUS:.8+PADDLE_RADIUS*.25;const maxX=left ? .8-PADDLE_RADIUS*.25 : WIDTH-PADDLE_RADIUS;const x=Math.max(minX,Math.min(maxX,raw.x));const y=Math.max(PADDLE_RADIUS,Math.min(HEIGHT-PADDLE_RADIUS,raw.y));if(state.mode==="solo"){localPaddle.current={x,y};onMove(x,y);}else{const intent={x,y};latestDuelIntent.current=intent;sendDuelIntent(intent);}
+  };
+  const finishPointer = (event: PointerEvent<HTMLCanvasElement>) => {
+    if (stateRef.current?.mode === "duel") {
+      if (dragging.current) movePointer(event);
+      flushDuelIntent();
+    }
+    dragging.current=false; localPaddle.current=null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+  return <canvas ref={canvasRef} onPointerDown={(event)=>{dragging.current=true;sentAt.current=0;latestDuelIntent.current=null;lastSentDuelIntent.current=null;event.currentTarget.setPointerCapture(event.pointerId);movePointer(event);}} onPointerMove={movePointer} onPointerUp={finishPointer} onPointerCancel={finishPointer} className="block h-full w-full touch-none select-none" aria-label="Mesa de Air Hockey" />;
 }
