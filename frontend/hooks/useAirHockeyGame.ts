@@ -7,7 +7,6 @@ import { getSocket } from "@/lib/socket";
 import { AirHockeyGame } from "../../backend/src/games/airhockey/AirHockeyGame";
 
 type PendingInput = { x: number; y: number; sequence: number };
-type PredictedImpact = { serial: number; startedAt: number };
 
 const MAX_CLIENT_FRAME_MS = 33;
 const CLIENT_SIMULATION_STEP_MS = 1000 / 60;
@@ -62,7 +61,6 @@ export function useAirHockeyGame(roomCode: string) {
   const predictedPuckRef = useRef<AirHockeyState["puck"] | null>(null);
   const pendingInputs = useRef<PendingInput[]>([]);
   const nextInputSequence = useRef(0);
-  const predictedLocalImpact = useRef<PredictedImpact | null>(null);
   const serverClockOffsetMs = useRef<number | null>(null);
   const bestClockRttMs = useRef(Number.POSITIVE_INFINITY);
   const debugEnabled = useRef(false);
@@ -72,7 +70,6 @@ export function useAirHockeyGame(roomCode: string) {
     lastDuoTick.current = 0;
     pendingInputs.current = [];
     nextInputSequence.current = 0;
-    predictedLocalImpact.current = null;
     serverClockOffsetMs.current = null;
     bestClockRttMs.current = Number.POSITIVE_INFINITY;
     debugEnabled.current = new URLSearchParams(window.location.search).get("airHockeyDebug") === "1";
@@ -127,52 +124,31 @@ export function useAirHockeyGame(roomCode: string) {
           predictedPuck: puckDetails(previousPrediction),
         });
 
-        const pendingImpact = predictedLocalImpact.current;
-        const confirmsPredictedImpact = !pendingImpact || next.impactSerial >= pendingImpact.serial;
-        if (confirmsPredictedImpact) predictedLocalImpact.current = null;
-
-        // Enquanto a colisão local ainda não chegou do servidor, o snapshot
-        // atualiza metadados/raquete remota, mas não pode apagar o puck que já
-        // reagiu no cliente. Isso é separado dos inputs apenas "ackados".
-        if (!confirmsPredictedImpact && predictedLocalRef.current && next.phase === "playing") {
-          const preserved = cloneState(predictedLocalRef.current);
-          const remoteId = next.playerIds[0] === selfId ? next.playerIds[1] : next.playerIds[0];
-          preserved.paddles[remoteId] = cloneState(next).paddles[remoteId];
-          preserved.lastProcessedInputSequence = next.lastProcessedInputSequence;
-          authoritativeRef.current = next;
-          predictedLocalRef.current = preserved;
-          predictedPuckRef.current = { ...preserved.puck };
-          stateRef.current = preserved;
-          logDebug(debugEnabled.current, "RECONCILIATION", {
-            ...puckError(previousPrediction, next),
-            snapshotAgeMs,
-            resimulatedMs: 0,
-            pendingInputs: pendingInputs.current.map((input) => input.sequence),
-            reason: "pending-local-impact-preserved",
-          });
-          updateMeta(next);
-          return;
-        }
-
-        // Reconciliação: servidor primeiro; depois apenas intenções ainda não
-        // processadas. Nenhum impulso é copiado do cliente para o servidor.
+        // Todo snapshot válido passa pelo mesmo rebase: servidor primeiro,
+        // depois apenas intenções ainda não processadas. Um impacto local não
+        // preserva uma segunda história física nem decide esta reconciliação.
         let predicted = cloneState(next);
         for (const input of pendingInputs.current) {
           predicted = engineRef.current.applyAction(predicted as never, { type: "move", ...input }, selfId) as AirHockeyState;
         }
-        predicted = advancePrediction(engineRef.current, predicted, snapshotAgeMs);
+        const resimulatedMs = snapshotAgeMs;
+        predicted = advancePrediction(engineRef.current, predicted, resimulatedMs);
         predictedLocalRef.current = predicted;
         predictedPuckRef.current = { ...predicted.puck };
         stateRef.current = predicted;
         // A previsão acima já alcançou o presente estimado. O próximo RAF só
         // pode integrar o tempo transcorrido depois desta reconciliação.
         previous = performance.now();
+        if (debugEnabled.current) {
+          console.assert(snapshotAgeMs <= 0 || resimulatedMs > 0, "Snapshot com idade positiva não pode pular a ressimulação.");
+        }
         logDebug(debugEnabled.current, "RECONCILIATION", {
           ...puckError(previousPrediction, next),
           postReconcileError: puckError(predicted, next),
           snapshotAgeMs,
-          resimulatedMs: snapshotAgeMs,
+          resimulatedMs,
           pendingInputs: pendingInputs.current.map((input) => input.sequence),
+          reconciliationMode: "normal-replay",
           reason: offset === null ? "snapshot-rebase-without-clock-sample" : "snapshot-rebase-to-estimated-present",
         });
         updateMeta(next);
@@ -232,7 +208,6 @@ export function useAirHockeyGame(roomCode: string) {
         const beforeContact = (state as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
         const afterContact = (predicted as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
         if (!beforeContact && afterContact && predicted.impactKind === "paddle" && predicted.impactSerial > state.impactSerial) {
-          predictedLocalImpact.current = { serial: predicted.impactSerial, startedAt: performance.now() };
           logDebug(debugEnabled.current, "LOCAL IMPACT", {
             tick: predicted.lastTickAt,
             puckBefore: puckDetails(state),
