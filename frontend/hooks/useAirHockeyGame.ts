@@ -6,7 +6,8 @@ import { getPlayerId } from "@/lib/playerId";
 import { getSocket } from "@/lib/socket";
 import { AirHockeyGame } from "../../backend/src/games/airhockey/AirHockeyGame";
 
-type PendingInput = { x: number; y: number; sequence: number };
+type PendingInput = { x: number; y: number; sequence: number; simulationTick: number };
+type ReplaySegment = { advanceMs: number; appliedSequence?: number; timing?: "at-or-before-snapshot" | "future-applied-at-present" };
 
 const MAX_CLIENT_FRAME_MS = 33;
 const CLIENT_SIMULATION_STEP_MS = 1000 / 60;
@@ -48,6 +49,64 @@ function advancePrediction(engine: AirHockeyGame, state: AirHockeyState, elapsed
     remaining -= step;
   }
   return next;
+}
+
+function replayPendingInputs(
+  engine: AirHockeyGame,
+  snapshot: AirHockeyState,
+  pendingInputs: PendingInput[],
+  playerId: string,
+  snapshotAgeMs: number,
+) {
+  let predicted = cloneState(snapshot);
+  const snapshotTick = snapshot.lastTickAt ?? 0;
+  const presentTick = snapshotTick + snapshotAgeMs;
+  let currentTick = snapshotTick;
+  const segments: ReplaySegment[] = [];
+  const futureInputs: PendingInput[] = [];
+
+  for (const input of pendingInputs) {
+    if (input.simulationTick <= currentTick) {
+      // Ainda pendente porque o snapshot foi emitido antes de o servidor
+      // processar a intenção. Ela passa a valer no início do rebase; nunca
+      // retrocedemos a engine para tentar alcançar o timestamp original.
+      predicted = engine.applyAction(predicted as never, { type: "move", x: input.x, y: input.y, sequence: input.sequence }, playerId) as AirHockeyState;
+      segments.push({ advanceMs: 0, appliedSequence: input.sequence, timing: "at-or-before-snapshot" });
+      continue;
+    }
+
+    if (input.simulationTick > presentTick) {
+      futureInputs.push(input);
+      continue;
+    }
+
+    const advanceMs = input.simulationTick - currentTick;
+    predicted = advancePrediction(engine, predicted, advanceMs);
+    currentTick = input.simulationTick;
+    predicted = engine.applyAction(predicted as never, { type: "move", x: input.x, y: input.y, sequence: input.sequence }, playerId) as AirHockeyState;
+    segments.push({ advanceMs, appliedSequence: input.sequence });
+  }
+
+  const finalAdvanceMs = Math.max(0, presentTick - currentTick);
+  predicted = advancePrediction(engine, predicted, finalAdvanceMs);
+  segments.push({ advanceMs: finalAdvanceMs });
+
+  // Um timestamp futuro não pode fazer a simulação avançar além do presente.
+  // A intenção continua pendente, mas é aplicada como alvo no presente para
+  // que o próximo RAF a mova fisicamente sem retroceder nem pular no tempo.
+  for (const input of futureInputs) {
+    predicted = engine.applyAction(predicted as never, { type: "move", x: input.x, y: input.y, sequence: input.sequence }, playerId) as AirHockeyState;
+    segments.push({ advanceMs: 0, appliedSequence: input.sequence, timing: "future-applied-at-present" });
+  }
+
+  return {
+    predicted,
+    snapshotTick,
+    presentTick,
+    segments,
+    futureInputs,
+    totalAdvancedMs: segments.reduce((total, segment) => total + segment.advanceMs, 0),
+  };
 }
 
 export function useAirHockeyGame(roomCode: string) {
@@ -124,15 +183,11 @@ export function useAirHockeyGame(roomCode: string) {
           predictedPuck: puckDetails(previousPrediction),
         });
 
-        // Todo snapshot válido passa pelo mesmo rebase: servidor primeiro,
-        // depois apenas intenções ainda não processadas. Um impacto local não
-        // preserva uma segunda história física nem decide esta reconciliação.
-        let predicted = cloneState(next);
-        for (const input of pendingInputs.current) {
-          predicted = engineRef.current.applyAction(predicted as never, { type: "move", ...input }, selfId) as AirHockeyState;
-        }
-        const resimulatedMs = snapshotAgeMs;
-        predicted = advancePrediction(engineRef.current, predicted, resimulatedMs);
+        // Todo snapshot válido passa pelo mesmo rebase: os alvos pendentes
+        // entram na própria linha do tempo da previsão, não todos no começo.
+        const temporalReplay = replayPendingInputs(engineRef.current, next, pendingInputs.current, selfId, snapshotAgeMs);
+        const predicted = temporalReplay.predicted;
+        const resimulatedMs = temporalReplay.totalAdvancedMs;
         predictedLocalRef.current = predicted;
         predictedPuckRef.current = { ...predicted.puck };
         stateRef.current = predicted;
@@ -141,6 +196,21 @@ export function useAirHockeyGame(roomCode: string) {
         previous = performance.now();
         if (debugEnabled.current) {
           console.assert(snapshotAgeMs <= 0 || resimulatedMs > 0, "Snapshot com idade positiva não pode pular a ressimulação.");
+          if (pendingInputs.current.length > 1 || temporalReplay.futureInputs.length > 0) {
+            logDebug(true, "TEMPORAL REPLAY", {
+              snapshotTick: temporalReplay.snapshotTick,
+              presentTick: temporalReplay.presentTick,
+              snapshotAgeMs,
+              inputs: pendingInputs.current.map((input) => ({
+                sequence: input.sequence,
+                tick: input.simulationTick,
+                offsetFromSnapshot: input.simulationTick - temporalReplay.snapshotTick,
+              })),
+              segments: temporalReplay.segments,
+              totalAdvancedMs: temporalReplay.totalAdvancedMs,
+              futureInputs: temporalReplay.futureInputs.map((input) => input.sequence),
+            });
+          }
         }
         logDebug(debugEnabled.current, "RECONCILIATION", {
           ...puckError(previousPrediction, next),
@@ -246,20 +316,21 @@ export function useAirHockeyGame(roomCode: string) {
     // A previsão local recebe a mesma intenção que o servidor: somente o
     // alvo muda aqui. A posição, velocidade e colisões avançam no tick comum.
     const sequence = ++nextInputSequence.current;
-    const input = { x, y, sequence };
+    const base = predictedLocalRef.current ?? authoritativeRef.current ?? state;
+    const simulationTick = base.lastTickAt ?? state.lastTickAt ?? Date.now();
+    const input = { x, y, sequence, simulationTick };
     pendingInputs.current.push(input);
     logDebug(debugEnabled.current, "INPUT", {
       sequence,
       timestamp: Date.now(),
-      predictedTick: state.lastTickAt,
+      predictedTick: simulationTick,
       target: { x, y },
     });
-    const base = predictedLocalRef.current ?? authoritativeRef.current ?? state;
-    const predicted = engineRef.current.applyAction(cloneState(base) as never, { type: "move", ...input }, getPlayerId()) as AirHockeyState;
+    const predicted = engineRef.current.applyAction(cloneState(base) as never, { type: "move", x, y, sequence }, getPlayerId()) as AirHockeyState;
     predictedLocalRef.current = predicted;
     predictedPuckRef.current = { ...predicted.puck };
     stateRef.current = predicted;
-    getSocket().emit("airhockey:move", input);
+    getSocket().emit("airhockey:move", { x, y, sequence });
   }, []);
 
   const newGame = useCallback(() => getSocket().emit("airhockey:newGame"), []);
