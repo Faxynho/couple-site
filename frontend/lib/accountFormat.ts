@@ -10,6 +10,7 @@ import { TERMO_VARIANTS } from "@/lib/termoTypes";
 import { AIR_HOCKEY_DIFFICULTIES } from "@/lib/airHockeyTypes";
 import { CHESS_DIFFICULTIES } from "@/lib/chessTypes";
 import { NO_RANK } from "@/lib/accountTypes";
+import type { AccountId, AccountsOverview } from "@/lib/accountTypes";
 
 type RankInfo = { label: string; emoji: string };
 
@@ -96,6 +97,24 @@ export function formatRecordTime(ms: number): string {
 
 export function formatRecordValue(value: number, scoreType: "time" | "points"): string {
   return scoreType === "time" ? formatRecordTime(value) : `${value} pts`;
+}
+
+/** Deriva a conquista do perfil apenas das vitórias pessoais em Duelo. A
+ * ordem de GAMES é deliberadamente usada como desempate determinístico. */
+export function duoCompetitiveTitle(accountId: AccountId, overview: AccountsOverview | null): string | null {
+  if (!overview) return null;
+  const wins = overview.duoPerAccount[accountId]?.gameWinCounts ?? {};
+  let bestGame: GameId | null = null;
+  let bestWins = 0;
+  for (const game of GAMES) {
+    const gameWins = wins[game.id] ?? 0;
+    if (gameWins > bestWins) {
+      bestWins = gameWins;
+      bestGame = game.id;
+    }
+  }
+  if (!bestGame) return null;
+  return `${accountId === "andre" ? "Rei" : "Rainha"} do ${gameName(bestGame)}`;
 }
 
 /** Acha a chave com maior contagem num mapa de contagens (ex.: qual jogo mais

@@ -2,22 +2,30 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
 import GameCard from "@/components/GameCard";
 import { GAMES } from "@/lib/games";
 import { GameDefinition } from "@/lib/types";
 import GameSearch, { normalizeGameSearch } from "@/components/GameSearch";
+import GameCatalogActions from "@/components/GameCatalogActions";
+import GameSequenceSuggestion from "@/components/GameSequenceSuggestion";
 
 export default function SoloPickerPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
   const filteredGames = useMemo(() => {
     const query = normalizeGameSearch(search);
     if (!query) return GAMES;
     return GAMES.filter((game) => normalizeGameSearch(`${game.name} ${game.description}`).includes(query));
   }, [search]);
+  const handleRandomGame = () => {
+    const availableGames = GAMES.filter((game) => game.available);
+    const game = availableGames[Math.floor(Math.random() * availableGames.length)];
+    if (game) router.push(`/solo/${game.id}`);
+  };
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center px-5 py-14 sm:py-20">
@@ -51,6 +59,27 @@ export default function SoloPickerPage() {
 
       <div className="mt-10 w-full">
         <GameSearch value={search} onChange={setSearch} />
+        <GameCatalogActions onRandom={handleRandomGame} onToggleSuggestion={() => setSuggestionOpen((open) => !open)} suggestionOpen={suggestionOpen} />
+        <AnimatePresence initial={false}>
+          {suggestionOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -6 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -6 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden"
+            >
+              <GameSequenceSuggestion
+                sequence={GAMES.filter((game) => game.available).map((game) => game.id)}
+                sequenceProgress={[]}
+                isHost={false}
+                onShuffle={() => undefined}
+                onPickGame={() => undefined}
+                preview
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {filteredGames.length > 0 ? (
           <div className="mt-5 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
             {filteredGames.map((game, i) => (

@@ -23,8 +23,10 @@ interface AccountPanelProps {
   accountId: AccountId;
   profile: PublicAccountProfile;
   onClose: () => void;
-  onProfileUpdated: (profile: PublicAccountProfile) => void;
-  onSwitchAccount: () => void;
+  onProfileUpdated?: (profile: PublicAccountProfile) => void;
+  onSwitchAccount?: () => void;
+  /** Remove os controles de edição quando o painel mostra outra conta. */
+  readOnly?: boolean;
 }
 
 /**
@@ -34,7 +36,7 @@ interface AccountPanelProps {
  * resetar estatísticas/recordes em caso de bug. Estatísticas, Recordes e
  * Configurações compartilham os MESMOS dados (`GET /api/accounts/overview`).
  */
-export default function AccountPanel({ accountId, profile, onClose, onProfileUpdated, onSwitchAccount }: AccountPanelProps) {
+export default function AccountPanel({ accountId, profile, onClose, onProfileUpdated, onSwitchAccount, readOnly = false }: AccountPanelProps) {
   const [tab, setTab] = useState<TabId>("perfil");
   const [overview, setOverview] = useState<AccountsOverview | null>(null);
   const [overviewError, setOverviewError] = useState<string | null>(null);
@@ -52,7 +54,7 @@ export default function AccountPanel({ accountId, profile, onClose, onProfileUpd
   // A aba de reset só existe para a conta André (ver accountsRoutes.ts — o
   // backend também recusa o pedido se vier de outra conta, isso aqui é só a
   // visibilidade na interface).
-  const tabs = accountId === "andre" ? [...BASE_TABS, { id: "configuracoes" as const, label: "Configurações", icon: Settings }] : BASE_TABS;
+  const tabs = !readOnly && accountId === "andre" ? [...BASE_TABS, { id: "configuracoes" as const, label: "Configurações", icon: Settings }] : BASE_TABS;
 
   return (
     <AnimatePresence>
@@ -104,13 +106,15 @@ export default function AccountPanel({ accountId, profile, onClose, onProfileUpd
               <ProfileTab
                 accountId={accountId}
                 profile={profile}
+                overview={overview}
                 onProfileUpdated={onProfileUpdated}
                 onSwitchAccount={onSwitchAccount}
+                readOnly={readOnly}
               />
             )}
             {tab === "estatisticas" && <StatsTab overview={overview} error={overviewError} />}
             {tab === "recordes" && <RecordsTab overview={overview} error={overviewError} />}
-            {tab === "configuracoes" && accountId === "andre" && (
+            {tab === "configuracoes" && !readOnly && accountId === "andre" && (
               <SettingsTab overview={overview} onChanged={loadOverview} />
             )}
           </div>

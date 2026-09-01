@@ -11,6 +11,8 @@ interface GameSequenceSuggestionProps {
   isHost: boolean;
   onShuffle: () => void;
   onPickGame: (gameId: GameId) => void;
+  /** Visualização usada no catálogo Solo, sem progresso da sala ou ações. */
+  preview?: boolean;
 }
 
 const gameById = new Map(GAMES.map((g) => [g.id, g]));
@@ -27,6 +29,7 @@ export default function GameSequenceSuggestion({
   isHost,
   onShuffle,
   onPickGame,
+  preview = false,
 }: GameSequenceSuggestionProps) {
   const doneCount = sequenceProgress.length;
 
@@ -36,10 +39,10 @@ export default function GameSequenceSuggestion({
         <div>
           <p className="font-display text-sm font-semibold text-ink">Sequência sugerida</p>
           <p className="text-xs text-ink-soft">
-            {doneCount}/{sequence.length} jogados nesta rodada
+            {preview ? "Uma seleção para inspirar a próxima partida" : `${doneCount}/${sequence.length} jogados nesta rodada`}
           </p>
         </div>
-        {isHost && (
+        {isHost && !preview && (
           <button
             type="button"
             onClick={onShuffle}
@@ -59,8 +62,8 @@ export default function GameSequenceSuggestion({
             <motion.li key={gameId} layout>
               <button
                 type="button"
-                disabled={!isHost}
-                onClick={() => isHost && onPickGame(gameId)}
+                disabled={!isHost || preview}
+                onClick={() => isHost && !preview && onPickGame(gameId)}
                 className={`flex w-full items-center gap-3 rounded-xl2 border px-3 py-2.5 text-left transition-colors ${
                   done ? "border-sage/50 bg-sage/10" : "border-surface/70 bg-surface/50"
                 } ${isHost ? "hover:bg-surface/80" : "cursor-default"}`}

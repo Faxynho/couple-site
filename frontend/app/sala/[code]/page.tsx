@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
@@ -13,8 +13,11 @@ import GameSequenceSuggestion from "@/components/GameSequenceSuggestion";
 import LoadingScreen from "@/components/LoadingScreen";
 import { useRoomSession } from "@/hooks/useRoomSession";
 import { GAMES } from "@/lib/games";
-import { GameDefinition } from "@/lib/types";
+import { GameDefinition, Player } from "@/lib/types";
 import GameSearch, { normalizeGameSearch } from "@/components/GameSearch";
+import GameCatalogActions from "@/components/GameCatalogActions";
+import AccountPanel from "@/components/account/AccountPanel";
+import { fetchAccounts } from "@/lib/accountApi";
 
 export default function DuoRoomPage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -33,6 +36,9 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
     shuffleSequence,
   } = useRoomSession(code);
   const [search, setSearch] = useState("");
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
+  const [viewedProfile, setViewedProfile] = useState<Awaited<ReturnType<typeof fetchAccounts>>[number] | null>(null);
+  const profileRequestRef = useRef(0);
   const filteredGames = useMemo(() => {
     const query = normalizeGameSearch(search);
     if (!query) return GAMES;
@@ -75,6 +81,25 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   const handleStart = async () => {
     await startGame();
   };
+  const handleRandomGame = () => {
+    const availableGames = GAMES.filter((item) => item.available);
+    const gameToPlay = availableGames[Math.floor(Math.random() * availableGames.length)];
+    if (gameToPlay) selectGame(gameToPlay.id);
+  };
+
+  const handleViewProfile = async (player: Player) => {
+    // Visitantes sem uma conta fixa não têm um perfil persistente para abrir.
+    if (!player.accountId || player.id === selfId) return;
+    const requestId = ++profileRequestRef.current;
+    try {
+      const profiles = await fetchAccounts();
+      if (requestId !== profileRequestRef.current) return;
+      const profile = profiles.find((item) => item.id === player.accountId);
+      if (profile) setViewedProfile(profile);
+    } catch {
+      // O avatar continua apenas visual se o perfil não puder ser carregado.
+    }
+  };
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center px-5 py-14">
@@ -103,6 +128,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                 selfId={selfId}
                 isHost={isHost}
                 onKick={kickPlayer}
+                onViewProfile={handleViewProfile}
               />
               {error && <p className="mt-2 text-sm text-rose-deep">{error}</p>}
             </div>
@@ -110,6 +136,26 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             {isHost ? (
               <div className="w-full">
                 <GameSearch value={search} onChange={setSearch} />
+                <GameCatalogActions onRandom={handleRandomGame} onToggleSuggestion={() => setSuggestionOpen((open) => !open)} suggestionOpen={suggestionOpen} />
+                <AnimatePresence initial={false}>
+                  {suggestionOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, y: -6 }}
+                      animate={{ opacity: 1, height: "auto", y: 0 }}
+                      exit={{ opacity: 0, height: 0, y: -6 }}
+                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <GameSequenceSuggestion
+                        sequence={room.sequence}
+                        sequenceProgress={room.sequenceProgress}
+                        isHost={isHost}
+                        onShuffle={shuffleSequence}
+                        onPickGame={selectGame}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 {filteredGames.length > 0 ? (
                   <div className="mt-5 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
                     {filteredGames.map((g, i) => (
@@ -127,13 +173,6 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
               <p className="text-center text-sm text-ink-soft">Aguardando o anfitrião escolher o jogo...</p>
             )}
 
-            <GameSequenceSuggestion
-              sequence={room.sequence}
-              sequenceProgress={room.sequenceProgress}
-              isHost={isHost}
-              onShuffle={shuffleSequence}
-              onPickGame={selectGame}
-            />
           </motion.div>
         ) : (
           <motion.div
@@ -163,6 +202,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
               selfId={selfId}
               isHost={isHost}
               onKick={kickPlayer}
+              onViewProfile={handleViewProfile}
             />
 
             <div className="mt-2">
@@ -188,6 +228,15 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {viewedProfile && (
+        <AccountPanel
+          accountId={viewedProfile.id}
+          profile={viewedProfile}
+          readOnly
+          onClose={() => setViewedProfile(null)}
+        />
+      )}
     </main>
   );
 }

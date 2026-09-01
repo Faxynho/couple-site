@@ -15,6 +15,8 @@ interface ConnectionThreadProps {
    *  e poder tirar quem não deveria estar na sala. */
   isHost?: boolean;
   onKick?: (playerId: string) => void;
+  /** Abre o perfil público de um jogador da sala (quando disponível). */
+  onViewProfile?: (player: Player) => void;
 }
 
 function Avatar({
@@ -23,12 +25,16 @@ function Avatar({
   placeholder,
   canKick,
   onKick,
+  canViewProfile,
+  onViewProfile,
 }: {
   player?: Player;
   photo?: string | null;
   placeholder?: boolean;
   canKick?: boolean;
   onKick?: (playerId: string) => void;
+  canViewProfile?: boolean;
+  onViewProfile?: (player: Player) => void;
 }) {
   return (
     <div className="flex flex-col items-center gap-2">
@@ -48,6 +54,23 @@ function Avatar({
             >
               …
             </div>
+          ) : canViewProfile && onViewProfile ? (
+            <button
+              type="button"
+              onClick={() => onViewProfile(player)}
+              aria-label={`Ver perfil de ${player.name}`}
+              title="Ver perfil"
+              className="group block cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-rose/50"
+            >
+              <AccountAvatar
+                name={player.name}
+                photo={photo}
+                accountId={player.accountId}
+                fallbackColor={player.color}
+                size={64}
+                className="shadow-soft transition-transform duration-150 group-hover:scale-105 group-active:scale-95"
+              />
+            </button>
           ) : (
             <AccountAvatar
               name={player.name}
@@ -78,7 +101,7 @@ function Avatar({
   );
 }
 
-export default function ConnectionThread({ players, maxPlayers, selfId, isHost, onKick }: ConnectionThreadProps) {
+export default function ConnectionThread({ players, maxPlayers, selfId, isHost, onKick, onViewProfile }: ConnectionThreadProps) {
   const slots = Array.from({ length: maxPlayers }, (_, i) => players[i]);
   const bothPresent = players.filter((p) => p.connected).length === maxPlayers;
   const photos = useAccountPhotos();
@@ -91,6 +114,8 @@ export default function ConnectionThread({ players, maxPlayers, selfId, isHost, 
         placeholder={!slots[0]}
         canKick={isHost && slots[0]?.id !== selfId}
         onKick={onKick}
+        canViewProfile={bothPresent && slots[0]?.id !== selfId && Boolean(slots[0]?.accountId)}
+        onViewProfile={onViewProfile}
       />
 
       <svg width="96" height="24" viewBox="0 0 96 24" className="shrink-0">
@@ -122,6 +147,8 @@ export default function ConnectionThread({ players, maxPlayers, selfId, isHost, 
         placeholder={!slots[1]}
         canKick={isHost && slots[1]?.id !== selfId}
         onKick={onKick}
+        canViewProfile={bothPresent && slots[1]?.id !== selfId && Boolean(slots[1]?.accountId)}
+        onViewProfile={onViewProfile}
       />
     </div>
   );
