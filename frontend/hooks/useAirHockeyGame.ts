@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AirHockeyState } from "@/lib/airHockeyTypes";
 import { getPlayerId } from "@/lib/playerId";
 import { getSocket } from "@/lib/socket";
+import { updateActiveSoloState } from "@/lib/soloMatch";
 import { AirHockeyGame } from "../../backend/src/games/airhockey/AirHockeyGame";
 
 type PendingInput = { x: number; y: number; sequence: number; simulationTick: number };
@@ -133,6 +134,7 @@ export function useAirHockeyGame(roomCode: string) {
     bestClockRttMs.current = Number.POSITIVE_INFINITY;
     debugEnabled.current = new URLSearchParams(window.location.search).get("airHockeyDebug") === "1";
     let previous = performance.now();
+    let lastSoloAutosaveAt = 0;
 
     const updateMeta = (next: AirHockeyState) => {
       setMeta((previous) => {
@@ -267,6 +269,11 @@ export function useAirHockeyGame(roomCode: string) {
         stateRef.current = engineRef.current.applyAction(state as never, { type: "tick", now: Date.now() }, "system") as AirHockeyState;
         const current = stateRef.current;
         updateMeta(current);
+        const now = Date.now();
+        if (now - lastSoloAutosaveAt >= 1_000) {
+          lastSoloAutosaveAt = now;
+          updateActiveSoloState("airhockey", current);
+        }
         if (current.phase === "finished" && !soloFinished.current) {
           soloFinished.current = true;
           getSocket().emit("airhockey:soloComplete", { score: current.scores[current.playerIds[0]], conceded: current.scores[current.playerIds[1]] });

@@ -19,6 +19,7 @@ import { AirHockeyState, isValidAirHockeyDifficulty, isValidAirHockeyMode } from
 import { ChessState, isValidChessDifficulty, isValidChessMode } from "../games/chess/ChessGame";
 import { advanceAirHockeyInputTimeline, AIR_HOCKEY_AUTHORITATIVE_DELAY_MS, QueuedAirHockeyInput } from "../games/airhockey/AirHockeyInputTimeline";
 import { isAccountId } from "../accounts/types";
+import { isFinishedSoloState, isSoloResumePayload, rebaseSoloState } from "../solo/soloMatch";
 
 interface SocketData {
   roomCode?: string;
@@ -139,6 +140,23 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     }
   } else {
     io.to(roomCode).emit("game:state", room.gameState);
+  }
+
+  // Snapshot integral somente da sala Solo e somente para a própria conta.
+  // Os eventos públicos mascarados acima continuam iguais para todos os jogos
+  // e para todas as salas Duo.
+  if (room.roomMode === "solo" && room.gameId && room.gameState) {
+    const player = [...room.players.values()][0];
+    if (player?.accountId) {
+      emitToPlayer(io, room, player.id, "solo:state", {
+        ownerId: player.accountId,
+        room: room.toSnapshot(),
+        playerId: player.id,
+        playerName: player.name,
+        state: room.gameState,
+        savedAt: Date.now(),
+      });
+    }
   }
 }
 
@@ -600,6 +618,56 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
   };
 
   io.on("connection", (socket: Socket<any, any, any, SocketData>) => {
+    socket.on("solo:resume", (payload: unknown, callback: AckCallback) => {
+      if (!isSoloResumePayload(payload)) {
+        callback?.({ ok: false, error: "O save desta partida é inválido." });
+        return;
+      }
+      if (isFinishedSoloState(payload.gameId, payload.state)) {
+        callback?.({ ok: false, error: "Esta partida já foi concluída." });
+        return;
+      }
+
+      const restoredState = rebaseSoloState(payload.state, payload.savedAt);
+      const previousCode = socket.data.roomCode;
+      if (previousCode) {
+        const previousRoom = roomManager.getRoom(previousCode);
+        if (previousRoom && socket.data.playerId) previousRoom.markDisconnected(socket.data.playerId);
+        socket.leave(previousCode);
+      }
+
+      const room = roomManager.createRoom("solo", payload.gameId);
+      const player = room.addPlayer(payload.playerId, payload.playerName, payload.ownerId);
+      if (!player) {
+        callback?.({ ok: false, error: "Não foi possível recriar o jogador desta partida." });
+        return;
+      }
+      room.restoreSoloGameState(restoredState);
+      room.setSocketId(payload.playerId, socket.id);
+      socket.data.roomCode = room.code;
+      socket.data.playerId = payload.playerId;
+      socket.data.playerName = payload.playerName;
+      socket.join(room.code);
+
+      callback?.({ ok: true, room: room.toSnapshot(), gameState: getMaskedStateForPlayer(room, payload.playerId) });
+      broadcastRoom(io, room.code, roomManager);
+      broadcastGameState(io, room.code, roomManager);
+
+      // Um save de Xadrez pode ter sido feito entre o lance humano e a resposta
+      // do BOT. A resposta pendente é retomada, sem deixar a posição travada.
+      const chessState = room.gameState as ChessState | null;
+      if (payload.gameId === "chess" && chessState?.mode === "solo" && chessState.turn === "b" && !chessState.result) {
+        chessBotTimers.set(room.code, setTimeout(() => {
+          const currentRoom = roomManager.getRoom(room.code);
+          const current = currentRoom?.gameState as ChessState | null;
+          if (!currentRoom || currentRoom.status !== "playing" || current?.turn !== "b" || current.result) return;
+          currentRoom.applyAction({ type: "botMove" }, "BOT");
+          broadcastGameState(io, room.code, roomManager);
+          if ((currentRoom.gameState as ChessState).result) broadcastRoom(io, room.code, roomManager);
+        }, 330));
+      }
+    });
+
     socket.on(
       "room:create",
       (
@@ -612,6 +680,15 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         },
         callback: AckCallback
       ) => {
+        const previousCode = socket.data.roomCode;
+        if (previousCode) {
+          const previousRoom = roomManager.getRoom(previousCode);
+          if (previousRoom && socket.data.playerId) {
+            previousRoom.markDisconnected(socket.data.playerId);
+            broadcastRoom(io, previousCode, roomManager);
+          }
+          socket.leave(previousCode);
+        }
         const roomMode: RoomMode = payload.roomMode === "solo" ? "solo" : "duo";
         // Sala Solo já nasce com o jogo escolhido (o jogador acabou de
         // escolher na grade); sala Duo sempre nasce sem jogo (lobby) — o

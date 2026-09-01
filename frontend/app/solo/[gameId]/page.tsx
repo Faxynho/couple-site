@@ -22,6 +22,8 @@ import { AIR_HOCKEY_DIFFICULTIES, AirHockeyDifficulty } from "@/lib/airHockeyTyp
 import { CHESS_DIFFICULTIES, ChessDifficulty } from "@/lib/chessTypes";
 import { fetchAccounts } from "@/lib/accountApi";
 import { getActiveAccount } from "@/lib/accountSession";
+import SoloMatchModal from "@/components/SoloMatchModal";
+import { clearSoloMatch, getActiveProfileSoloMatch, SoloMatchSave } from "@/lib/soloMatch";
 
 function DifficultyGrid<K extends string>({
   entries,
@@ -67,6 +69,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
   const [imageId, setImageId] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<{ width: number; height: number } | null>(null);
   const [starting, setStarting] = useState(false);
+  const [conflictSave, setConflictSave] = useState<SoloMatchSave | null>(null);
   // Continua sem pedir nome (nunca teve essa etapa no Solo) — só passa a usar
   // o nome atual da conta fixa, se houver, no lugar do "Você" genérico.
   const [playerName, setPlayerName] = useState("Você");
@@ -96,7 +99,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
 
   const selectedImage = images.find((img) => img.file === imageId) ?? null;
 
-  const handleStart = async () => {
+  const startMatch = async () => {
     setStarting(true);
     const res = await createRoom("solo", playerName, gameId);
     if (!res.ok || !res.room) {
@@ -130,6 +133,15 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
     } else {
       setStarting(false);
     }
+  };
+
+  const handleStart = () => {
+    const activeSave = getActiveProfileSoloMatch();
+    if (activeSave) {
+      setConflictSave(activeSave);
+      return;
+    }
+    void startMatch();
   };
 
   const canStart = gameId === "puzzle" ? Boolean(imageId) : true;
@@ -294,6 +306,19 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
 
         {error && <p className="mt-4 text-center text-sm text-rose-deep">{error}</p>}
       </motion.div>
+      {conflictSave && (
+        <SoloMatchModal
+          save={conflictSave}
+          mode="conflict"
+          busy={starting}
+          onDismiss={() => setConflictSave(null)}
+          onCancel={() => {
+            clearSoloMatch(conflictSave.ownerId);
+            setConflictSave(null);
+            void startMatch();
+          }}
+        />
+      )}
     </main>
   );
 }

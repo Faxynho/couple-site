@@ -5,6 +5,7 @@ import { themeInitScript } from "@/lib/theme";
 import ThemeToggleGate from "@/components/ThemeToggleGate";
 import AccountPanelGate from "@/components/account/AccountPanelGate";
 import PWARegister from "@/components/PWARegister";
+import SoloMatchGate from "@/components/SoloMatchGate";
 
 const fredoka = Fredoka({
   subsets: ["latin"],
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeToggleGate />
         <AccountPanelGate />
         <PWARegister />
+        <SoloMatchGate />
         {children}
       </body>
     </html>

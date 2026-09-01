@@ -154,6 +154,7 @@ export class Room {
       const successor = [...this.players.values()].find((p) => p.id !== id && p.connected);
       if (successor) this.hostId = successor.id;
     }
+    this.socketIds.delete(id);
   }
 
   /** Remove um jogador definitivamente da sala (usado só para expulsar o
@@ -336,6 +337,30 @@ export class Room {
       this.status = "playing";
       this.statsRecordedForMatch = false;
     }
+  }
+
+  /** Reidrata exclusivamente uma sala Solo nova a partir do snapshot salvo no
+   * navegador. Salas Duo nunca passam por este caminho. */
+  restoreSoloGameState(state: unknown) {
+    if (this.roomMode !== "solo" || !this.gameId) return;
+    const engine = getGameEngine(this.gameId);
+    let restored = state;
+    // Posse de ponteiro/arraste é transitória. Se o app fechou no meio de um
+    // gesto (especialmente no Quebra-cabeça), a peça precisa voltar livre.
+    if (engine.releasePlayer) {
+      for (const playerId of this.players.keys()) restored = engine.releasePlayer(restored, playerId);
+    }
+    this.gameState = restored;
+    this.status = "playing";
+    this.statsRecordedForMatch = false;
+
+    const saved = restored as Record<string, unknown>;
+    if (typeof saved.difficulty === "string") this.pendingDifficulty = saved.difficulty;
+    if (typeof saved.variant === "string") this.pendingDifficulty = saved.variant;
+    if (typeof saved.mode === "string") this.pendingMatchMode = saved.mode;
+    if (typeof saved.imageId === "string") this.pendingImageId = saved.imageId;
+    if (typeof saved.imageWidth === "number") this.pendingImageWidth = saved.imageWidth;
+    if (typeof saved.imageHeight === "number") this.pendingImageHeight = saved.imageHeight;
   }
 
   applyAction(action: unknown, playerId: string) {
