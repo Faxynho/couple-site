@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Heart } from "lucide-react";
 import AccountAvatar from "@/components/account/AccountAvatar";
@@ -69,7 +69,23 @@ function statusKindForEvent(event: RPGRoundEvent): StatusKind {
   return event.status ?? (event.cardId === "bleeding" ? "bleed" : event.cardId === "curse" ? "curse" : "poison");
 }
 
-function StatusEffectBurst({ event, index, eventsKey, onStart, onComplete }: { event: RPGRoundEvent; index: number; eventsKey: number; onStart: () => void; onComplete: () => void }) {
+function FloatingCombatText({ floating, index }: {
+  floating: NonNullable<ReturnType<typeof floatingText>>;
+  index: number;
+}) {
+  return (
+    <motion.span
+      className={`pointer-events-none absolute left-1/2 top-[28%] z-40 -translate-x-1/2 whitespace-nowrap font-display text-xs font-extrabold drop-shadow-[0_2px_3px_rgba(255,255,255,0.8)] sm:text-sm ${floating.tone === "heal" ? "text-emerald-700" : floating.tone === "crit" ? "text-red-700" : floating.tone === "damage" ? "text-rose-600" : "text-slate-700"}`}
+      initial={{ opacity: 0, y: 4, scale: 0.75 }}
+      animate={{ opacity: [0, 1, 1, 0], y: -48, scale: floating.tone === "crit" ? [0.75, 1.25, 1] : 1 }}
+      transition={{ duration: floating.tone === "crit" ? 1.8 : 1.5, delay: index * 0.12, ease: "easeOut" }}
+    >
+      {floating.text}
+    </motion.span>
+  );
+}
+
+function StatusEffectBurst({ event, index, eventsKey }: { event: RPGRoundEvent; index: number; eventsKey: number }) {
   const [visible, setVisible] = useState(true);
   if (!visible) return null;
 
@@ -79,15 +95,11 @@ function StatusEffectBurst({ event, index, eventsKey, onStart, onComplete }: { e
   return (
     <motion.div
       key={`status-${eventsKey}-${index}-${status}`}
-      className="pointer-events-none absolute inset-x-[16%] bottom-auto top-[calc(100%+5rem)] z-[25] h-12 sm:bottom-[4%] sm:top-[8%] sm:h-auto"
+      className="pointer-events-none absolute inset-x-[16%] bottom-[4%] top-[8%] z-[25] h-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: [0, 1, 1, 1, 0] }}
       transition={{ duration: 1.62 + index * 0.18, times: [0, 0.12, 0.35, 0.9, 1] }}
-      onAnimationStart={onStart}
-      onAnimationComplete={() => {
-        setVisible(false);
-        onComplete();
-      }}
+      onAnimationComplete={() => setVisible(false)}
     >
       <motion.span className="absolute left-1/2 top-[14%] -translate-x-1/2 text-4xl leading-none drop-shadow-[0_0_14px_rgba(255,255,255,0.95)] sm:text-5xl" initial={{ opacity: 0, scale: 0.25, y: 10, rotate: -10 }} animate={{ opacity: [0, 1, 1, 0], scale: [0.25, 1.2, 0.95, 1], y: [10, -4, -18, -35], rotate: [-10, 6, -3, 0] }} transition={{ duration: 0.72, delay: 0.62 + index * 0.18, ease: "easeOut" }}>{visual.emoji}</motion.span>
       <motion.span className={`absolute left-1/2 top-[46%] -translate-x-1/2 whitespace-nowrap rounded-full border border-surface/80 bg-surface/90 px-2 py-1 font-display text-[10px] font-extrabold shadow-lg sm:text-xs ${visual.text}`} initial={{ opacity: 0, y: 9, scale: 0.75 }} animate={{ opacity: [0, 1, 1, 0], y: [9, 0, -10, -22], scale: [0.75, 1, 1, 1.04] }} transition={{ duration: 0.72, delay: 0.64 + index * 0.18, ease: "easeOut" }}>-{event.amount} {visual.label}</motion.span>
@@ -149,22 +161,6 @@ export default function RPGCombatantPanel({ combatant, name, player, color, appe
   if (activeDefense) extraBadges.push({ text: "Escudo divino", emoji: "🛡️", className: "border-amber-300 bg-amber-100 text-amber-800" });
   const floats = events.map(floatingText).filter((event): event is NonNullable<ReturnType<typeof floatingText>> => Boolean(event));
   const hasBadges = activeStatuses.length > 0 || extraBadges.length > 0 || showChosenBadge;
-  const [visibleEffectIds, setVisibleEffectIds] = useState<string[]>([]);
-
-  // A faixa móvel de efeitos só existe enquanto uma animação chegou a ser
-  // exibida. Os eventos da rodada permanecem no estado até a próxima rodada,
-  // portanto não podem determinar sozinhos o espaço reservado pelo HP.
-  useEffect(() => {
-    setVisibleEffectIds([]);
-  }, [eventsKey]);
-
-  const markEffectVisible = (id: string) => {
-    setVisibleEffectIds((visible) => visible.includes(id) ? visible : [...visible, id]);
-  };
-  const markEffectComplete = (id: string) => {
-    setVisibleEffectIds((visible) => visible.filter((visibleId) => visibleId !== id));
-  };
-  const effectLaneVisible = visibleEffectIds.length > 0;
 
   const healthGradient = hpPct > 50
     ? "linear-gradient(90deg, #16a34a, #4ade80)"
@@ -222,16 +218,15 @@ export default function RPGCombatantPanel({ combatant, name, player, color, appe
           {blocked && <motion.span key={`block-${eventsKey}`} className="pointer-events-none absolute left-1/2 top-[22%] z-20 -translate-x-1/2 text-4xl drop-shadow-[0_0_12px_rgba(125,211,252,0.9)]" initial={{ scale: 0.65, opacity: 0 }} animate={{ scale: [0.65, 1.12, 1], opacity: [0, 0.95, 0] }} transition={{ duration: 0.68 }}>🛡️</motion.span>}
         </AnimatePresence>
 
-        <AnimatePresence>{statusTickEvents.map((event, index) => <StatusEffectBurst key={`${eventsKey}-${index}-${event.status ?? event.cardId}`} event={event} index={index} eventsKey={eventsKey} onStart={() => markEffectVisible(`status-${eventsKey}-${index}`)} onComplete={() => markEffectComplete(`status-${eventsKey}-${index}`)} />)}</AnimatePresence>
+        <AnimatePresence>{statusTickEvents.map((event, index) => <StatusEffectBurst key={`${eventsKey}-${index}-${event.status ?? event.cardId}`} event={event} index={index} eventsKey={eventsKey} />)}</AnimatePresence>
 
         <AnimatePresence>{fullHealUsed && <motion.div key={`full-heal-hearts-${eventsKey}`} className="pointer-events-none absolute -inset-x-3 -top-4 bottom-0 z-30">{Array.from({ length: 12 }, (_, index) => { const x = ((index * 29) % 86) + 7; const y = 76 - ((index * 11) % 22); const scale = 0.75 + (index % 4) * 0.12; return <motion.span key={index} className="absolute text-xl leading-none drop-shadow-[0_4px_10px_rgba(190,24,93,0.35)] sm:text-2xl" style={{ left: `${x}%`, top: `${y}%` }} initial={{ opacity: 0, scale: 0.2, y: 8, rotate: -15 }} animate={{ opacity: [0, 1, 1, 0], scale: [0.2, scale * 1.22, scale, scale * 0.9], y: [-2, -18 - (index % 4) * 4, -42 - (index % 5) * 6, -58 - (index % 3) * 8], x: [index % 2 ? -4 : 4, (index % 3 - 1) * 12, index % 2 ? 8 : -8, 0], rotate: [-15, 8, -5, 0] }} transition={{ delay: index * 0.045, duration: 1.15 + (index % 3) * 0.08, ease: "easeOut" }}>❤️</motion.span>; })}</motion.div>}</AnimatePresence>
         <AnimatePresence>{dead && <motion.div key={`death-skull-${eventsKey}`} className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><motion.div className="absolute h-24 w-24 rounded-full bg-red-950/20 blur-xl" initial={{ scale: 0.25, opacity: 0 }} animate={{ scale: [0.25, 1.45, 1.08], opacity: [0, 0.78, 0.28] }} transition={{ duration: 0.9, ease: "easeOut" }} /><motion.span className="relative text-7xl leading-none drop-shadow-[0_0_16px_rgba(127,29,29,0.5)] drop-shadow-[0_5px_10px_rgba(0,0,0,0.4)] sm:text-8xl" initial={{ opacity: 0, scale: 0.12, rotate: -32, y: 16 }} animate={{ opacity: [0, 1, 1, 0.9], scale: [0.12, 1.42, 1.04, 1.12], rotate: [-32, 9, -4, 0], y: [16, -6, 1, 0] }} transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}>💀</motion.span></motion.div>}</AnimatePresence>
-        <AnimatePresence>{floats.map((floating, index) => <motion.span key={`${eventsKey}-${index}`} className={`pointer-events-none absolute left-1/2 top-[calc(100%+5rem)] z-40 -translate-x-1/2 whitespace-nowrap font-display text-xs font-extrabold drop-shadow-[0_2px_3px_rgba(255,255,255,0.8)] sm:top-[28%] sm:text-sm ${floating.tone === "heal" ? "text-emerald-700" : floating.tone === "crit" ? "text-red-700" : floating.tone === "damage" ? "text-rose-600" : "text-slate-700"}`} onAnimationStart={() => markEffectVisible(`float-${eventsKey}-${index}`)} onAnimationComplete={() => markEffectComplete(`float-${eventsKey}-${index}`)} initial={{ opacity: 0, y: 4, scale: 0.75 }} animate={{ opacity: [0, 1, 1, 0], y: -48, scale: floating.tone === "crit" ? [0.75, 1.25, 1] : 1 }} transition={{ duration: floating.tone === "crit" ? 1.8 : 1.5, delay: index * 0.12, ease: "easeOut" }}>{floating.text}</motion.span>)}</AnimatePresence>
+        <AnimatePresence>{floats.map((floating, index) => <FloatingCombatText key={`${eventsKey}-${index}`} floating={floating} index={index} />)}</AnimatePresence>
+        {hasBadges && <div className={`absolute top-1/2 z-30 flex -translate-y-1/2 flex-col gap-1 ${facing === "right" ? "left-0 items-start" : "right-0 items-end"}`}>{activeStatuses.map(([status]) => <motion.span key={status} aria-label={STATUS[status].label} title={STATUS[status].label} initial={{ opacity: 0, y: -4, scale: 0.85 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs shadow-sm sm:h-7 sm:w-7 sm:text-sm ${STATUS[status].chip}`}>{STATUS[status].emoji}</motion.span>)}{extraBadges.map((badge) => <motion.span key={badge.text} aria-label={badge.text} title={badge.text} initial={{ opacity: 0, y: -4, scale: 0.85 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs shadow-sm sm:h-7 sm:w-7 sm:text-sm ${badge.className}`}>{badge.emoji}</motion.span>)}{showChosenBadge && <span aria-label="Escolhido" title="Escolhido" className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-300 bg-emerald-100 text-xs font-bold text-emerald-800 shadow-sm sm:h-7 sm:w-7 sm:text-sm">✓</span>}</div>}
       </div>
 
-      {hasBadges && <div className="z-20 mt-9 flex max-w-full flex-wrap justify-center gap-1 px-1 text-[8px] font-bold sm:mt-1 sm:text-[9px]">{activeStatuses.map(([status, turns]) => <motion.span key={status} initial={{ opacity: 0, y: -4, scale: 0.85 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`rounded-full border px-1.5 py-0.5 shadow-sm ${STATUS[status].chip}`}>{STATUS[status].emoji} {STATUS[status].label} {turns}</motion.span>)}{extraBadges.map((badge) => <motion.span key={badge.text} initial={{ opacity: 0, y: -4, scale: 0.85 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`rounded-full border px-1.5 py-0.5 shadow-sm ${badge.className}`}>{badge.emoji} {badge.text}</motion.span>)}{showChosenBadge && <span className="rounded-full border border-emerald-300 bg-emerald-100 px-1.5 py-0.5 text-emerald-800 shadow-sm">✓ Escolhido</span>}</div>}
-
-      <motion.div className={`relative z-20 ${activeStatuses.length > 0 || extraBadges.length > 0 || showChosenBadge ? "mt-1.5" : effectLaneVisible ? "mt-20" : "mt-9"} w-full max-w-[200px] rounded-xl border bg-slate-950/70 p-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.20),0_5px_12px_rgba(15,23,42,0.16)] sm:mt-1.5 sm:max-w-[230px] ${criticalHp ? "border-red-400/80" : "border-surface/80"}`} initial={false} animate={tookRealDamage ? { x: heavyDamage ? [0, -5, 5, -3, 0] : [0, -3, 3, -1, 0], scale: [1, 1.045, 0.99, 1], boxShadow: ["inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)", "inset 0 0 0 1px rgba(254,202,202,0.86), 0 0 24px rgba(248,113,113,0.70)", "inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)"] } : healed ? { x: 0, scale: [1, 1.09, 1], boxShadow: "inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)" } : criticalPulseActive ? { x: 0, scale: [1, 1.03, 1], boxShadow: ["inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)", "inset 0 0 0 1px rgba(248,113,113,0.86), 0 0 20px rgba(248,113,113,0.62)", "inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)" ] } : { x: 0, scale: 1, boxShadow: "inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)" }} transition={{ duration: tookRealDamage ? 0.56 : healed ? 0.65 : criticalPulseActive ? 1.05 : 0.24, repeat: criticalPulseActive ? Infinity : 0, ease: "easeOut" }}>
+      <motion.div className={`relative z-20 mt-9 w-full max-w-[200px] rounded-xl border bg-slate-950/70 p-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.20),0_5px_12px_rgba(15,23,42,0.16)] sm:mt-1.5 sm:max-w-[230px] ${criticalHp ? "border-red-400/80" : "border-surface/80"}`} initial={false} animate={tookRealDamage ? { x: heavyDamage ? [0, -5, 5, -3, 0] : [0, -3, 3, -1, 0], scale: [1, 1.045, 0.99, 1], boxShadow: ["inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)", "inset 0 0 0 1px rgba(254,202,202,0.86), 0 0 24px rgba(248,113,113,0.70)", "inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)"] } : healed ? { x: 0, scale: [1, 1.09, 1], boxShadow: "inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)" } : criticalPulseActive ? { x: 0, scale: [1, 1.03, 1], boxShadow: ["inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)", "inset 0 0 0 1px rgba(248,113,113,0.86), 0 0 20px rgba(248,113,113,0.62)", "inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)" ] } : { x: 0, scale: 1, boxShadow: "inset 0 1px 2px rgba(255,255,255,0.20), 0 5px 12px rgba(15,23,42,0.16)" }} transition={{ duration: tookRealDamage ? 0.56 : healed ? 0.65 : criticalPulseActive ? 1.05 : 0.24, repeat: criticalPulseActive ? Infinity : 0, ease: "easeOut" }}>
         <div className="mb-1 flex items-center justify-between px-1 text-[8px] font-extrabold uppercase tracking-[0.12em] text-white/80"><span className="flex items-center gap-1"><Heart size={9} fill="currentColor" /> HP</span><span className="tabular-nums text-white">{Math.max(0, combatant.hp)} / {combatant.maxHp}</span></div>
         <div className="relative h-3 overflow-hidden rounded-md border border-white/15 bg-black/35 shadow-inner sm:h-3.5"><motion.div className="absolute inset-0 shadow-[0_0_10px_rgba(255,255,255,0.32)]" initial={false} animate={{ scaleX: hpPct / 100, opacity: dead ? 0.15 : 1 }} style={{ transformOrigin: "left", backgroundImage: healthGradient }} transition={{ duration: tookRealDamage ? 0.72 : 0.55, ease: [0.22, 1, 0.36, 1] }} />{tookRealDamage && <motion.div key={`hp-flash-${eventsKey}`} className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/90 via-rose-100/85 to-white/70" initial={{ opacity: 0, scaleX: 0.2 }} animate={{ opacity: [0, 0.92, 0.34, 0], scaleX: [0.2, 1, 1, 1] }} transition={{ duration: 0.48, ease: "easeOut" }} style={{ transformOrigin: "left" }} />}{criticalPulseActive && <motion.div className="pointer-events-none absolute inset-0 bg-red-400/65 mix-blend-screen" initial={false} animate={{ opacity: [0.04, 0.72, 0.04] }} transition={{ duration: 1.05, repeat: Infinity, ease: "easeInOut" }} />}<div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/20" /></div>
       </motion.div>
