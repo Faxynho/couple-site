@@ -53,6 +53,8 @@ export class Room {
   pendingMatchMode = "together";
   /** Id do jogador que será Rosa no Xadrez Duo. Rosa equivale às brancas. */
   pendingChessPinkPlayerId: string | null = null;
+  /** Aparência do host para o RPG; o outro humano recebe a oposta. */
+  pendingRpgAppearance: "man" | "woman" = "man";
 
   /** Sugestão de sequência de jogos (só relevante em salas Duo). */
   sequence: GameId[] = [];
@@ -208,6 +210,7 @@ export class Room {
     this.pendingChessPinkPlayerId = gameId === "chess" && this.roomMode === "duo"
       ? [...this.players.keys()][0] ?? null
       : null;
+    this.pendingRpgAppearance = "man";
     this.status = this.players.size === this.maxPlayers ? "ready" : "waiting";
   }
 
@@ -255,6 +258,7 @@ export class Room {
     seerId?: string | null;
     matchMode?: string;
     chessPinkPlayerId?: string | null;
+    rpgAppearance?: "man" | "woman";
   }) {
     if (config.imageId !== undefined) this.pendingImageId = config.imageId;
     if (config.imageWidth !== undefined) this.pendingImageWidth = config.imageWidth;
@@ -264,6 +268,7 @@ export class Room {
     if (config.seerId !== undefined) this.pendingSeerId = config.seerId;
     if (config.matchMode !== undefined) this.pendingMatchMode = config.matchMode;
     if (config.chessPinkPlayerId !== undefined) this.pendingChessPinkPlayerId = config.chessPinkPlayerId;
+    if (config.rpgAppearance !== undefined) this.pendingRpgAppearance = config.rpgAppearance;
   }
 
   startGame(overrides?: Record<string, unknown>) {
@@ -314,6 +319,8 @@ export class Room {
       // para saber quantos jogadores precisam terminar antes de encerrar o duelo.
       playerIds: connectedIds,
       pinkPlayerId: this.gameId === "chess" && this.roomMode === "duo" ? this.pendingChessPinkPlayerId : undefined,
+      rpgAppearance: this.gameId === "rpg" ? this.pendingRpgAppearance : undefined,
+      hostPlayerId: this.gameId === "rpg" ? this.hostId : undefined,
       ...overrides,
     };
     this.gameState = engine.createInitialState(options);
@@ -374,6 +381,7 @@ export class Room {
       pendingSeerId: this.pendingSeerId,
       pendingMatchMode: this.pendingMatchMode,
       pendingChessPinkPlayerId: this.pendingChessPinkPlayerId,
+      pendingRpgAppearance: this.pendingRpgAppearance,
       sequence: this.sequence,
       sequenceProgress: this.sequenceProgress,
     };

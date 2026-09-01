@@ -71,6 +71,8 @@ export interface RoomSnapshot {
   pendingMatchMode: string;
   /** Somente para Xadrez Duo: id do jogador escolhido pelo host para ser Rosa (brancas). */
   pendingChessPinkPlayerId: string | null;
+  /** Aparência base do anfitrião no RPG; o outro jogador recebe a outra. */
+  pendingRpgAppearance: "man" | "woman";
   /** Sugestão de sequência de jogos da sala Duo: uma ordem sorteada com todos
    *  os jogos do catálogo. Sem efeito numa sala Solo. */
   sequence: GameId[];

@@ -29,6 +29,7 @@ interface GameConfigPanelProps {
     seerId?: string | null;
     matchMode?: string;
     chessPinkPlayerId?: string | null;
+    rpgAppearance?: "man" | "woman";
   }) => void;
 }
 
@@ -311,6 +312,7 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
 
   if (room.gameId === "rpg") {
     const selectedMode = (room.pendingMatchMode as RPGMode) ?? "1v1";
+    const selectedAppearance = room.pendingRpgAppearance ?? "man";
     // Sala Duo nunca oferece "soloBot" — não faz sentido com o convidado presente.
     const modeEntries = (Object.entries(RPG_MODES) as [RPGMode, (typeof RPG_MODES)[RPGMode]][]).filter(
       ([key]) => key !== "soloBot"
@@ -319,6 +321,28 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
       <div className="text-left">
         <SectionLabel>{isHost ? "Modo de batalha" : "Modo escolhido pelo anfitrião"}</SectionLabel>
         <OptionGrid entries={modeEntries} selected={selectedMode} isHost={isHost} onSelect={(key) => setConfig({ matchMode: key })} />
+        <div className="mt-5">
+          <SectionLabel>{isHost ? "Escolha seu personagem" : "Personagens escolhidos pelo anfitrião"}</SectionLabel>
+          <div className="grid grid-cols-2 gap-3">
+            {(["man", "woman"] as const).map((appearance) => {
+              const selected = appearance === selectedAppearance;
+              return (
+                <button
+                  key={appearance}
+                  type="button"
+                  disabled={!isHost}
+                  onClick={() => setConfig({ rpgAppearance: appearance })}
+                  aria-label="Selecionar personagem"
+                  className={`relative flex h-32 items-end justify-center overflow-hidden rounded-2xl border p-2 transition ${selected ? appearance === "woman" ? "border-rose-400 bg-rose-200/25 shadow-[0_0_22px_rgba(244,114,182,0.28)]" : "border-sky-400 bg-sky-200/25 shadow-[0_0_22px_rgba(56,189,248,0.28)]" : "border-surface/70 bg-surface/50"} ${isHost ? "hover:-translate-y-0.5" : "cursor-default"}`}
+                >
+                  <span className={`pointer-events-none absolute inset-x-5 bottom-2 h-4 rounded-full blur-md ${appearance === "woman" ? "bg-rose-400/35" : "bg-sky-400/35"}`} />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/images/rpg/sprites/${appearance}.png`} alt="" className="relative z-10 h-full w-full object-contain" style={{ imageRendering: "pixelated" }} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   }

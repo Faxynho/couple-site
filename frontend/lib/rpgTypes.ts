@@ -9,6 +9,9 @@ export type RPGClassId =
   | "warlock"
   | "boss";
 
+/** Aparência temporária definida pelo host para esta partida de RPG. */
+export type RPGCharacterAppearance = "man" | "woman";
+
 export type RPGRarity =
   | "common"
   | "rare"
@@ -132,6 +135,8 @@ export interface RPGState {
   teamB: string[];
   combatants: Record<string, RPGCombatant>;
   humanPlayerIds: string[];
+  /** Aparência escolhida por cada combatente humano nesta partida. */
+  characterAppearances: Record<string, RPGCharacterAppearance | null>;
   lastRoundEvents: RPGRoundEvent[];
   winnerTeam: "a" | "b" | "draw" | null;
   finishReason: "death" | "roundLimit" | null;

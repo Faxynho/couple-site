@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Swords } from "lucide-react";
 import { useRoomSession } from "@/hooks/useRoomSession";
 import { useRPGGame } from "@/hooks/useRPGGame";
 import RPGClassIntro from "@/components/rpg/RPGClassIntro";
@@ -87,6 +87,11 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
     for (const p of room?.players ?? []) map[p.id] = p.color;
     return map;
   }, [room?.players]);
+
+  const playersById = useMemo(
+    () => Object.fromEntries((room?.players ?? []).map((player) => [player.id, player])),
+    [room?.players]
+  );
 
   useEffect(() => {
     if (!room) return;
@@ -231,38 +236,20 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
         )}
       </div>
 
-      <div className="flex w-full max-w-[min(94vw,560px)] flex-col gap-2">
-        {enemyIds.map((id) => (
-          <RPGCombatantPanel
-            key={`${id}-${gameInstanceKey}`}
-            combatant={state.combatants[id]}
-            name={state.combatants[id].displayName ?? namesById[id] ?? "Jogador"}
-            color={colorsById[id]}
-            events={eventsFor(id)}
-            eventsKey={eventsKey}
-            currentRound={state.round}
-            showChosenBadge={isChoosingPhase && state.combatants[id].hasChosen}
-          />
-        ))}
-      </div>
-
-      <span className="text-2xl">⚔️</span>
-
-      <div className="flex w-full max-w-[min(94vw,560px)] flex-col gap-2">
-        {allyIds.map((id) => (
-          <RPGCombatantPanel
-            key={`${id}-${gameInstanceKey}`}
-            combatant={state.combatants[id]}
-            name={state.combatants[id].displayName ?? namesById[id] ?? "Jogador"}
-            color={colorsById[id]}
-            isSelf={id === selfId}
-            events={eventsFor(id)}
-            eventsKey={eventsKey}
-            currentRound={state.round}
-            showChosenBadge={isChoosingPhase && id !== selfId && state.combatants[id].hasChosen}
-          />
-        ))}
-      </div>
+      <section className="relative isolate w-full max-w-[min(94vw,560px)] overflow-visible px-2 py-3 sm:px-4 sm:py-4">
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-3xl border border-indigo-200/45 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.50),transparent_55%),linear-gradient(135deg,rgba(44,61,125,0.20),rgba(35,28,70,0.08)_45%,rgba(96,48,91,0.16))] shadow-[0_16px_38px_rgba(44,35,85,0.18)] dark:border-indigo-300/20">
+            <div className="absolute -left-16 top-4 h-44 w-44 rounded-full bg-sky-400/25 blur-3xl" />
+            <div className="absolute -right-16 top-5 h-44 w-44 rounded-full bg-rose-400/25 blur-3xl" />
+            <div className="absolute inset-x-[18%] bottom-0 h-20 rounded-[100%] bg-indigo-950/15 blur-2xl" />
+            <div className="absolute inset-0 opacity-[0.15] [background-image:radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:18px_18px]" />
+            <div className="absolute inset-x-7 top-2 h-px bg-gradient-to-r from-transparent via-white/75 to-transparent" />
+          </div>
+          <div className="grid grid-cols-[minmax(0,1fr)_32px_minmax(0,1fr)] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_46px_minmax(0,1fr)] sm:gap-2">
+            <div className="flex min-w-0 flex-col items-center gap-2">{state.teamA.map((id) => <RPGCombatantPanel key={`${id}-${gameInstanceKey}`} combatant={state.combatants[id]} name={state.combatants[id].displayName ?? namesById[id] ?? "Jogador"} player={playersById[id]} color={colorsById[id]} appearance={state.characterAppearances?.[id] ?? null} facing="right" events={eventsFor(id)} eventsKey={eventsKey} currentRound={state.round} showChosenBadge={isChoosingPhase && id !== selfId && state.combatants[id].hasChosen} />)}</div>
+            <div className="justify-self-center rounded-full border border-white/60 bg-surface/55 p-1.5 text-indigo-700 shadow-[0_0_20px_rgba(129,140,248,0.38)] backdrop-blur-sm dark:border-indigo-200/30 dark:text-indigo-200"><Swords aria-hidden="true" size={22} strokeWidth={1.8} /></div>
+            <div className="flex min-w-0 flex-col items-center gap-2">{state.teamB.map((id) => <RPGCombatantPanel key={`${id}-${gameInstanceKey}`} combatant={state.combatants[id]} name={state.combatants[id].displayName ?? namesById[id] ?? "Jogador"} player={playersById[id]} color={colorsById[id]} appearance={state.characterAppearances?.[id] ?? null} facing="left" events={eventsFor(id)} eventsKey={eventsKey} currentRound={state.round} showChosenBadge={isChoosingPhase && id !== selfId && state.combatants[id].hasChosen} />)}</div>
+          </div>
+      </section>
 
       <AnimatePresence mode="wait">
         {revealVisible && (

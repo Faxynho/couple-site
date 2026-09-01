@@ -918,6 +918,9 @@ export class RPGGame
       Array.isArray(options?.playerIds)
         ? (options!.playerIds as string[]).slice(0, 2)
         : [];
+    const hostPlayerId =
+      typeof options?.hostPlayerId === "string" ? options.hostPlayerId : humanPlayerIds[0];
+    const hostAppearance = options?.rpgAppearance === "woman" ? "woman" : "man";
 
     const { teamA, teamB } =
       resolveTeams(
@@ -976,6 +979,11 @@ export class RPGGame
       teamB,
       combatants,
       humanPlayerIds,
+      // A aparência nasce da configuração do host e fica no estado efêmero da
+      // partida. O segundo humano sempre recebe a aparência oposta.
+      characterAppearances: Object.fromEntries(
+        humanPlayerIds.map((id) => [id, id === hostPlayerId ? hostAppearance : hostAppearance === "man" ? "woman" : "man"])
+      ),
       lastRoundEvents: [],
       winnerTeam: null,
       finishReason: null,

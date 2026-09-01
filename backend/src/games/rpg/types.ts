@@ -12,6 +12,9 @@ export type RPGClassId =
   | "warlock"
   | "boss";
 
+/** Escolha visual efêmera da partida; não pertence a uma conta/perfil. */
+export type RPGCharacterAppearance = "man" | "woman";
+
 export interface RPGClassPassives {
   physDamageTakenMult?: number;
   magicDamageDealtMult?: number;
@@ -193,6 +196,7 @@ export interface RPGState {
   teamB: string[];
   combatants: Record<string, RPGCombatant>;
   humanPlayerIds: string[];
+  characterAppearances: Record<string, RPGCharacterAppearance | null>;
   lastRoundEvents: RPGRoundEvent[];
   winnerTeam: "a" | "b" | "draw" | null;
   finishReason: "death" | "roundLimit" | null;

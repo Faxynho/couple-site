@@ -107,6 +107,7 @@ export function useRoomSession(code: string) {
       seerId?: string | null;
       matchMode?: string;
       chessPinkPlayerId?: string | null;
+      rpgAppearance?: "man" | "woman";
     }) => {
       getSocket().emit("room:setConfig", payload);
     },

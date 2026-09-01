@@ -456,6 +456,8 @@ interface RPGStateShape {
   introStartedAt: number;
   resolvedAt: number | null;
   combatants: Record<string, RPGCombatantShape>;
+  humanPlayerIds: string[];
+  characterAppearances: Record<string, "man" | "woman" | null>;
 }
 
 /**
@@ -703,12 +705,12 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     // recebendo a atualização em tempo real via room:update.
     socket.on(
       "room:setConfig",
-      (payload: StartPayload & { colorMode?: string; seerId?: string | null; matchMode?: string; chessPinkPlayerId?: string | null }) => {
+      (payload: StartPayload & { colorMode?: string; seerId?: string | null; matchMode?: string; chessPinkPlayerId?: string | null; rpgAppearance?: "man" | "woman" }) => {
         const code = socket.data.roomCode;
         const room = code ? roomManager.getRoom(code) : undefined;
         if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
 
-        const options: { colorMode?: string; seerId?: string | null; matchMode?: string; chessPinkPlayerId?: string } = {};
+        const options: { colorMode?: string; seerId?: string | null; matchMode?: string; chessPinkPlayerId?: string; rpgAppearance?: "man" | "woman" } = {};
         if (payload?.colorMode && isValidColorMode(payload.colorMode)) options.colorMode = payload.colorMode;
         if (payload?.seerId === null || (payload?.seerId && room.players.has(payload.seerId))) {
           options.seerId = payload.seerId;
@@ -744,6 +746,13 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
             !room.players.has(payload.chessPinkPlayerId)
           ) return;
           options.chessPinkPlayerId = payload.chessPinkPlayerId;
+        }
+        if (payload?.rpgAppearance !== undefined) {
+          if (
+            room.gameId !== "rpg" ||
+            (payload.rpgAppearance !== "man" && payload.rpgAppearance !== "woman")
+          ) return;
+          options.rpgAppearance = payload.rpgAppearance;
         }
         room.setPendingConfig({ ...baseOptions, ...options });
         broadcastRoom(io, code!, roomManager);
@@ -1487,7 +1496,11 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (room.gameId !== "rpg" || room.status !== "playing" || !room.gameState) continue;
       const state = room.gameState as RPGStateShape;
 
-      if (state.phase === "intro" && now - state.introStartedAt >= RPG_INTRO_DURATION_MS) {
+      if (
+        state.phase === "intro" &&
+        state.humanPlayerIds.every((id) => Boolean(state.characterAppearances?.[id])) &&
+        now - state.introStartedAt >= RPG_INTRO_DURATION_MS
+      ) {
         room.applyAction({ type: "beginRound" }, "system");
       } else if (
         state.phase === "resolved" &&
