@@ -23,7 +23,7 @@ import { CHESS_DIFFICULTIES, ChessDifficulty } from "@/lib/chessTypes";
 import { fetchAccounts } from "@/lib/accountApi";
 import { getActiveAccount } from "@/lib/accountSession";
 import SoloMatchModal from "@/components/SoloMatchModal";
-import { clearSoloMatch, getActiveProfileSoloMatch, SoloMatchSave } from "@/lib/soloMatch";
+import { clearSoloMatch, getActiveProfileSoloMatch, resumeSoloMatch, SoloMatchSave } from "@/lib/soloMatch";
 
 function DifficultyGrid<K extends string>({
   entries,
@@ -70,6 +70,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
   const [imageDims, setImageDims] = useState<{ width: number; height: number } | null>(null);
   const [starting, setStarting] = useState(false);
   const [conflictSave, setConflictSave] = useState<SoloMatchSave | null>(null);
+  const [conflictError, setConflictError] = useState<string | null>(null);
   // Continua sem pedir nome (nunca teve essa etapa no Solo) — só passa a usar
   // o nome atual da conta fixa, se houver, no lugar do "Você" genérico.
   const [playerName, setPlayerName] = useState("Você");
@@ -138,10 +139,25 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
   const handleStart = () => {
     const activeSave = getActiveProfileSoloMatch();
     if (activeSave) {
+      setConflictError(null);
       setConflictSave(activeSave);
       return;
     }
     void startMatch();
+  };
+
+  const returnToSavedMatch = async () => {
+    if (!conflictSave) return;
+    setStarting(true);
+    setConflictError(null);
+    const response = await resumeSoloMatch(conflictSave);
+    setStarting(false);
+    if (!response.ok || !response.room?.gameId) {
+      setConflictError(response.error || "Não foi possível restaurar a partida.");
+      return;
+    }
+    setConflictSave(null);
+    router.push(`/game/${response.room.gameId}/${response.room.code}`);
   };
 
   const canStart = gameId === "puzzle" ? Boolean(imageId) : true;
@@ -311,8 +327,9 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
           save={conflictSave}
           mode="conflict"
           busy={starting}
-          onDismiss={() => setConflictSave(null)}
-          onCancel={() => {
+          error={conflictError}
+          onReturnToMatch={() => void returnToSavedMatch()}
+          onStartNewMatch={() => {
             clearSoloMatch(conflictSave.ownerId);
             setConflictSave(null);
             void startMatch();

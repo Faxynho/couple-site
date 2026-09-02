@@ -2,6 +2,7 @@
 
 import { AccountId, getActiveAccount } from "@/lib/accountSession";
 import { GAMES } from "@/lib/games";
+import { getSocket } from "@/lib/socket";
 import { GameId, RoomSnapshot } from "@/lib/types";
 
 export const SOLO_MATCH_STORAGE_KEY = "couple-site:solo-active-matches:v1";
@@ -31,6 +32,12 @@ export interface SoloStatePayload {
   playerName: string;
   state: unknown;
   savedAt: number;
+}
+
+export interface ResumeSoloMatchResult {
+  ok: boolean;
+  room?: RoomSnapshot;
+  error?: string;
 }
 
 function emptyStore(): SoloMatchStore {
@@ -130,6 +137,22 @@ export function clearSoloMatch(ownerId: AccountId): void {
   if (!store.profiles[ownerId]) return;
   delete store.profiles[ownerId];
   writeStore(store);
+}
+
+/** Caminho único de restauração usado tanto no retorno ao app quanto no
+ * conflito ao tentar iniciar outra partida. */
+export function resumeSoloMatch(save: SoloMatchSave): Promise<ResumeSoloMatchResult> {
+  return new Promise((resolve) => {
+    getSocket().emit("solo:resume", save, (response: ResumeSoloMatchResult) => {
+      if (response.ok && response.room?.gameId) {
+        // A sala restaurada recebe outro código. O ACK chega antes do novo
+        // snapshot, então removemos o envelope antigo para permitir que o
+        // snapshot da sala restaurada se torne o único save ativo.
+        clearSoloMatch(save.ownerId);
+      }
+      resolve(response);
+    });
+  });
 }
 
 export function subscribeToSoloMatchChange(callback: () => void): () => void {

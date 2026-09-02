@@ -8,17 +8,11 @@ import { getSocket } from "@/lib/socket";
 import {
   clearSoloMatch,
   getSoloMatch,
+  resumeSoloMatch,
   saveSoloState,
   SoloMatchSave,
   SoloStatePayload,
 } from "@/lib/soloMatch";
-import { RoomSnapshot } from "@/lib/types";
-
-interface ResumeResponse {
-  ok: boolean;
-  room?: RoomSnapshot;
-  error?: string;
-}
 
 export default function SoloMatchGate() {
   const router = useRouter();
@@ -68,23 +62,18 @@ export default function SoloMatchGate() {
     setError(null);
   };
 
-  const resume = () => {
+  const resume = async () => {
     setBusy(true);
     setError(null);
-    getSocket().emit("solo:resume", save, (response: ResumeResponse) => {
-      setBusy(false);
-      if (!response.ok || !response.room?.gameId) {
-        setError(response.error || "Não foi possível restaurar a partida.");
-        return;
-      }
-      // A sala restaurada recebe um código novo. O ACK chega antes do novo
-      // snapshot, então liberamos a troca explícita sem permitir overwrite
-      // silencioso por eventos de outras salas.
-      clearSoloMatch(save.ownerId);
-      resumableOwners.current.delete(save.ownerId);
-      setSave(null);
-      router.push(`/game/${response.room.gameId}/${response.room.code}`);
-    });
+    const response = await resumeSoloMatch(save);
+    setBusy(false);
+    if (!response.ok || !response.room?.gameId) {
+      setError(response.error || "Não foi possível restaurar a partida.");
+      return;
+    }
+    resumableOwners.current.delete(save.ownerId);
+    setSave(null);
+    router.push(`/game/${response.room.gameId}/${response.room.code}`);
   };
 
   return <SoloMatchModal save={save} busy={busy} error={error} onContinue={resume} onCancel={cancel} />;
