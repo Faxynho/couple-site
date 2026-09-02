@@ -49,7 +49,7 @@ function DuoEntryContent() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center px-5 py-14">
+    <main className="duo-shell app-shell mx-auto flex min-h-screen max-w-md flex-col items-center px-5 py-14">
       <div className="flex w-full items-center gap-3">
         <button
           onClick={() => router.push("/")}

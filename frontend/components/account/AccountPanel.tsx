@@ -32,9 +32,10 @@ interface AccountPanelProps {
 /**
  * Painel aberto pelo botão de conta (canto superior esquerdo, fora das telas
  * de jogo) — abas: editar nome/foto, estatísticas da dupla e de cada um, os
- * recordes por jogo/dificuldade e, só para a conta André, uma aba extra para
- * resetar estatísticas/recordes em caso de bug. Estatísticas, Recordes e
- * Configurações compartilham os MESMOS dados (`GET /api/accounts/overview`).
+ * recordes por jogo/dificuldade e as preferências locais. Dentro de
+ * Configurações, apenas o ID estável "andre" recebe o acesso adicional ao
+ * reset de estatísticas/recordes. Os painéis de dados compartilham o mesmo
+ * resumo (`GET /api/accounts/overview`).
  */
 export default function AccountPanel({ accountId, profile, onClose, onProfileUpdated, onSwitchAccount, readOnly = false }: AccountPanelProps) {
   const [tab, setTab] = useState<TabId>("perfil");
@@ -51,10 +52,9 @@ export default function AccountPanel({ accountId, profile, onClose, onProfileUpd
     loadOverview();
   }, [loadOverview]);
 
-  // A aba de reset só existe para a conta André (ver accountsRoutes.ts — o
-  // backend também recusa o pedido se vier de outra conta, isso aqui é só a
-  // visibilidade na interface).
-  const tabs = !readOnly && accountId === "andre" ? [...BASE_TABS, { id: "configuracoes" as const, label: "Configurações", icon: Settings }] : BASE_TABS;
+  // Contas fixas podem personalizar a interface. A autorização do reset
+  // continua sendo decidida dentro de Configurações pelo ID estável "andre".
+  const tabs = !readOnly ? [...BASE_TABS, { id: "configuracoes" as const, label: "Configurações", icon: Settings }] : BASE_TABS;
 
   return (
     <AnimatePresence>
@@ -66,7 +66,7 @@ export default function AccountPanel({ accountId, profile, onClose, onProfileUpd
         onClick={onClose}
       >
         <motion.div
-          className="glass-panel relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl3"
+          className="account-panel glass-panel relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl3"
           initial={{ opacity: 0, scale: 0.92, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94 }}
@@ -81,7 +81,7 @@ export default function AccountPanel({ accountId, profile, onClose, onProfileUpd
             <X size={18} />
           </button>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto border-b border-ink/10 px-5 pb-3 pt-5 no-scrollbar sm:px-7">
+          <div className="account-tabs flex items-center gap-1.5 overflow-x-auto border-b border-ink/10 px-5 pb-3 pt-5 no-scrollbar sm:px-7">
             {tabs.map((t) => {
               const Icon = t.icon;
               const active = tab === t.id;
@@ -114,8 +114,8 @@ export default function AccountPanel({ accountId, profile, onClose, onProfileUpd
             )}
             {tab === "estatisticas" && <StatsTab overview={overview} error={overviewError} />}
             {tab === "recordes" && <RecordsTab overview={overview} error={overviewError} />}
-            {tab === "configuracoes" && !readOnly && accountId === "andre" && (
-              <SettingsTab overview={overview} onChanged={loadOverview} />
+            {tab === "configuracoes" && !readOnly && (
+              <SettingsTab accountId={accountId} overview={overview} onChanged={loadOverview} />
             )}
           </div>
         </motion.div>

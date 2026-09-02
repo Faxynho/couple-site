@@ -61,7 +61,7 @@ export default function AccountPanelGate() {
         whileTap={{ scale: 0.94 }}
         aria-label="Abrir minha conta"
         title="Minha conta"
-        className="glass-panel fixed left-4 top-4 z-50 flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-ink shadow-soft"
+        className="account-control glass-panel fixed left-4 top-4 z-50 flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-ink shadow-soft"
       >
         <AccountAvatar name={profile.name} photo={profile.photo} accountId={accountId} size={32} />
         <span className="hidden font-display text-sm font-medium sm:inline">{profile.name}</span>

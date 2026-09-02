@@ -35,7 +35,7 @@ function HomeContent() {
   if (account === null) return <AccountGate onSelected={setAccount} />;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center px-5 py-14 sm:py-20">
+    <main className="home-shell app-shell mx-auto flex min-h-screen max-w-3xl flex-col items-center px-5 py-14 sm:py-20">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <Logo size={52} />
       </motion.div>

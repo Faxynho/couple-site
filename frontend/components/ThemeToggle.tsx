@@ -39,7 +39,7 @@ export default function ThemeToggle() {
       whileTap={{ scale: 0.9 }}
       aria-label={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
       title={theme === "dark" ? "Modo claro" : "Modo escuro"}
-      className="glass-panel fixed right-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full text-ink shadow-soft"
+      className="global-control theme-control glass-panel fixed right-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full text-ink shadow-soft"
     >
       <AnimatePresence mode="wait" initial={false}>
         {theme === "dark" ? (

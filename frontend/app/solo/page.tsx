@@ -28,7 +28,7 @@ export default function SoloPickerPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center px-5 py-14 sm:py-20">
+    <main className="catalog-shell app-shell mx-auto flex min-h-screen max-w-3xl flex-col items-center px-5 py-14 sm:py-20">
       <div className="flex w-full items-center gap-3">
         <button
           onClick={() => router.push("/")}

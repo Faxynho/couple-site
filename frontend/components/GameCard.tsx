@@ -19,7 +19,7 @@ export default function GameCard({ game, index, onPlay, ctaLabel = "Jogar juntos
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -6 }}
-      className="group relative overflow-hidden rounded-xl3 glass-panel p-5 flex flex-col gap-4"
+      className="game-card group relative overflow-hidden rounded-xl3 glass-panel p-5 flex flex-col gap-4"
     >
       <div
         className="relative h-40 rounded-xl2 overflow-hidden bg-beige animate-floaty"

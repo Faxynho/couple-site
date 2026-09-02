@@ -1,7 +1,7 @@
 "use client";
 
-import { ReactNode, useState } from "react";
-import { AlertTriangle, RotateCcw } from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
+import { AlertTriangle, ArrowLeft, Check, ChevronRight, Palette, RotateCcw } from "lucide-react";
 import {
   resetDuoParticipation,
   resetDuoSharedStats,
@@ -10,8 +10,16 @@ import {
   resetTogetherRecords,
 } from "@/lib/accountApi";
 import { AccountsOverview } from "@/lib/accountTypes";
+import { AccountId } from "@/lib/accountSession";
+import {
+  applyVisualTheme,
+  getStoredVisualTheme,
+  setStoredVisualTheme,
+  VisualTheme,
+} from "@/lib/theme";
 
 interface SettingsTabProps {
+  accountId: AccountId;
   overview: AccountsOverview | null;
   /** Chamado depois de qualquer reset bem-sucedido, pra Estatísticas e
    *  Recordes buscarem os dados de novo e não ficarem mostrando número velho. */
@@ -19,15 +27,131 @@ interface SettingsTabProps {
 }
 
 const ACCOUNT_ORDER = ["andre", "flavia"] as const;
+type SettingsView = "menu" | "themes" | "reset";
+
+const THEME_OPTIONS: { id: VisualTheme; name: string; description: string; swatchClass: string }[] = [
+  { id: "default", name: "Tema padrão", description: "O visual original do site.", swatchClass: "theme-swatch-default" },
+  { id: "romance", name: "Corações", description: "Rosa suave, lilás e vidro brilhante.", swatchClass: "theme-swatch-romance" },
+];
 
 /**
- * Só é renderizada pelo AccountPanel quando a conta ativa é "andre" — ver
- * comentário em accountsRoutes.ts sobre o backend também conferir isso.
- * Cada botão reseta UMA categoria (estatística solo de uma conta, estatística
- * duo da dupla, duelos de uma conta, ou recordes solo/duo de uma conta) —
- * nunca tudo de uma vez, pra dar pra corrigir só a parte que bugou.
+ * Menu de preferências das contas fixas. A seleção visual é local ao aparelho;
+ * o reset existente segue exclusivo do ID estável "andre".
  */
-export default function SettingsTab({ overview, onChanged }: SettingsTabProps) {
+export default function SettingsTab({ accountId, overview, onChanged }: SettingsTabProps) {
+  const [view, setView] = useState<SettingsView>("menu");
+
+  if (view === "themes") {
+    return <SettingsPage title="Temas" onBack={() => setView("menu")}><ThemeSelector /></SettingsPage>;
+  }
+
+  if (view === "reset" && accountId === "andre") {
+    return <SettingsPage title="Resetar estatísticas e recordes" onBack={() => setView("menu")}><ResetSettings overview={overview} onChanged={onChanged} /></SettingsPage>;
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="mb-1 text-sm text-ink-soft">Personalize sua experiência neste aparelho.</p>
+      <SettingsOption
+        icon={Palette}
+        title="Temas"
+        description="Escolha a identidade visual do site."
+        onClick={() => setView("themes")}
+      />
+      {accountId === "andre" && (
+        <SettingsOption
+          icon={RotateCcw}
+          title="Resetar estatísticas e recordes"
+          description="Acesse os controles de correção dos dados salvos."
+          onClick={() => setView("reset")}
+          danger
+        />
+      )}
+    </div>
+  );
+}
+
+function SettingsPage({ title, onBack, children }: { title: string; onBack: () => void; children: ReactNode }) {
+  return (
+    <div>
+      <button type="button" onClick={onBack} className="mb-5 flex items-center gap-2 text-sm font-semibold text-ink-soft transition-colors hover:text-ink">
+        <ArrowLeft size={16} /> Configurações
+      </button>
+      <h2 className="mb-4 font-display text-xl font-semibold text-ink">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function SettingsOption({ icon: Icon, title, description, onClick, danger = false }: {
+  icon: typeof Palette;
+  title: string;
+  description: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="settings-option flex w-full items-center gap-3 rounded-xl2 border border-surface/70 bg-surface/55 p-4 text-left transition hover:border-rose/35 hover:bg-surface/75"
+    >
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${danger ? "bg-rose/15 text-rose-deep" : "bg-surface text-ink"}`}>
+        <Icon size={18} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-display text-sm font-semibold text-ink">{title}</span>
+        <span className="mt-0.5 block text-xs text-ink-soft">{description}</span>
+      </span>
+      <ChevronRight size={17} className="shrink-0 text-ink-soft" />
+    </button>
+  );
+}
+
+function ThemeSelector() {
+  const [selected, setSelected] = useState<VisualTheme>("default");
+
+  useEffect(() => {
+    setSelected(getStoredVisualTheme());
+  }, []);
+
+  const choose = (theme: VisualTheme) => {
+    applyVisualTheme(theme);
+    setStoredVisualTheme(theme);
+    setSelected(theme);
+  };
+
+  return (
+    <div>
+      <p className="mb-4 text-sm text-ink-soft">O modo claro ou escuro continua independente desta escolha.</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {THEME_OPTIONS.map((theme) => {
+          const active = selected === theme.id;
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              onClick={() => choose(theme.id)}
+              aria-pressed={active}
+              className={`theme-choice relative overflow-hidden rounded-xl2 border p-4 text-left transition ${active ? "border-rose bg-rose/10 shadow-glow" : "border-surface/75 bg-surface/55 hover:border-rose/40"}`}
+            >
+              <span className={`theme-swatch ${theme.swatchClass} mb-4 block h-20 rounded-xl border border-white/40`} aria-hidden="true" />
+              <span className="block pr-7 font-display text-sm font-semibold text-ink">{theme.name}</span>
+              <span className="mt-1 block text-xs text-ink-soft">{theme.description}</span>
+              {active && <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-rose text-white"><Check size={14} strokeWidth={3} /></span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Interface de reset original. Cada botão continua chamando exatamente as
+ * mesmas funções e nunca apaga mais de uma categoria por vez.
+ */
+function ResetSettings({ overview, onChanged }: Pick<SettingsTabProps, "overview" | "onChanged">) {
   const nameOf = (id: (typeof ACCOUNT_ORDER)[number]) => overview?.profiles[id]?.name ?? id;
 
   return (

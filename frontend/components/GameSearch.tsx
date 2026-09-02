@@ -27,7 +27,7 @@ export default function GameSearch({ value, onChange }: GameSearchProps) {
   };
 
   return (
-    <div className="relative w-full">
+    <div className="game-search relative w-full">
       <Search
         size={18}
         aria-hidden="true"

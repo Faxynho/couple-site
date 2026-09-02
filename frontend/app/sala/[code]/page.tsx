@@ -102,7 +102,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center px-5 py-14">
+    <main className="room-shell app-shell mx-auto flex min-h-screen max-w-md flex-col items-center px-5 py-14">
       <div className="flex w-full items-center justify-between">
         <Logo size={40} />
         <span className="font-display text-xs font-medium tracking-[0.15em] text-ink-soft">Sala {room.code}</span>
