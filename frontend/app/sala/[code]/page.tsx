@@ -118,9 +118,9 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             transition={{ duration: 0.4 }}
             className="mt-6 flex w-full flex-col items-center gap-6"
           >
-            <div className="glass-panel w-full rounded-xl3 p-5 text-center">
+            <div className="glass-panel room-panel w-full rounded-xl3 p-5 text-center">
               <p className="text-xs text-ink-soft">Código da sala</p>
-              <p className="font-display text-2xl font-semibold tracking-[0.3em] text-ink">{room.code}</p>
+              <p className="room-code font-display text-2xl font-semibold tracking-[0.3em] text-ink">{room.code}</p>
               <p className="mt-1 text-xs text-ink-soft">Envie esse código para seu par entrar.</p>
               <ConnectionThread
                 players={room.players}
@@ -180,7 +180,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="glass-panel mt-6 w-full rounded-xl3 p-6 text-center"
+            className="glass-panel room-panel mt-6 w-full rounded-xl3 p-6 text-center"
           >
             <div className="flex items-center justify-between">
               <button

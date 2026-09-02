@@ -53,10 +53,10 @@
      sem espalhar condições pelos componentes. */
   :root[data-theme="romance"] {
     color-scheme: light;
-    --color-ink: 139 58 87;
-    --color-ink-soft: 173 91 118;
-    --color-rose: 255 111 155;
-    --color-rose-deep: 229 70 126;
+    --color-ink: 143 50 84;
+    --color-ink-soft: 154 70 101;
+    --color-rose: 255 105 151;
+    --color-rose-deep: 231 65 123;
     --color-sage: 195 226 213;
     --color-beige: 255 221 224;
     --color-surface: 255 249 247;
@@ -73,10 +73,10 @@
 
   :root.dark[data-theme="romance"] {
     color-scheme: dark;
-    --color-ink: 255 239 238;
-    --color-ink-soft: 220 171 193;
-    --color-rose: 240 88 143;
-    --color-rose-deep: 255 119 168;
+    --color-ink: 255 241 240;
+    --color-ink-soft: 235 190 211;
+    --color-rose: 244 86 145;
+    --color-rose-deep: 255 113 167;
     --color-sage: 142 199 169;
     --color-beige: 54 32 61;
     --color-surface: 46 27 53;
@@ -134,14 +134,15 @@
    as ilustrações continuam sendo os assets reais do projeto. */
 :root[data-theme="romance"] body {
   isolation: isolate;
-  background-color: #ffd9df;
+  background-color: #ffd7df;
   background-image:
-    radial-gradient(circle at 8% 18%, rgba(255, 255, 255, 0.72) 0 1.5px, transparent 2px),
-    radial-gradient(circle at 91% 16%, rgba(255, 116, 163, 0.22) 0 3px, transparent 4px),
-    radial-gradient(ellipse at -4% 18%, rgba(255, 255, 255, 0.6) 0 18%, transparent 40%),
-    radial-gradient(ellipse at 103% 62%, rgba(255, 241, 244, 0.7) 0 20%, transparent 43%),
-    linear-gradient(135deg, #fff2f0 0%, #ffd8df 48%, #f9c8d8 100%);
-  background-size: 180px 180px, 260px 260px, auto, auto, auto;
+    radial-gradient(circle at 8% 18%, rgba(255, 255, 255, 0.88) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 91% 16%, rgba(255, 104, 158, 0.28) 0 3px, transparent 4px),
+    radial-gradient(ellipse at -4% 18%, rgba(255, 255, 255, 0.68) 0 18%, transparent 40%),
+    radial-gradient(ellipse at 103% 62%, rgba(255, 238, 243, 0.82) 0 20%, transparent 43%),
+    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.42), transparent 28%),
+    linear-gradient(135deg, #fff2ef 0%, #ffd5de 47%, #f8c2d4 100%);
+  background-size: 180px 180px, 260px 260px, auto, auto, auto, auto;
   background-attachment: fixed;
 }
 
@@ -151,57 +152,119 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: url("/images/romance-decor.png") center / 100vw auto no-repeat;
-  opacity: 0.82;
+  background: url("/images/romance-decor.png") center top / 100vw auto repeat-y;
+  opacity: 0.9;
+  filter: saturate(1.05) drop-shadow(0 12px 16px rgba(191, 72, 118, 0.08));
+}
+
+:root[data-theme="romance"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 17% 74%, rgba(255, 255, 255, 0.28), transparent 27%),
+    radial-gradient(ellipse at 83% 38%, rgba(243, 145, 179, 0.2), transparent 30%),
+    linear-gradient(118deg, transparent 0 23%, rgba(255, 255, 255, 0.12) 28%, transparent 35% 69%, rgba(234, 135, 174, 0.11) 75%, transparent 82%);
+  mix-blend-mode: soft-light;
 }
 
 :root.dark[data-theme="romance"] body {
-  background-color: #140e25;
+  background-color: #110a20;
   background-image:
-    radial-gradient(circle at 7% 30%, rgba(235, 81, 142, 0.28) 0 1.5px, transparent 2px),
-    radial-gradient(circle at 91% 18%, rgba(171, 104, 237, 0.2) 0 2px, transparent 3px),
-    radial-gradient(ellipse at -8% 28%, rgba(105, 47, 112, 0.24) 0 18%, transparent 39%),
-    radial-gradient(ellipse at 105% 72%, rgba(90, 40, 104, 0.25) 0 20%, transparent 43%),
-    linear-gradient(135deg, #140e25 0%, #21142f 48%, #171024 100%);
+    radial-gradient(circle at 7% 30%, rgba(238, 76, 141, 0.34) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 91% 18%, rgba(176, 102, 241, 0.28) 0 2px, transparent 3px),
+    radial-gradient(ellipse at -8% 28%, rgba(119, 49, 125, 0.3) 0 18%, transparent 39%),
+    radial-gradient(ellipse at 105% 72%, rgba(101, 43, 119, 0.32) 0 20%, transparent 43%),
+    radial-gradient(circle at 52% 9%, rgba(134, 57, 139, 0.17), transparent 29%),
+    linear-gradient(135deg, #10091f 0%, #21112f 48%, #130b23 100%);
 }
 
 :root.dark[data-theme="romance"] body::before {
-  opacity: 0.72;
-  filter: saturate(0.9) brightness(0.88);
+  opacity: 0.82;
+  filter: saturate(1.06) brightness(0.9) drop-shadow(0 16px 20px rgba(0, 0, 0, 0.22));
+}
+
+:root.dark[data-theme="romance"] body::after {
+  background:
+    radial-gradient(ellipse at 16% 75%, rgba(123, 53, 133, 0.18), transparent 29%),
+    radial-gradient(ellipse at 84% 37%, rgba(236, 76, 142, 0.1), transparent 28%),
+    linear-gradient(118deg, transparent 0 23%, rgba(235, 111, 170, 0.055) 28%, transparent 36% 69%, rgba(144, 80, 193, 0.07) 75%, transparent 83%);
+  mix-blend-mode: screen;
 }
 
 :root[data-theme="romance"] .glass-panel {
-  border-color: rgba(255, 255, 255, 0.72);
-  background: linear-gradient(145deg, rgba(255, 252, 249, 0.78), rgba(255, 239, 242, 0.55));
+  border-color: rgba(255, 255, 255, 0.9);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.74), transparent 38%),
+    linear-gradient(145deg, rgba(255, 252, 249, 0.95), rgba(255, 231, 237, 0.88));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    0 16px 38px -22px rgba(173, 64, 105, 0.52),
-    0 3px 10px rgba(202, 88, 127, 0.13);
-  backdrop-filter: blur(24px) saturate(1.12);
+    inset 0 2px 1px rgba(255, 255, 255, 0.96),
+    inset 0 -5px 12px rgba(210, 87, 130, 0.1),
+    0 3px 0 rgba(206, 99, 136, 0.14),
+    0 18px 34px -20px rgba(155, 49, 90, 0.52),
+    0 6px 14px -10px rgba(202, 88, 127, 0.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.08);
+  backdrop-filter: blur(12px) saturate(1.08);
 }
 
 :root.dark[data-theme="romance"] .glass-panel {
-  border-color: rgba(240, 88, 143, 0.27);
-  background: linear-gradient(145deg, rgba(55, 31, 63, 0.88), rgba(35, 21, 45, 0.78));
+  border-color: rgba(243, 93, 151, 0.34);
+  background:
+    radial-gradient(circle at 16% -8%, rgba(255, 142, 190, 0.1), transparent 42%),
+    linear-gradient(145deg, rgba(58, 30, 66, 0.97), rgba(34, 18, 45, 0.95));
   box-shadow:
-    inset 0 1px 0 rgba(255, 171, 205, 0.09),
-    0 16px 42px -20px rgba(0, 0, 0, 0.72),
-    0 0 18px rgba(232, 75, 139, 0.1);
+    inset 0 2px 1px rgba(255, 172, 208, 0.12),
+    inset 0 -6px 14px rgba(5, 2, 12, 0.27),
+    0 3px 0 rgba(111, 39, 84, 0.42),
+    0 19px 38px -17px rgba(0, 0, 0, 0.8),
+    0 0 22px rgba(239, 75, 141, 0.12);
+  -webkit-backdrop-filter: blur(12px) saturate(1.05);
+  backdrop-filter: blur(12px) saturate(1.05);
 }
 
 :root[data-theme="romance"] .brand-logo {
-  filter: drop-shadow(0 5px 8px rgba(170, 55, 105, 0.12));
+  filter: drop-shadow(0 7px 9px rgba(170, 55, 105, 0.2));
 }
 
 :root[data-theme="romance"] .brand-logo > span {
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.01em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.68), 0 4px 9px rgba(142, 45, 81, 0.14);
+}
+
+:root.dark[data-theme="romance"] .brand-logo > span {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.08), 0 5px 12px rgba(0, 0, 0, 0.38);
+}
+
+:root[data-theme="romance"] .app-shell :is(h1, h2, h3) {
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 10px rgba(142, 45, 81, 0.1);
+}
+
+:root.dark[data-theme="romance"] .app-shell :is(h1, h2, h3) {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.06), 0 5px 12px rgba(0, 0, 0, 0.4);
 }
 
 :root[data-theme="romance"] .global-control {
   height: 3.25rem;
   width: 3.25rem;
   color: rgb(var(--color-rose-deep));
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -4px 9px rgba(211, 79, 125, 0.1),
+    0 3px 0 rgba(196, 86, 125, 0.16),
+    0 11px 20px -13px rgba(145, 44, 82, 0.62);
+}
+
+:root.dark[data-theme="romance"] .global-control {
+  box-shadow:
+    inset 0 2px 1px rgba(255, 167, 205, 0.12),
+    inset 0 -4px 9px rgba(3, 1, 10, 0.24),
+    0 3px 0 rgba(111, 36, 81, 0.44),
+    0 13px 24px -13px rgba(0, 0, 0, 0.78),
+    0 0 15px rgba(240, 82, 144, 0.1);
 }
 
 :root[data-theme="romance"] .sound-control {
@@ -211,44 +274,103 @@
 :root[data-theme="romance"] .account-control {
   min-height: 3.25rem;
   padding: 0.35rem 1.15rem 0.35rem 0.35rem;
-  border-color: rgba(255, 255, 255, 0.68);
+  border-color: rgba(255, 255, 255, 0.92);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255, 255, 255, 0.85), transparent 42%),
+    linear-gradient(145deg, rgba(255, 250, 248, 0.97), rgba(255, 226, 235, 0.92));
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.98),
+    inset 0 -5px 11px rgba(204, 77, 121, 0.11),
+    0 4px 0 rgba(197, 83, 123, 0.18),
+    0 15px 25px -16px rgba(139, 42, 80, 0.66);
+}
+
+:root.dark[data-theme="romance"] .account-control {
+  border-color: rgba(244, 92, 151, 0.38);
+  background:
+    radial-gradient(circle at 14% -10%, rgba(255, 136, 185, 0.13), transparent 43%),
+    linear-gradient(145deg, rgba(66, 33, 74, 0.98), rgba(37, 18, 48, 0.97));
+  box-shadow:
+    inset 0 2px 1px rgba(255, 173, 207, 0.13),
+    inset 0 -5px 12px rgba(2, 0, 8, 0.28),
+    0 4px 0 rgba(109, 35, 79, 0.48),
+    0 16px 27px -15px rgba(0, 0, 0, 0.84),
+    0 0 17px rgba(241, 77, 142, 0.11);
 }
 
 :root[data-theme="romance"] .account-control > :first-child {
   width: 2.6rem !important;
   height: 2.6rem !important;
-  box-shadow: 0 0 0 3px rgba(240, 88, 143, 0.25), 0 6px 13px rgba(137, 43, 86, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 0 0 3px rgba(240, 88, 143, 0.34),
+    0 3px 0 rgba(166, 52, 98, 0.22),
+    0 8px 14px rgba(137, 43, 86, 0.24);
 }
 
 :root[data-theme="romance"] .account-control > span:last-child {
-  font-weight: 700;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+:root.dark[data-theme="romance"] .account-control > span:last-child {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.07), 0 3px 8px rgba(0, 0, 0, 0.32);
 }
 
 :root[data-theme="romance"] .app-button-primary {
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: linear-gradient(180deg, #ff7eaa 0%, #e84e87 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 20px -12px rgba(202, 42, 105, 0.8);
-  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.42), transparent 53%),
+    linear-gradient(180deg, #ff86af 0%, #fb679a 47%, #e74380 100%);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.55),
+    inset 0 -5px 9px rgba(173, 33, 88, 0.18),
+    0 4px 0 #c9366d,
+    0 13px 22px -12px rgba(177, 33, 88, 0.78);
+  font-weight: 800;
+  text-shadow: 0 1px 1px rgba(126, 23, 64, 0.2);
 }
 
 :root.dark[data-theme="romance"] .app-button-primary {
-  background: linear-gradient(180deg, #f36a9d 0%, #d94482 100%);
+  border-color: rgba(255, 193, 217, 0.36);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 221, 235, 0.34), transparent 52%),
+    linear-gradient(180deg, #f873a5 0%, #eb548e 48%, #d63876 100%);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 220, 234, 0.38),
+    inset 0 -5px 9px rgba(93, 13, 54, 0.24),
+    0 4px 0 #a92b60,
+    0 14px 24px -12px rgba(0, 0, 0, 0.66),
+    0 0 15px rgba(238, 73, 137, 0.18);
 }
 
 :root[data-theme="romance"] .app-button-secondary {
-  background: linear-gradient(180deg, rgba(190, 141, 244, 0.86), rgba(139, 87, 218, 0.9));
-  border-color: rgba(255, 255, 255, 0.28);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.38), transparent 53%),
+    linear-gradient(180deg, #bf8df3 0%, #a66ee6 48%, #814dcc 100%);
+  border-color: rgba(255, 255, 255, 0.44);
   color: white;
-  box-shadow: 0 10px 20px -13px rgba(105, 54, 183, 0.75);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.44),
+    inset 0 -5px 9px rgba(74, 31, 144, 0.18),
+    0 4px 0 #6940ad,
+    0 13px 22px -12px rgba(84, 42, 157, 0.78);
+  font-weight: 800;
+  text-shadow: 0 1px 1px rgba(58, 25, 112, 0.24);
 }
 
 :root[data-theme="romance"] .catalog-action {
   min-height: 2.85rem;
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.46);
   color: white;
   font-family: var(--font-display), sans-serif;
-  font-weight: 700;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 10px 20px -14px rgba(104, 47, 136, 0.7);
+  font-weight: 800;
+  text-shadow: 0 1px 1px rgba(64, 22, 83, 0.22);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.48),
+    inset 0 -5px 9px rgba(75, 24, 105, 0.18),
+    0 4px 0 rgba(105, 43, 139, 0.72),
+    0 13px 22px -13px rgba(84, 34, 130, 0.75);
 }
 
 :root[data-theme="romance"] .catalog-action svg {
@@ -256,23 +378,54 @@
 }
 
 :root[data-theme="romance"] .catalog-action-random {
-  background: linear-gradient(180deg, #ff7eaa, #e84e87);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.42), transparent 53%),
+    linear-gradient(180deg, #ff86af 0%, #f86196 50%, #e64280 100%);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -5px 9px rgba(158, 25, 78, 0.18),
+    0 4px 0 #c4356b,
+    0 13px 22px -13px rgba(177, 33, 88, 0.82);
 }
 
 :root[data-theme="romance"] .catalog-action-suggestion {
-  background: linear-gradient(180deg, #b889ef, #8353cf);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.4), transparent 53%),
+    linear-gradient(180deg, #bd8cf3 0%, #9e67df 50%, #7d4ac8 100%);
+}
+
+:root[data-theme="romance"] :is(.app-button-primary, .app-button-secondary, .catalog-action):hover:not(:disabled) {
+  filter: brightness(1.055) saturate(1.04);
+}
+
+:root[data-theme="romance"] :is(.app-button-primary, .app-button-secondary, .catalog-action):active:not(:disabled) {
+  filter: brightness(0.98) saturate(1.02);
+  box-shadow:
+    inset 0 2px 2px rgba(102, 20, 65, 0.16),
+    inset 0 -2px 5px rgba(255, 255, 255, 0.14),
+    0 2px 0 rgba(113, 34, 78, 0.72),
+    0 7px 12px -9px rgba(95, 30, 74, 0.68);
 }
 
 :root[data-theme="romance"] .game-search input {
   min-height: 3.15rem;
-  border-color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 249, 247, 0.66);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 8px 20px -16px rgba(151, 52, 92, 0.5);
+  border-color: rgba(255, 255, 255, 0.86);
+  background: linear-gradient(180deg, rgba(255, 250, 248, 0.96), rgba(255, 233, 238, 0.9));
+  box-shadow:
+    inset 0 3px 7px rgba(154, 54, 92, 0.08),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.86),
+    0 3px 0 rgba(196, 86, 124, 0.12),
+    0 10px 20px -16px rgba(151, 52, 92, 0.58);
 }
 
 :root.dark[data-theme="romance"] .game-search input {
-  border-color: rgba(240, 88, 143, 0.2);
-  background: rgba(49, 28, 57, 0.78);
+  border-color: rgba(240, 88, 143, 0.3);
+  background: linear-gradient(180deg, rgba(55, 29, 63, 0.96), rgba(37, 19, 48, 0.95));
+  box-shadow:
+    inset 0 4px 8px rgba(2, 0, 8, 0.24),
+    inset 0 -1px 0 rgba(255, 159, 199, 0.08),
+    0 3px 0 rgba(106, 33, 77, 0.36),
+    0 11px 21px -14px rgba(0, 0, 0, 0.72);
 }
 
 :root[data-theme="romance"] .game-card {
@@ -284,12 +437,15 @@
 :root[data-theme="romance"] .game-card > div:first-child {
   height: 11.5rem;
   animation: none;
-  border: 1px solid rgba(255, 255, 255, 0.66);
-  box-shadow: 0 9px 21px -15px rgba(131, 44, 81, 0.54);
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+    0 3px 0 rgba(194, 83, 122, 0.13),
+    0 12px 24px -15px rgba(131, 44, 81, 0.62);
 }
 
 :root[data-theme="romance"] .game-card h3 {
-  font-weight: 700;
+  font-weight: 800;
 }
 
 :root[data-theme="romance"] .account-panel {
@@ -302,7 +458,62 @@
 
 :root[data-theme="romance"] .settings-option,
 :root[data-theme="romance"] .theme-choice {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 9px 20px -18px rgba(143, 45, 85, 0.75);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.52),
+    inset 0 -3px 7px rgba(143, 45, 85, 0.07),
+    0 3px 0 rgba(181, 72, 113, 0.1),
+    0 10px 20px -16px rgba(143, 45, 85, 0.66);
+}
+
+:root[data-theme="romance"] .room-panel {
+  border-color: rgba(255, 255, 255, 0.96);
+  background:
+    radial-gradient(ellipse at 50% -8%, rgba(255, 255, 255, 0.88), transparent 48%),
+    linear-gradient(145deg, rgba(255, 253, 250, 0.98), rgba(255, 229, 236, 0.93));
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 1),
+    inset 0 -7px 15px rgba(200, 75, 119, 0.12),
+    0 4px 0 rgba(196, 82, 122, 0.18),
+    0 22px 42px -23px rgba(142, 40, 80, 0.66),
+    0 8px 17px -13px rgba(196, 74, 117, 0.42);
+}
+
+:root.dark[data-theme="romance"] .room-panel {
+  border-color: rgba(247, 96, 155, 0.42);
+  background:
+    radial-gradient(ellipse at 50% -8%, rgba(255, 137, 186, 0.13), transparent 48%),
+    linear-gradient(145deg, rgba(62, 31, 70, 0.99), rgba(34, 17, 45, 0.98));
+  box-shadow:
+    inset 0 2px 1px rgba(255, 170, 207, 0.15),
+    inset 0 -8px 17px rgba(1, 0, 7, 0.32),
+    0 4px 0 rgba(112, 36, 82, 0.5),
+    0 24px 45px -19px rgba(0, 0, 0, 0.86),
+    0 0 26px rgba(239, 71, 138, 0.14);
+}
+
+:root[data-theme="romance"] .room-code {
+  color: transparent;
+  background: linear-gradient(180deg, #ff9abd 0%, #ff6f9e 47%, #df3d79 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke: 0.35px rgba(174, 43, 94, 0.28);
+  font-weight: 800;
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.82))
+    drop-shadow(0 3px 0 rgba(177, 46, 97, 0.28))
+    drop-shadow(0 6px 7px rgba(158, 42, 85, 0.24));
+}
+
+:root.dark[data-theme="romance"] .room-code {
+  background: linear-gradient(180deg, #ff9dc1 0%, #f66b9f 47%, #d83c79 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke-color: rgba(109, 22, 65, 0.42);
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 208, 226, 0.36))
+    drop-shadow(0 3px 0 rgba(126, 27, 73, 0.64))
+    drop-shadow(0 7px 9px rgba(0, 0, 0, 0.42))
+    drop-shadow(0 0 8px rgba(242, 77, 141, 0.18));
 }
 
 :root[data-theme="romance"] .catalog-shell,
@@ -312,7 +523,7 @@
 
 @media (max-width: 639px) {
   :root[data-theme="romance"] body::before {
-    background-size: 120vw auto;
+    background-size: 132vw auto;
   }
 
   :root[data-theme="romance"] .app-shell {
