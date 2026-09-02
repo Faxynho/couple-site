@@ -13,6 +13,7 @@ import MemoryResultModal from "@/components/memory/MemoryResultModal";
 import LoadingScreen from "@/components/LoadingScreen";
 import Button from "@/components/Button";
 import Logo from "@/components/Logo";
+import { useDuelFirstFinishCelebration } from "@/hooks/useDuelFirstFinishCelebration";
 
 export default function MemoryGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -25,6 +26,15 @@ export default function MemoryGamePage({ params }: { params: { code: string } })
   const wasOwnFinished = useRef(false);
   const previousProgress = useRef<{ pairsFound: number; mistakes: number } | null>(null);
   const { play } = useMemorySounds();
+  const ownProgressSnapshot = selfId && state ? state.progress[selfId] : undefined;
+  const opponentId = selfId && state ? state.expectedPlayers?.find((playerId) => playerId !== selfId) : undefined;
+  const firstFinishCelebration = useDuelFirstFinishCelebration({
+    enabled: room?.roomMode === "duo" && state?.mode === "duel",
+    matchKey: state?.startedAt,
+    ownFinished: Boolean(ownProgressSnapshot?.finished),
+    opponentFinished: opponentId ? Boolean(state?.progress?.[opponentId]?.finished) : false,
+    matchFinished: Boolean(state?.finished),
+  });
 
   useEffect(() => {
     if (!room) return;
@@ -34,8 +44,7 @@ export default function MemoryGamePage({ params }: { params: { code: string } })
   }, [room, router]);
 
   useEffect(() => {
-    const ownProgress = selfId && state ? state.progress[selfId] : undefined;
-    const ownFinished = Boolean(ownProgress?.finished);
+    const ownFinished = Boolean(ownProgressSnapshot?.finished);
     const justFinished = ownFinished && !wasOwnFinished.current && previousProgress.current !== null;
     let celebrationTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -59,17 +68,17 @@ export default function MemoryGamePage({ params }: { params: { code: string } })
     wasOwnFinished.current = ownFinished;
     wasFinished.current = Boolean(state?.finished);
 
-    if (ownProgress) {
+    if (ownProgressSnapshot) {
       const previous = previousProgress.current;
       if (previous) {
-        if (ownProgress.pairsFound > previous.pairsFound) {
+        if (ownProgressSnapshot.pairsFound > previous.pairsFound) {
           play("match");
-          if (ownProgress.combo >= 2) play("combo");
-        } else if (ownProgress.mistakes > previous.mistakes) {
+          if (ownProgressSnapshot.combo >= 2) play("combo");
+        } else if (ownProgressSnapshot.mistakes > previous.mistakes) {
           play("wrong");
         }
       }
-      previousProgress.current = { pairsFound: ownProgress.pairsFound, mistakes: ownProgress.mistakes };
+      previousProgress.current = { pairsFound: ownProgressSnapshot.pairsFound, mistakes: ownProgressSnapshot.mistakes };
     }
 
     return () => {
@@ -110,6 +119,7 @@ export default function MemoryGamePage({ params }: { params: { code: string } })
 
   return (
     <main className="flex min-h-screen flex-col items-center gap-5 bg-cozy-gradient px-4 py-6 sm:py-8">
+      {firstFinishCelebration}
       <MemoryControls
         roomCode={room.code}
         difficulty={state.difficulty}

@@ -14,6 +14,7 @@ import Button from "@/components/Button";
 import Logo from "@/components/Logo";
 import { playSoundEffect } from "@/lib/sound";
 import { isTermoOwnProgress, TermoLetterState, TermoOwnProgress } from "@/lib/termoTypes";
+import { useDuelFirstFinishCelebration } from "@/hooks/useDuelFirstFinishCelebration";
 
 const KEY_PRIORITY: Record<TermoLetterState, number> = { absent: 1, present: 2, correct: 3 };
 
@@ -61,6 +62,14 @@ export default function TermoGamePage({ params }: { params: { code: string } }) 
   }, [state?.startedAt, state?.finished]);
 
   const ownProgress = selfId && state && isTermoOwnProgress(state.progress[selfId]) ? state.progress[selfId] : null;
+  const opponentId = selfId && state ? state.expectedPlayers?.find((playerId) => playerId !== selfId) : undefined;
+  const firstFinishCelebration = useDuelFirstFinishCelebration({
+    enabled: room?.roomMode === "duo" && state?.mode === "duel",
+    matchKey: state?.startedAt,
+    ownFinished: Boolean(ownProgress?.finished),
+    opponentFinished: opponentId ? Boolean(state?.progress?.[opponentId]?.finished) : false,
+    matchFinished: Boolean(state?.finished),
+  });
 
   useEffect(() => {
     if (!state || !ownProgress) return;
@@ -149,6 +158,7 @@ export default function TermoGamePage({ params }: { params: { code: string } }) 
   };
   return (
     <main className="flex min-h-screen flex-col items-center gap-2 bg-cozy-gradient px-3 py-3 sm:gap-3 sm:px-5 sm:py-4">
+      {firstFinishCelebration}
       <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel flex w-full max-w-[min(96vw,780px)] flex-col gap-2 rounded-xl3 p-3">
         <div className="flex items-center justify-between gap-2"><button onClick={handleBack} aria-label="Voltar" className="rounded-full p-2 text-ink-soft hover:bg-surface/60"><ArrowLeft size={18} /></button><div className="text-center"><h1 className="font-display text-xl font-semibold text-ink">🔤 Termo</h1><p className="text-[11px] uppercase tracking-[.15em] text-ink-soft">{state.variant === "one" ? "1 palavra" : state.variant === "dueto" ? "Dueto · 2 palavras" : "Quarteto · 4 palavras"}</p></div><span className="flex min-w-11 items-center justify-end gap-1 text-sm font-semibold tabular-nums text-ink"><Clock3 size={15} className="text-ink-soft" />{formatTime(elapsedMs)}</span></div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft"><span>{ownProgress.solvedIndices.length}/{boardCount} palavras · {ownProgress.attemptsUsed}/{state.maxAttempts} tentativas</span><details className="relative"><summary className="flex cursor-pointer list-none items-center gap-1 rounded-full bg-surface/60 px-2.5 py-1 hover:bg-surface"><HelpCircle size={13} /> Como jogar</summary><div className="glass-panel absolute right-0 top-8 z-30 w-64 rounded-xl2 p-3 text-left leading-relaxed shadow-soft"><p><b className="text-sage">Verde</b>: letra e posição corretas. <b className="text-amber-500">Amarelo</b>: letra presente em outra posição. Cinza: letra ausente.</p><p className="mt-1">Cada tentativa tem 5 letras. No Dueto e Quarteto, a mesma palavra vale para todos os tabuleiros ativos.</p>{state.mode === "duel" && <p className="mt-1">No Duelo, ambos enfrentam as mesmas soluções com progresso privado.</p>}</div></details></div>

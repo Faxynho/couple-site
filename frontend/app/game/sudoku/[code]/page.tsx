@@ -16,6 +16,7 @@ import Logo from "@/components/Logo";
 import { isFullProgress, SUDOKU_DIFFICULTIES, SudokuDifficulty } from "@/lib/sudokuTypes";
 import { MatchMode } from "@/lib/matchModes";
 import { playSoundEffect } from "@/lib/sound";
+import { useDuelFirstFinishCelebration } from "@/hooks/useDuelFirstFinishCelebration";
 
 function formatFinalTime(ms: number) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -35,7 +36,6 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
   const [markedIndices, setMarkedIndices] = useState<Set<number>>(new Set());
   const [showWinModal, setShowWinModal] = useState(false);
   const wasMatchFinishedRef = useRef(false);
-  const wasSelfFinishedRef = useRef(false);
 
   // Se o host trocar de jogo (ou voltar pra escolha de jogo) enquanto o
   // convidado ainda está nesta tela, o socket vai começar a mandar
@@ -44,6 +44,14 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
   const isActiveGame = room?.gameId === "sudoku";
   const ownProgressRaw = isActiveGame && selfId && state ? state.progress?.[selfId] : undefined;
   const ownProgress = ownProgressRaw && isFullProgress(ownProgressRaw) ? ownProgressRaw : null;
+  const opponentId = selfId && state ? state.expectedPlayers?.find((playerId) => playerId !== selfId) : undefined;
+  const firstFinishCelebration = useDuelFirstFinishCelebration({
+    enabled: room?.roomMode === "duo" && state?.mode === "duel",
+    matchKey: state?.startedAt,
+    ownFinished: Boolean(ownProgress?.finished),
+    opponentFinished: opponentId ? Boolean(state?.progress?.[opponentId]?.finished) : false,
+    matchFinished: Boolean(state?.finished),
+  });
 
   useEffect(() => {
     if (!room) return;
@@ -68,10 +76,6 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
     }
     wasMatchFinishedRef.current = Boolean(state?.finished);
   }, [state?.finished, state?.finishedAt]);
-
-  useEffect(() => {
-    wasSelfFinishedRef.current = Boolean(ownProgress?.finished);
-  }, [ownProgress?.finished]);
 
   useEffect(() => {
     if (state?.startedAt) {
@@ -126,6 +130,7 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
 
   return (
     <main className="flex min-h-screen flex-col items-center gap-5 bg-cozy-gradient px-4 py-6 sm:py-8">
+      {firstFinishCelebration}
       <SudokuControls
         roomCode={room.code}
         difficulty={state.difficulty}

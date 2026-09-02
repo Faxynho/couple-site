@@ -16,6 +16,7 @@ import Logo from "@/components/Logo";
 import { WORDSEARCH_DIFFICULTIES, WordSearchDifficulty, isFullWordSearchProgress } from "@/lib/wordsearchTypes";
 import { MatchMode } from "@/lib/matchModes";
 import { playSoundEffect } from "@/lib/sound";
+import { useDuelFirstFinishCelebration } from "@/hooks/useDuelFirstFinishCelebration";
 
 export default function WordSearchGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -35,6 +36,14 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
   const isActiveGame = room?.gameId === "wordsearch";
   const ownProgressRaw = isActiveGame && selfId && state ? state.progress?.[selfId] : undefined;
   const ownProgress = ownProgressRaw && isFullWordSearchProgress(ownProgressRaw) ? ownProgressRaw : null;
+  const opponentId = selfId && state ? state.expectedPlayers?.find((playerId) => playerId !== selfId) : undefined;
+  const firstFinishCelebration = useDuelFirstFinishCelebration({
+    enabled: room?.roomMode === "duo" && state?.mode === "duel",
+    matchKey: state?.startedAt,
+    ownFinished: Boolean(ownProgress?.finished),
+    opponentFinished: opponentId ? Boolean(state?.progress?.[opponentId]?.finished) : false,
+    matchFinished: Boolean(state?.finished),
+  });
 
   useEffect(() => {
     if (!room) return;
@@ -111,6 +120,7 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
 
   return (
     <main className="flex min-h-screen flex-col items-center gap-5 bg-cozy-gradient px-4 py-6 sm:py-8">
+      {firstFinishCelebration}
       <WordSearchControls
         roomCode={room.code}
         difficulty={state.difficulty}

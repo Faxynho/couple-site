@@ -16,6 +16,7 @@ import Logo from "@/components/Logo";
 import { CROSSWORD_DIFFICULTIES, CrosswordDifficulty, CrosswordDirection, isFullProgress } from "@/lib/crosswordTypes";
 import { MatchMode } from "@/lib/matchModes";
 import { playSoundEffect } from "@/lib/sound";
+import { useDuelFirstFinishCelebration } from "@/hooks/useDuelFirstFinishCelebration";
 
 export default function CrosswordGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -30,7 +31,6 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
   const [showResultModal, setShowResultModal] = useState(false);
 
   const wasMatchFinishedRef = useRef(false);
-  const wasSelfFinishedRef = useRef(false);
   const completedWordCountRef = useRef<number | null>(null);
 
   // Se o host trocar de jogo (ou voltar pra escolha de jogo) enquanto o
@@ -40,6 +40,14 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
   const isActiveGame = room?.gameId === "crossword";
   const ownProgressRaw = isActiveGame && selfId && state ? state.progress?.[selfId] : undefined;
   const ownProgress = ownProgressRaw && isFullProgress(ownProgressRaw) ? ownProgressRaw : null;
+  const opponentId = selfId && state ? state.expectedPlayers?.find((playerId) => playerId !== selfId) : undefined;
+  const firstFinishCelebration = useDuelFirstFinishCelebration({
+    enabled: room?.roomMode === "duo" && state?.mode === "duel",
+    matchKey: state?.startedAt,
+    ownFinished: Boolean(ownProgress?.finished),
+    opponentFinished: opponentId ? Boolean(state?.progress?.[opponentId]?.finished) : false,
+    matchFinished: Boolean(state?.finished),
+  });
 
   useEffect(() => {
     if (!room) return;
@@ -64,10 +72,6 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
     }
     wasMatchFinishedRef.current = Boolean(state?.finished);
   }, [state?.finished, state?.finishedAt]);
-
-  useEffect(() => {
-    wasSelfFinishedRef.current = Boolean(ownProgress?.finished);
-  }, [ownProgress?.finished]);
 
   useEffect(() => {
     const count = ownProgress?.completedWordIds.length ?? 0;
@@ -115,6 +119,7 @@ export default function CrosswordGamePage({ params }: { params: { code: string }
 
   return (
     <main className="flex min-h-screen flex-col items-center gap-5 bg-cozy-gradient px-4 py-6 sm:py-8">
+      {firstFinishCelebration}
       <CrosswordControls
         roomCode={room.code}
         difficulty={state.difficulty}
