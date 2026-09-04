@@ -20,6 +20,8 @@ import { ChessState, isValidChessDifficulty, isValidChessMode } from "../games/c
 import { advanceAirHockeyInputTimeline, AIR_HOCKEY_AUTHORITATIVE_DELAY_MS, QueuedAirHockeyInput } from "../games/airhockey/AirHockeyInputTimeline";
 import { isAccountId } from "../accounts/types";
 import { isFinishedSoloState, isSoloResumePayload, rebaseSoloState } from "../solo/soloMatch";
+import { BoardRaceState } from "../games/boardrace/types";
+import { getBoardRaceStateForPlayer, isValidBoardRaceMode } from "../games/boardrace/BoardRaceGame";
 
 interface SocketData {
   roomCode?: string;
@@ -138,6 +140,10 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getSudokuStateForPlayer(room.gameState, player.id));
     }
+  } else if (room.gameId === "boardrace") {
+    for (const player of room.players.values()) {
+      emitToPlayer(io, room, player.id, "game:state", getBoardRaceStateForPlayer(room.gameState as BoardRaceState, player.id));
+    }
   } else {
     io.to(roomCode).emit("game:state", room.gameState);
   }
@@ -170,6 +176,7 @@ function getMaskedStateForPlayer(room: { gameId: GameId | null; gameState: unkno
   if (room.gameId === "memory") return getMemoryStateForPlayer(room.gameState, playerId);
   if (room.gameId === "termo") return getTermoStateForPlayer(room.gameState, playerId);
   if (room.gameId === "sudoku") return getSudokuStateForPlayer(room.gameState, playerId);
+  if (room.gameId === "boardrace") return getBoardRaceStateForPlayer(room.gameState as BoardRaceState, playerId);
   return room.gameState;
 }
 
@@ -802,7 +809,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
             isValidMemoryMode(payload.matchMode) ||
             isValidTermoMode(payload.matchMode) ||
             isValidAirHockeyMode(payload.matchMode) ||
-            isValidChessMode(payload.matchMode))
+            isValidChessMode(payload.matchMode) ||
+            isValidBoardRaceMode(payload.matchMode))
         ) {
           options.matchMode = payload.matchMode;
         }
@@ -922,8 +930,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         callback?.({ ok: false, error: "Escolha uma imagem antes de começar." });
         return;
       }
-      if ((room.gameId === "termo" || room.gameId === "airhockey" || room.gameId === "chess") && room.roomMode === "duo" && !room.bothConnected()) {
-        callback?.({ ok: false, error: room.gameId === "termo" ? "O Duelo de Termo precisa dos dois jogadores conectados." : room.gameId === "airhockey" ? "O Duelo de Air Hockey precisa dos dois jogadores conectados." : "O Duelo de Xadrez precisa dos dois jogadores conectados." });
+      if ((room.gameId === "termo" || room.gameId === "airhockey" || room.gameId === "chess" || room.gameId === "boardrace") && room.roomMode === "duo" && !room.bothConnected()) {
+        callback?.({ ok: false, error: room.gameId === "termo" ? "O Duelo de Termo precisa dos dois jogadores conectados." : room.gameId === "airhockey" ? "O Duelo de Air Hockey precisa dos dois jogadores conectados." : room.gameId === "chess" ? "O Duelo de Xadrez precisa dos dois jogadores conectados." : "A corrida precisa dos dois jogadores conectados." });
         return;
       }
       // Sem exigência de "os dois conectados": o host pode jogar sozinho —
@@ -1486,6 +1494,30 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       broadcastGameState(io, code!, roomManager);
     });
 
+    // ---- Eventos exclusivos da Corrida de Tabuleiro ----
+    // O cliente envia apenas intenções. Dado, efeitos, Quiz, poderes e o
+    // resultado dos subdesafios continuam sob autoridade do servidor.
+    socket.on("boardrace:action", (payload: unknown) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "boardrace" || room.status !== "playing") return;
+      if (!payload || typeof payload !== "object") return;
+      const type = (payload as { type?: unknown }).type;
+      if (type !== "roll" && type !== "answerQuiz" && type !== "usePower" && type !== "minigameAction") return;
+      room.applyAction(payload, socket.data.playerId ?? socket.id);
+      broadcastGameState(io, code!, roomManager);
+      if ((room.status as string) === "finished") broadcastRoom(io, code!, roomManager);
+    });
+
+    socket.on("boardrace:newGame", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "boardrace" || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      room.resetGame();
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
     // Só marca o jogador como desconectado se essa conexão que caiu ainda for
     // a "atual" dele — se ele já tiver reconectado mais rápido (novo socket.id
     // já registrado via room:sync) antes desse evento chegar, não sobrescreve
@@ -1595,6 +1627,20 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
     }
   }, 400);
+
+  // ---- Turnos e desafios da Corrida de Tabuleiro ----
+  // Um relógio único conduz transições, BOT e submotores temporários. Isso
+  // mantém o Duo sincronizado e retoma saves Solo no meio de qualquer etapa.
+  setInterval(() => {
+    for (const room of roomManager.getAllRooms()) {
+      if (room.gameId !== "boardrace" || room.status !== "playing" || !room.gameState) continue;
+      const before = JSON.stringify(room.gameState);
+      room.applyAction({ type: "tick" }, "system");
+      if (JSON.stringify(room.gameState) === before) continue;
+      broadcastGameState(io, room.code, roomManager);
+      if ((room.status as string) === "finished") broadcastRoom(io, room.code, roomManager);
+    }
+  }, 250);
 
   // ---- Simulação autoritativa do Air Hockey ----
   // A física roda em passos curtos no servidor. Clientes recebem snapshots a

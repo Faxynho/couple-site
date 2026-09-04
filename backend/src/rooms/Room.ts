@@ -140,7 +140,10 @@ export class Room {
     const player = this.players.get(id);
     if (player) {
       player.connected = false;
-      if (this.status === "playing" || this.status === "ready") {
+      // A Corrida de Tabuleiro pode ficar pausada naturalmente aguardando a
+      // identidade persistente reconectar. Seu estado autoritativo permanece
+      // jogável e o room:sync recoloca o mesmo jogador na partida.
+      if ((this.status === "playing" && this.gameId !== "boardrace") || this.status === "ready") {
         this.status = "waiting";
       }
     }
@@ -187,6 +190,7 @@ export class Room {
    *  que faz sentido sozinho; uma sala Duo entra no modo cooperativo padrão
    *  (nunca em "solo"/"soloBot", que não fazem sentido com o convidado presente). */
   private defaultMatchModeFor(gameId: GameId): string {
+    if (gameId === "boardrace") return this.roomMode === "solo" ? "solo" : "duel";
     if (gameId === "quiz" || gameId === "memory") return this.roomMode === "solo" ? "solo" : "together";
     if (gameId === "termo") return this.roomMode === "solo" ? "solo" : "duel";
     if (gameId === "airhockey") return this.roomMode === "solo" ? "solo" : "duel";
@@ -305,6 +309,7 @@ export class Room {
       this.gameId === "termo" ||
       this.gameId === "airhockey"
         || this.gameId === "chess"
+        || this.gameId === "boardrace"
         ? this.pendingMatchMode
         : undefined;
 

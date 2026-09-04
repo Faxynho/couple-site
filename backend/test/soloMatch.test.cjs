@@ -22,6 +22,7 @@ test("identifica estados concluídos conforme a arquitetura de cada jogo", () =>
   assert.equal(isFinishedSoloState("rpg", { phase: "finished" }), true);
   assert.equal(isFinishedSoloState("airhockey", { phase: "playing" }), false);
   assert.equal(isFinishedSoloState("sudoku", { finished: false }), false);
+  assert.equal(isFinishedSoloState("boardrace", { finished: true, winnerId: "p1" }), true);
 });
 
 test("valida o envelope de restauração e rejeita estado finalizado ou malformado", () => {

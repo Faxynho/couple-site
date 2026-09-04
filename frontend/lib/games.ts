@@ -94,6 +94,14 @@ export const GAMES: GameDefinition[] = [
     image: "/images/chess-card.png",
     available: true,
   },
+  {
+    id: "boardrace",
+    name: "Trilha da Sorte",
+    description: "Corra até a chegada, enfrente casas especiais e dispute desafios no caminho.",
+    emoji: "🎲",
+    image: "/images/board-game-card.png",
+    available: true,
+  },
 ];
 
 /**

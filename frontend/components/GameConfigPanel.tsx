@@ -362,6 +362,15 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
     />;
   }
 
+  if (room.gameId === "boardrace") {
+    return (
+      <div className="rounded-xl2 border border-surface/70 bg-surface/50 p-4 text-center">
+        <p className="text-sm font-medium text-ink">⚔️ Duelo 1x1</p>
+        <p className="mt-1 text-xs text-ink-soft">Dado de 1 a 6, 30 casas e desafios compartilhados. O primeiro a chegar vence.</p>
+      </div>
+    );
+  }
+
   return null;
 }
 

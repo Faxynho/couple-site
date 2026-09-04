@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1080" viewBox="0 0 720 1080" fill="none">
+  <defs>
+    <filter id="trayShadow" x="-20%" y="-15%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#9f5069" flood-opacity=".27"/>
+    </filter>
+    <linearGradient id="tray" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#fff8ee"/>
+      <stop offset=".58" stop-color="#f9e2d9"/>
+      <stop offset="1" stop-color="#e7c2be"/>
+    </linearGradient>
+  </defs>
+  <path d="M72 108C220 91 492 93 648 108C692 129 691 287 648 318C505 334 216 332 72 318C29 343 29 498 72 528C214 543 505 544 648 528C691 558 691 708 648 738C504 753 216 753 72 738C29 770 29 918 72 948C220 966 500 966 648 948" stroke="#c77d91" stroke-width="126" stroke-linecap="round" stroke-linejoin="round" opacity=".34" filter="url(#trayShadow)"/>
+  <path d="M72 108C220 91 492 93 648 108C692 129 691 287 648 318C505 334 216 332 72 318C29 343 29 498 72 528C214 543 505 544 648 528C691 558 691 708 648 738C504 753 216 753 72 738C29 770 29 918 72 948C220 966 500 966 648 948" stroke="url(#tray)" stroke-width="120" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M72 101C220 84 492 86 648 101C692 122 691 280 648 311C505 327 216 325 72 311C29 336 29 491 72 521C214 536 505 537 648 521C691 551 691 701 648 731C504 746 216 746 72 731C29 763 29 911 72 941C220 959 500 959 648 941" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".68"/>
+</svg>

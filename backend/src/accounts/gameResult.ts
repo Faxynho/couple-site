@@ -406,6 +406,35 @@ function extractRPG(state: RPGStateShape, accountByPlayerId: Map<string, Account
   return { rank, durationMs, bucket: "duel", players };
 }
 
+interface BoardRaceStateShape {
+  mode: "solo" | "duel";
+  playerOrder: string[];
+  winnerId: string | null;
+  startedAt: number;
+  finishedAt: number | null;
+}
+
+function extractBoardRace(
+  state: BoardRaceStateShape,
+  accountByPlayerId: Map<string, AccountId | undefined>
+): MatchOutcome {
+  const durationMs = Math.max(0, (state.finishedAt ?? Date.now()) - state.startedAt);
+  const bucket: Bucket = state.mode === "duel" ? "duel" : "solo";
+  const players: PlayerOutcome[] = [];
+  for (const id of state.playerOrder) {
+    const accountId = accountFor(id, accountByPlayerId);
+    if (!accountId) continue;
+    const won = state.winnerId === id;
+    players.push({
+      accountId,
+      metricValue: won ? durationMs : null,
+      scoreType: "time",
+      result: bucket === "solo" ? "solo" : won ? "win" : "loss",
+    });
+  }
+  return { rank: NO_RANK, durationMs, bucket, players };
+}
+
 function extractGameOutcome(
   gameId: GameId,
   roomMode: RoomMode,
@@ -434,6 +463,8 @@ function extractGameOutcome(
       return extractAirHockey(gameState as AirHockeyStateShape, accountByPlayerId);
     case "chess":
       return extractChess(gameState as ChessStateShape, accountByPlayerId);
+    case "boardrace":
+      return extractBoardRace(gameState as BoardRaceStateShape, accountByPlayerId);
     default:
       return null;
   }

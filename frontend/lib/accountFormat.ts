@@ -42,6 +42,7 @@ export const GAME_RANKS: Record<GameId, string[]> = {
   rpg: [NO_RANK],
   airhockey: ["easy", "medium", "hard"],
   chess: ["easy", "medium", "hard"],
+  boardrace: [NO_RANK],
 };
 
 /** O Quebra-cabeça é o único jogo sem nenhum modo de Duelo — usado pela aba
