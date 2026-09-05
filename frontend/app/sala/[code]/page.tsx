@@ -76,7 +76,8 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
 
   const isHost = Boolean(selfId && room.hostId === selfId);
   const bothConnected = room.players.filter((p) => p.connected).length === room.maxPlayers;
-  const requiresPair = room.gameId === "whoami";
+  const requiresPair = room.gameId === "whoami" || room.gameId === "casino";
+  const pairRequirementMessage = room.gameId === "casino" ? "O Cassino precisa dos dois jogadores conectados." : "O Quem Sou Eu? precisa dos dois jogadores conectados.";
   const game = GAMES.find((g) => g.id === room.gameId);
 
   const handleStart = async () => {
@@ -217,7 +218,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                 </Button>
                 {!bothConnected && (
                   <p className="mt-2 text-xs text-ink-soft">
-                    {requiresPair ? "O Quem Sou Eu? precisa dos dois jogadores conectados." : "Ainda esperando seu par entrar — ou comece agora e jogue sozinho."}
+                    {requiresPair ? pairRequirementMessage : "Ainda esperando seu par entrar — ou comece agora e jogue sozinho."}
                   </p>
                 )}
               </>

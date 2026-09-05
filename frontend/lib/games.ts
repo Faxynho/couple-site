@@ -111,6 +111,15 @@ export const GAMES: GameDefinition[] = [
     image: "/images/board-game-card.png",
     available: true,
   },
+  {
+    id: "casino",
+    name: "Cassino",
+    description: "Dispute fichas em oito mesas contra seu par ou o BOT e seja o primeiro a alcançar a meta.",
+    emoji: "🎰",
+    image: "/images/casino-card.svg",
+    available: true,
+    soloAvailable: true,
+  },
 ];
 
 /**

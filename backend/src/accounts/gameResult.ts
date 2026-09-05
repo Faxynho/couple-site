@@ -448,6 +448,35 @@ function extractWhoAmI(
   return { rank, durationMs, bucket: "duel", players };
 }
 
+interface CasinoStateShape {
+  length: string;
+  expectedPlayers: string[];
+  winnerId: string | null;
+  startedAt: number;
+  finishedAt: number | null;
+  players: Record<string, { balance: number }>;
+}
+
+function extractCasino(
+  state: CasinoStateShape,
+  accountByPlayerId: Map<string, AccountId | undefined>
+): MatchOutcome {
+  const durationMs = Math.max(0, (state.finishedAt ?? Date.now()) - state.startedAt);
+  const players: PlayerOutcome[] = [];
+  for (const id of state.expectedPlayers) {
+    const accountId = accountFor(id, accountByPlayerId);
+    if (!accountId) continue;
+    const result = state.winnerId === null ? "draw" : state.winnerId === id ? "win" : "loss";
+    players.push({
+      accountId,
+      metricValue: state.players[id]?.balance ?? 0,
+      scoreType: "points",
+      result,
+    });
+  }
+  return { rank: state.length ?? NO_RANK, durationMs, bucket: "duel", players };
+}
+
 interface BoardRaceStateShape {
   mode: "solo" | "duel";
   playerOrder: string[];
@@ -509,6 +538,8 @@ function extractGameOutcome(
       return extractChess(gameState as ChessStateShape, accountByPlayerId);
     case "boardrace":
       return extractBoardRace(gameState as BoardRaceStateShape, accountByPlayerId);
+    case "casino":
+      return extractCasino(gameState as CasinoStateShape, accountByPlayerId);
     default:
       return null;
   }

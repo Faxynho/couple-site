@@ -1,0 +1,81 @@
+<svg width="900" height="520" viewBox="0 0 900 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="30" x2="820" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#153C2C"/>
+      <stop offset="1" stop-color="#071A12"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFE6A0"/>
+      <stop offset="0.55" stop-color="#E0B650"/>
+      <stop offset="1" stop-color="#9B6F23"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(450 250) rotate(90) scale(260 390)">
+      <stop stop-color="#2C8159" stop-opacity=".52"/>
+      <stop offset="1" stop-color="#173E2D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="520" rx="46" fill="url(#bg)"/>
+  <rect width="900" height="520" rx="46" fill="url(#glow)"/>
+  <path d="M0 405C190 340 292 430 450 388C620 343 733 330 900 411V520H0V405Z" fill="#0A2118" fill-opacity=".78"/>
+  <circle cx="450" cy="245" r="173" stroke="#E4BD60" stroke-opacity=".16" stroke-width="2"/>
+  <circle cx="450" cy="245" r="137" stroke="#E4BD60" stroke-opacity=".1"/>
+
+  <!-- roulette -->
+  <g transform="translate(450 245)">
+    <circle r="124" fill="#7B5925"/>
+    <circle r="115" fill="url(#gold)"/>
+    <circle r="107" fill="#102D21"/>
+    <path d="M0-104A104 104 0 0 1 52-90L26-45A52 52 0 0 0 0-52V-104Z" fill="#A43D48"/>
+    <path d="M52-90A104 104 0 0 1 90-52L45-26A52 52 0 0 0 26-45L52-90Z" fill="#161E1B"/>
+    <path d="M90-52A104 104 0 0 1 104 0H52A52 52 0 0 0 45-26L90-52Z" fill="#A43D48"/>
+    <path d="M104 0A104 104 0 0 1 90 52L45 26A52 52 0 0 0 52 0H104Z" fill="#161E1B"/>
+    <path d="M90 52A104 104 0 0 1 52 90L26 45A52 52 0 0 0 45 26L90 52Z" fill="#A43D48"/>
+    <path d="M52 90A104 104 0 0 1 0 104V52A52 52 0 0 0 26 45L52 90Z" fill="#161E1B"/>
+    <path d="M0 104A104 104 0 0 1-52 90L-26 45A52 52 0 0 0 0 52V104Z" fill="#A43D48"/>
+    <path d="M-52 90A104 104 0 0 1-90 52L-45 26A52 52 0 0 0-26 45L-52 90Z" fill="#161E1B"/>
+    <path d="M-90 52A104 104 0 0 1-104 0H-52A52 52 0 0 0-45 26L-90 52Z" fill="#A43D48"/>
+    <path d="M-104 0A104 104 0 0 1-90-52L-45-26A52 52 0 0 0-52 0H-104Z" fill="#161E1B"/>
+    <path d="M-90-52A104 104 0 0 1-52-90L-26-45A52 52 0 0 0-45-26L-90-52Z" fill="#A43D48"/>
+    <path d="M-52-90A104 104 0 0 1 0-104V-52A52 52 0 0 0-26-45L-52-90Z" fill="#1F6D4B"/>
+    <circle r="51" fill="#0D251B" stroke="#E7C56C" stroke-width="5"/>
+    <circle r="15" fill="url(#gold)"/>
+    <circle cx="38" cy="-72" r="9" fill="#FFF8E7" stroke="#D2B35D" stroke-width="3"/>
+  </g>
+
+  <!-- cards -->
+  <g transform="translate(160 130) rotate(-12)">
+    <rect width="142" height="196" rx="20" fill="#FFF8E8" stroke="#DDB954" stroke-width="5"/>
+    <text x="21" y="45" font-family="Arial, sans-serif" font-size="32" font-weight="800" fill="#B43E4A">K</text>
+    <text x="18" y="77" font-family="Arial, sans-serif" font-size="30" fill="#B43E4A">♥</text>
+    <text x="71" y="121" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" fill="#B43E4A">♥</text>
+  </g>
+  <g transform="translate(660 118) rotate(11)">
+    <rect width="142" height="196" rx="20" fill="#FFF8E8" stroke="#DDB954" stroke-width="5"/>
+    <text x="21" y="45" font-family="Arial, sans-serif" font-size="32" font-weight="800" fill="#15211D">A</text>
+    <text x="18" y="77" font-family="Arial, sans-serif" font-size="30" fill="#15211D">♠</text>
+    <text x="71" y="121" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" fill="#15211D">♠</text>
+  </g>
+
+  <!-- chips -->
+  <g>
+    <g transform="translate(190 380) rotate(-8)">
+      <ellipse cx="0" cy="0" rx="73" ry="30" fill="#0C1713" fill-opacity=".45"/>
+      <circle cy="-17" r="60" fill="#AF3F4B" stroke="#F5DE92" stroke-width="6"/>
+      <circle cy="-17" r="39" fill="#8C2D38" stroke="#F5DE92" stroke-width="4" stroke-dasharray="10 9"/>
+      <circle cy="-17" r="20" fill="#C55761"/>
+    </g>
+    <g transform="translate(716 386) rotate(9)">
+      <ellipse cx="0" cy="0" rx="73" ry="30" fill="#0C1713" fill-opacity=".45"/>
+      <circle cy="-17" r="60" fill="#316FB1" stroke="#F5DE92" stroke-width="6"/>
+      <circle cy="-17" r="39" fill="#235689" stroke="#F5DE92" stroke-width="4" stroke-dasharray="10 9"/>
+      <circle cy="-17" r="20" fill="#4787C7"/>
+    </g>
+  </g>
+
+  <!-- sparkles -->
+  <g fill="#F6D878" opacity=".8">
+    <path d="M84 94l6 15 15 6-15 6-6 15-6-15-15-6 15-6 6-15Z"/>
+    <path d="M824 77l4 10 10 4-10 4-4 10-4-10-10-4 10-4 4-10Z"/>
+    <circle cx="96" cy="345" r="5"/><circle cx="810" cy="342" r="6"/>
+  </g>
+</svg>

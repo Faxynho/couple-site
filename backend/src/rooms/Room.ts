@@ -145,7 +145,7 @@ export class Room {
       // A Corrida de Tabuleiro pode ficar pausada naturalmente aguardando a
       // identidade persistente reconectar. Seu estado autoritativo permanece
       // jogável e o room:sync recoloca o mesmo jogador na partida.
-      if ((this.status === "playing" && this.gameId !== "boardrace" && this.gameId !== "whoami") || this.status === "ready") {
+      if ((this.status === "playing" && this.gameId !== "boardrace" && this.gameId !== "whoami" && this.gameId !== "casino") || this.status === "ready") {
         this.status = "waiting";
       }
     }
@@ -194,6 +194,7 @@ export class Room {
   private defaultMatchModeFor(gameId: GameId): string {
     if (gameId === "whoami") return this.roomMode === "solo" ? "togetherHints" : "duelHints";
     if (gameId === "boardrace") return this.roomMode === "solo" ? "solo" : "duel";
+    if (gameId === "casino") return this.roomMode === "solo" ? "soloBot" : "duel";
     if (gameId === "quiz" || gameId === "memory") return this.roomMode === "solo" ? "solo" : "together";
     if (gameId === "termo") return this.roomMode === "solo" ? "solo" : "duel";
     if (gameId === "airhockey") return this.roomMode === "solo" ? "solo" : "duel";
@@ -211,7 +212,7 @@ export class Room {
     this.pendingImageId = null;
     this.pendingImageWidth = null;
     this.pendingImageHeight = null;
-    this.pendingDifficulty = gameId === "termo" ? "one" : gameId === "whoami" ? "easy" : DEFAULT_PENDING_DIFFICULTY;
+    this.pendingDifficulty = gameId === "termo" ? "one" : gameId === "whoami" ? "easy" : gameId === "casino" ? "normal" : DEFAULT_PENDING_DIFFICULTY;
     this.pendingColorMode = "competitive";
     this.pendingSeerId = null;
     this.pendingMatchMode = this.defaultMatchModeFor(gameId);
@@ -317,6 +318,7 @@ export class Room {
       this.gameId === "airhockey"
         || this.gameId === "chess"
         || this.gameId === "boardrace"
+        || this.gameId === "casino"
         ? this.pendingMatchMode
         : undefined;
 
@@ -325,7 +327,11 @@ export class Room {
       imageWidth: this.pendingImageWidth ?? undefined,
       imageHeight: this.pendingImageHeight ?? undefined,
       difficulty: this.pendingDifficulty,
-      mode: matchMode ?? colorMode,
+      // Cassino Solo sempre nasce contra o BOT. Não depende de um setConfig
+      // chegar antes do start: o próprio tipo da sala define o modo seguro.
+      mode: this.gameId === "casino"
+        ? (this.roomMode === "solo" ? "soloBot" : "duel")
+        : matchMode ?? colorMode,
       category: this.gameId === "whoami" ? this.pendingWhoAmICategory : undefined,
       seerId: seerId ?? undefined,
       guesserId: guesserId ?? undefined,
@@ -370,6 +376,7 @@ export class Room {
     const saved = restored as Record<string, unknown>;
     if (typeof saved.difficulty === "string") this.pendingDifficulty = saved.difficulty;
     if (typeof saved.variant === "string") this.pendingDifficulty = saved.variant;
+    if (this.gameId === "casino" && typeof saved.length === "string") this.pendingDifficulty = saved.length;
     if (typeof saved.mode === "string") this.pendingMatchMode = saved.mode;
     if (typeof saved.imageId === "string") this.pendingImageId = saved.imageId;
     if (typeof saved.imageWidth === "number") this.pendingImageWidth = saved.imageWidth;

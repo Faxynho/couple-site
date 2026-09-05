@@ -32,7 +32,7 @@ export function isFinishedSoloState(gameId: GameId, state: unknown): boolean {
   if (!state || typeof state !== "object") return true;
   const value = state as Record<string, unknown>;
   if (gameId === "puzzle") return value.solved === true;
-  if (gameId === "airhockey" || gameId === "rpg") return value.phase === "finished";
+  if (gameId === "airhockey" || gameId === "rpg" || gameId === "casino") return value.phase === "finished";
   if (gameId === "chess") return value.result !== null && value.result !== undefined;
   return value.finished === true;
 }

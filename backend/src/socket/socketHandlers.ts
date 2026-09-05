@@ -23,6 +23,7 @@ import { isFinishedSoloState, isSoloResumePayload, rebaseSoloState } from "../so
 import { BoardRaceState } from "../games/boardrace/types";
 import { getWhoAmIStateForPlayer, isValidWhoAmICategory, isValidWhoAmIMode, WhoAmIState } from "../games/whoami/WhoAmIGame";
 import { getBoardRaceStateForPlayer, isValidBoardRaceMode } from "../games/boardrace/BoardRaceGame";
+import { CasinoState, getCasinoStateForPlayer, isValidCasinoLength } from "../games/casino/CasinoGame";
 
 interface SocketData {
   roomCode?: string;
@@ -149,6 +150,10 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getBoardRaceStateForPlayer(room.gameState as BoardRaceState, player.id));
     }
+  } else if (room.gameId === "casino") {
+    for (const player of room.players.values()) {
+      emitToPlayer(io, room, player.id, "game:state", getCasinoStateForPlayer(room.gameState as CasinoState, player.id));
+    }
   } else {
     io.to(roomCode).emit("game:state", room.gameState);
   }
@@ -184,6 +189,7 @@ function getMaskedStateForPlayer(room: { gameId: GameId | null; gameState: unkno
   if (room.gameId === "sudoku") return getSudokuStateForPlayer(room.gameState, playerId);
   if (room.gameId === "whoami") return getWhoAmIStateForPlayer(room.gameState as WhoAmIState, playerId);
   if (room.gameId === "boardrace") return getBoardRaceStateForPlayer(room.gameState as BoardRaceState, playerId);
+  if (room.gameId === "casino") return getCasinoStateForPlayer(room.gameState as CasinoState, playerId);
   return room.gameState;
 }
 
@@ -827,6 +833,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         if (payload?.difficulty && isValidTermoVariant(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         if (payload?.difficulty && isValidAirHockeyDifficulty(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         if (payload?.difficulty && isValidChessDifficulty(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
+        if (room.gameId === "casino" && payload?.difficulty && isValidCasinoLength(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         // A escolha de cores só existe no Duo e só pode ser feita antes de
         // iniciar. O servidor valida a associação inteira, não o cliente.
         if (payload?.chessPinkPlayerId !== undefined) {
@@ -945,8 +952,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         callback?.({ ok: false, error: "O Quem Sou Eu? precisa dos dois jogadores conectados." });
         return;
       }
-      if ((room.gameId === "termo" || room.gameId === "airhockey" || room.gameId === "chess" || room.gameId === "boardrace") && room.roomMode === "duo" && !room.bothConnected()) {
-        callback?.({ ok: false, error: room.gameId === "termo" ? "O Duelo de Termo precisa dos dois jogadores conectados." : room.gameId === "airhockey" ? "O Duelo de Air Hockey precisa dos dois jogadores conectados." : room.gameId === "chess" ? "O Duelo de Xadrez precisa dos dois jogadores conectados." : "A corrida precisa dos dois jogadores conectados." });
+      if ((room.gameId === "termo" || room.gameId === "airhockey" || room.gameId === "chess" || room.gameId === "boardrace" || room.gameId === "casino") && room.roomMode === "duo" && !room.bothConnected()) {
+        callback?.({ ok: false, error: room.gameId === "termo" ? "O Duelo de Termo precisa dos dois jogadores conectados." : room.gameId === "airhockey" ? "O Duelo de Air Hockey precisa dos dois jogadores conectados." : room.gameId === "chess" ? "O Duelo de Xadrez precisa dos dois jogadores conectados." : room.gameId === "casino" ? "O Cassino precisa dos dois jogadores conectados." : "A corrida precisa dos dois jogadores conectados." });
         return;
       }
       // Sem exigência de "os dois conectados": o host pode jogar sozinho —
@@ -1441,9 +1448,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
           : { type: "giveUp" as const };
       room.applyAction(action, socket.data.playerId ?? socket.id);
       broadcastGameState(io, code!, roomManager);
-      if ((room.status as string) === "finished") {
-        broadcastRoom(io, code!, roomManager);
-      }
+      if ((room.status as string) === "finished") broadcastRoom(io, code!, roomManager);
     });
 
     socket.on("whoami:newGame", () => {
@@ -1541,6 +1546,36 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (current?.mode) options.mode = current.mode;
 
       room.startGame(options);
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
+    // ---- Eventos exclusivos do Cassino ----
+    // O navegador envia apenas intenções. Sorteios, cartas, bombas, ponto do
+    // Crash e resultados compartilhados são definidos pelo servidor.
+    socket.on("casino:action", (payload: unknown) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "casino" || room.status !== "playing") return;
+      if (!payload || typeof payload !== "object") return;
+      const type = (payload as { type?: unknown }).type;
+      const allowed = new Set([
+        "vote", "lockBet", "minesOpen", "cashOut", "crashCashOut",
+        "roulettePick", "slotsSpin", "racePick", "diceRoll", "diceContinue",
+        "hiloGuess", "hiloContinue", "nextRound", "lastChanceChoose", "lastChanceSpin",
+      ]);
+      if (typeof type !== "string" || !allowed.has(type)) return;
+      room.applyAction(payload, socket.data.playerId ?? socket.id);
+      broadcastGameState(io, code!, roomManager);
+      if ((room.status as string) === "finished") broadcastRoom(io, code!, roomManager);
+    });
+
+    socket.on("casino:newGame", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "casino" || room.status !== "finished" || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      if (room.roomMode === "duo" && !room.bothConnected()) return;
+      room.resetGame();
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);
     });
@@ -1692,6 +1727,24 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if ((room.status as string) === "finished") broadcastRoom(io, room.code, roomManager);
     }
   }, 250);
+
+  // ---- Relógio autoritativo do Cassino ----
+  // Conduz animações/resultados e, no Solo, também o ritmo do BOT. O motor só
+  // altera a revisão quando existe alguma transição real; por isso podemos
+  // chamar tick em todas as fases sem gerar tráfego inútil no Duelo.
+  setInterval(() => {
+    const now = Date.now();
+    for (const room of roomManager.getAllRooms()) {
+      if (room.gameId !== "casino" || room.status !== "playing" || !room.gameState) continue;
+      const before = room.gameState as CasinoState;
+      const revision = before.revision;
+      room.applyAction({ type: "tick", now }, "system");
+      const after = room.gameState as CasinoState;
+      if (after.revision === revision) continue;
+      broadcastGameState(io, room.code, roomManager);
+      if ((room.status as string) === "finished") broadcastRoom(io, room.code, roomManager);
+    }
+  }, 100);
 
   // ---- Simulação autoritativa do Air Hockey ----
   // A física roda em passos curtos no servidor. Clientes recebem snapshots a

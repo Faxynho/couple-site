@@ -13,6 +13,7 @@ import { RPG_MODES, RPGMode } from "@/lib/rpgTypes";
 import { MEMORY_DIFFICULTIES, MEMORY_MODES, MemoryDifficulty, MemoryMode } from "@/lib/memoryTypes";
 import { TERMO_VARIANTS, TermoVariant } from "@/lib/termoTypes";
 import { WHOAMI_CATEGORIES, WHOAMI_DIFFICULTIES, WHOAMI_MODES, WhoAmICategory, WhoAmIDifficulty, WhoAmIMode } from "@/lib/whoAmITypes";
+import { CASINO_LENGTHS, CasinoLength } from "@/lib/casinoTypes";
 import { RoomSnapshot } from "@/lib/types";
 import { useAccountPhotos } from "@/hooks/useAccountPhotos";
 import AccountAvatar from "@/components/account/AccountAvatar";
@@ -402,6 +403,25 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
           </p>
         </div>
       </>
+    );
+  }
+
+  if (room.gameId === "casino") {
+    const selectedLength = (room.pendingDifficulty as CasinoLength) ?? "normal";
+    return (
+      <div className="text-left">
+        <SectionLabel>{isHost ? "Duração da sessão" : "Duração escolhida pelo anfitrião"}</SectionLabel>
+        <OptionGrid
+          entries={Object.entries(CASINO_LENGTHS) as [CasinoLength, (typeof CASINO_LENGTHS)[CasinoLength]][]}
+          selected={selectedLength}
+          isHost={isHost}
+          onSelect={(key) => setConfig({ difficulty: key })}
+        />
+        <div className="mt-4 rounded-xl2 border border-surface/70 bg-surface/50 p-4 text-center">
+          <p className="text-sm font-medium text-ink">🎰 Duelo de fichas · 8 mesas</p>
+          <p className="mt-1 text-xs text-ink-soft">Os dois começam com 1.000 fichas. A cada rodada, escolham em segredo entre 3 jogos e arrisquem até alguém alcançar a meta.</p>
+        </div>
+      </div>
     );
   }
 

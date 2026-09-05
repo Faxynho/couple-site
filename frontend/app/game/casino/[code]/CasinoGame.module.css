@@ -1,0 +1,1071 @@
+.shell {
+  --casino-bg: #07140f;
+  --casino-panel: rgba(10, 31, 23, 0.82);
+  --casino-panel-strong: rgba(8, 25, 19, 0.96);
+  --casino-border: rgba(244, 207, 111, 0.22);
+  --casino-gold: #f0c968;
+  --casino-gold-soft: #ffe6a3;
+  --casino-cream: #fff7df;
+  --casino-muted: #b8c5bd;
+  --casino-green: #35b779;
+  --casino-red: #dd5a67;
+  --casino-blue: #6aa7e8;
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 1040px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px 18px 48px;
+  color: var(--casino-cream);
+  overflow: hidden;
+}
+
+.shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  background:
+    radial-gradient(circle at 50% -5%, rgba(240, 201, 104, 0.16), transparent 30%),
+    radial-gradient(circle at 8% 30%, rgba(39, 154, 102, 0.15), transparent 28%),
+    linear-gradient(180deg, rgba(4, 20, 14, 0.97), rgba(8, 30, 22, 0.93) 50%, rgba(5, 16, 12, 0.98));
+  border-radius: 28px;
+}
+
+.shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, #000, transparent 78%);
+}
+
+.ambientA,
+.ambientB {
+  position: absolute;
+  z-index: -1;
+  width: 360px;
+  height: 360px;
+  border-radius: 999px;
+  filter: blur(85px);
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.ambientA { top: 170px; left: -210px; background: #27ba76; }
+.ambientB { top: 520px; right: -240px; background: #f1c45d; }
+
+.topbar {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 5;
+}
+
+.topbar > :nth-child(2) { justify-self: center; }
+
+.backButton {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255,255,255,0.11);
+  border-radius: 14px;
+  color: var(--casino-cream);
+  background: rgba(255,255,255,0.055);
+  backdrop-filter: blur(12px);
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+.backButton:not(:disabled):hover { transform: translateY(-1px); border-color: var(--casino-border); background: rgba(240,201,104,.1); }
+.backButton:disabled { opacity: .38; cursor: default; }
+
+.roomPill {
+  white-space: nowrap;
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 999px;
+  background: rgba(255,255,255,.055);
+  color: var(--casino-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) 104px;
+  align-items: center;
+  gap: 18px;
+  margin-top: 22px;
+  padding: 28px 32px;
+  overflow: hidden;
+  border: 1px solid var(--casino-border);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(240,201,104,.1), transparent 42%),
+    linear-gradient(145deg, rgba(8,35,25,.96), rgba(7,22,17,.92));
+  box-shadow: inset 0 1px rgba(255,255,255,.06), 0 22px 55px rgba(0,0,0,.23);
+}
+
+.hero::before,
+.hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  border: 1px solid rgba(240,201,104,.12);
+  pointer-events: none;
+}
+.hero::before { width: 250px; height: 250px; left: -130px; top: -125px; }
+.hero::after { width: 210px; height: 210px; right: -105px; bottom: -130px; }
+
+.heroText { position: relative; z-index: 2; min-width: 0; text-align: center; }
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid rgba(240,201,104,.24);
+  border-radius: 999px;
+  color: var(--casino-gold-soft);
+  background: rgba(240,201,104,.08);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.heroText h1 {
+  margin: 9px 0 2px;
+  font-family: var(--font-display, ui-serif, Georgia, serif);
+  font-size: clamp(34px, 6vw, 54px);
+  line-height: .95;
+  letter-spacing: -.035em;
+  color: #fff9e9;
+  text-shadow: 0 2px 20px rgba(240,201,104,.12);
+}
+.heroText p { max-width: 620px; margin: 9px auto 0; color: var(--casino-muted); font-size: 13px; line-height: 1.55; }
+.metaRow { display: flex; justify-content: center; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+.metaRow span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,.085);
+  border-radius: 999px;
+  color: #d8e1dc;
+  background: rgba(255,255,255,.045);
+  font-size: 11px;
+}
+
+.heroDecorLeft,
+.heroDecorRight { position: relative; z-index: 1; display: grid; place-items: center; }
+.heroDecorLeft img,
+.heroDecorRight img { width: 94px; height: 94px; object-fit: contain; filter: drop-shadow(0 18px 18px rgba(0,0,0,.28)); }
+.heroDecorLeft img { transform: rotate(-14deg); }
+.heroDecorRight img { transform: rotate(13deg); }
+
+.bankrollGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.bankrollCard {
+  padding: 14px 15px 12px;
+  border: 1px solid rgba(255,255,255,.085);
+  border-radius: 18px;
+  background: rgba(8,27,20,.72);
+  backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px rgba(255,255,255,.04);
+}
+.bankrollSelf { border-color: rgba(240,201,104,.3); background: linear-gradient(120deg, rgba(240,201,104,.08), rgba(8,27,20,.76) 48%); }
+.bankrollTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.playerNameLine { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.playerNameLine > span:last-child,
+.playerNameLine strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.playerDot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(255,255,255,.055); }
+.balance { display: inline-flex; align-items: center; gap: 5px; color: var(--casino-gold-soft); font-weight: 800; font-size: 14px; white-space: nowrap; }
+.progressTrack { height: 5px; margin-top: 10px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.075); }
+.progressTrack span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #b68a35, #f4d67f); box-shadow: 0 0 14px rgba(240,201,104,.35); transition: width .5s cubic-bezier(.16,1,.3,1); }
+.bankrollBottom { display: flex; justify-content: space-between; gap: 8px; margin-top: 7px; color: #8fa49a; font-size: 9.5px; }
+
+.floor { margin-top: 14px; min-width: 0; }
+.selectionPanel,
+.betPanel,
+.playingPanel,
+.resultPanel,
+.lastChance,
+.finishedPanel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--casino-border);
+  border-radius: 26px;
+  background: linear-gradient(150deg, rgba(13,39,29,.96), rgba(6,20,15,.96));
+  box-shadow: inset 0 1px rgba(255,255,255,.045), 0 22px 60px rgba(0,0,0,.22);
+}
+.selectionPanel,
+.betPanel,
+.playingPanel { padding: 24px; }
+
+.sectionHeading { display: flex; align-items: center; gap: 12px; }
+.sectionHeading small { display: block; color: #93a79d; font-size: 9px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+.sectionHeading h2 { margin: 2px 0 0; color: #fff9e9; font-size: clamp(19px, 4vw, 25px); line-height: 1.08; }
+.stepBadge { display: grid; place-items: center; flex: 0 0 auto; width: 42px; height: 42px; border: 1px solid rgba(240,201,104,.28); border-radius: 13px; color: var(--casino-gold); background: rgba(240,201,104,.08); font-size: 12px; font-weight: 900; }
+.lead { margin: 10px 0 0 54px; color: var(--casino-muted); font-size: 12px; line-height: 1.45; }
+
+.gameChoiceGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; margin-top: 20px; }
+.gameChoice {
+  position: relative;
+  min-height: 164px;
+  padding: 22px 12px 15px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 20px;
+  color: #f3f6f3;
+  background: linear-gradient(160deg, rgba(255,255,255,.065), rgba(255,255,255,.025));
+  text-align: center;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+.gameChoice::after { content: ""; position: absolute; width: 86px; height: 86px; border-radius: 50%; left: 50%; top: 34px; transform: translateX(-50%); background: rgba(240,201,104,.06); filter: blur(2px); }
+.gameChoice:not(:disabled):hover { transform: translateY(-3px); border-color: rgba(240,201,104,.38); background: linear-gradient(160deg, rgba(240,201,104,.1), rgba(255,255,255,.025)); }
+.gameChoiceSelected { border-color: rgba(240,201,104,.58); background: linear-gradient(160deg, rgba(240,201,104,.15), rgba(31,114,77,.1)); box-shadow: inset 0 0 0 1px rgba(240,201,104,.1); }
+.choiceIndex { position: absolute; top: 9px; left: 10px; color: rgba(255,255,255,.22); font-size: 10px; font-weight: 900; }
+.choiceEmoji { position: relative; z-index: 1; display: block; font-size: 42px; line-height: 1; filter: drop-shadow(0 8px 10px rgba(0,0,0,.2)); }
+.gameChoice strong { position: relative; z-index: 1; display: block; margin-top: 12px; font-size: 14px; }
+.gameChoice small { position: relative; z-index: 1; display: block; margin-top: 5px; color: #9fb1a8; font-size: 9.5px; line-height: 1.35; }
+.secretStatus { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; color: #849b8f; font-size: 10px; }
+.secretStatus span { display: inline-flex; align-items: center; gap: 5px; }
+.statusReady { color: var(--casino-gold-soft) !important; }
+
+.chosenGameBanner { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid rgba(240,201,104,.2); border-radius: 17px; background: rgba(240,201,104,.06); }
+.chosenIcon { display: grid; place-items: center; width: 43px; height: 43px; flex: 0 0 auto; border-radius: 13px; background: rgba(240,201,104,.1); font-size: 25px; }
+.chosenGameBanner small { display: block; color: #91a59b; font-size: 9px; text-transform: uppercase; letter-spacing: .12em; }
+.chosenGameBanner strong { display: block; margin-top: 2px; color: #fff9e9; font-size: 15px; }
+
+.betBox { margin-top: 17px; padding: 18px; border-radius: 20px; background: rgba(0,0,0,.14); border: 1px solid rgba(255,255,255,.065); }
+.smallCaps { color: #93a79c; font-size: 9.5px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+.betValue { display: flex; align-items: baseline; gap: 7px; margin-top: 4px; color: var(--casino-gold-soft); }
+.betValue strong { font-size: clamp(29px, 6vw, 40px); line-height: 1; }
+.betValue span { color: #aebdb5; font-size: 11px; }
+.betSlider { width: 100%; height: 5px; margin-top: 18px; accent-color: #e9c363; cursor: pointer; }
+.betScale { display: flex; justify-content: space-between; margin-top: 3px; color: #71877c; font-size: 9px; }
+.betPresets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 13px; }
+.betPresets button { min-height: 38px; border: 1px solid rgba(255,255,255,.085); border-radius: 11px; color: #d9e1dc; background: rgba(255,255,255,.045); font-size: 10px; font-weight: 800; transition: .18s ease; }
+.betPresets button:hover { border-color: rgba(240,201,104,.3); background: rgba(240,201,104,.08); color: #fff3c9; }
+
+.primaryCasinoButton,
+.cashButton,
+.cashButtonBig,
+.riskButton,
+.secondaryButton,
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 45px;
+  border-radius: 14px;
+  font-weight: 850;
+  transition: transform .18s ease, filter .18s ease, opacity .18s ease, border-color .18s ease;
+}
+.primaryCasinoButton { width: 100%; margin-top: 15px; padding: 0 17px; border: 1px solid #f3d47b; color: #182116; background: linear-gradient(180deg, #ffe89d, #d5a944); box-shadow: 0 8px 24px rgba(240,201,104,.14), inset 0 1px rgba(255,255,255,.45); }
+.primaryCasinoButton:not(:disabled):hover,
+.cashButton:hover,
+.cashButtonBig:hover,
+.riskButton:hover,
+.secondaryButton:hover,
+.dangerButton:not(:disabled):hover { transform: translateY(-1px); filter: brightness(1.06); }
+.primaryCasinoButton:disabled,
+.dangerButton:disabled { opacity: .55; cursor: default; }
+.finePrint { display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 9px; color: #82978d; font-size: 9.5px; text-align: center; }
+
+.playingHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 17px; }
+.playingHeader > div:first-child { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.playingHeader h2 { margin: 0; color: #fff8e7; font-size: 20px; }
+.playingHeader small { display: block; color: #91a59b; font-size: 9px; text-transform: uppercase; letter-spacing: .13em; }
+.currentBet { padding: 7px 10px; border: 1px solid rgba(240,201,104,.18); border-radius: 999px; color: var(--casino-gold-soft); background: rgba(240,201,104,.06); font-size: 10px; font-weight: 750; white-space: nowrap; }
+.opponentStatus { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 13px; padding: 10px 12px; border-radius: 13px; color: #a5b6ad; background: rgba(255,255,255,.04); font-size: 10.5px; text-align: center; }
+.liveDot { width: 7px; height: 7px; border-radius: 50%; background: var(--casino-green); box-shadow: 0 0 0 4px rgba(53,183,121,.1); animation: casinoPulse 1.5s ease-in-out infinite; }
+
+.minesLayout { display: grid; grid-template-columns: 155px minmax(0, 1fr); gap: 16px; align-items: start; }
+.riskRail { display: grid; gap: 9px; }
+.riskRail > div { padding: 12px; border: 1px solid rgba(255,255,255,.07); border-radius: 15px; background: rgba(0,0,0,.13); }
+.riskRail small { display: block; color: #82968c; font-size: 8.5px; text-transform: uppercase; letter-spacing: .12em; }
+.riskRail strong { display: block; margin-top: 4px; color: var(--casino-gold-soft); font-size: 19px; }
+.minesGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.mineCell { aspect-ratio: 1; min-width: 0; border: 1px solid rgba(255,255,255,.09); border-radius: 12px; color: transparent; background: linear-gradient(145deg, rgba(31,91,66,.75), rgba(14,54,39,.8)); box-shadow: inset 0 1px rgba(255,255,255,.07), 0 4px 10px rgba(0,0,0,.14); transition: transform .16s ease, background .16s ease, border-color .16s ease; }
+.mineCell:not(:disabled):hover { transform: translateY(-2px); border-color: rgba(240,201,104,.33); }
+.mineSafe { color: #143426; background: linear-gradient(145deg, #7bddad, #46b87e); border-color: rgba(119,238,175,.5); }
+.mineAfterExplosion { opacity: .55; }
+.mineBack { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: rgba(240,201,104,.55); box-shadow: 0 0 11px rgba(240,201,104,.25); }
+.gameActions { display: grid; gap: 8px; margin-top: 12px; }
+.potential { color: #a9bbb1; font-size: 10px; text-align: center; }
+.cashButton { width: 100%; padding: 0 12px; border: 1px solid rgba(73,213,146,.45); color: #dff9eb; background: linear-gradient(180deg, rgba(50,173,113,.3), rgba(32,127,82,.24)); }
+.cashButtonBig { min-width: 190px; padding: 0 18px; border: 1px solid rgba(73,213,146,.55); color: #e7fff2; background: linear-gradient(180deg, #27895d, #176545); box-shadow: 0 10px 28px rgba(30,148,93,.16); }
+.winBanner,
+.lossBanner,
+.neutralBanner { margin-top: 12px; padding: 10px 12px; border-radius: 12px; font-size: 10.5px; text-align: center; }
+.winBanner { color: #ccf5df; background: rgba(53,183,121,.12); border: 1px solid rgba(53,183,121,.2); }
+.lossBanner { color: #ffd8db; background: rgba(221,90,103,.1); border: 1px solid rgba(221,90,103,.19); }
+.neutralBanner { color: #e7dec2; background: rgba(240,201,104,.07); border: 1px solid rgba(240,201,104,.15); }
+
+.crashWrap { display: grid; gap: 15px; }
+.crashGraph { position: relative; height: 265px; overflow: hidden; border: 1px solid rgba(255,255,255,.075); border-radius: 20px; background: radial-gradient(circle at 75% 25%, rgba(45,191,119,.12), transparent 32%), linear-gradient(180deg, #071910, #07120e); }
+.crashGraph::before { content: ""; position: absolute; inset: 0; opacity: .2; background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px); background-size: 42px 42px; }
+.crashGraph svg { position: absolute; inset: 12% 5% 9%; width: 90%; height: 79%; overflow: visible; }
+.crashGraph svg path { fill: none; stroke: #52d997; stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 8px rgba(82,217,151,.3)); }
+.crashGraphDead svg path { stroke: #e55e69; filter: drop-shadow(0 0 8px rgba(229,94,105,.25)); }
+.crashCenter { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; pointer-events: none; }
+.crashCenter strong { font-size: clamp(43px, 11vw, 74px); line-height: .95; color: #effff6; letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+.crashGraphDead .crashCenter strong { color: #ffdce0; }
+.crashCenter span { margin-top: 7px; color: #85a092; font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.crashPlayers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.crashPlayers > div { display: flex; justify-content: space-between; gap: 6px; padding: 9px 11px; border-radius: 12px; background: rgba(255,255,255,.04); color: #aebeb5; font-size: 10px; }
+.crashCashed { color: #6bdd9f !important; }
+
+.rouletteBetting { display: grid; gap: 13px; }
+.centerHint { margin: 10px 0 0; color: #92a69b; font-size: 10.5px; text-align: center; line-height: 1.45; }
+.rouletteSimpleBets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.rouletteSimpleBets button,
+.rouletteNumbers button { min-height: 40px; border: 1px solid rgba(255,255,255,.08); border-radius: 11px; color: #eef2ef; background: rgba(255,255,255,.045); font-size: 10px; font-weight: 800; transition: transform .16s ease, border-color .16s ease, filter .16s ease; }
+.rouletteSimpleBets button:hover,
+.rouletteNumbers button:hover { transform: translateY(-1px); border-color: rgba(240,201,104,.32); filter: brightness(1.08); }
+.redBet { background: linear-gradient(180deg, #b83d4a, #872932) !important; }
+.blackBet { background: linear-gradient(180deg, #262d2b, #111715) !important; }
+.numberLabel { color: #82988d; font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.rouletteNumbers { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
+.numberRed { background: #8f2f39 !important; }
+.numberBlack { background: #161e1b !important; }
+.numberGreen { grid-column: span 2; background: #207650 !important; }
+.rouletteSpinArea { display: grid; place-items: center; gap: 16px; padding: 6px 0; }
+.rouletteWheel { position: relative; width: min(300px, 76vw); aspect-ratio: 1; display: grid; place-items: center; border: 10px solid #7c5b25; border-radius: 50%; background: repeating-conic-gradient(#9d3340 0deg 10deg, #171f1c 10deg 20deg, #1c744f 20deg 21deg); box-shadow: inset 0 0 0 5px #d5af54, inset 0 0 35px rgba(0,0,0,.5), 0 14px 34px rgba(0,0,0,.25); }
+.rouletteInner { display: grid; place-items: center; width: 58%; aspect-ratio: 1; border: 5px solid rgba(240,201,104,.78); border-radius: 50%; color: #fff2c2; background: radial-gradient(circle, #31523f, #122b20 72%); font-size: 34px; font-weight: 900; box-shadow: 0 0 0 10px rgba(0,0,0,.2); }
+.wheelSpinning { animation: casinoWheel 1.1s linear infinite; }
+.sharedBets { display: flex; justify-content: center; flex-wrap: wrap; gap: 7px; }
+.sharedBets span { padding: 7px 10px; border-radius: 999px; color: #b9c7c0; background: rgba(255,255,255,.045); font-size: 9.5px; }
+
+.slotsWrap { display: grid; place-items: center; gap: 13px; }
+.slotMachine { width: min(100%, 560px); padding: 14px; border: 1px solid rgba(240,201,104,.35); border-radius: 25px; background: linear-gradient(180deg, rgba(92,64,22,.32), rgba(14,38,28,.92)); box-shadow: inset 0 1px rgba(255,255,255,.08), 0 20px 45px rgba(0,0,0,.2); }
+.slotTop { display: flex; justify-content: space-between; align-items: center; padding: 0 5px 9px; color: #dbc67f; font-size: 9px; font-weight: 900; letter-spacing: .17em; }
+.reels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; border: 1px solid rgba(255,255,255,.09); border-radius: 17px; background: #f7edcf; box-shadow: inset 0 3px 10px rgba(48,34,14,.14); }
+.reel { display: grid; place-items: center; aspect-ratio: 1; overflow: hidden; border-radius: 13px; background: linear-gradient(180deg, #fffaf0, #eadfbd); box-shadow: inset 0 0 0 1px rgba(94,70,28,.12); }
+.reel img { width: 76%; height: 76%; object-fit: contain; filter: drop-shadow(0 6px 5px rgba(84,52,14,.16)); }
+.slotMultiplier { color: var(--casino-gold-soft); font-size: 11px; font-weight: 850; }
+.dualActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: min(100%, 560px); margin-top: 4px; }
+.riskButton { width: 100%; padding: 0 13px; border: 1px solid rgba(240,201,104,.28); color: #ffe8a0; background: rgba(240,201,104,.075); }
+
+.racerCards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.racerCards button { min-width: 0; padding: 10px 5px; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; color: #dfe7e2; background: rgba(255,255,255,.035); transition: .18s ease; }
+.racerCards img { display: block; width: 44px; height: 44px; margin: 0 auto; object-fit: contain; }
+.racerCards strong { display: block; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8.5px; }
+.racerCards small { display: block; margin-top: 2px; color: #91a59b; font-size: 8px; }
+.racerSelected { border-color: rgba(240,201,104,.5) !important; background: rgba(240,201,104,.09) !important; transform: translateY(-2px); }
+.raceTrackWrap { display: grid; gap: 7px; }
+.raceHeaderLine { display: flex; justify-content: space-between; color: #81968b; font-size: 9px; text-transform: uppercase; letter-spacing: .1em; }
+.raceLanes { display: grid; gap: 6px; }
+.raceLane { display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 7px; min-height: 43px; }
+.raceLaneMeta { display: flex; align-items: center; gap: 6px; min-width: 0; color: #b9c7c0; font-size: 9px; }
+.raceLaneMeta img { width: 27px; height: 27px; object-fit: contain; }
+.raceLaneMeta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trackLine { position: relative; height: 36px; border-radius: 11px; overflow: hidden; background: repeating-linear-gradient(90deg, rgba(255,255,255,.055) 0 1px, transparent 1px 10%); border: 1px solid rgba(255,255,255,.055); }
+.finishFlag { position: absolute; right: 5px; top: 8px; color: rgba(255,255,255,.5); }
+.racerToken { position: absolute; left: 4px; top: 4px; width: 28px; height: 28px; object-fit: contain; transform: translateX(calc(var(--progress, 0) * 1%)); transition: left .13s linear; }
+
+.diceWrap { display: grid; gap: 14px; }
+.numberTriples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.greenTriple,
+.redTriple { padding: 12px; border-radius: 15px; text-align: center; }
+.greenTriple { border: 1px solid rgba(53,183,121,.25); background: rgba(53,183,121,.08); }
+.redTriple { border: 1px solid rgba(221,90,103,.23); background: rgba(221,90,103,.075); }
+.numberTriples small { display: block; font-size: 8.5px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+.greenTriple small { color: #75d9a6; }
+.redTriple small { color: #ed8c95; }
+.numberTriples strong { display: block; margin-top: 5px; font-size: 18px; letter-spacing: .08em; }
+.diceStage { display: flex; justify-content: center; align-items: center; gap: 12px; min-height: 118px; padding: 12px; border: 1px solid rgba(255,255,255,.065); border-radius: 19px; background: rgba(0,0,0,.13); }
+.die { display: grid; place-items: center; width: 74px; height: 74px; border-radius: 17px; color: #13251c; background: linear-gradient(145deg, #fff7df, #e7dcb9); box-shadow: 0 10px 20px rgba(0,0,0,.2), inset 0 2px rgba(255,255,255,.7); font-size: 55px; line-height: 1; }
+.diceSum { min-width: 55px; text-align: center; }
+.diceSum small { display: block; color: #8da197; font-size: 8px; text-transform: uppercase; }
+.diceSum strong { display: block; color: var(--casino-gold-soft); font-size: 29px; }
+.streakDots { display: flex; justify-content: center; gap: 6px; }
+.streakDots span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.09); }
+.streakActive { background: var(--casino-gold) !important; box-shadow: 0 0 9px rgba(240,201,104,.35); }
+
+.hiloWrap { display: grid; gap: 13px; }
+.cardsStage { display: flex; align-items: center; justify-content: center; gap: clamp(8px, 3vw, 20px); min-height: 220px; padding: 14px; border: 1px solid rgba(255,255,255,.06); border-radius: 20px; background: radial-gradient(circle at 50% 45%, rgba(240,201,104,.07), transparent 45%), rgba(0,0,0,.12); }
+.playingCard,
+.cardBack { position: relative; width: min(130px, 31vw); aspect-ratio: 2.5 / 3.5; border-radius: 15px; box-shadow: 0 15px 25px rgba(0,0,0,.23); }
+.playingCard { color: #1b2621; background: #fffaf0; border: 1px solid rgba(0,0,0,.12); }
+.playingCard > strong { position: absolute; inset: 0; display: grid; place-items: center; font-size: 46px; }
+.cardRed { color: #bd3d4a; }
+.cardFaded { opacity: .52; transform: scale(.92) rotate(-4deg); }
+.cardBack { display: grid; place-items: center; border: 5px solid #f2d37d; background: repeating-linear-gradient(45deg, #143c2b 0 8px, #1b523a 8px 16px); }
+.cardBack::after { content: "♛"; display: grid; place-items: center; width: 54%; aspect-ratio: 1; border: 2px solid #e2c163; border-radius: 50%; color: #f1d47d; background: #143523; font-size: 33px; }
+.cardCorner { position: absolute; top: 8px; left: 9px; display: grid; line-height: .9; font-size: 18px; font-weight: 900; }
+.cardCorner small { margin-top: 3px; font-size: 13px; }
+.cardCornerBottom { top: auto; left: auto; right: 9px; bottom: 8px; transform: rotate(180deg); }
+.cardArrow { display: grid; place-items: center; color: var(--casino-gold); }
+.hiloStats { display: flex; justify-content: center; flex-wrap: wrap; gap: 7px; }
+.hiloStats span { padding: 6px 9px; border-radius: 999px; background: rgba(255,255,255,.045); color: #a9bbb1; font-size: 9px; }
+.hiloStats b { color: #f3da91; }
+.hiloButtons { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+.hiloButtons button { display: grid; place-items: center; min-height: 75px; padding: 9px; border: 1px solid rgba(240,201,104,.22); border-radius: 16px; color: #fce8ae; background: rgba(240,201,104,.055); }
+.hiloButtons button:not(:disabled):hover { background: rgba(240,201,104,.1); }
+.hiloButtons button:disabled { opacity: .28; }
+.hiloButtons span { margin-top: 2px; font-size: 11px; font-weight: 900; }
+.hiloButtons small { margin-top: 2px; color: #8ea298; font-size: 8.5px; }
+
+.fortuneWrap { display: grid; justify-items: center; gap: 10px; }
+.fortunePointer { position: relative; z-index: 3; margin-bottom: -19px; color: #ffe297; font-size: 25px; text-shadow: 0 2px 5px rgba(0,0,0,.4); }
+.fortuneWheel { position: relative; width: min(360px, 80vw); aspect-ratio: 1; border: 9px solid #7e5b22; border-radius: 50%; background: conic-gradient(#9f3742 0 30deg,#245d43 30deg 60deg,#b58b32 60deg 90deg,#143d2c 90deg 120deg,#a15036 120deg 150deg,#1f6244 150deg 180deg,#705a9a 180deg 210deg,#266b4b 210deg 240deg,#963846 240deg 270deg,#bc9236 270deg 300deg,#1a5139 300deg 330deg,#caa54a 330deg 360deg); box-shadow: inset 0 0 0 4px #e0bd5f, inset 0 0 0 17px rgba(9,30,21,.8), 0 18px 38px rgba(0,0,0,.25); }
+.fortuneWheel > span { position: absolute; left: calc(50% - 20px); top: 50%; width: 40px; transform-origin: 20px 0; color: #fff8e5; font-size: 9px; font-weight: 900; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.65); }
+.fortuneHub { position: absolute; inset: 32%; display: grid; place-items: center; align-content: center; border: 3px solid #e3c46d; border-radius: 50%; color: #f8dc8d; background: radial-gradient(circle, #1d563c, #0b261a); box-shadow: 0 0 0 6px rgba(0,0,0,.2); }
+.fortuneHub small { margin-top: 3px; font-size: 7px; font-weight: 900; letter-spacing: .13em; }
+.fortuneSpinning { animation: casinoWheel 1.5s cubic-bezier(.2,.7,.2,1) infinite; }
+.fortuneLegend { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.fortuneLegend span { padding: 5px 7px; border-radius: 999px; color: #a4b5ac; background: rgba(255,255,255,.04); font-size: 8.5px; }
+
+.resultPanel,
+.lastChance,
+.finishedPanel { padding: 28px; text-align: center; }
+.resultIcon,
+.trophyCircle { display: grid; place-items: center; width: 68px; height: 68px; margin: 0 auto 11px; border: 1px solid rgba(240,201,104,.36); border-radius: 50%; color: #f5d77e; background: radial-gradient(circle, rgba(240,201,104,.17), rgba(240,201,104,.035)); box-shadow: 0 0 26px rgba(240,201,104,.08); }
+.resultPanel h2,
+.lastChance h2,
+.finishedPanel h2 { margin: 4px 0 0; color: #fff8e6; font-size: clamp(24px, 6vw, 34px); line-height: 1.04; }
+.resultPanel > p,
+.lastChance > p,
+.finishedPanel > p { max-width: 620px; margin: 8px auto 0; color: #9eb0a7; font-size: 11px; line-height: 1.5; }
+.resultPlayers { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-top: 18px; }
+.resultPlayers > div { display: grid; gap: 4px; padding: 13px; border: 1px solid rgba(255,255,255,.07); border-radius: 15px; background: rgba(255,255,255,.035); text-align: left; }
+.resultSelf { border-color: rgba(240,201,104,.25) !important; background: rgba(240,201,104,.055) !important; }
+.resultPlayers span { color: #8fa399; font-size: 9px; }
+.resultPlayers b { color: #dfe7e2; font-size: 17px; }
+.resultPlayers em { color: #afbeb6; font-size: 9px; font-style: normal; }
+.positive { color: #6ad79e !important; }
+.negative { color: #ef828c !important; }
+.readyLine { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 8px; color: #6f857a; font-size: 9px; }
+.readyOn { color: #cbb56f !important; }
+.outcomeOrb { display: grid; place-items: center; width: 76px; height: 76px; margin: 15px auto 0; border: 4px solid rgba(255,255,255,.8); border-radius: 50%; box-shadow: 0 12px 22px rgba(0,0,0,.2); }
+.outcomeOrb strong { font-size: 26px; line-height: 1; }
+.outcomeOrb span { font-size: 8px; text-transform: uppercase; }
+.outcomeRed { background: #9e3440; }
+.outcomeBlack { background: #17201d; }
+.outcomeGreen { background: #227a54; }
+.bigOutcome { margin-top: 16px; color: #d4ded8; font-size: 18px; }
+.bigOutcome strong { color: var(--casino-gold-soft); font-size: 28px; }
+
+.skull { font-size: 52px; filter: drop-shadow(0 10px 12px rgba(0,0,0,.2)); }
+.lastChanceWheel { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; width: min(330px, 90%); margin: 19px auto; padding: 13px; border: 1px solid rgba(221,90,103,.22); border-radius: 22px; background: rgba(0,0,0,.14); }
+.lastChanceWheel span { display: grid; place-items: center; aspect-ratio: 1.35; border-radius: 10px; color: #b5c2bb; background: rgba(255,255,255,.045); font-size: 10px; font-weight: 900; }
+.reviveSlice { color: #16281e !important; background: linear-gradient(145deg, #f8dc86, #cda444) !important; }
+.lastChanceWheel > div { position: absolute; inset: 50% auto auto 50%; display: grid; place-items: center; width: 44px; height: 44px; transform: translate(-50%,-50%); border: 3px solid #d0aa50; border-radius: 50%; color: #ffe8a1; background: #122c20; font-weight: 900; box-shadow: 0 5px 15px rgba(0,0,0,.3); }
+.dangerButton { width: min(100%, 360px); margin-top: 2px; padding: 0 16px; border: 1px solid #e06a74; color: #fff1f2; background: linear-gradient(180deg, #aa3947, #762631); }
+
+.trophyCircle { width: 82px; height: 82px; }
+.finalBalances { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 19px; }
+.finalBalances > div { display: grid; gap: 5px; padding: 14px; border: 1px solid rgba(255,255,255,.07); border-radius: 16px; background: rgba(255,255,255,.035); }
+.finalBalances span { color: #a5b4ad; font-size: 10px; }
+.finalBalances strong { display: flex; justify-content: center; align-items: center; gap: 5px; color: #f4de9b; font-size: 19px; }
+.finalBalances small { color: #71887d; font-size: 8.5px; }
+.finalWinner { border-color: rgba(240,201,104,.38) !important; background: rgba(240,201,104,.08) !important; box-shadow: inset 0 0 0 1px rgba(240,201,104,.07); }
+.finalStats { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.finalStats span { padding: 5px 8px; border-radius: 999px; color: #83998e; background: rgba(255,255,255,.04); font-size: 8.5px; }
+.secondaryButton { width: 100%; padding: 0 12px; border: 1px solid rgba(255,255,255,.11); color: #c7d2cc; background: rgba(255,255,255,.045); }
+.finishedPanel .dualActions { margin: 18px auto 0; }
+.finishedPanel .primaryCasinoButton { margin-top: 0; }
+
+.historyStrip { margin-top: 12px; padding: 12px; border: 1px solid rgba(255,255,255,.065); border-radius: 18px; background: rgba(7,22,16,.6); backdrop-filter: blur(14px); }
+.historyTitle { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 3px 8px; }
+.historyTitle span { color: #c5d0ca; font-size: 10px; font-weight: 750; }
+.historyTitle small { color: #71877c; font-size: 8px; }
+.historyScroller { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+.historyCard { display: flex; align-items: center; gap: 8px; min-width: 178px; padding: 9px; border-radius: 13px; background: rgba(255,255,255,.035); }
+.historyCard > span { font-size: 22px; }
+.historyCard div { min-width: 0; }
+.historyCard strong { display: block; color: #d9e1dd; font-size: 9px; white-space: nowrap; }
+.historyCard small { display: block; max-width: 145px; margin-top: 2px; overflow: hidden; color: #7f9489; font-size: 7.5px; text-overflow: ellipsis; white-space: nowrap; }
+
+@keyframes casinoPulse { 0%,100% { opacity: .55; transform: scale(.88); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes casinoWheel { to { transform: rotate(360deg); } }
+
+@media (max-width: 720px) {
+  .shell { padding: 16px 12px 34px; }
+  .hero { grid-template-columns: 64px minmax(0,1fr) 64px; gap: 5px; padding: 23px 12px; border-radius: 23px; }
+  .heroDecorLeft img, .heroDecorRight img { width: 64px; height: 64px; }
+  .heroText p { font-size: 11px; }
+  .metaRow span { padding: 6px 8px; font-size: 9px; }
+  .selectionPanel, .betPanel, .playingPanel { padding: 17px; border-radius: 22px; }
+  .lead { margin-left: 0; }
+  .gameChoiceGrid { gap: 6px; }
+  .gameChoice { min-height: 139px; padding: 19px 7px 12px; border-radius: 15px; }
+  .choiceEmoji { font-size: 34px; }
+  .gameChoice strong { font-size: 11px; }
+  .gameChoice small { font-size: 7.8px; }
+  .minesLayout { grid-template-columns: 1fr; }
+  .riskRail { grid-template-columns: repeat(3,1fr); }
+  .riskRail > div { padding: 9px; }
+  .riskRail strong { font-size: 15px; }
+  .mineCell { border-radius: 9px; }
+  .rouletteNumbers { grid-template-columns: repeat(7, minmax(0,1fr)); }
+  .numberGreen { grid-column: span 1; }
+  .racerCards { grid-template-columns: repeat(5, minmax(54px,1fr)); overflow-x: auto; padding-bottom: 3px; }
+  .raceLane { grid-template-columns: 78px minmax(0,1fr); }
+  .raceLaneMeta span { display: none; }
+  .raceLaneMeta { justify-content: center; }
+  .cardsStage { min-height: 190px; }
+  .resultPanel, .lastChance, .finishedPanel { padding: 22px 16px; }
+}
+
+@media (max-width: 470px) {
+  .topbar { grid-template-columns: 40px 1fr auto; }
+  .roomPill { padding: 7px 9px; font-size: 9px; }
+  .hero { grid-template-columns: 46px minmax(0,1fr) 46px; }
+  .heroDecorLeft img, .heroDecorRight img { width: 48px; height: 48px; }
+  .eyebrow { font-size: 7.5px; padding: 5px 7px; }
+  .heroText h1 { font-size: 34px; }
+  .heroText p { display: none; }
+  .metaRow { margin-top: 9px; gap: 4px; }
+  .metaRow span { font-size: 7.8px; }
+  .bankrollGrid { gap: 6px; }
+  .bankrollCard { padding: 10px; border-radius: 14px; }
+  .playerNameLine { font-size: 10px; }
+  .balance { font-size: 11px; }
+  .bankrollBottom { display: none; }
+  .sectionHeading { gap: 8px; }
+  .stepBadge { width: 36px; height: 36px; }
+  .sectionHeading h2 { font-size: 18px; }
+  .gameChoiceGrid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .gameChoice { min-height: 122px; padding: 17px 5px 8px; }
+  .choiceEmoji { font-size: 30px; }
+  .gameChoice small { display: none; }
+  .chosenGameBanner { padding: 9px 10px; }
+  .betBox { padding: 14px; }
+  .playingHeader { align-items: flex-start; }
+  .playingHeader h2 { font-size: 17px; }
+  .currentBet { font-size: 8px; }
+  .rouletteSimpleBets { grid-template-columns: repeat(2, 1fr); }
+  .rouletteNumbers { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .reels { gap: 5px; padding: 7px; }
+  .racerCards { grid-template-columns: repeat(5, 54px); }
+  .raceLane { grid-template-columns: 42px minmax(0,1fr); }
+  .raceLaneMeta { justify-content: flex-start; }
+  .raceLaneMeta img { width: 24px; height: 24px; }
+  .numberTriples { gap: 5px; }
+  .die { width: 62px; height: 62px; font-size: 47px; }
+  .cardsStage { gap: 7px; min-height: 170px; padding: 9px; }
+  .playingCard, .cardBack { width: 105px; border-radius: 12px; }
+  .cardArrow svg { width: 20px; }
+  .resultPlayers, .finalBalances { gap: 6px; }
+  .resultPlayers > div, .finalBalances > div { padding: 10px; }
+  .dualActions { grid-template-columns: 1fr; }
+  .fortuneWheel { width: min(300px, 78vw); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveDot, .wheelSpinning, .fortuneSpinning { animation: none !important; }
+  .racerToken, .mineCell, .gameChoice, .progressTrack span { transition: none !important; }
+}
+
+/* Ajustes de conteúdo dos componentes — mantêm a hierarquia visual mesmo
+   quando os rótulos são spans/p em vez de elementos tipográficos específicos. */
+.gameChoice > strong + span {
+  position: relative;
+  z-index: 1;
+  display: block;
+  min-height: 27px;
+  margin-top: 5px;
+  color: #9fb1a8;
+  font-size: 9.5px;
+  line-height: 1.35;
+}
+.gameChoice > em {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: 9px;
+  color: #dbc879;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.chosenGameBanner h2 { margin: 1px 0 0; color: #fff9e9; font-size: 17px; }
+.chosenGameBanner p { margin: 3px 0 0; color: #91a59b; font-size: 9.5px; line-height: 1.35; }
+
+.riskRail {
+  display: flex;
+  min-height: 185px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 15px 10px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 17px;
+  background: rgba(0,0,0,.13);
+  text-align: center;
+}
+.riskRail > span { color: #b1c1b9; font-size: 10px; font-weight: 750; }
+.riskRail > small { color: #82968c; font-size: 8.5px; text-transform: uppercase; letter-spacing: .1em; }
+.riskRail > strong { color: var(--casino-gold-soft); font-size: 24px; }
+.potential { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 11px; border-radius: 12px; background: rgba(255,255,255,.035); }
+.potential span { color: #8da197; font-size: 9px; }
+.potential strong { color: #f4d986; font-size: 11px; }
+
+.crashGraph svg polyline { fill: none; stroke: #52d997; stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 8px rgba(82,217,151,.3)); }
+.crashGraphDead svg polyline { stroke: #e55e69; filter: drop-shadow(0 0 8px rgba(229,94,105,.25)); }
+
+.racerCards button > span { display: block; margin-top: 6px; overflow: hidden; color: #c8d3cd; text-overflow: ellipsis; white-space: nowrap; font-size: 8.5px; }
+.racerCards button > strong { display: block; margin-top: 2px; color: #f2d88b; font-size: 10px; }
+.racerToken { transform: none; }
+.racerToken img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 3px rgba(0,0,0,.25)); }
+
+.numberTriples > div > div { display: flex; justify-content: center; gap: 6px; margin-top: 7px; }
+.numberTriples > div > div span { display: grid; place-items: center; min-width: 31px; height: 31px; padding: 0 6px; border-radius: 9px; color: #f0f5f2; background: rgba(255,255,255,.06); font-size: 14px; font-weight: 900; }
+.diceStage > span { color: #82978c; font-size: 21px; font-weight: 800; }
+.diceSum { display: grid; place-items: center; min-width: 58px; height: 58px; border-left: 1px solid rgba(255,255,255,.08); color: var(--casino-gold-soft); font-size: 28px; font-weight: 900; }
+.streakDots span { width: auto; height: auto; min-width: 38px; padding: 5px 7px; border-radius: 999px; color: #748a7f; background: rgba(255,255,255,.055); font-size: 8px; font-weight: 800; text-align: center; }
+.streakActive { color: #172219 !important; background: var(--casino-gold) !important; }
+
+.cardBack { color: transparent; }
+
+@media (max-width: 720px) {
+  .riskRail { min-height: 0; flex-direction: row; justify-content: space-between; padding: 10px 12px; }
+  .riskRail > strong { font-size: 17px; }
+}
+@media (max-width: 470px) {
+  .gameChoice > strong + span { display: none; }
+  .gameChoice > em { margin-top: 6px; font-size: 7px; }
+  .numberTriples > div > div { gap: 3px; }
+  .numberTriples > div > div span { min-width: 27px; height: 28px; padding: 0 4px; font-size: 12px; }
+}
+.mineBomb { color: #fff !important; background: linear-gradient(145deg, #b83f4c, #762732) !important; border-color: rgba(255,134,145,.55) !important; animation: casinoBomb .32s ease-out; }
+.reel { animation: casinoSlotPop .28s cubic-bezier(.16,1,.3,1); }
+@keyframes casinoBomb { 0% { transform: scale(.75); } 55% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes casinoSlotPop { from { transform: translateY(-10px) scale(.94); opacity: .55; } to { transform: translateY(0) scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .mineBomb, .reel { animation: none !important; } }
+
+/* --- Casino polish pass: movement, profile presence and richer feedback --- */
+.playerNameLine :global(img) { flex: 0 0 auto; }
+.playerNameLine { font-weight: 800; }
+
+.spinStatus,
+.lastChanceStatus {
+  padding: 7px 10px;
+  border: 1px solid rgba(240,201,104,.15);
+  border-radius: 999px;
+  color: #c8d4ce;
+  background: rgba(240,201,104,.055);
+  font-size: 9.5px;
+  font-weight: 750;
+  text-align: center;
+}
+
+/* Jackpot: os três rolos correm de verdade antes do resultado autoritativo. */
+.slotMachineActive { box-shadow: inset 0 1px rgba(255,255,255,.08), 0 22px 48px rgba(0,0,0,.24), 0 0 34px rgba(240,201,104,.08); }
+.reelSpinning { position: relative; }
+.reelStrip {
+  position: absolute;
+  inset: -720% 0 auto;
+  display: grid;
+  grid-template-rows: repeat(16, 100%);
+  height: 1600%;
+  animation: casinoReelScroll .46s linear infinite;
+}
+.reelStrip img {
+  display: block;
+  width: 74%;
+  height: 74%;
+  margin: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 4px rgba(84,52,14,.14));
+}
+@keyframes casinoReelScroll {
+  from { transform: translateY(0); }
+  to { transform: translateY(50%); }
+}
+
+/* Roleta tradicional com roda numerada e bolinha independente. */
+.rouletteTable { position: relative; width: min(324px, 80vw); aspect-ratio: 1; }
+.rouletteTable .rouletteWheel { width: 100%; }
+.rouletteNumberMark {
+  --roulette-radius: clamp(112px, 32vw, 137px);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: 18px;
+  margin-left: -9px;
+  color: rgba(255,248,226,.94);
+  font-size: 7px;
+  font-weight: 900;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0,0,0,.85);
+  transform: translateY(-50%) rotate(var(--roulette-angle)) translateY(calc(-1 * var(--roulette-radius))) rotate(calc(-1 * var(--roulette-angle)));
+}
+.rouletteBallOrbit {
+  position: absolute;
+  inset: 7px;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: 50%;
+}
+.rouletteBall {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  margin-left: -6.5px;
+  border: 1px solid rgba(255,255,255,.85);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #fff, #e6e1d8 58%, #9a978f);
+  box-shadow: 0 3px 8px rgba(0,0,0,.45);
+}
+.ballSpinning { animation: casinoBallOrbit .62s linear infinite; }
+.ballStopped { transform: rotate(18deg); transition: transform .4s ease-out; }
+@keyframes casinoBallOrbit { to { transform: rotate(-360deg); } }
+
+/* Corrida: o servidor ainda manda posições autoritativas, mas o navegador interpola. */
+.racerToken {
+  transition: left .34s linear, transform .18s ease !important;
+  will-change: left;
+}
+.racerToken img { animation: casinoRunnerBounce .36s ease-in-out infinite alternate; }
+@keyframes casinoRunnerBounce { from { transform: translateY(1px) rotate(-2deg); } to { transform: translateY(-2px) rotate(2deg); } }
+
+/* Dados: primeiro um cubo para, depois o segundo. */
+.dieRolling,
+.dieRollingSecond {
+  animation: casinoDiceRoll .22s linear infinite;
+  color: #f5db8d;
+}
+.dieRollingSecond { animation-delay: .08s; }
+.dieLanded { animation: casinoDiceLand .28s cubic-bezier(.16,1,.3,1); }
+@keyframes casinoDiceRoll {
+  0% { transform: translateY(0) rotate(0deg) scale(1); }
+  25% { transform: translateY(-7px) rotate(12deg) scale(1.05); }
+  50% { transform: translateY(1px) rotate(-8deg) scale(.98); }
+  75% { transform: translateY(-5px) rotate(7deg) scale(1.03); }
+  100% { transform: translateY(0) rotate(0deg) scale(1); }
+}
+@keyframes casinoDiceLand { 0% { transform: scale(.82) rotate(-8deg); } 65% { transform: scale(1.09) rotate(3deg); } 100% { transform: scale(1) rotate(0); } }
+
+/* Roda da Fortuna: valores agora ficam de fato sobre cada setor. */
+.fortuneWheel { --fortune-label-radius: clamp(105px, 31vw, 145px); }
+.fortuneWheel > .fortuneValue {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: 48px;
+  margin-left: -24px;
+  transform-origin: center;
+  color: #fff8e5;
+  font-size: 10px;
+  font-weight: 950;
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(0,0,0,.85);
+  transform: translateY(-50%) rotate(var(--fortune-angle)) translateY(calc(-1 * var(--fortune-label-radius))) rotate(calc(-1 * var(--fortune-angle)));
+}
+
+/* Última Chance deixa de ser um clique seco: há ponteiro, giro e suspense. */
+.lastChanceActive { border-color: rgba(224,106,116,.32); box-shadow: inset 0 1px rgba(255,255,255,.045), 0 22px 60px rgba(0,0,0,.22), 0 0 42px rgba(224,106,116,.08); }
+.lastChancePointer {
+  position: relative;
+  z-index: 4;
+  width: 34px;
+  margin: 15px auto -31px;
+  color: #ffe094;
+  font-size: 23px;
+  text-shadow: 0 2px 6px rgba(0,0,0,.55);
+}
+.lastChanceWheel { transform-origin: center; }
+.lastChanceWheel span { box-shadow: inset 0 1px rgba(255,255,255,.04); }
+
+@media (max-width: 470px) {
+  .rouletteNumberMark { --roulette-radius: 111px; font-size: 6px; }
+  .fortuneWheel { --fortune-label-radius: 111px; }
+  .fortuneWheel > .fortuneValue { width: 42px; margin-left: -21px; font-size: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reelStrip,
+  .ballSpinning,
+  .racerToken img,
+  .dieRolling,
+  .dieRollingSecond,
+  .dieLanded { animation: none !important; }
+  .racerToken { transition: none !important; }
+}
+
+/* --- Correções de sincronização visual: rolos, rodas, dados, cartas e moeda --- */
+
+/* Jackpot: faixa simples, contínua e acelerada. O Framer Motion movimenta a
+   faixa inteira; cada ícone ocupa exatamente uma janela do rolo. */
+.reelSpinning { position: relative; overflow: hidden; }
+.reelMotionStrip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform;
+}
+.reelMotionStrip img {
+  flex: 0 0 100%;
+  width: 76% !important;
+  height: 100% !important;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 5px rgba(84,52,14,.16));
+}
+.slotMachineActive .reel { box-shadow: inset 0 0 0 1px rgba(94,70,28,.12), inset 0 0 24px rgba(240,201,104,.12); }
+
+/* A bolinha termina no topo; a roda é quem alinha exatamente a casa sorteada
+   sob o ponteiro. A ordem dos números é a ordem europeia real. */
+.roulettePointer {
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  z-index: 8;
+  transform: translateX(-50%);
+  color: #ffe39a;
+  font-size: 23px;
+  line-height: 1;
+  text-shadow: 0 3px 6px rgba(0,0,0,.65);
+  pointer-events: none;
+}
+.rouletteBallOrbit { will-change: transform; }
+
+/* Dados 3D: cada clique lança somente um cubo. */
+.diceStage3d {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  min-height: 150px;
+  padding: 20px 14px;
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 19px;
+  background: radial-gradient(circle at 50% 30%, rgba(240,201,104,.07), transparent 58%), rgba(0,0,0,.13);
+}
+.dieScene {
+  width: 72px;
+  height: 72px;
+  perspective: 520px;
+}
+.diceCube {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform .48s cubic-bezier(.16,1,.3,1), opacity .25s ease, filter .25s ease;
+  will-change: transform;
+}
+.diceCubeWaiting { opacity: .38; filter: grayscale(.45); }
+.dieFace {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  place-items: center;
+  padding: 9px;
+  border: 1px solid rgba(98,72,29,.18);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #fff9e9, #e8dcba);
+  box-shadow: inset 0 2px rgba(255,255,255,.8);
+  backface-visibility: hidden;
+}
+.dieFace i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: transparent;
+}
+.dieFace i.pipOn { background: #183327; box-shadow: inset 0 1px 2px rgba(0,0,0,.28); }
+.dieFace1 { transform: translateZ(36px); }
+.dieFace6 { transform: rotateY(180deg) translateZ(36px); }
+.dieFace3 { transform: rotateY(90deg) translateZ(36px); }
+.dieFace4 { transform: rotateY(-90deg) translateZ(36px); }
+.dieFace2 { transform: rotateX(90deg) translateZ(36px); }
+.dieFace5 { transform: rotateX(-90deg) translateZ(36px); }
+.dieValue1 { transform: rotateX(0deg) rotateY(0deg); }
+.dieValue2 { transform: rotateX(-90deg) rotateY(0deg); }
+.dieValue3 { transform: rotateX(0deg) rotateY(-90deg); }
+.dieValue4 { transform: rotateX(0deg) rotateY(90deg); }
+.dieValue5 { transform: rotateX(90deg) rotateY(0deg); }
+.dieValue6 { transform: rotateX(0deg) rotateY(180deg); }
+.diceCubeRolling { animation: casinoDiceCubeRoll .34s linear infinite; opacity: 1; filter: none; }
+@keyframes casinoDiceCubeRoll {
+  0% { transform: translateY(0) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+  25% { transform: translateY(-13px) rotateX(115deg) rotateY(82deg) rotateZ(35deg); }
+  50% { transform: translateY(1px) rotateX(235deg) rotateY(176deg) rotateZ(88deg); }
+  75% { transform: translateY(-8px) rotateX(355deg) rotateY(267deg) rotateZ(132deg); }
+  100% { transform: translateY(0) rotateX(480deg) rotateY(360deg) rotateZ(180deg); }
+}
+.dicePlus { color: #82978c; font-size: 22px; font-weight: 900; }
+.diceStage3d .diceSum { height: 72px; }
+
+/* Hi-Lo: carta fechada gira enquanto o servidor segura o resultado; depois a
+   carta real entra pelo mesmo eixo e fica visível antes de encerrar a rodada. */
+.hiloFlipCard { transform-style: preserve-3d; perspective: 650px; }
+.hiloFlipCard .cardBack { backface-visibility: hidden; }
+.cardsStage > div { transform-style: preserve-3d; }
+
+/* Última Chance: cara/coroa usando os dois assets já existentes. */
+.coinChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  width: min(100%, 430px);
+  margin: 18px auto 0;
+}
+.coinChoiceGrid button {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 112px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 17px;
+  color: #dbe4df;
+  background: rgba(255,255,255,.04);
+  transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+.coinChoiceGrid button:not(:disabled):hover { transform: translateY(-2px); border-color: rgba(240,201,104,.35); }
+.coinChoiceGrid button:disabled { cursor: default; }
+.coinChoiceGrid img { width: 58px; height: 58px; object-fit: contain; filter: drop-shadow(0 7px 7px rgba(0,0,0,.22)); }
+.coinChoiceGrid span { font-size: 12px; font-weight: 900; color: #fff3c6; }
+.coinChoiceGrid small { color: #84998f; font-size: 8.5px; }
+.coinChoiceSelected { border-color: rgba(240,201,104,.55) !important; background: rgba(240,201,104,.1) !important; box-shadow: inset 0 0 0 1px rgba(240,201,104,.08); }
+.coinStage {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  margin: 12px auto 4px;
+  perspective: 700px;
+}
+.coinFlipper {
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  transform-style: preserve-3d;
+}
+.coinFlipper img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 16px 12px rgba(0,0,0,.28)); backface-visibility: visible; }
+.coinTwoSided { position: relative; }
+.coinTwoSided img { position: absolute; inset: 0; backface-visibility: hidden; }
+.coinFaceFront { transform: rotateY(0deg); }
+.coinFaceBack { transform: rotateY(180deg); }
+.coinWaiting {
+  border: 2px dashed rgba(240,201,104,.26);
+  border-radius: 50%;
+  color: rgba(255,232,161,.65);
+  background: rgba(240,201,104,.035);
+  font-size: 34px;
+  font-weight: 900;
+}
+
+@media (max-width: 470px) {
+  .diceStage3d { gap: 10px; min-height: 126px; padding: 16px 8px; }
+  .dieScene { width: 58px; height: 58px; }
+  .dieFace { padding: 7px; border-radius: 11px; }
+  .dieFace i { width: 8px; height: 8px; }
+  .dieFace1 { transform: translateZ(29px); }
+  .dieFace6 { transform: rotateY(180deg) translateZ(29px); }
+  .dieFace3 { transform: rotateY(90deg) translateZ(29px); }
+  .dieFace4 { transform: rotateY(-90deg) translateZ(29px); }
+  .dieFace2 { transform: rotateX(90deg) translateZ(29px); }
+  .dieFace5 { transform: rotateX(-90deg) translateZ(29px); }
+  .diceStage3d .diceSum { min-width: 44px; height: 58px; font-size: 23px; }
+  .coinFlipper { width: 94px; height: 94px; }
+  .coinChoiceGrid button { min-height: 100px; }
+  .coinChoiceGrid img { width: 48px; height: 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diceCubeRolling { animation: none !important; }
+  .reelMotionStrip { transform: none !important; }
+}
+
+/* --- V3: animações únicas e determinísticas -------------------------------- */
+/* Jackpot: cada símbolo entra por cima e sai por baixo. Os rolos param em
+   sequência no símbolo já sorteado pelo servidor, sem depender de uma faixa
+   percentual gigantesca (que podia parecer travada em alguns navegadores). */
+.slotCycleWindow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.slotCycleWindow img {
+  position: absolute;
+  left: 12%;
+  top: 12%;
+  width: 76% !important;
+  height: 76% !important;
+  object-fit: contain;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 6px 5px rgba(84,52,14,.16));
+}
+.slotCyclingSymbol { z-index: 2; }
+.slotFinalSymbol {
+  z-index: 3;
+  filter: drop-shadow(0 7px 6px rgba(84,52,14,.18)) drop-shadow(0 0 10px rgba(240,201,104,.16)) !important;
+}
+
+/* Dados: o giro agora é inteiramente conduzido pelo Framer Motion em um único
+   lançamento 3D. A transição CSS antiga é removida durante o tumble para não
+   disputar o transform a cada frame. */
+.diceCubeMotion {
+  transition: none !important;
+  opacity: 1;
+  filter: none;
+  will-change: transform;
+}
+
+/* Hi-Lo: uma carta de duas faces. O verso começa visível e a própria carta
+   sorteada está no outro lado; uma rotação de 180° revela a nova carta sem
+   montar uma segunda animação depois. */
+.cardsStage { perspective: 760px; }
+.hiloFlipCard {
+  position: relative;
+  width: min(130px, 31vw);
+  aspect-ratio: 2.5 / 3.5;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.hiloFlipFace {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+.hiloFlipFace > .cardBack,
+.hiloFlipFace > .playingCard {
+  width: 100%;
+  height: 100%;
+}
+.hiloFlipBackFace { transform: rotateY(0deg); }
+.hiloFlipRevealFace { transform: rotateY(180deg); }
+
+/* As rodas agora recebem o destino já no primeiro frame. Evita qualquer
+   animação CSS paralela/legada interferir no movimento único do Framer. */
+.rouletteWheel,
+.rouletteBallOrbit,
+.fortuneWheel {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Mantemos o estado final correto mesmo com redução de movimento; não
+     reativamos as animações CSS antigas que causavam dupla rotação. */
+  .rouletteWheel,
+  .rouletteBallOrbit,
+  .fortuneWheel { animation: none !important; }
+}

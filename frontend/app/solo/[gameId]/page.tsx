@@ -20,6 +20,7 @@ import { MEMORY_DIFFICULTIES, MemoryDifficulty } from "@/lib/memoryTypes";
 import { TERMO_VARIANTS, TermoVariant } from "@/lib/termoTypes";
 import { AIR_HOCKEY_DIFFICULTIES, AirHockeyDifficulty } from "@/lib/airHockeyTypes";
 import { CHESS_DIFFICULTIES, ChessDifficulty } from "@/lib/chessTypes";
+import { CASINO_LENGTHS, CasinoLength } from "@/lib/casinoTypes";
 import { fetchAccounts } from "@/lib/accountApi";
 import { getActiveAccount } from "@/lib/accountSession";
 import SoloMatchModal from "@/components/SoloMatchModal";
@@ -65,7 +66,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
   const { error, loading, createRoom, setConfig, startGame } = useRoom();
   const { images, loading: imagesLoading } = usePuzzleImages();
 
-  const [difficulty, setDifficulty] = useState<string>(() => (gameId === "termo" ? "one" : "medium"));
+  const [difficulty, setDifficulty] = useState<string>(() => gameId === "termo" ? "one" : gameId === "casino" ? "normal" : "medium");
   const [imageId, setImageId] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<{ width: number; height: number } | null>(null);
   const [starting, setStarting] = useState(false);
@@ -124,6 +125,10 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
       setConfig({ difficulty, matchMode: "solo" });
     } else if (gameId === "chess") {
       setConfig({ difficulty, matchMode: "solo" });
+    } else if (gameId === "casino") {
+      // Não existe dificuldade do BOT: a única escolha continua sendo a
+      // duração/meta da sessão. O servidor força Solo -> soloBot também.
+      setConfig({ difficulty, matchMode: "soloBot" });
     } else {
       setConfig({ difficulty });
     }
@@ -312,12 +317,27 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
           </div>
         )}
 
+        {gameId === "casino" && (
+          <div className="text-left">
+            <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">Duração da sessão</p>
+            <DifficultyGrid
+              entries={Object.entries(CASINO_LENGTHS) as [CasinoLength, (typeof CASINO_LENGTHS)[CasinoLength]][]}
+              selected={difficulty as CasinoLength}
+              onSelect={setDifficulty}
+            />
+            <div className="mt-4 rounded-xl2 border border-surface/70 bg-surface/50 p-4 text-center">
+              <p className="text-sm font-medium text-ink">🤖 Solo contra BOT · 8 mesas</p>
+              <p className="mt-1 text-xs text-ink-soft">Vocês começam com 1.000 fichas. O BOT aposta e decide como um jogador normal, sem conhecer bombas, cartas ou resultados futuros.</p>
+            </div>
+          </div>
+        )}
+
         {gameId === "rpg" && (
           <p className="text-center text-sm text-ink-soft">Sorteie sua classe e batalhe contra o BOT.</p>
         )}
 
         <Button onClick={handleStart} disabled={!canStart || loading || starting} className="mt-6 w-full">
-          {gameId === "rpg" ? "Batalhar!" : "Jogar!"}
+          {gameId === "rpg" ? "Batalhar!" : gameId === "casino" ? "Jogar contra o BOT" : "Jogar!"}
         </Button>
 
         {error && <p className="mt-4 text-center text-sm text-rose-deep">{error}</p>}
