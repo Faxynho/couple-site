@@ -18,11 +18,12 @@ export default function SoloPickerPage() {
   const [suggestionOpen, setSuggestionOpen] = useState(false);
   const filteredGames = useMemo(() => {
     const query = normalizeGameSearch(search);
-    if (!query) return GAMES;
-    return GAMES.filter((game) => normalizeGameSearch(`${game.name} ${game.description}`).includes(query));
+    const soloGames = GAMES.filter((game) => game.soloAvailable !== false);
+    if (!query) return soloGames;
+    return soloGames.filter((game) => normalizeGameSearch(`${game.name} ${game.description}`).includes(query));
   }, [search]);
   const handleRandomGame = () => {
-    const availableGames = GAMES.filter((game) => game.available);
+    const availableGames = GAMES.filter((game) => game.available && game.soloAvailable !== false);
     const game = availableGames[Math.floor(Math.random() * availableGames.length)];
     if (game) router.push(`/solo/${game.id}`);
   };
@@ -70,7 +71,7 @@ export default function SoloPickerPage() {
               className="overflow-hidden"
             >
               <GameSequenceSuggestion
-                sequence={GAMES.filter((game) => game.available).map((game) => game.id)}
+                sequence={GAMES.filter((game) => game.available && game.soloAvailable !== false).map((game) => game.id)}
                 sequenceProgress={[]}
                 isHost={false}
                 onShuffle={() => undefined}

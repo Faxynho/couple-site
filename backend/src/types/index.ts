@@ -5,11 +5,11 @@
  * cooperativo for adicionado à plataforma (Jogo da Velha, Forca, Sudoku...).
  */
 
-export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "rpg" | "airhockey" | "chess" | "boardrace"; // adicione novos ids aqui
+export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "whoami" | "rpg" | "airhockey" | "chess" | "boardrace"; // adicione novos ids aqui
 
 /** Lista de todos os ids de jogo, na mesma ordem do catálogo — usada para
  *  sortear a sugestão de sequência de jogos da sala Duo. */
-export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "rpg", "airhockey", "chess", "boardrace"];
+export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "whoami", "rpg", "airhockey", "chess", "boardrace"];
 
 /** "solo": sessão de um único jogador, sem convite nem convidado — a sala
  *  existe só para reaproveitar a mesma infraestrutura de motor de jogo.
@@ -69,6 +69,8 @@ export interface RoomSnapshot {
    *  O Quiz reaproveita o mesmo campo com valores "solo" | "together" | "duel".
    *  O Mini RPG reaproveita o mesmo campo com valores "1v1" | "soloBot" | "duoBot". */
   pendingMatchMode: string;
+  /** Categoria escolhida para o Quem Sou Eu? ("all" mistura tudo). */
+  pendingWhoAmICategory: string;
   /** Somente para Xadrez Duo: id do jogador escolhido pelo host para ser Rosa (brancas). */
   pendingChessPinkPlayerId: string | null;
   /** Aparência base do anfitrião no RPG; o outro jogador recebe a outra. */

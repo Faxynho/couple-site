@@ -12,6 +12,7 @@ import { QUIZ_DIFFICULTIES, QUIZ_MODES, QuizDifficulty, QuizMode } from "@/lib/q
 import { RPG_MODES, RPGMode } from "@/lib/rpgTypes";
 import { MEMORY_DIFFICULTIES, MEMORY_MODES, MemoryDifficulty, MemoryMode } from "@/lib/memoryTypes";
 import { TERMO_VARIANTS, TermoVariant } from "@/lib/termoTypes";
+import { WHOAMI_CATEGORIES, WHOAMI_DIFFICULTIES, WHOAMI_MODES, WhoAmICategory, WhoAmIDifficulty, WhoAmIMode } from "@/lib/whoAmITypes";
 import { RoomSnapshot } from "@/lib/types";
 import { useAccountPhotos } from "@/hooks/useAccountPhotos";
 import AccountAvatar from "@/components/account/AccountAvatar";
@@ -28,6 +29,7 @@ interface GameConfigPanelProps {
     colorMode?: string;
     seerId?: string | null;
     matchMode?: string;
+    whoamiCategory?: string;
     chessPinkPlayerId?: string | null;
     rpgAppearance?: "man" | "woman";
   }) => void;
@@ -360,6 +362,47 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
       setConfig={setConfig}
       connectedPlayers={connectedPlayers}
     />;
+  }
+
+  if (room.gameId === "whoami") {
+    const selectedMode = (room.pendingMatchMode as WhoAmIMode) ?? "duelHints";
+    const selectedDifficulty = (room.pendingDifficulty as WhoAmIDifficulty) ?? "easy";
+    const selectedCategory = (room.pendingWhoAmICategory as WhoAmICategory) ?? "all";
+    return (
+      <>
+        <div className="text-left">
+          <SectionLabel>{isHost ? "Modo de jogo" : "Modo escolhido pelo anfitrião"}</SectionLabel>
+          <OptionGrid
+            entries={Object.entries(WHOAMI_MODES) as [WhoAmIMode, (typeof WHOAMI_MODES)[WhoAmIMode]][]}
+            selected={selectedMode}
+            isHost={isHost}
+            onSelect={(key) => setConfig({ matchMode: key })}
+          />
+        </div>
+        <div className="mt-5 text-left">
+          <SectionLabel>{isHost ? "Dificuldade" : "Dificuldade escolhida pelo anfitrião"}</SectionLabel>
+          <OptionGrid
+            entries={Object.entries(WHOAMI_DIFFICULTIES) as [WhoAmIDifficulty, (typeof WHOAMI_DIFFICULTIES)[WhoAmIDifficulty]][]}
+            selected={selectedDifficulty}
+            isHost={isHost}
+            onSelect={(key) => setConfig({ difficulty: key })}
+          />
+        </div>
+        <div className="mt-5 text-left">
+          <SectionLabel>{isHost ? "Categoria" : "Categoria escolhida pelo anfitrião"}</SectionLabel>
+          <OptionGrid
+            cols={2}
+            entries={Object.entries(WHOAMI_CATEGORIES) as [WhoAmICategory, (typeof WHOAMI_CATEGORIES)[WhoAmICategory]][]}
+            selected={selectedCategory}
+            isHost={isHost}
+            onSelect={(key) => setConfig({ whoamiCategory: key })}
+          />
+          <p className="mt-3 text-center text-[11px] text-ink-soft">
+            No Fácil entram só respostas bem conhecidas. No Clássico, a dificuldade muda apenas o quão conhecida é a identidade.
+          </p>
+        </div>
+      </>
+    );
   }
 
   if (room.gameId === "boardrace") {

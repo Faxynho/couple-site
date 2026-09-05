@@ -87,10 +87,10 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
     }
   }, []);
 
-  if (!game) {
+  if (!game || game.soloAvailable === false) {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-5 text-center">
-        <p className="text-ink-soft">Jogo não encontrado.</p>
+        <p className="text-ink-soft">{game?.soloAvailable === false ? "Esse jogo foi feito para a sala Duo." : "Jogo não encontrado."}</p>
         <Button onClick={() => router.push("/solo")} className="mt-4">
           Voltar
         </Button>

@@ -51,6 +51,8 @@ export class Room {
   pendingSeerId: string | null = null;
   /** Específico dos jogos com modo de partida (incluindo Termo em Duelo). */
   pendingMatchMode = "together";
+  /** Categoria do Quem Sou Eu?; "all" mistura todas. */
+  pendingWhoAmICategory = "all";
   /** Id do jogador que será Rosa no Xadrez Duo. Rosa equivale às brancas. */
   pendingChessPinkPlayerId: string | null = null;
   /** Aparência do host para o RPG; o outro humano recebe a oposta. */
@@ -143,7 +145,7 @@ export class Room {
       // A Corrida de Tabuleiro pode ficar pausada naturalmente aguardando a
       // identidade persistente reconectar. Seu estado autoritativo permanece
       // jogável e o room:sync recoloca o mesmo jogador na partida.
-      if ((this.status === "playing" && this.gameId !== "boardrace") || this.status === "ready") {
+      if ((this.status === "playing" && this.gameId !== "boardrace" && this.gameId !== "whoami") || this.status === "ready") {
         this.status = "waiting";
       }
     }
@@ -190,6 +192,7 @@ export class Room {
    *  que faz sentido sozinho; uma sala Duo entra no modo cooperativo padrão
    *  (nunca em "solo"/"soloBot", que não fazem sentido com o convidado presente). */
   private defaultMatchModeFor(gameId: GameId): string {
+    if (gameId === "whoami") return this.roomMode === "solo" ? "togetherHints" : "duelHints";
     if (gameId === "boardrace") return this.roomMode === "solo" ? "solo" : "duel";
     if (gameId === "quiz" || gameId === "memory") return this.roomMode === "solo" ? "solo" : "together";
     if (gameId === "termo") return this.roomMode === "solo" ? "solo" : "duel";
@@ -208,10 +211,11 @@ export class Room {
     this.pendingImageId = null;
     this.pendingImageWidth = null;
     this.pendingImageHeight = null;
-    this.pendingDifficulty = gameId === "termo" ? "one" : DEFAULT_PENDING_DIFFICULTY;
+    this.pendingDifficulty = gameId === "termo" ? "one" : gameId === "whoami" ? "easy" : DEFAULT_PENDING_DIFFICULTY;
     this.pendingColorMode = "competitive";
     this.pendingSeerId = null;
     this.pendingMatchMode = this.defaultMatchModeFor(gameId);
+    this.pendingWhoAmICategory = "all";
     this.pendingChessPinkPlayerId = gameId === "chess" && this.roomMode === "duo"
       ? [...this.players.keys()][0] ?? null
       : null;
@@ -262,6 +266,7 @@ export class Room {
     colorMode?: string;
     seerId?: string | null;
     matchMode?: string;
+    whoamiCategory?: string;
     chessPinkPlayerId?: string | null;
     rpgAppearance?: "man" | "woman";
   }) {
@@ -272,6 +277,7 @@ export class Room {
     if (config.colorMode !== undefined) this.pendingColorMode = config.colorMode;
     if (config.seerId !== undefined) this.pendingSeerId = config.seerId;
     if (config.matchMode !== undefined) this.pendingMatchMode = config.matchMode;
+    if (config.whoamiCategory !== undefined) this.pendingWhoAmICategory = config.whoamiCategory;
     if (config.chessPinkPlayerId !== undefined) this.pendingChessPinkPlayerId = config.chessPinkPlayerId;
     if (config.rpgAppearance !== undefined) this.pendingRpgAppearance = config.rpgAppearance;
   }
@@ -303,6 +309,7 @@ export class Room {
       this.gameId === "crossword" ||
       this.gameId === "wordsearch" ||
       this.gameId === "quiz" ||
+      this.gameId === "whoami" ||
       this.gameId === "rpg" ||
       this.gameId === "sudoku" ||
       this.gameId === "memory" ||
@@ -319,6 +326,7 @@ export class Room {
       imageHeight: this.pendingImageHeight ?? undefined,
       difficulty: this.pendingDifficulty,
       mode: matchMode ?? colorMode,
+      category: this.gameId === "whoami" ? this.pendingWhoAmICategory : undefined,
       seerId: seerId ?? undefined,
       guesserId: guesserId ?? undefined,
       // Fixado no início da partida — usado pelo Palavras Cruzadas/Caça-Palavras
@@ -410,6 +418,7 @@ export class Room {
       pendingColorMode: this.pendingColorMode,
       pendingSeerId: this.pendingSeerId,
       pendingMatchMode: this.pendingMatchMode,
+      pendingWhoAmICategory: this.pendingWhoAmICategory,
       pendingChessPinkPlayerId: this.pendingChessPinkPlayerId,
       pendingRpgAppearance: this.pendingRpgAppearance,
       sequence: this.sequence,

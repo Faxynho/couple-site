@@ -406,6 +406,48 @@ function extractRPG(state: RPGStateShape, accountByPlayerId: Map<string, Account
   return { rank, durationMs, bucket: "duel", players };
 }
 
+interface WhoAmIStateShape {
+  difficulty?: string;
+  mode: "duelHints" | "classicDuel" | "togetherHints";
+  expectedPlayers: string[];
+  winnerId: string | null;
+  resultReason?: string | null;
+  startedAt: number;
+  finishedAt: number | null;
+}
+
+function extractWhoAmI(
+  state: WhoAmIStateShape,
+  accountByPlayerId: Map<string, AccountId | undefined>
+): MatchOutcome {
+  const durationMs = Math.max(0, (state.finishedAt ?? Date.now()) - state.startedAt);
+  const rank = state.difficulty ?? NO_RANK;
+
+  if (state.mode === "togetherHints") {
+    return {
+      rank,
+      durationMs,
+      bucket: "together",
+      players: [],
+      togetherMetric: state.resultReason === "togetherSolved" ? { value: durationMs, scoreType: "time" } : null,
+    };
+  }
+
+  const players: PlayerOutcome[] = [];
+  for (const id of state.expectedPlayers) {
+    const accountId = accountFor(id, accountByPlayerId);
+    if (!accountId) continue;
+    const result = state.winnerId === null ? "draw" : state.winnerId === id ? "win" : "loss";
+    players.push({
+      accountId,
+      metricValue: result === "win" ? durationMs : null,
+      scoreType: "time",
+      result,
+    });
+  }
+  return { rank, durationMs, bucket: "duel", players };
+}
+
 interface BoardRaceStateShape {
   mode: "solo" | "duel";
   playerOrder: string[];
@@ -451,6 +493,8 @@ function extractGameOutcome(
       return extractResultsBased(gameState as ResultsBasedState, accountByPlayerId);
     case "quiz":
       return extractQuiz(gameState as QuizStateShape, accountByPlayerId);
+    case "whoami":
+      return extractWhoAmI(gameState as WhoAmIStateShape, accountByPlayerId);
     case "colors":
       return extractColors(gameState as ColorsStateShape, roomMode, accountByPlayerId);
     case "memory":

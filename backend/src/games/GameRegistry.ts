@@ -7,6 +7,7 @@ import { TermoGame } from "./termo/TermoGame";
 import { CrosswordGame } from "./crossword/CrosswordGame";
 import { WordSearchGame } from "./wordsearch/WordSearchGame";
 import { QuizGame } from "./quiz/QuizGame";
+import { WhoAmIGame } from "./whoami/WhoAmIGame";
 import { RPGGame } from "./rpg/RPGGame";
 import { AirHockeyGame } from "./airhockey/AirHockeyGame";
 import { ChessGame } from "./chess/ChessGame";
@@ -28,6 +29,7 @@ export const GameRegistry: Record<GameId, GameEngine<unknown, unknown>> = {
   crossword: new CrosswordGame() as unknown as GameEngine<unknown, unknown>,
   wordsearch: new WordSearchGame() as unknown as GameEngine<unknown, unknown>,
   quiz: new QuizGame() as unknown as GameEngine<unknown, unknown>,
+  whoami: new WhoAmIGame() as unknown as GameEngine<unknown, unknown>,
   rpg: new RPGGame() as unknown as GameEngine<unknown, unknown>,
   airhockey: new AirHockeyGame() as unknown as GameEngine<unknown, unknown>,
   chess: new ChessGame() as unknown as GameEngine<unknown, unknown>,

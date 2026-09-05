@@ -1,8 +1,8 @@
-export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "rpg" | "airhockey" | "chess" | "boardrace";
+export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "whoami" | "rpg" | "airhockey" | "chess" | "boardrace";
 
 /** Mesma ordem do catálogo (`GAMES`, em games.ts) — usada para sortear a
  *  sugestão de sequência de jogos da sala Duo. */
-export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "rpg", "airhockey", "chess", "boardrace"];
+export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "whoami", "rpg", "airhockey", "chess", "boardrace"];
 
 /** "solo": sessão de um único jogador — sem convite, sem convidado, sem sala
  *  persistente. "duo": sala pensada para dois jogadores, criada ANTES de
@@ -40,6 +40,8 @@ export interface RoomSnapshot {
   pendingColorMode: string;
   pendingSeerId: string | null;
   pendingMatchMode: string;
+  /** Categoria escolhida para o Quem Sou Eu? ("all" mistura tudo). */
+  pendingWhoAmICategory: string;
   /** Id escolhido pelo host para jogar de Rosa no Xadrez Duo. */
   pendingChessPinkPlayerId?: string | null;
   /** Aparência base do anfitrião no RPG; o outro jogador recebe a outra. */
@@ -93,4 +95,6 @@ export interface GameDefinition {
   emoji: string;
   image: string;
   available: boolean;
+  /** false = não aparece no catálogo Solo. */
+  soloAvailable?: boolean;
 }

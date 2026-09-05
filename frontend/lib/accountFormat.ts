@@ -5,6 +5,7 @@ import { COLOR_DIFFICULTIES } from "@/lib/colorTypes";
 import { CROSSWORD_DIFFICULTIES } from "@/lib/crosswordTypes";
 import { WORDSEARCH_DIFFICULTIES } from "@/lib/wordsearchTypes";
 import { QUIZ_DIFFICULTIES } from "@/lib/quizTypes";
+import { WHOAMI_DIFFICULTIES } from "@/lib/whoAmITypes";
 import { MEMORY_DIFFICULTIES } from "@/lib/memoryTypes";
 import { TERMO_VARIANTS } from "@/lib/termoTypes";
 import { AIR_HOCKEY_DIFFICULTIES } from "@/lib/airHockeyTypes";
@@ -23,6 +24,7 @@ const RANK_MAPS: Partial<Record<GameId, Record<string, RankInfo>>> = {
   crossword: CROSSWORD_DIFFICULTIES,
   wordsearch: WORDSEARCH_DIFFICULTIES,
   quiz: QUIZ_DIFFICULTIES,
+  whoami: WHOAMI_DIFFICULTIES,
   memory: MEMORY_DIFFICULTIES,
   termo: TERMO_VARIANTS,
   airhockey: AIR_HOCKEY_DIFFICULTIES,
@@ -37,6 +39,7 @@ export const GAME_RANKS: Record<GameId, string[]> = {
   crossword: ["easy", "medium", "hard"],
   wordsearch: ["easy", "medium", "hard"],
   quiz: ["easy", "medium", "hard"],
+  whoami: ["easy", "medium", "hard"],
   memory: ["easy", "medium", "hard"],
   termo: ["one", "dueto", "quarteto"],
   rpg: [NO_RANK],

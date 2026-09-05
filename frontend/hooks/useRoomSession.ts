@@ -106,6 +106,7 @@ export function useRoomSession(code: string) {
       colorMode?: string;
       seerId?: string | null;
       matchMode?: string;
+      whoamiCategory?: string;
       chessPinkPlayerId?: string | null;
       rpgAppearance?: "man" | "woman";
     }) => {

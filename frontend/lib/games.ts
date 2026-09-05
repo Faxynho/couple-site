@@ -71,6 +71,15 @@ export const GAMES: GameDefinition[] = [
     available: true,
   },
   {
+    id: "whoami",
+    name: "Quem Sou Eu?",
+    description: "Descubram personagens e coisas por pistas — em duelo, no clássico falado ou juntos.",
+    emoji: "🎭",
+    image: "/images/whoami-card.svg",
+    available: true,
+    soloAvailable: false,
+  },
+  {
     id: "rpg",
     name: "Mini RPG: Duelo",
     description: "Sorteie sua classe e batalhe com cartas aleatórias — 1x1, ou em dupla contra o BOT.",

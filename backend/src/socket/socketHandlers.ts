@@ -21,6 +21,7 @@ import { advanceAirHockeyInputTimeline, AIR_HOCKEY_AUTHORITATIVE_DELAY_MS, Queue
 import { isAccountId } from "../accounts/types";
 import { isFinishedSoloState, isSoloResumePayload, rebaseSoloState } from "../solo/soloMatch";
 import { BoardRaceState } from "../games/boardrace/types";
+import { getWhoAmIStateForPlayer, isValidWhoAmICategory, isValidWhoAmIMode, WhoAmIState } from "../games/whoami/WhoAmIGame";
 import { getBoardRaceStateForPlayer, isValidBoardRaceMode } from "../games/boardrace/BoardRaceGame";
 
 interface SocketData {
@@ -107,7 +108,7 @@ function emitToPlayer(io: Server, room: { getSocketId(playerId: string): string 
 
 function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManager) {
   const room = roomManager.getRoom(roomCode);
-  if (!room) return;
+  if (!room || room.gameState == null) return;
   if (room.gameId === "colors") {
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getColorsStateForPlayer(room.gameState, player.id));
@@ -140,6 +141,10 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getSudokuStateForPlayer(room.gameState, player.id));
     }
+  } else if (room.gameId === "whoami") {
+    for (const player of room.players.values()) {
+      emitToPlayer(io, room, player.id, "game:state", getWhoAmIStateForPlayer(room.gameState as WhoAmIState, player.id));
+    }
   } else if (room.gameId === "boardrace") {
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getBoardRaceStateForPlayer(room.gameState as BoardRaceState, player.id));
@@ -168,6 +173,7 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
 
 /** Retorna a versão pública (sem `game.gameState` cru) do estado de acordo com o jogo/jogador. */
 function getMaskedStateForPlayer(room: { gameId: GameId | null; gameState: unknown }, playerId: string): unknown {
+  if (room.gameState == null) return null;
   if (room.gameId === "colors") return getColorsStateForPlayer(room.gameState, playerId);
   if (room.gameId === "crossword") return getCrosswordStateForPlayer(room.gameState, playerId);
   if (room.gameId === "wordsearch") return getWordSearchStateForPlayer(room.gameState, playerId);
@@ -176,6 +182,7 @@ function getMaskedStateForPlayer(room: { gameId: GameId | null; gameState: unkno
   if (room.gameId === "memory") return getMemoryStateForPlayer(room.gameState, playerId);
   if (room.gameId === "termo") return getTermoStateForPlayer(room.gameState, playerId);
   if (room.gameId === "sudoku") return getSudokuStateForPlayer(room.gameState, playerId);
+  if (room.gameId === "whoami") return getWhoAmIStateForPlayer(room.gameState as WhoAmIState, playerId);
   if (room.gameId === "boardrace") return getBoardRaceStateForPlayer(room.gameState as BoardRaceState, playerId);
   return room.gameState;
 }
@@ -789,12 +796,12 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     // recebendo a atualização em tempo real via room:update.
     socket.on(
       "room:setConfig",
-      (payload: StartPayload & { colorMode?: string; seerId?: string | null; matchMode?: string; chessPinkPlayerId?: string | null; rpgAppearance?: "man" | "woman" }) => {
+      (payload: StartPayload & { colorMode?: string; seerId?: string | null; matchMode?: string; whoamiCategory?: string; chessPinkPlayerId?: string | null; rpgAppearance?: "man" | "woman" }) => {
         const code = socket.data.roomCode;
         const room = code ? roomManager.getRoom(code) : undefined;
         if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
 
-        const options: { colorMode?: string; seerId?: string | null; matchMode?: string; chessPinkPlayerId?: string; rpgAppearance?: "man" | "woman" } = {};
+        const options: { colorMode?: string; seerId?: string | null; matchMode?: string; whoamiCategory?: string; chessPinkPlayerId?: string; rpgAppearance?: "man" | "woman" } = {};
         if (payload?.colorMode && isValidColorMode(payload.colorMode)) options.colorMode = payload.colorMode;
         if (payload?.seerId === null || (payload?.seerId && room.players.has(payload.seerId))) {
           options.seerId = payload.seerId;
@@ -804,6 +811,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
           (isValidCrosswordMode(payload.matchMode) ||
             isValidWordSearchMode(payload.matchMode) ||
             isValidQuizMode(payload.matchMode) ||
+            isValidWhoAmIMode(payload.matchMode) ||
             isValidRPGMode(payload.matchMode) ||
             isValidSudokuMode(payload.matchMode) ||
             isValidMemoryMode(payload.matchMode) ||
@@ -838,6 +846,9 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
             (payload.rpgAppearance !== "man" && payload.rpgAppearance !== "woman")
           ) return;
           options.rpgAppearance = payload.rpgAppearance;
+        }
+        if (room.gameId === "whoami" && payload?.whoamiCategory && isValidWhoAmICategory(payload.whoamiCategory)) {
+          options.whoamiCategory = payload.whoamiCategory;
         }
         room.setPendingConfig({ ...baseOptions, ...options });
         broadcastRoom(io, code!, roomManager);
@@ -928,6 +939,10 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
       if (room.gameId === "puzzle" && !room.pendingImageId) {
         callback?.({ ok: false, error: "Escolha uma imagem antes de começar." });
+        return;
+      }
+      if (room.gameId === "whoami" && room.roomMode === "duo" && !room.bothConnected()) {
+        callback?.({ ok: false, error: "O Quem Sou Eu? precisa dos dois jogadores conectados." });
         return;
       }
       if ((room.gameId === "termo" || room.gameId === "airhockey" || room.gameId === "chess" || room.gameId === "boardrace") && room.roomMode === "duo" && !room.bothConnected()) {
@@ -1405,6 +1420,42 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (current?.mode && isValidAirHockeyMode(current.mode)) options.mode = current.mode;
       room.startGame(options);
       beginDelayedAirHockeyTimeline(room);
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
+    // ---- Eventos exclusivos do Quem Sou Eu? ----
+    // O cliente só envia intenção (revelar, palpitar ou desistir). A resposta
+    // correta e as pistas privadas nunca são confiadas ao navegador.
+    socket.on("whoami:action", (payload: { type?: string; guess?: string }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "whoami" || room.status !== "playing") return;
+      if (!payload || (payload.type !== "revealHint" && payload.type !== "submitGuess" && payload.type !== "giveUp")) return;
+      if (payload.type === "submitGuess" && (typeof payload.guess !== "string" || payload.guess.length > 100)) return;
+
+      const action = payload.type === "submitGuess"
+        ? { type: "submitGuess" as const, guess: payload.guess as string }
+        : payload.type === "revealHint"
+          ? { type: "revealHint" as const }
+          : { type: "giveUp" as const };
+      room.applyAction(action, socket.data.playerId ?? socket.id);
+      broadcastGameState(io, code!, roomManager);
+      if ((room.status as string) === "finished") {
+        broadcastRoom(io, code!, roomManager);
+      }
+    });
+
+    socket.on("whoami:newGame", () => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.gameId !== "whoami" || room.status !== "finished" || (room.roomMode === "duo" && !room.bothConnected())) return;
+      const current = room.gameState as WhoAmIState | null;
+      room.startGame({
+        difficulty: current?.difficulty,
+        mode: current?.mode,
+        category: current?.category,
+      });
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);
     });
