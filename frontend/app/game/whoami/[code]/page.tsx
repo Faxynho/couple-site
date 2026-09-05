@@ -407,7 +407,7 @@ function ResultOverlay({
     subtitle = state.answer ? `Era ${state.answer}. Na próxima vocês pegam!` : "";
   } else if (winner) {
     title = selfWon ? "Você venceu! ✨" : `${winner.name} venceu!`;
-  } else if (state.mode !== "togetherHints") {
+  } else {
     title = "Empate! 🤝";
   }
 
