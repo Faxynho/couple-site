@@ -114,7 +114,7 @@ export const GAMES: GameDefinition[] = [
   {
     id: "casino",
     name: "Cassino",
-    description: "Dispute fichas em oito mesas contra seu par ou o BOT e seja o primeiro a alcançar a meta.",
+    description: "Dispute fichas em dez mesas contra seu par ou o BOT e seja o primeiro a alcançar a meta.",
     emoji: "🎰",
     image: "/images/casino-card.svg",
     available: true,

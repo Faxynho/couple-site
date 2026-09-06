@@ -46,6 +46,9 @@ export function useCasinoGame(roomCode: string) {
   const diceContinue = useCallback(() => send({ type: "diceContinue" }), [send]);
   const hiloGuess = useCallback((direction: "higher" | "lower") => send({ type: "hiloGuess", direction }), [send]);
   const hiloContinue = useCallback(() => send({ type: "hiloContinue" }), [send]);
+  const plinkoDrop = useCallback(() => send({ type: "plinkoDrop" }), [send]);
+  const briefcaseOpen = useCallback((index: number) => send({ type: "briefcaseOpen", index }), [send]);
+  const briefcaseContinue = useCallback(() => send({ type: "briefcaseContinue" }), [send]);
   const nextRound = useCallback(() => send({ type: "nextRound" }), [send]);
   const lastChanceChoose = useCallback((side: LastChanceCoinSide) => send({ type: "lastChanceChoose", side }), [send]);
   const lastChanceSpin = useCallback(() => send({ type: "lastChanceSpin" }), [send]);
@@ -65,6 +68,9 @@ export function useCasinoGame(roomCode: string) {
     diceContinue,
     hiloGuess,
     hiloContinue,
+    plinkoDrop,
+    briefcaseOpen,
+    briefcaseContinue,
     nextRound,
     lastChanceChoose,
     lastChanceSpin,

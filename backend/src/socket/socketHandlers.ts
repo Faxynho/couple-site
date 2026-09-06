@@ -1562,7 +1562,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       const allowed = new Set([
         "vote", "lockBet", "minesOpen", "cashOut", "crashCashOut",
         "roulettePick", "slotsSpin", "racePick", "diceRoll", "diceContinue",
-        "hiloGuess", "hiloContinue", "nextRound", "lastChanceChoose", "lastChanceSpin",
+        "hiloGuess", "hiloContinue", "plinkoDrop", "briefcaseOpen", "briefcaseContinue",
+        "nextRound", "lastChanceChoose", "lastChanceSpin",
       ]);
       if (typeof type !== "string" || !allowed.has(type)) return;
       room.applyAction(payload, socket.data.playerId ?? socket.id);

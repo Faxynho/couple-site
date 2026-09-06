@@ -1,6 +1,6 @@
 export type CasinoLength = "quick" | "normal" | "long";
 export type CasinoMode = "duel" | "soloBot";
-export type CasinoMiniGame = "mines" | "crash" | "roulette" | "slots" | "race" | "dice" | "hilo" | "fortune";
+export type CasinoMiniGame = "mines" | "crash" | "roulette" | "slots" | "race" | "dice" | "hilo" | "fortune" | "plinko" | "briefcase";
 export type CasinoPhase = "selecting" | "betting" | "playing" | "roundResult" | "lastChance" | "finished";
 
 export const CASINO_LENGTHS: Record<CasinoLength, { label: string; emoji: string; hint: string; target: number }> = {
@@ -13,11 +13,13 @@ export const CASINO_GAMES: Record<CasinoMiniGame, { label: string; emoji: string
   mines: { label: "Mines", emoji: "💣", short: "Abra casas, aumente o multiplicador e saque antes da bomba.", accent: "emerald" },
   crash: { label: "Crash", emoji: "📈", short: "O multiplicador sobe até quebrar. Saque antes do estouro.", accent: "cyan" },
   roulette: { label: "Roleta", emoji: "🎡", short: "Uma bolinha, um número e apostas na mesma mesa.", accent: "red" },
-  slots: { label: "Jackpot", emoji: "🎰", short: "Ganhe sequências no caça-níquel e decida quando parar.", accent: "violet" },
+  slots: { label: "Jackpot", emoji: "🎰", short: "Grade 3×3: forme linhas, acumule multiplicadores e busque o Jackpot.", accent: "violet" },
   race: { label: "Corrida", emoji: "🏁", short: "Escolha seu corredor, aposte e acompanhe a disputa ao vivo.", accent: "amber" },
   dice: { label: "Dados", emoji: "🎲", short: "Acerte os números verdes, fuja dos vermelhos e monte sua sequência.", accent: "blue" },
   hilo: { label: "Hi-Lo", emoji: "🃏", short: "Maior ou menor? Acerte cartas em sequência e saque na hora certa.", accent: "pink" },
   fortune: { label: "Roda da Fortuna", emoji: "✨", short: "Uma roda compartilhada com multiplicadores e um jackpot raro.", accent: "gold" },
+  plinko: { label: "Plinko", emoji: "🔻", short: "Solte a bolinha, acompanhe as colisões e torça pelo multiplicador da borda.", accent: "cyan" },
+  briefcase: { label: "Maletas", emoji: "💼", short: "Mesa compartilhada: cada maleta aberta muda as opções do adversário.", accent: "amber" },
 };
 
 export interface CasinoPlayerState {
@@ -81,11 +83,14 @@ export type SlotSymbolId = "cherry" | "strawberry" | "plum" | "clover" | "heart-
 export interface SlotsMiniState {
   kind: "slots";
   players: Record<string, {
+    spinsUsed: number;
     streak: number;
     multiplier: number;
     lastSymbols: SlotSymbolId[];
     lastWinFactor: number | null;
+    lastWinningLines: number[];
     lastSpinWon: boolean | null;
+    jackpotHit: boolean;
     awaitingDecision: boolean;
     spinning: boolean;
     spinStartedAt: number | null;
@@ -95,6 +100,51 @@ export interface SlotsMiniState {
     revealEndsAt: number | null;
     done: boolean;
   }>;
+}
+
+export const SLOT_WIN_LINES: ReadonlyArray<readonly [number, number, number]> = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6],
+];
+
+export const PLINKO_MULTIPLIERS = [12, 5, 3, 1.5, 1, 0.5, 0.2, 0.5, 1, 1.5, 3, 5, 12] as const;
+export interface PlinkoMiniState {
+  kind: "plinko";
+  rows: 12;
+  multipliers: number[];
+  players: Record<string, {
+    dropping: boolean;
+    dropStartedAt: number | null;
+    dropEndsAt: number | null;
+    path: number[] | null;
+    pendingBucket: number | null;
+    bucketIndex: number | null;
+    multiplier: number | null;
+    revealEndsAt: number | null;
+    done: boolean;
+  }>;
+}
+
+export type BriefcaseValue = number | "lose";
+export interface BriefcaseMiniState {
+  kind: "briefcase";
+  contents: Array<BriefcaseValue | null>;
+  openedBy: Array<string | null>;
+  startPlayerId: string;
+  turnPlayerId: string | null;
+  players: Record<string, {
+    accumulatedMultiplier: number;
+    awaitingDecision: boolean;
+    done: boolean;
+    cashed: boolean;
+    openedCount: number;
+    lastOpenedIndex: number | null;
+  }>;
+  lastOpenedIndex: number | null;
+  lastOpenedBy: string | null;
+  lastValue: BriefcaseValue | null;
+  revealEndsAt: number | null;
 }
 
 export type CasinoRacerId = "crown" | "cherry" | "clover" | "star" | "diamond";
@@ -198,7 +248,7 @@ export interface LastChanceMiniState {
   pendingCoinResults: Record<string, LastChanceCoinSide | null>;
 }
 
-export type CasinoMiniState = MinesMiniState | CrashMiniState | RouletteMiniState | SlotsMiniState | RaceMiniState | DiceMiniState | HiLoMiniState | FortuneMiniState | LastChanceMiniState;
+export type CasinoMiniState = MinesMiniState | CrashMiniState | RouletteMiniState | SlotsMiniState | RaceMiniState | DiceMiniState | HiLoMiniState | FortuneMiniState | PlinkoMiniState | BriefcaseMiniState | LastChanceMiniState;
 
 export interface CasinoState {
   mode: CasinoMode;

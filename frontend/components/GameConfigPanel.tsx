@@ -418,7 +418,7 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
           onSelect={(key) => setConfig({ difficulty: key })}
         />
         <div className="mt-4 rounded-xl2 border border-surface/70 bg-surface/50 p-4 text-center">
-          <p className="text-sm font-medium text-ink">🎰 Duelo de fichas · 8 mesas</p>
+          <p className="text-sm font-medium text-ink">🎰 Duelo de fichas · 10 mesas</p>
           <p className="mt-1 text-xs text-ink-soft">Os dois começam com 1.000 fichas. A cada rodada, escolham em segredo entre 3 jogos e arrisquem até alguém alcançar a meta.</p>
         </div>
       </div>

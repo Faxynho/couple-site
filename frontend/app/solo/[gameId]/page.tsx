@@ -326,7 +326,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
               onSelect={setDifficulty}
             />
             <div className="mt-4 rounded-xl2 border border-surface/70 bg-surface/50 p-4 text-center">
-              <p className="text-sm font-medium text-ink">🤖 Solo contra BOT · 8 mesas</p>
+              <p className="text-sm font-medium text-ink">🤖 Solo contra BOT · 10 mesas</p>
               <p className="mt-1 text-xs text-ink-soft">Vocês começam com 1.000 fichas. O BOT aposta e decide como um jogador normal, sem conhecer bombas, cartas ou resultados futuros.</p>
             </div>
           </div>

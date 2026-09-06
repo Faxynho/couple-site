@@ -23,8 +23,15 @@ export type CasinoSound =
   | "hiloWin"
   | "hiloLose"
   | "crash"
+  | "plinkoDrop"
+  | "plinkoLand"
+  | "briefcaseOpen"
+  | "briefcaseLose"
   | "betWin"
   | "betLose"
+  | "moneyGain"
+  | "moneyLoss"
+  | "victory"
   | "coinFlip"
   | "coinLand"
   | "revive"
@@ -98,8 +105,18 @@ export function playCasinoSound(sound: CasinoSound) {
       case "hiloWin": tone(c, 620, .07, 0, .03); tone(c, 840, .09, .065, .035); break;
       case "hiloLose": tone(c, 250, .1, 0, .03, "triangle"); tone(c, 175, .14, .08, .025); break;
       case "crash": noise(c, .2, 0, .035); tone(c, 180, .22, 0, .035, "sawtooth", 70); break;
+      case "plinkoDrop": for (let i = 0; i < 9; i += 1) tone(c, 560 + (i % 4) * 75, .028, i * .085, .012, "triangle"); break;
+      case "plinkoLand": tone(c, 410, .055, 0, .025, "square"); tone(c, 720, .08, .05, .03, "triangle"); break;
+      case "briefcaseOpen": tone(c, 280, .05, 0, .022, "square"); tone(c, 520, .09, .045, .028, "triangle"); break;
+      case "briefcaseLose": noise(c, .14, 0, .025); tone(c, 170, .18, .02, .03, "sawtooth", 72); break;
       case "betWin": tone(c, 523, .075, 0, .035); tone(c, 659, .085, .06, .04); tone(c, 784, .1, .13, .045); tone(c, 1046, .13, .21, .035); break;
       case "betLose": tone(c, 247, .1, 0, .032, "triangle"); tone(c, 196, .14, .085, .03, "triangle"); tone(c, 131, .18, .18, .024, "sine"); break;
+      case "moneyGain":
+        for (let i = 0; i < 7; i += 1) tone(c, 760 + (i % 3) * 170, .045, i * .055, .025, "triangle");
+        tone(c, 1046, .12, .34, .038); tone(c, 1318, .13, .42, .032);
+        break;
+      case "moneyLoss": tone(c, 260, .07, 0, .024, "triangle"); tone(c, 190, .12, .06, .026, "triangle"); break;
+      case "victory": tone(c, 523, .08, 0, .036); tone(c, 659, .08, .07, .038); tone(c, 784, .09, .14, .042); tone(c, 1046, .13, .22, .04); tone(c, 1318, .16, .32, .035); break;
       case "coinFlip": for (let i = 0; i < 9; i += 1) tone(c, 520 + (i % 3) * 90, .025, i * .085, .014, "triangle"); break;
       case "coinLand": tone(c, 310, .055, 0, .035, "square"); tone(c, 620, .09, .055, .03, "triangle"); break;
       case "revive": tone(c, 523, .08, 0, .035); tone(c, 659, .08, .07, .04); tone(c, 784, .1, .14, .04); tone(c, 1046, .16, .22, .035); break;

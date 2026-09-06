@@ -121,13 +121,13 @@ test("Hi-Lo trata empate como derrota, anima a revelação e segura a carta ante
   assert.equal(state.phase, "playing");
 });
 
-test("Dados sempre gera três verdes e três vermelhos válidos, sem sobreposição", () => {
+test("Dados sempre gera três verdes e dois vermelhos válidos, sem sobreposição", () => {
   const { state } = enterGame("dice");
   assert.equal(state.miniState.kind, "dice");
   for (const id of ["p1", "p2"]) {
     const p = state.miniState.players[id];
     assert.equal(p.green.length, 3);
-    assert.equal(p.red.length, 3);
+    assert.equal(p.red.length, 2);
     assert.ok([...p.green, ...p.red].every((n) => n >= 2 && n <= 12));
     assert.equal(p.green.some((n) => p.red.includes(n)), false);
   }
@@ -198,8 +198,8 @@ test("Falência vira Cara ou Coroa, revela a moeda e só encerra depois da anima
   assert.equal(state.players.p2.lastChanceUsed, true);
 });
 
-test("As oito mesas entram no submotor correto", () => {
-  for (const id of ["mines", "crash", "roulette", "slots", "race", "dice", "hilo", "fortune"]) {
+test("As dez mesas entram no submotor correto", () => {
+  for (const id of ["mines", "crash", "roulette", "slots", "race", "dice", "hilo", "fortune", "plinko", "briefcase"]) {
     const { state } = enterGame(id);
     assert.equal(state.phase, "playing", `${id} deveria iniciar em playing`);
     assert.equal(state.miniState.kind, id, `${id} abriu o submotor errado`);
@@ -252,42 +252,115 @@ test("Corrida e Crash continuam resolvendo pelo relógio autoritativo", () => {
   }
 });
 
-test("Jackpot deixa continuar após vitória e só fecha a rodada quando os dois terminam", () => {
+const SLOT_ONE_LINE = [
+  "cherry", "cherry", "cherry",
+  "star", "diamond", "clover",
+  "plum", "thunder", "strawberry",
+];
+const SLOT_NO_LINE = [
+  "cherry", "star", "diamond",
+  "clover", "thunder", "plum",
+  "heart-card", "club-card", "strawberry",
+];
+
+function forceSlotResult(game, state, playerId, symbols) {
+  let next = game.applyAction(state, { type: "slotsSpin" }, playerId);
+  const p = next.miniState.players[playerId];
+  assert.equal(p.pendingSymbols.length, 9);
+  p.pendingSymbols = [...symbols];
+  p.spinEndsAt = Date.now();
+  return game.applyAction(next, { type: "tick", now: p.spinEndsAt + 1 }, "system");
+}
+
+test("Jackpot dá três chances reais: só o terceiro erro perde a aposta", () => {
   const { game, state: started } = enterGame("slots");
   let state = started;
-  const oldRandom = Math.random;
-  Math.random = () => 0; // três cerejas em todo giro
-  try {
-    state = game.applyAction(state, { type: "slotsSpin" }, "p1");
-    assert.equal(state.miniState.players.p1.spinning, true);
-    assert.equal(getCasinoStateForPlayer(state, "p1").miniState.players.p1.pendingSymbols.length, 3);
-    assert.equal(getCasinoStateForPlayer(state, "p2").miniState.players.p1.pendingSymbols, null);
-    state = game.applyAction(state, { type: "tick", now: state.miniState.players.p1.spinEndsAt + 1 }, "system");
-    assert.equal(state.miniState.players.p1.awaitingDecision, true);
-    assert.equal(state.phase, "playing");
-    // O botão "Continuar" inicia outro giro e não encerra a rodada só porque o rival terminou.
-    state = game.applyAction(state, { type: "slotsSpin" }, "p1");
-    assert.equal(state.miniState.players.p1.spinning, true);
-    state = game.applyAction(state, { type: "tick", now: state.miniState.players.p1.spinEndsAt + 1 }, "system");
-    assert.equal(state.miniState.players.p1.streak, 2);
-    state = game.applyAction(state, { type: "cashOut" }, "p1");
-    assert.equal(state.miniState.players.p1.done, true);
-    assert.equal(state.phase, "playing");
 
-    state = game.applyAction(state, { type: "slotsSpin" }, "p2");
-    state = game.applyAction(state, { type: "tick", now: state.miniState.players.p2.spinEndsAt + 1 }, "system");
-    state = game.applyAction(state, { type: "cashOut" }, "p2");
-  } finally {
-    Math.random = oldRandom;
-  }
-  assert.equal(state.phase, "roundResult");
+  state = forceSlotResult(game, state, "p1", SLOT_NO_LINE);
+  assert.equal(state.miniState.players.p1.spinsUsed, 1);
+  assert.equal(state.miniState.players.p1.done, false);
+  assert.equal(state.players.p1.roundStatus, "playing");
+  assert.equal(state.players.p1.balance, 900, "o saldo não deve ser descontado de novo no primeiro erro");
+
+  state = forceSlotResult(game, state, "p1", SLOT_NO_LINE);
+  assert.equal(state.miniState.players.p1.spinsUsed, 2);
+  assert.equal(state.miniState.players.p1.done, false);
+  assert.equal(state.players.p1.roundStatus, "playing");
+  assert.equal(state.players.p1.balance, 900);
+
+  state = forceSlotResult(game, state, "p1", SLOT_NO_LINE);
+  assert.equal(state.miniState.players.p1.spinsUsed, 3);
+  assert.equal(state.miniState.players.p1.done, true);
+  assert.equal(state.players.p1.roundStatus, "lost");
+  assert.equal(state.players.p1.balance, 900);
+  assert.equal(state.phase, "playing", "o rival ainda deve terminar a própria tentativa");
+});
+
+test("Jackpot vencedor no terceiro giro ganha uma chance bônus, e cada nova vitória renova outra", () => {
+  const { game, state: started } = enterGame("slots");
+  let state = started;
+
+  state = forceSlotResult(game, state, "p1", SLOT_NO_LINE);
+  state = forceSlotResult(game, state, "p1", SLOT_NO_LINE);
+  state = forceSlotResult(game, state, "p1", SLOT_ONE_LINE);
+  let p1 = state.miniState.players.p1;
+  assert.equal(p1.spinsUsed, 3);
+  assert.equal(p1.lastSpinWon, true);
+  assert.equal(p1.done, false);
+  assert.equal(p1.awaitingDecision, true);
+  assert.deepEqual(p1.lastWinningLines, [0]);
+
+  state = forceSlotResult(game, state, "p1", SLOT_ONE_LINE);
+  p1 = state.miniState.players.p1;
+  assert.equal(p1.spinsUsed, 4);
+  assert.equal(p1.lastSpinWon, true);
+  assert.equal(p1.done, false, "vencer o bônus deve liberar mais um giro");
+  assert.equal(p1.awaitingDecision, true);
+  assert.ok(p1.multiplier > 1);
+
+  state = forceSlotResult(game, state, "p1", SLOT_NO_LINE);
+  p1 = state.miniState.players.p1;
+  assert.equal(p1.spinsUsed, 5);
+  assert.equal(p1.done, true, "errar depois das três chances encerra a tentativa");
+  assert.equal(state.players.p1.roundStatus, "lost");
+});
+
+test("Jackpot aumenta o multiplicador quando a grade forma mais de uma linha", () => {
+  const twoLines = [
+    "cherry", "cherry", "cherry",
+    "cherry", "cherry", "cherry",
+    "star", "diamond", "clover",
+  ];
+  const one = enterGame("slots");
+  const oneState = forceSlotResult(one.game, one.state, "p1", SLOT_ONE_LINE);
+  const oneFactor = oneState.miniState.players.p1.lastWinFactor;
+
+  const two = enterGame("slots");
+  const twoState = forceSlotResult(two.game, two.state, "p1", twoLines);
+  const twoPlayer = twoState.miniState.players.p1;
+  assert.deepEqual(twoPlayer.lastWinningLines, [0, 1]);
+  assert.ok(twoPlayer.lastWinFactor > oneFactor);
+  assert.equal(twoPlayer.jackpotHit, false);
+});
+
+test("Jackpot máximo paga 50x e encerra a tentativa do jogador", () => {
+  const { game, state: started } = enterGame("slots");
+  const jackpotGrid = Array(9).fill("cherry");
+  const state = forceSlotResult(game, started, "p1", jackpotGrid);
+  const p1 = state.miniState.players.p1;
+  assert.equal(p1.jackpotHit, true);
+  assert.equal(p1.lastWinningLines.length, 8);
+  assert.equal(state.players.p1.lastMultiplier, 50);
+  assert.equal(p1.done, true);
+  assert.equal(state.players.p1.balance, 5900); // 900 após aposta + 5.000 de prêmio
+  assert.equal(state.phase, "playing", "o rival ainda deve terminar a própria tentativa");
 });
 
 test("Dados exige dois cliques, um dado por vez, e só então calcula o resultado", () => {
   const { game, state: started } = enterGame("dice");
   let state = structuredClone(started);
   state.miniState.players.p1.green = [2, 5, 7];
-  state.miniState.players.p1.red = [3, 8, 10];
+  state.miniState.players.p1.red = [3, 8];
   const oldRandom = Math.random;
   try {
     Math.random = () => 0; // primeiro dado = 1
@@ -318,7 +391,7 @@ test("Dados neutro oferece Parar e devolve a aposta em 1x", () => {
   const { game, state: started } = enterGame("dice");
   let state = structuredClone(started);
   state.miniState.players.p1.green = [2, 5, 7];
-  state.miniState.players.p1.red = [3, 8, 10];
+  state.miniState.players.p1.red = [3, 8];
   const oldRandom = Math.random;
   try {
     Math.random = () => 0; // 1
@@ -341,34 +414,89 @@ test("Dados neutro oferece Parar e devolve a aposta em 1x", () => {
   assert.equal(state.phase, "playing");
 });
 
-test("Jackpot continua normalmente quando o rival já sacou ou perdeu", () => {
+test("Jackpot continua normalmente quando o rival já perdeu no terceiro erro", () => {
   const { game, state: started } = enterGame("slots");
-  let state = started;
-  const oldRandom = Math.random;
-  try {
-    Math.random = () => 0; // P1: três cerejas
-    state = game.applyAction(state, { type: "slotsSpin" }, "p1");
-    state = game.applyAction(state, { type: "tick", now: state.miniState.players.p1.spinEndsAt + 1 }, "system");
-    assert.equal(state.miniState.players.p1.awaitingDecision, true);
+  let state = forceSlotResult(game, started, "p1", SLOT_ONE_LINE);
+  assert.equal(state.miniState.players.p1.awaitingDecision, true);
 
-    const seq = [0.01, 0.30, 0.95];
-    Math.random = () => seq.shift() ?? 0.95; // P2: três símbolos diferentes
-    state = game.applyAction(state, { type: "slotsSpin" }, "p2");
-    state = game.applyAction(state, { type: "tick", now: state.miniState.players.p2.spinEndsAt + 1 }, "system");
-    assert.equal(state.miniState.players.p2.done, true);
-    assert.equal(state.phase, "playing");
+  state = forceSlotResult(game, state, "p2", SLOT_NO_LINE);
+  state = forceSlotResult(game, state, "p2", SLOT_NO_LINE);
+  state = forceSlotResult(game, state, "p2", SLOT_NO_LINE);
+  assert.equal(state.miniState.players.p2.done, true);
+  assert.equal(state.phase, "playing");
 
-    Math.random = () => 0; // P1 aperta Continuar e ganha outro giro
-    state = game.applyAction(state, { type: "slotsSpin" }, "p1");
-    assert.equal(state.miniState.players.p1.spinning, true);
-    assert.equal(state.phase, "playing");
-    state = game.applyAction(state, { type: "tick", now: state.miniState.players.p1.spinEndsAt + 1 }, "system");
-    assert.equal(state.phase, "playing");
-    assert.equal(state.miniState.players.p1.awaitingDecision, true);
-    assert.equal(state.miniState.players.p1.streak, 2);
-  } finally {
-    Math.random = oldRandom;
-  }
+  state = forceSlotResult(game, state, "p1", SLOT_ONE_LINE);
+  assert.equal(state.phase, "playing");
+  assert.equal(state.miniState.players.p1.awaitingDecision, true);
+  assert.equal(state.miniState.players.p1.streak, 2);
+  assert.equal(state.miniState.players.p1.spinsUsed, 2);
+});
+
+test("Plinko gera caminho autoritativo de 12 colisões, pousa em um bucket e paga o multiplicador", () => {
+  const { game, state: started } = enterGame("plinko");
+  let state = game.applyAction(started, { type: "plinkoDrop" }, "p1");
+  const p1 = state.miniState.players.p1;
+  assert.equal(p1.dropping, true);
+  assert.equal(p1.path.length, 12);
+  assert.ok(p1.path.every((direction) => direction === -1 || direction === 1));
+  assert.ok(p1.pendingBucket >= 0 && p1.pendingBucket <= 12);
+  assert.deepEqual(getCasinoStateForPlayer(state, "p2").miniState.players.p1.path, null);
+  assert.equal(getCasinoStateForPlayer(state, "p2").miniState.players.p1.pendingBucket, null);
+  const expectedBucket = p1.pendingBucket;
+  const expectedMultiplier = state.miniState.multipliers[expectedBucket];
+
+  state = game.applyAction(state, { type: "tick", now: p1.dropEndsAt + 1 }, "system");
+  assert.equal(state.miniState.players.p1.dropping, false);
+  assert.equal(state.miniState.players.p1.bucketIndex, expectedBucket);
+  assert.equal(state.miniState.players.p1.multiplier, expectedMultiplier);
+  assert.equal(state.miniState.players.p1.done, true);
+  assert.equal(state.phase, "playing", "P2 ainda deve soltar a própria ficha");
+});
+
+test("Maletas compartilha as 10 escolhas, alterna turnos e uma maleta PERDEU elimina só aquele jogador", () => {
+  const { game, state: started } = enterGame("briefcase");
+  let state = structuredClone(started);
+  assert.equal(state.miniState.kind, "briefcase");
+  assert.equal(state.miniState.contents.length, 10);
+  assert.equal(state.miniState.openedBy.length, 10);
+
+  // Torna o cenário previsível sem alterar a lógica do submotor.
+  state.miniState.startPlayerId = "p1";
+  state.miniState.turnPlayerId = "p1";
+  state.miniState.contents = [1.5, "lose", 0.5, 1, 1.25, 2, 3, 5, "lose", 0.75];
+
+  state = game.applyAction(state, { type: "briefcaseOpen", index: 0 }, "p1");
+  assert.equal(state.miniState.openedBy[0], "p1");
+  assert.equal(state.miniState.players.p1.accumulatedMultiplier, 1.5);
+  assert.equal(state.miniState.players.p1.awaitingDecision, true);
+  assert.equal(game.applyAction(state, { type: "briefcaseOpen", index: 2 }, "p2"), state, "P2 não joga fora da vez");
+  assert.equal(game.applyAction(state, { type: "briefcaseOpen", index: 0 }, "p2"), state, "a mesma maleta nunca pode ser escolhida duas vezes");
+
+  state = game.applyAction(state, { type: "tick", now: state.miniState.revealEndsAt + 1 }, "system");
+  state = game.applyAction(state, { type: "briefcaseContinue" }, "p1");
+  assert.equal(state.miniState.turnPlayerId, "p2");
+
+  state = game.applyAction(state, { type: "briefcaseOpen", index: 1 }, "p2");
+  assert.equal(state.miniState.lastValue, "lose");
+  assert.equal(state.miniState.players.p2.done, true);
+  assert.equal(state.players.p2.roundStatus, "lost");
+  assert.equal(state.miniState.turnPlayerId, "p1");
+  assert.equal(state.phase, "playing", "P1 ainda pode decidir seu saque");
+});
+
+test("Maletas só revela conteúdo de maletas que já foram abertas", () => {
+  const { game, state: started } = enterGame("briefcase");
+  let state = structuredClone(started);
+  state.miniState.startPlayerId = "p1";
+  state.miniState.turnPlayerId = "p1";
+  state.miniState.contents = [2, "lose", 0.5, 1, 1.25, 1.5, 3, 5, "lose", 0.75];
+  let masked = getCasinoStateForPlayer(state, "p1");
+  assert.ok(masked.miniState.contents.every((value) => value == null));
+
+  state = game.applyAction(state, { type: "briefcaseOpen", index: 0 }, "p1");
+  masked = getCasinoStateForPlayer(state, "p2");
+  assert.equal(masked.miniState.contents[0], 2);
+  assert.ok(masked.miniState.contents.slice(1).every((value) => value == null));
 });
 
 test("Solo cria exatamente um adversário BOT e o reset preserva esse modo", () => {
@@ -533,6 +661,20 @@ test("BOT consegue agir nas mesas que exigem decisão sem acessar o resultado fu
     state.miniState.startedAt = Date.now() - 100;
     state = runOneBotDecision(game, state);
     assert.notEqual(state.miniState.cashouts.BOT, null, "BOT deve sacar quando o alvo público planejado for alcançado");
+  }
+  {
+    const { game, state: initial } = enterSoloBotMini("plinko");
+    const state = runOneBotDecision(game, initial);
+    assert.equal(state.miniState.players.BOT.dropping, true, "BOT deve soltar uma ficha no Plinko");
+  }
+  {
+    const { game, state: initial } = enterSoloBotMini("briefcase");
+    let state = structuredClone(initial);
+    state.miniState.turnPlayerId = "BOT";
+    state.miniState.startPlayerId = "BOT";
+    state.bot.decisionKey = null;
+    state = runOneBotDecision(game, state);
+    assert.equal(state.miniState.openedBy.filter(Boolean).length, 1, "BOT deve escolher uma maleta quando for sua vez");
   }
 });
 

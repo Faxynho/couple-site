@@ -19,6 +19,7 @@ import {
   Trophy,
 } from "lucide-react";
 import Button from "@/components/Button";
+import Confetti from "@/components/Confetti";
 import LoadingScreen from "@/components/LoadingScreen";
 import Logo from "@/components/Logo";
 import AccountAvatar from "@/components/account/AccountAvatar";
@@ -30,6 +31,7 @@ import {
   CASINO_LENGTHS,
   CASINO_RACERS,
   FORTUNE_SEGMENTS,
+  SLOT_WIN_LINES,
   cardLabel,
   cardSuitSymbol,
   casinoMinimumBet,
@@ -49,6 +51,7 @@ import styles from "./CasinoGame.module.css";
 
 const ROULETTE_RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const ROULETTE_WHEEL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26] as const;
+const SLOT_PAYLINE_PATHS = ["M7 16.7 L93 16.7", "M7 50 L93 50", "M7 83.3 L93 83.3", "M16.7 7 L16.7 93", "M50 7 L50 93", "M83.3 7 L83.3 93", "M8 8 L92 92", "M92 8 L8 92"] as const;
 
 export default function CasinoGamePage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -57,8 +60,14 @@ export default function CasinoGamePage({ params }: { params: { code: string } })
   const game = useCasinoGame(code);
   const state = game.state;
   const [betAmount, setBetAmount] = useState(100);
+  const [moneyToast, setMoneyToast] = useState<{ id: number; delta: number } | null>(null);
   const photos = useAccountPhotos();
   const previousSoundState = useRef<CasinoState | null>(null);
+  const moneyToastTimer = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (moneyToastTimer.current != null) window.clearTimeout(moneyToastTimer.current);
+  }, []);
 
   useEffect(() => {
     if (kicked) router.push("/?aviso=expulso");
@@ -92,6 +101,14 @@ export default function CasinoGamePage({ params }: { params: { code: string } })
     const prev = previousSoundState.current;
     const mini = state.miniState;
     const prevMini = prev?.miniState;
+    const showMoneyToast = (delta: number) => {
+      const rounded = Math.round(delta);
+      if (rounded === 0) return;
+      if (moneyToastTimer.current != null) window.clearTimeout(moneyToastTimer.current);
+      setMoneyToast({ id: Date.now() + state.revision, delta: rounded });
+      playCasinoSound(rounded > 0 ? "moneyGain" : "moneyLoss");
+      moneyToastTimer.current = window.setTimeout(() => setMoneyToast(null), 2_250);
+    };
 
     if (prev && prev.phase !== state.phase && state.phase === "betting") playCasinoSound("select");
     if (prev && prev.players[selfId]?.betLocked !== state.players[selfId]?.betLocked && state.players[selfId]?.betLocked) playCasinoSound("chip");
@@ -137,24 +154,37 @@ export default function CasinoGamePage({ params }: { params: { code: string } })
       if (nowP.flipping && !oldP?.flipping) playCasinoSound("hiloFlip");
       if (oldP?.lastCorrect !== nowP.lastCorrect && nowP.lastCorrect != null) playCasinoSound(nowP.lastCorrect ? "hiloWin" : "hiloLose");
     }
+    if (mini?.kind === "plinko") {
+      const nowP = mini.players[selfId];
+      const oldP = prevMini?.kind === "plinko" ? prevMini.players[selfId] : null;
+      if (nowP.dropping && !oldP?.dropping) playCasinoSound("plinkoDrop");
+      if (oldP?.dropping && !nowP.dropping && nowP.bucketIndex != null) playCasinoSound("plinkoLand");
+    }
+    if (mini?.kind === "briefcase") {
+      const old = prevMini?.kind === "briefcase" ? prevMini : null;
+      if (mini.lastOpenedIndex != null && old?.lastOpenedIndex !== mini.lastOpenedIndex) {
+        playCasinoSound(mini.lastValue === "lose" ? "briefcaseLose" : "briefcaseOpen");
+      }
+    }
     if (mini?.kind === "crash" && prevMini?.kind === "crash" && !prevMini.crashed && mini.crashed) playCasinoSound("crash");
     if (mini?.kind === "lastChance") {
       const old = prevMini?.kind === "lastChance" ? prevMini : null;
       if (mini.spinning[selfId] && !old?.spinning[selfId]) playCasinoSound("coinFlip");
       if (old?.spinning[selfId] && !mini.spinning[selfId] && mini.coinResults[selfId]) playCasinoSound("coinLand");
       if (old?.results[selfId] !== mini.results[selfId] && mini.results[selfId]) playCasinoSound(mini.results[selfId] === "revived" ? "revive" : "bankrupt");
+      if (old?.results[selfId] !== "revived" && mini.results[selfId] === "revived") showMoneyToast(500);
     }
 
     const previousStatus = prev?.players[selfId]?.roundStatus;
     const currentStatus = state.players[selfId]?.roundStatus;
     if (prev && previousStatus !== currentStatus) {
-      if (currentStatus === "won") playCasinoSound("betWin");
-      else if (currentStatus === "lost") playCasinoSound("betLose");
-      else if (currentStatus === "cashed") {
-        if ((state.players[selfId]?.roundDelta ?? 0) > 0) playCasinoSound("betWin");
-        else playCasinoSound("cash");
+      if (currentStatus === "won" || currentStatus === "lost" || currentStatus === "cashed") {
+        const delta = state.players[selfId]?.roundDelta ?? 0;
+        if (delta !== 0) showMoneyToast(delta);
+        else if (currentStatus === "cashed") playCasinoSound("cash");
       }
     }
+    if (prev && prev.phase !== "finished" && state.phase === "finished" && state.winnerId === selfId) playCasinoSound("victory");
 
     previousSoundState.current = state;
   }, [state, selfId]);
@@ -199,6 +229,7 @@ export default function CasinoGamePage({ params }: { params: { code: string } })
     <main className={`${styles.shell} app-shell`}>
       <div className={styles.ambientA} />
       <div className={styles.ambientB} />
+      <MoneyDeltaPopup toast={moneyToast} />
 
       <header className={styles.topbar}>
         <button type="button" className={styles.backButton} onClick={goToConfig} disabled={!isHost} aria-label="Voltar para a configuração">
@@ -297,6 +328,72 @@ export default function CasinoGamePage({ params }: { params: { code: string } })
 
       {state.history.length > 0 && state.phase !== "finished" ? <HistoryStrip state={state} /> : null}
     </main>
+  );
+}
+
+function MoneyDeltaPopup({ toast }: { toast: { id: number; delta: number } | null }) {
+  const positive = (toast?.delta ?? 0) > 0;
+  const magnitude = Math.abs(toast?.delta ?? 0);
+  const intensity = positive
+    ? magnitude >= 1_500 ? 3 : magnitude >= 700 ? 2 : magnitude >= 250 ? 1 : 0
+    : 0;
+  const particleCount = [24, 32, 42, 54][intensity];
+  const burstRadius = [92, 128, 168, 218][intensity];
+  const duration = [1.65, 1.78, 1.95, 2.12][intensity];
+  const powerClass = [styles.moneyToastPower0, styles.moneyToastPower1, styles.moneyToastPower2, styles.moneyToastPower3][intensity];
+  const peakScale = [1.08, 1.15, 1.24, 1.36][intensity];
+  const lift = [28, 34, 42, 52][intensity];
+
+  return (
+    <div className={styles.moneyToastLayer} aria-live="polite" aria-atomic="true">
+      <AnimatePresence>
+        {toast ? (
+          <motion.div
+            key={toast.id}
+            className={`${styles.moneyToast} ${positive ? styles.moneyToastGain : styles.moneyToastLoss} ${positive ? powerClass : ""}`}
+            initial={{ opacity: 0, y: 20, scale: 0.68, rotate: 0 }}
+            animate={{
+              opacity: [0, 1, 1, 0],
+              y: [20, -5 - intensity * 2, -12 - intensity * 3, -lift],
+              scale: [0.68, peakScale, 1 + intensity * 0.018, 0.94],
+              rotate: intensity >= 2 ? [0, -2.2 - intensity * 0.4, 2.1 + intensity * 0.35, 0] : 0,
+            }}
+            exit={{ opacity: 0, y: -lift - 8, scale: 0.9 }}
+            transition={{ duration, times: [0, 0.17, 0.68, 1], ease: [0.16, 1, 0.3, 1] }}
+          >
+            {positive ? (
+              <div className={styles.moneyBurst} aria-hidden="true">
+                {Array.from({ length: particleCount }).map((_, index) => {
+                  const angle = (index / particleCount) * Math.PI * 2 + (index % 2) * 0.055;
+                  const ring = 0.72 + (index % 6) * 0.065;
+                  const distance = burstRadius * ring;
+                  const fontSize = 16 + intensity * 2 + (index % 4) * 1.4;
+                  return (
+                    <motion.span
+                      key={index}
+                      initial={{ x: 0, y: 0, opacity: 0, scale: 0.28, rotate: 0 }}
+                      animate={{
+                        x: Math.cos(angle) * distance,
+                        y: Math.sin(angle) * distance - 12 - intensity * 5,
+                        opacity: [0, 1, 0.95, 0],
+                        scale: [0.28, 1.05 + intensity * 0.08, 0.92, 0.5],
+                        rotate: (index % 2 === 0 ? 1 : -1) * (32 + intensity * 18 + (index % 5) * 8),
+                      }}
+                      transition={{ duration: 1.05 + intensity * 0.16, delay: (index % 10) * 0.014, ease: "easeOut" }}
+                      style={{ fontSize }}
+                    >$</motion.span>
+                  );
+                })}
+              </div>
+            ) : null}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/casino/money-bag.png" alt="" />
+            <strong>{positive ? "+" : ""}{formatSignedChips(toast.delta)}</strong>
+            <span>fichas</span>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -453,6 +550,8 @@ function PlayingPanel({ state, selfId, opponentName, actions }: { state: CasinoS
       {mini.kind === "dice" && <DiceBoard state={state} selfId={selfId} opponentName={opponentName} onRoll={actions.diceRoll} onContinue={actions.diceContinue} onCashOut={actions.cashOut} />}
       {mini.kind === "hilo" && <HiLoBoard state={state} selfId={selfId} opponentName={opponentName} onGuess={actions.hiloGuess} onContinue={actions.hiloContinue} onCashOut={actions.cashOut} />}
       {mini.kind === "fortune" && <FortuneBoard state={state} opponentName={opponentName} />}
+      {mini.kind === "plinko" && <PlinkoBoard state={state} selfId={selfId} opponentName={opponentName} onDrop={actions.plinkoDrop} />}
+      {mini.kind === "briefcase" && <BriefcaseBoard state={state} selfId={selfId} opponentName={opponentName} onOpen={actions.briefcaseOpen} onContinue={actions.briefcaseContinue} onCashOut={actions.cashOut} />}
     </div>
   );
 }
@@ -639,45 +738,88 @@ function SlotsBoard({ state, selfId, opponentName, onSpin, onCashOut }: { state:
   const mini = state.miniState;
   if (!mini || mini.kind !== "slots") return null;
   const p = mini.players[selfId];
-  const symbols = p.lastSymbols.length === 3 ? p.lastSymbols : (["cherry", "star", "diamond"] as const);
+  const fallbackSymbols: SlotSymbolId[] = ["cherry", "star", "diamond", "clover", "thunder", "plum", "heart-card", "club-card", "strawberry"];
+  const symbols = p.lastSymbols.length === 9 ? p.lastSymbols : fallbackSymbols;
   const spinSymbols: readonly SlotSymbolId[] = ["cherry", "clover", "plum", "star", "heart-card", "club-card", "thunder", "diamond", "strawberry"];
+  const winningCells = new Set(p.lastWinningLines.flatMap((lineIndex) => SLOT_WIN_LINES[lineIndex] ?? []));
+  const baseSpinsLeft = Math.max(0, 3 - p.spinsUsed);
+  const bonusActive = p.spinsUsed >= 3 && p.lastSpinWon === true && !p.done;
+  const nextSpinLabel = p.spinsUsed < 3 ? `Giro ${p.spinsUsed + 1}/3` : `Giro bônus ${Math.max(1, p.spinsUsed - 2)}`;
+
   return (
     <div className={styles.slotsWrap}>
-      <div className={`${styles.slotMachine} ${p.spinning ? styles.slotMachineActive : ""}`}>
-        <div className={styles.slotTop}><Crown size={19}/> JACKPOT <span>{p.streak}/5</span></div>
-        <div className={styles.reels}>
-          {[0, 1, 2].map((index) => (
-            <div key={index} className={`${styles.reel} ${p.spinning ? styles.reelSpinning : ""}`}>
-              {p.spinning ? (
-                <AnimatedSlotReel
-                  key={`${p.spinStartedAt}-${index}`}
-                  index={index}
-                  symbols={spinSymbols}
-                  targetSymbol={p.pendingSymbols?.[index] ?? null}
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={slotAsset(symbols[index])} alt={symbols[index]} />
-              )}
-            </div>
-          ))}
+      <div className={`${styles.slotMachine} ${p.spinning ? styles.slotMachineActive : ""} ${p.jackpotHit ? styles.slotMachineJackpot : ""}`}>
+        <div className={styles.jackpotMarquee} aria-label="Jáckpot">
+          <div className={styles.marqueeBulbs} aria-hidden="true">{Array.from({ length: 18 }).map((_, index) => <i key={index} />)}</div>
+          <Crown size={23} />
+          <strong>JÁCKPOT</strong>
+          <Crown size={23} />
+          <small>{p.spinsUsed < 3 ? `${p.spinsUsed}/3 giros usados` : bonusActive ? "BÔNUS ATIVO · VENÇA PARA CONTINUAR" : "3 GIROS CONSUMIDOS"}</small>
         </div>
-        <div className={styles.slotMultiplier}>
-          <span>{p.spinning ? "Girando..." : "Acumulado"}</span><strong>{p.multiplier.toFixed(2)}×</strong>
+
+        {p.spinning ? (
+          <div className={styles.jackpotColumnReels} aria-label="Três colunas do jackpot girando">
+            {[0, 1, 2].map((column) => {
+              const targets: SlotSymbolId[] = [
+                p.pendingSymbols?.[column] ?? symbols[column],
+                p.pendingSymbols?.[column + 3] ?? symbols[column + 3],
+                p.pendingSymbols?.[column + 6] ?? symbols[column + 6],
+              ];
+              return (
+                <AnimatedSlotColumn
+                  key={`${p.spinStartedAt}-${column}`}
+                  column={column}
+                  symbols={spinSymbols}
+                  targetSymbols={targets}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className={`${styles.reels} ${styles.jackpotGrid}`}>
+            {Array.from({ length: 9 }).map((_, index) => {
+              const isWinningCell = winningCells.has(index);
+              return (
+                <div key={index} className={`${styles.reel} ${isWinningCell ? styles.jackpotCellWin : ""} ${p.jackpotHit ? styles.jackpotCellGrand : ""}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={slotAsset(symbols[index])} alt={symbols[index]} />
+                </div>
+              );
+            })}
+            {p.lastWinningLines.length > 0 ? (
+              <svg className={styles.jackpotPaylines} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                {p.lastWinningLines.map((lineIndex) => <path key={lineIndex} d={SLOT_PAYLINE_PATHS[lineIndex] ?? ""} />)}
+              </svg>
+            ) : null}
+          </div>
+        )}
+
+        <div className={styles.jackpotInfoBar}>
+          <div><span>{p.spinning ? "GIRO EM ANDAMENTO" : "ACUMULADO"}</span><strong>{p.multiplier.toFixed(2)}×</strong></div>
+          <div><span>GIROS</span><strong>{p.spinsUsed < 3 ? `${p.spinsUsed}/3` : bonusActive ? "BÔNUS" : `${p.spinsUsed}`}</strong></div>
+          <div><span>LINHAS</span><strong>{p.spinning ? "—" : `${p.lastWinningLines.length}/8`}</strong></div>
+          <div><span>PRÊMIO MÁX.</span><strong>50×</strong></div>
         </div>
       </div>
 
-      {p.spinning ? <div className={styles.spinStatus}>🎰 Os rolos estão girando. O resultado só aparece quando eles pararem.</div> : null}
-      {!p.spinning && p.lastSpinWon === true ? <div className={styles.winBanner}>✨ Combinação! +{((p.lastWinFactor ?? 1) - 1).toFixed(2)}× na sequência.</div> : null}
-      {!p.spinning && p.lastSpinWon === false ? <div className={styles.lossBanner}>Sem combinação. Você perdeu o acumulado.</div> : null}
+      {p.spinning ? <div className={styles.spinStatus}>🎰 As três colunas estão girando como rolos inteiros e vão parar uma após a outra.</div> : null}
+      {!p.spinning && p.jackpotHit ? <div className={`${styles.winBanner} ${styles.jackpotWinBanner}`}>👑 JACKPOT! Combinação máxima · multiplicador de 50×!</div> : null}
+      {!p.spinning && p.lastSpinWon === true && !p.jackpotHit ? (
+        <div className={styles.winBanner}>✨ {p.lastWinningLines.length} {p.lastWinningLines.length === 1 ? "linha" : "linhas"}! Giro valeu {p.lastWinFactor?.toFixed(2)}× · acumulado {p.multiplier.toFixed(2)}×.</div>
+      ) : null}
+      {!p.spinning && p.lastSpinWon === false && !p.done ? (
+        <div className={styles.slotMissBanner}>Sem combinação. Sua aposta continua viva — {baseSpinsLeft} {baseSpinsLeft === 1 ? "chance restante" : "chances restantes"}.</div>
+      ) : null}
+      {!p.spinning && p.lastSpinWon === false && p.done ? <div className={styles.lossBanner}>Sem combinação no giro decisivo. Agora a aposta foi perdida.</div> : null}
+      {bonusActive ? <div className={styles.bonusSpinBanner}>🔥 Você venceu depois do 3º giro: ganhou mais uma chance. Se vencer de novo, ganha outra; se errar, encerra.</div> : null}
 
       {!p.done && !p.awaitingDecision && !p.spinning ? (
-        <button type="button" className={styles.primaryCasinoButton} onClick={onSpin}><RotateCw size={18}/> Girar</button>
+        <button type="button" className={styles.primaryCasinoButton} onClick={onSpin}><RotateCw size={18}/> {nextSpinLabel}</button>
       ) : null}
       {!p.done && p.awaitingDecision && !p.spinning ? (
         <div className={styles.dualActions}>
           <button type="button" className={styles.cashButton} onClick={onCashOut}>💰 Sacar {p.multiplier.toFixed(2)}×</button>
-          <button type="button" className={styles.riskButton} onClick={onSpin}>🎰 Continuar</button>
+          <button type="button" className={styles.riskButton} onClick={onSpin}>🎰 {nextSpinLabel}</button>
         </div>
       ) : null}
       {p.done && p.revealEndsAt == null ? <OpponentMiniStatus state={state} selfId={selfId} opponentName={opponentName} /> : null}
@@ -685,42 +827,31 @@ function SlotsBoard({ state, selfId, opponentName, onSpin, onCashOut }: { state:
   );
 }
 
-function AnimatedSlotReel({ index, symbols, targetSymbol }: { index: number; symbols: readonly SlotSymbolId[]; targetSymbol: SlotSymbolId | null }) {
-  const [frame, setFrame] = useState(index * 3);
-  const [settled, setSettled] = useState(false);
+function AnimatedSlotColumn({ column, symbols, targetSymbols }: { column: number; symbols: readonly SlotSymbolId[]; targetSymbols: readonly SlotSymbolId[] }) {
+  const fillerCount = 21 + column * 3;
+  const filler = Array.from({ length: fillerCount }, (_, index) => symbols[(index * 2 + column * 3 + (index % 4)) % symbols.length]);
+  const reelItems = [...filler, ...targetSymbols];
+  const stopPercent = ((reelItems.length - 3) / reelItems.length) * 100;
+  const duration = 1.82 + column * 0.28;
 
-  useEffect(() => {
-    setFrame(index * 3);
-    setSettled(false);
-    // Cada rolo corre numa velocidade levemente diferente e para um depois
-    // do outro, como num caça-níquel físico. Não dependemos de porcentagens
-    // gigantes de transform (que era o motivo do rolo antigo quase não andar).
-    const interval = window.setInterval(() => setFrame((value) => value + 1), 92 + index * 8);
-    const stop = window.setTimeout(() => {
-      window.clearInterval(interval);
-      setSettled(true);
-    }, 1_220 + index * 260);
-    return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(stop);
-    };
-  }, [index, targetSymbol]);
-
-  const symbol = settled && targetSymbol ? targetSymbol : symbols[frame % symbols.length];
   return (
-    <div className={styles.slotCycleWindow}>
-      <AnimatePresence initial={false} mode="sync">
-        <motion.img
-          key={`${settled ? "final" : "spin"}-${symbol}-${frame}`}
-          className={settled ? styles.slotFinalSymbol : styles.slotCyclingSymbol}
-          src={slotAsset(symbol)}
-          alt=""
-          initial={{ y: "-115%", opacity: 0.2, scale: 0.88 }}
-          animate={{ y: "0%", opacity: 1, scale: settled ? [0.9, 1.1, 1] : 1 }}
-          exit={{ y: "115%", opacity: 0.15, scale: 0.88 }}
-          transition={settled ? { duration: 0.28, ease: [0.16, 1, 0.3, 1] } : { duration: 0.105, ease: "linear" }}
-        />
-      </AnimatePresence>
+    <div className={styles.slotColumnViewport}>
+      <motion.div
+        className={styles.slotColumnStrip}
+        style={{ "--slot-items": reelItems.length } as React.CSSProperties}
+        initial={{ y: "0%" }}
+        animate={{ y: `-${stopPercent}%` }}
+        transition={{ duration, ease: [0.08, 0.72, 0.12, 1] }}
+      >
+        {reelItems.map((symbol, index) => (
+          <div key={`${column}-${index}-${symbol}`} className={styles.slotColumnSymbol}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={slotAsset(symbol)} alt="" />
+          </div>
+        ))}
+      </motion.div>
+      <span className={styles.slotColumnDividerA} aria-hidden="true" />
+      <span className={styles.slotColumnDividerB} aria-hidden="true" />
     </div>
   );
 }
@@ -775,6 +906,170 @@ function RaceBoard({ state, selfId, opponentName, onPick }: { state: CasinoState
         <span>Você · {ownPick ? CASINO_RACERS.find((r) => r.id === ownPick)?.label : "—"}</span>
         <span>{opponentName} · {opponentPick ? CASINO_RACERS.find((r) => r.id === opponentPick)?.label : "—"}</span>
       </div>
+    </div>
+  );
+}
+
+function PlinkoBoard({ state, selfId, opponentName, onDrop }: { state: CasinoState; selfId: string; opponentName: string; onDrop: () => void }) {
+  const mini = state.miniState;
+  if (!mini || mini.kind !== "plinko") return null;
+  const p = mini.players[selfId];
+  const bet = state.players[selfId].roundBet ?? 0;
+  const landed = p.done && p.bucketIndex != null;
+  const landedMultiplier = p.multiplier ?? 0;
+
+  return (
+    <div className={styles.plinkoWrap}>
+      <div className={styles.plinkoHeader}>
+        <div><small>12 FILEIRAS · FÍSICA ANIMADA</small><strong>Solte a ficha e torça pelos cantos</strong></div>
+        <span>até <b>12×</b></span>
+      </div>
+      <div className={styles.plinkoBoard}>
+        <div className={styles.plinkoGlow} aria-hidden="true" />
+        {Array.from({ length: mini.rows }).map((_, row) => {
+          const count = row + 1;
+          return Array.from({ length: count }).map((__, column) => {
+            const spacing = 7;
+            const left = 50 + (column - (count - 1) / 2) * spacing;
+            const top = 9 + row * 6.1;
+            return <i key={`${row}-${column}`} className={styles.plinkoPeg} style={{ left: `${left}%`, top: `${top}%` }} />;
+          });
+        })}
+        {p.dropping && p.path ? <PlinkoBall key={p.dropStartedAt ?? state.round} path={p.path} bucket={p.pendingBucket ?? 6} rows={mini.rows} /> : null}
+        {landed ? (
+          <motion.div className={styles.plinkoLandedBall} initial={{ scale: 0.4, y: -20 }} animate={{ scale: [0.4, 1.25, 1], y: 0 }} style={{ left: `${4.6 + (p.bucketIndex ?? 6) * (90.8 / 12)}%` }} />
+        ) : null}
+        <div className={styles.plinkoBuckets}>
+          {mini.multipliers.map((multiplier, index) => (
+            <div key={`${multiplier}-${index}`} className={`${styles.plinkoBucket} ${multiplier >= 5 ? styles.plinkoBucketHot : multiplier < 1 ? styles.plinkoBucketCold : ""} ${p.bucketIndex === index ? styles.plinkoBucketHit : ""}`}>
+              {multiplier}×
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {!p.done && !p.dropping ? <button type="button" className={styles.primaryCasinoButton} onClick={onDrop}>🔻 Soltar ficha</button> : null}
+      {p.dropping ? <div className={styles.spinStatus}>🪙 A ficha está quicando entre os pinos...</div> : null}
+      {landed ? (
+        <div className={landedMultiplier > 1 ? styles.winBanner : landedMultiplier < 1 ? styles.lossBanner : styles.neutralBanner}>
+          Caiu em <b>{landedMultiplier.toFixed(2)}×</b> · retorno {formatCasinoChips(Math.round(bet * landedMultiplier))} fichas.
+        </div>
+      ) : null}
+      {p.done && p.revealEndsAt == null ? <OpponentMiniStatus state={state} selfId={selfId} opponentName={opponentName} /> : null}
+    </div>
+  );
+}
+
+function PlinkoBall({ path, bucket, rows }: { path: number[]; bucket: number; rows: number }) {
+  const horizontalStep = 3.5;
+  let x = 50;
+  const left: string[] = ["50%"];
+  const top: string[] = ["2.5%"];
+  const rotate: number[] = [0];
+  path.slice(0, rows).forEach((direction, row) => {
+    const pegTop = 9 + row * 6.1;
+    left.push(`${x}%`);
+    top.push(`${pegTop - 1.3}%`);
+    rotate.push((row + 1) * 80 * direction);
+    x += direction * horizontalStep;
+    left.push(`${x}%`);
+    top.push(`${pegTop + 2.5}%`);
+    rotate.push((row + 1) * 115 * direction);
+  });
+  left.push(`${4.6 + bucket * (90.8 / 12)}%`);
+  top.push("88%");
+  rotate.push(900);
+  return (
+    <motion.div
+      className={styles.plinkoBall}
+      initial={{ left: "50%", top: "2.5%", scale: 0.8 }}
+      animate={{ left, top, rotate, scale: [0.8, ...Array(Math.max(0, left.length - 2)).fill(1), 0.92] }}
+      transition={{ duration: 2.9, ease: "easeIn", times: left.map((_, index) => index / (left.length - 1)) }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/images/casino/dollar.png" alt="Ficha do Plinko" />
+    </motion.div>
+  );
+}
+
+function BriefcaseBoard({ state, selfId, opponentName, onOpen, onContinue, onCashOut }: {
+  state: CasinoState;
+  selfId: string;
+  opponentName: string;
+  onOpen: (index: number) => void;
+  onContinue: () => void;
+  onCashOut: () => void;
+}) {
+  const mini = state.miniState;
+  if (!mini || mini.kind !== "briefcase") return null;
+  const self = mini.players[selfId];
+  const opponentId = state.expectedPlayers.find((id) => id !== selfId) ?? "";
+  const opponent = mini.players[opponentId];
+  const revealing = mini.revealEndsAt != null;
+  const isSelfTurn = mini.turnPlayerId === selfId && !self.done;
+  const starterName = mini.startPlayerId === selfId ? "Você" : opponentName;
+  const canOpen = isSelfTurn && !revealing && !self.awaitingDecision;
+  const lastWasLoss = mini.lastValue === "lose";
+
+  return (
+    <div className={styles.briefcaseWrap}>
+      <div className={styles.briefcaseIntro}>
+        <div><small>JOGO COMPARTILHADO</small><strong>💼 Maletas do Ganancioso</strong><p>Uma maleta aberta some para os dois. Quem começou foi sorteado: <b>{starterName}</b>.</p></div>
+        <div className={`${styles.turnBadge} ${isSelfTurn ? styles.turnBadgeSelf : ""}`}><span className={styles.liveDot}/>{revealing ? "Revelando..." : isSelfTurn ? "Sua vez" : `${opponentName} joga`}</div>
+      </div>
+
+      <div className={styles.briefcaseScores}>
+        <div className={styles.briefcaseScoreSelf}><span>Você</span><strong>{self.accumulatedMultiplier.toFixed(2)}×</strong><small>{self.done ? self.cashed ? "sacou" : "eliminado" : self.awaitingDecision ? "decidindo" : isSelfTurn ? "escolhendo" : "aguardando"}</small></div>
+        <div><span>{opponentName}</span><strong>{(opponent?.accumulatedMultiplier ?? 0).toFixed(2)}×</strong><small>{opponent?.done ? opponent.cashed ? "sacou" : "eliminado" : mini.turnPlayerId === opponentId ? "escolhendo" : "aguardando"}</small></div>
+      </div>
+
+      <div className={styles.briefcaseGrid}>
+        {Array.from({ length: 10 }).map((_, index) => {
+          const openedBy = mini.openedBy[index];
+          const value = mini.contents[index];
+          const opened = Boolean(openedBy);
+          const openedBySelf = openedBy === selfId;
+          const isLast = mini.lastOpenedIndex === index;
+          return (
+            <motion.button
+              key={index}
+              type="button"
+              disabled={!canOpen || opened}
+              onClick={() => onOpen(index)}
+              whileHover={canOpen && !opened ? { y: -4, scale: 1.03 } : undefined}
+              whileTap={canOpen && !opened ? { scale: 0.96 } : undefined}
+              className={`${styles.briefcase} ${opened ? styles.briefcaseOpened : ""} ${openedBySelf ? styles.briefcaseSelf : opened ? styles.briefcaseOther : ""} ${isLast ? styles.briefcaseLast : ""} ${value === "lose" ? styles.briefcaseLose : ""}`}
+            >
+              {opened ? (
+                <>
+                  <span className={styles.briefcaseValue}>{value === "lose" ? "PERDEU" : `${Number(value).toFixed(value === 1 || value === 2 || value === 3 || value === 5 ? 0 : 2)}×`}</span>
+                  <small>{openedBySelf ? "você abriu" : `${opponentName} abriu`}</small>
+                </>
+              ) : (
+                <><span className={styles.briefcaseHandle}/><b>{String(index + 1).padStart(2, "0")}</b><small>FECHADA</small></>
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {revealing && mini.lastOpenedIndex != null ? (
+        <motion.div className={lastWasLoss ? styles.lossBanner : styles.winBanner} initial={{ scale: 0.88, opacity: 0 }} animate={{ scale: [0.88, 1.04, 1], opacity: 1 }}>
+          {lastWasLoss ? "💀 PERDEU! A tentativa desse jogador terminou." : `✨ Maleta ${mini.lastOpenedIndex + 1}: +${Number(mini.lastValue).toFixed(2)}× no acumulado.`}
+        </motion.div>
+      ) : null}
+
+      {!revealing && !self.done && self.awaitingDecision && isSelfTurn ? (
+        <div className={styles.briefcaseDecision}>
+          <div><span>Seu acumulado</span><strong>{self.accumulatedMultiplier.toFixed(2)}×</strong><small>Você garante agora ou remove outra opção do tabuleiro?</small></div>
+          <div className={styles.dualActions}>
+            <button type="button" className={styles.cashButton} onClick={onCashOut}>💰 Sacar {self.accumulatedMultiplier.toFixed(2)}×</button>
+            <button type="button" className={styles.riskButton} onClick={onContinue}>💼 Continuar jogando</button>
+          </div>
+        </div>
+      ) : null}
+      {!revealing && canOpen ? <div className={styles.centerHint}>Escolha uma das maletas que ainda não foi retirada do jogo.</div> : null}
+      {self.done ? <OpponentMiniStatus state={state} selfId={selfId} opponentName={opponentName} /> : null}
     </div>
   );
 }
@@ -1121,6 +1416,7 @@ function FinishedPanel({ state, selfId, players, isHost, onAgain, onGames }: { s
   const selfWon = state.winnerId === selfId;
   return (
     <div className={styles.finishedPanel}>
+      {selfWon ? <Confetti /> : null}
       <motion.div initial={{ scale: 0.6, rotate: -10 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 180, damping: 13 }} className={styles.trophyCircle}>
         {winner ? <Trophy size={42}/> : <span>🤝</span>}
       </motion.div>

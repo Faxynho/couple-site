@@ -3,7 +3,7 @@ import { GameEngine } from "../../types";
 export type CasinoLength = "quick" | "normal" | "long";
 export type CasinoMode = "duel" | "soloBot";
 export const CASINO_BOT_ID = "BOT" as const;
-export type CasinoMiniGame = "mines" | "crash" | "roulette" | "slots" | "race" | "dice" | "hilo" | "fortune";
+export type CasinoMiniGame = "mines" | "crash" | "roulette" | "slots" | "race" | "dice" | "hilo" | "fortune" | "plinko" | "briefcase";
 export type CasinoPhase = "selecting" | "betting" | "playing" | "roundResult" | "lastChance" | "finished";
 
 export const CASINO_LENGTH_TARGETS: Record<CasinoLength, number> = {
@@ -21,6 +21,8 @@ export const CASINO_MINIGAMES: CasinoMiniGame[] = [
   "dice",
   "hilo",
   "fortune",
+  "plinko",
+  "briefcase",
 ];
 
 export function isValidCasinoLength(value: unknown): value is CasinoLength {
@@ -99,11 +101,16 @@ export interface RouletteMiniState {
 
 export type SlotSymbolId = "cherry" | "strawberry" | "plum" | "clover" | "heart-card" | "club-card" | "thunder" | "star" | "diamond";
 interface SlotsPlayerState {
+  /** Quantos giros já foram consumidos nesta aposta. Os dois primeiros erros não encerram a tentativa. */
+  spinsUsed: number;
+  /** Quantidade de giros vencedores; usada pelo BOT para decidir quando sacar. */
   streak: number;
   multiplier: number;
   lastSymbols: SlotSymbolId[];
   lastWinFactor: number | null;
+  lastWinningLines: number[];
   lastSpinWon: boolean | null;
+  jackpotHit: boolean;
   awaitingDecision: boolean;
   spinning: boolean;
   spinStartedAt: number | null;
@@ -116,6 +123,51 @@ interface SlotsPlayerState {
 export interface SlotsMiniState {
   kind: "slots";
   players: Record<string, SlotsPlayerState>;
+}
+
+export const PLINKO_MULTIPLIERS = [12, 5, 3, 1.5, 1, 0.5, 0.2, 0.5, 1, 1.5, 3, 5, 12] as const;
+
+interface PlinkoPlayerState {
+  dropping: boolean;
+  dropStartedAt: number | null;
+  dropEndsAt: number | null;
+  path: number[] | null;
+  pendingBucket: number | null;
+  bucketIndex: number | null;
+  multiplier: number | null;
+  revealEndsAt: number | null;
+  done: boolean;
+}
+
+export interface PlinkoMiniState {
+  kind: "plinko";
+  rows: 12;
+  multipliers: number[];
+  players: Record<string, PlinkoPlayerState>;
+}
+
+export type BriefcaseValue = number | "lose";
+
+interface BriefcasePlayerState {
+  accumulatedMultiplier: number;
+  awaitingDecision: boolean;
+  done: boolean;
+  cashed: boolean;
+  openedCount: number;
+  lastOpenedIndex: number | null;
+}
+
+export interface BriefcaseMiniState {
+  kind: "briefcase";
+  contents: Array<BriefcaseValue | null>;
+  openedBy: Array<string | null>;
+  startPlayerId: string;
+  turnPlayerId: string | null;
+  players: Record<string, BriefcasePlayerState>;
+  lastOpenedIndex: number | null;
+  lastOpenedBy: string | null;
+  lastValue: BriefcaseValue | null;
+  revealEndsAt: number | null;
 }
 
 export interface CasinoRacer {
@@ -242,6 +294,8 @@ export type CasinoMiniState =
   | DiceMiniState
   | HiLoMiniState
   | FortuneMiniState
+  | PlinkoMiniState
+  | BriefcaseMiniState
   | LastChanceMiniState;
 
 export interface CasinoBotState {
@@ -295,6 +349,9 @@ export type CasinoAction =
   | { type: "diceContinue" }
   | { type: "hiloGuess"; direction: "higher" | "lower" }
   | { type: "hiloContinue" }
+  | { type: "plinkoDrop" }
+  | { type: "briefcaseOpen"; index: number }
+  | { type: "briefcaseContinue" }
   | { type: "nextRound" }
   | { type: "lastChanceChoose"; side: LastChanceCoinSide }
   | { type: "lastChanceSpin" }
@@ -316,6 +373,13 @@ const RED_ROULETTE = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36])
 const DICE_MULTIPLIERS = [1.5, 2.2, 3.2, 5, 8];
 const HI_LO_MAX_STREAK = 7;
 const START_BALANCE = 1_000;
+const SLOT_JACKPOT_MULTIPLIER = 50;
+const SLOT_LINES: ReadonlyArray<readonly [number, number, number]> = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6],
+];
+const BRIEFCASE_VALUES: BriefcaseValue[] = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 5, "lose", "lose"];
 
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
@@ -372,6 +436,8 @@ function botDecisionDelay(key: string): number {
   if (key.startsWith("dice:")) return botDelay(480, 850);
   if (key.startsWith("hilo:")) return botDelay(520, 950);
   if (key.startsWith("slots:")) return botDelay(480, 900);
+  if (key.startsWith("plinko:")) return botDelay(520, 900);
+  if (key.startsWith("briefcase:")) return botDelay(620, 1_050);
   if (key.startsWith("lastChance:")) return botDelay(650, 1_050);
   if (key.startsWith("nextRound:")) return botDelay(700, 1_250);
   return botDelay(650, 1_200);
@@ -498,6 +564,17 @@ function botDecisionKey(state: CasinoState, now: number): string | null {
     if (p.awaitingDecision) return `hilo:decision:${p.streak}`;
     return `hilo:guess:${p.streak}:${p.currentCard.rank}`;
   }
+  if (mini.kind === "plinko") {
+    const p = mini.players[CASINO_BOT_ID];
+    if (!p || p.done || p.dropping || p.revealEndsAt != null) return null;
+    return `plinko:drop:${state.round}`;
+  }
+  if (mini.kind === "briefcase") {
+    const p = mini.players[CASINO_BOT_ID];
+    if (!p || p.done || mini.revealEndsAt != null) return null;
+    if (p.awaitingDecision) return `briefcase:decision:${p.openedCount}:${p.accumulatedMultiplier}`;
+    if (mini.turnPlayerId === CASINO_BOT_ID) return `briefcase:pick:${mini.openedBy.filter(Boolean).length}`;
+  }
   return null;
 }
 
@@ -551,6 +628,23 @@ function botActionForState(state: CasinoState): CasinoAction | null {
     if (!p.awaitingDecision) return { type: "hiloGuess", direction: chooseBotHiLoDirection(p.currentCard.rank) };
     const cashChance = Math.max(0.28, Math.min(0.92, 0.28 + p.streak * 0.12 + Math.max(0, p.multiplier - 1.7) * 0.07 - bot.risk * 0.16));
     return Math.random() < cashChance ? { type: "cashOut" } : { type: "hiloContinue" };
+  }
+  if (mini.kind === "plinko") return { type: "plinkoDrop" };
+  if (mini.kind === "briefcase") {
+    const p = mini.players[CASINO_BOT_ID];
+    if (p.awaitingDecision) {
+      const cashChance = Math.max(0.16, Math.min(0.94,
+        0.14 + p.accumulatedMultiplier * 0.16 + p.openedCount * 0.025 - bot.risk * 0.12
+      ));
+      return Math.random() < cashChance ? { type: "cashOut" } : { type: "briefcaseContinue" };
+    }
+    const closed = mini.openedBy
+      .map((openedBy, index) => openedBy == null ? index : -1)
+      .filter((index) => index >= 0);
+    if (closed.length === 0) return null;
+    // O BOT escolhe somente entre índices ainda fechados. Ele não consulta
+    // contents, então não sabe onde está o "PERDEU" nem os multiplicadores.
+    return { type: "briefcaseOpen", index: closed[randomInt(closed.length)] };
   }
   return null;
 }
@@ -647,21 +741,53 @@ function pickSlotSymbol(): SlotSymbolId {
   return weightedPick(SLOT_SYMBOLS).id;
 }
 
-function slotFactor(symbols: SlotSymbolId[]): number | null {
-  const counts = new Map<SlotSymbolId, number>();
-  for (const symbol of symbols) counts.set(symbol, (counts.get(symbol) ?? 0) + 1);
-  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
-  if (!best || best[1] < 2) return null;
-  const config = SLOT_SYMBOLS.find((item) => item.id === best[0])!;
-  return best[1] === 3 ? config.triple : config.pair;
+function slotGridResult(symbols: SlotSymbolId[]): { factor: number; lines: number[]; jackpot: boolean } | null {
+  if (symbols.length !== 9) return null;
+  const lines: number[] = [];
+  const lineFactors: number[] = [];
+  SLOT_LINES.forEach((line, lineIndex) => {
+    const [a, b, c] = line;
+    const symbol = symbols[a];
+    if (!symbol || symbol !== symbols[b] || symbol !== symbols[c]) return;
+    const config = SLOT_SYMBOLS.find((item) => item.id === symbol);
+    if (!config) return;
+    lines.push(lineIndex);
+    lineFactors.push(config.triple);
+  });
+  if (lines.length === 0) return null;
+  const jackpot = lines.length >= 4;
+  if (jackpot) return { factor: SLOT_JACKPOT_MULTIPLIER, lines, jackpot: true };
+
+  const lineSum = lineFactors.reduce((sum, value) => sum + value, 0);
+  const multiLineBonus = 1 + Math.max(0, lines.length - 1) * 0.25;
+  return {
+    factor: round2(Math.min(30, lineSum * multiLineBonus)),
+    lines,
+    jackpot: false,
+  };
 }
 
 function randomDiceSets(): { green: number[]; red: number[] } {
   const values = shuffle(Array.from({ length: 11 }, (_, i) => i + 2));
   return {
     green: values.slice(0, 3).sort((a, b) => a - b),
-    red: values.slice(3, 6).sort((a, b) => a - b),
+    red: values.slice(3, 5).sort((a, b) => a - b),
   };
+}
+
+function plinkoPath(rows = 12): { path: number[]; bucket: number } {
+  const path = Array.from({ length: rows }, () => (Math.random() < 0.5 ? -1 : 1));
+  const bucket = path.reduce((rights, direction) => rights + (direction > 0 ? 1 : 0), 0);
+  return { path, bucket };
+}
+
+function nextBriefcasePlayer(state: CasinoState, mini: BriefcaseMiniState, currentId: string): string | null {
+  const currentIndex = state.expectedPlayers.indexOf(currentId);
+  for (let offset = 1; offset <= state.expectedPlayers.length; offset += 1) {
+    const id = state.expectedPlayers[(currentIndex + offset) % state.expectedPlayers.length];
+    if (id && !mini.players[id]?.done) return id;
+  }
+  return null;
 }
 
 function drawCard(): HiLoCard {
@@ -760,11 +886,14 @@ function initialMiniState(game: CasinoMiniGame, playerIds: string[], now: number
     return {
       kind: "slots",
       players: Object.fromEntries(playerIds.map((id) => [id, {
+        spinsUsed: 0,
         streak: 0,
         multiplier: 1,
         lastSymbols: [],
         lastWinFactor: null,
+        lastWinningLines: [],
         lastSpinWon: null,
+        jackpotHit: false,
         awaitingDecision: false,
         spinning: false,
         spinStartedAt: null,
@@ -831,6 +960,47 @@ function initialMiniState(game: CasinoMiniGame, playerIds: string[], now: number
         pendingCorrect: null,
         pendingFactor: null,
       }])),
+    };
+  }
+  if (game === "plinko") {
+    return {
+      kind: "plinko",
+      rows: 12,
+      multipliers: [...PLINKO_MULTIPLIERS],
+      players: Object.fromEntries(playerIds.map((id) => [id, {
+        dropping: false,
+        dropStartedAt: null,
+        dropEndsAt: null,
+        path: null,
+        pendingBucket: null,
+        bucketIndex: null,
+        multiplier: null,
+        revealEndsAt: null,
+        done: false,
+      }])),
+    };
+  }
+  if (game === "briefcase") {
+    const contents = shuffle(BRIEFCASE_VALUES);
+    const startPlayerId = playerIds[randomInt(playerIds.length)] ?? playerIds[0] ?? "";
+    return {
+      kind: "briefcase",
+      contents,
+      openedBy: Array.from({ length: contents.length }, () => null),
+      startPlayerId,
+      turnPlayerId: startPlayerId || null,
+      players: Object.fromEntries(playerIds.map((id) => [id, {
+        accumulatedMultiplier: 0,
+        awaitingDecision: false,
+        done: false,
+        cashed: false,
+        openedCount: 0,
+        lastOpenedIndex: null,
+      }])),
+      lastOpenedIndex: null,
+      lastOpenedBy: null,
+      lastValue: null,
+      revealEndsAt: null,
     };
   }
   return {
@@ -934,8 +1104,10 @@ function maybeCompleteIndividualRound(state: CasinoState): CasinoState {
   let done = false;
   if (mini.kind === "mines") {
     done = allPlayers(state, (id) => Boolean(mini.players[id]?.done));
-  } else if (mini.kind === "slots" || mini.kind === "dice" || mini.kind === "hilo") {
+  } else if (mini.kind === "slots" || mini.kind === "dice" || mini.kind === "hilo" || mini.kind === "plinko") {
     done = allPlayers(state, (id) => Boolean(mini.players[id]?.done) && mini.players[id]?.revealEndsAt == null);
+  } else if (mini.kind === "briefcase") {
+    done = mini.revealEndsAt == null && allPlayers(state, (id) => Boolean(mini.players[id]?.done));
   } else if (mini.kind === "crash") {
     done = mini.crashed;
   }
@@ -950,6 +1122,8 @@ function maybeCompleteIndividualRound(state: CasinoState): CasinoState {
     dice: "Mesa de dados encerrada.",
     hilo: "Hi-Lo encerrado.",
     fortune: "Roda da Fortuna encerrada.",
+    plinko: "Plinko encerrado.",
+    briefcase: "Maletas encerradas.",
   };
   return completeRound(state, labels[state.chosenGame!]);
 }
@@ -1105,29 +1279,48 @@ function handleSlots(state: CasinoState, action: CasinoAction, playerId: string)
       if (!next) next = cloneState(state);
       const nextP = (next.miniState as SlotsMiniState).players[id];
       const symbols = nextP.pendingSymbols ?? [];
-      const factor = nextP.pendingFactor;
+      const result = slotGridResult(symbols);
+      const factor = result?.factor ?? null;
+
+      nextP.spinsUsed += 1;
       nextP.lastSymbols = symbols;
       nextP.lastWinFactor = factor;
+      nextP.lastWinningLines = result?.lines ?? [];
       nextP.lastSpinWon = factor != null;
+      nextP.jackpotHit = Boolean(result?.jackpot);
       nextP.spinning = false;
       nextP.spinStartedAt = null;
       nextP.spinEndsAt = null;
       nextP.pendingSymbols = null;
       nextP.pendingFactor = null;
+      nextP.revealEndsAt = null;
+
       if (factor == null) {
-        nextP.done = true;
         nextP.awaitingDecision = false;
-        nextP.revealEndsAt = now + 950;
-        losePlayer(next, id);
+        // A aposta compra três chances de verdade. Errar no 1º ou 2º giro não
+        // encerra a tentativa nem muda o saldo novamente — a aposta já está
+        // reservada desde a entrada da mesa. A partir do 3º, um erro encerra.
+        if (nextP.spinsUsed >= 3) {
+          nextP.done = true;
+          nextP.revealEndsAt = now + 950;
+          losePlayer(next, id);
+        }
       } else {
         nextP.streak += 1;
-        nextP.multiplier = round2(nextP.multiplier + (factor - 1));
-        nextP.awaitingDecision = true;
-        if (nextP.streak >= 5) {
-          payoutPlayer(next, id, nextP.multiplier, "won");
+        nextP.multiplier = result?.jackpot
+          ? SLOT_JACKPOT_MULTIPLIER
+          : round2(Math.min(SLOT_JACKPOT_MULTIPLIER, nextP.multiplier + (factor - 1)));
+
+        if (result?.jackpot) {
+          payoutPlayer(next, id, SLOT_JACKPOT_MULTIPLIER, "won");
           nextP.done = true;
           nextP.awaitingDecision = false;
-          nextP.revealEndsAt = now + 950;
+          nextP.revealEndsAt = now + 1_250;
+        } else {
+          // Qualquer vitória mantém o prêmio acumulado e permite sacar. Se já
+          // consumiu as 3 chances, a vitória também libera exatamente mais um
+          // giro; vencê-lo libera outro, sucessivamente, até errar ou sacar.
+          nextP.awaitingDecision = true;
         }
       }
     }
@@ -1142,18 +1335,22 @@ function handleSlots(state: CasinoState, action: CasinoAction, playerId: string)
   if (action.type === "slotsSpin") {
     const next = cloneState(state);
     const nextP = (next.miniState as SlotsMiniState).players[playerId];
-    const symbols: SlotSymbolId[] = [pickSlotSymbol(), pickSlotSymbol(), pickSlotSymbol()];
-    const factor = slotFactor(symbols);
+    const symbols: SlotSymbolId[] = Array.from({ length: 9 }, () => pickSlotSymbol());
+    const result = slotGridResult(symbols);
     const now = Date.now();
     nextP.awaitingDecision = false;
     nextP.lastSpinWon = null;
     nextP.lastWinFactor = null;
+    nextP.lastWinningLines = [];
+    nextP.jackpotHit = false;
     nextP.spinning = true;
     nextP.spinStartedAt = now;
-    // Dá tempo de os três rolos pararem em sequência no navegador.
-    nextP.spinEndsAt = now + 2_350;
+    // As três COLUNAS são rolos únicos. O servidor espera a terceira coluna
+    // terminar antes de consolidar o resultado e liberar a próxima decisão.
+    nextP.spinEndsAt = now + 2_850;
     nextP.pendingSymbols = symbols;
-    nextP.pendingFactor = factor;
+    nextP.pendingFactor = result?.factor ?? null;
+    nextP.revealEndsAt = null;
     touch(next);
     return next;
   }
@@ -1165,6 +1362,154 @@ function handleSlots(state: CasinoState, action: CasinoAction, playerId: string)
     nextP.done = true;
     nextP.awaitingDecision = false;
     nextP.revealEndsAt = null;
+    touch(next);
+    return maybeCompleteIndividualRound(next);
+  }
+  return state;
+}
+
+function settlePlinkoDrop(next: CasinoState, playerId: string, now: number): void {
+  const mini = next.miniState as PlinkoMiniState;
+  const p = mini.players[playerId];
+  if (!p?.dropping || p.pendingBucket == null) return;
+  const bucket = p.pendingBucket;
+  const multiplier = mini.multipliers[bucket] ?? 0;
+  p.dropping = false;
+  p.dropStartedAt = null;
+  p.dropEndsAt = null;
+  p.pendingBucket = null;
+  p.bucketIndex = bucket;
+  p.multiplier = multiplier;
+  p.done = true;
+  p.revealEndsAt = now + 900;
+  if (multiplier > 0) payoutPlayer(next, playerId, multiplier, multiplier > 1 ? "won" : "cashed");
+  else losePlayer(next, playerId);
+}
+
+function handlePlinko(state: CasinoState, action: CasinoAction, playerId: string): CasinoState {
+  const mini = state.miniState;
+  if (!mini || mini.kind !== "plinko") return state;
+
+  if (action.type === "tick") {
+    const now = typeof action.now === "number" ? action.now : Date.now();
+    let next: CasinoState | null = null;
+    for (const id of state.expectedPlayers) {
+      let source = (next?.miniState as PlinkoMiniState | undefined)?.players[id] ?? mini.players[id];
+      if (source?.dropping && source.dropEndsAt != null && now >= source.dropEndsAt) {
+        if (!next) next = cloneState(state);
+        settlePlinkoDrop(next, id, now);
+        source = (next.miniState as PlinkoMiniState).players[id];
+      }
+      if (source?.done && source.revealEndsAt != null && now >= source.revealEndsAt) {
+        if (!next) next = cloneState(state);
+        (next.miniState as PlinkoMiniState).players[id].revealEndsAt = null;
+      }
+    }
+    if (!next) return state;
+    touch(next);
+    return maybeCompleteIndividualRound(next);
+  }
+
+  const p = mini.players[playerId];
+  if (!p || p.done || p.dropping || action.type !== "plinkoDrop") return state;
+  const next = cloneState(state);
+  const nextP = (next.miniState as PlinkoMiniState).players[playerId];
+  const generated = plinkoPath((next.miniState as PlinkoMiniState).rows);
+  const now = Date.now();
+  nextP.dropping = true;
+  nextP.dropStartedAt = now;
+  nextP.dropEndsAt = now + 3_250;
+  nextP.path = generated.path;
+  nextP.pendingBucket = generated.bucket;
+  nextP.bucketIndex = null;
+  nextP.multiplier = null;
+  nextP.revealEndsAt = null;
+  return touch(next);
+}
+
+function cashBriefcasePlayer(next: CasinoState, playerId: string): void {
+  const mini = next.miniState as BriefcaseMiniState;
+  const p = mini.players[playerId];
+  if (!p || p.done) return;
+  if (p.accumulatedMultiplier > 0) {
+    payoutPlayer(next, playerId, p.accumulatedMultiplier, p.accumulatedMultiplier > 1 ? "won" : "cashed");
+  } else {
+    losePlayer(next, playerId);
+  }
+  p.done = true;
+  p.cashed = p.accumulatedMultiplier > 0;
+  p.awaitingDecision = false;
+}
+
+function finishBriefcaseIfExhausted(next: CasinoState): CasinoState {
+  const mini = next.miniState as BriefcaseMiniState;
+  if (mini.openedBy.some((openedBy) => openedBy == null)) return next;
+  for (const id of next.expectedPlayers) cashBriefcasePlayer(next, id);
+  mini.turnPlayerId = null;
+  return maybeCompleteIndividualRound(next);
+}
+
+function handleBriefcase(state: CasinoState, action: CasinoAction, playerId: string): CasinoState {
+  const mini = state.miniState;
+  if (!mini || mini.kind !== "briefcase") return state;
+
+  if (action.type === "tick") {
+    const now = typeof action.now === "number" ? action.now : Date.now();
+    if (mini.revealEndsAt == null || now < mini.revealEndsAt) return state;
+    const next = cloneState(state);
+    const nextMini = next.miniState as BriefcaseMiniState;
+    nextMini.revealEndsAt = null;
+    touch(next);
+    if (nextMini.openedBy.every((openedBy) => openedBy != null)) return finishBriefcaseIfExhausted(next);
+    return maybeCompleteIndividualRound(next);
+  }
+
+  const p = mini.players[playerId];
+  if (!p || p.done || mini.revealEndsAt != null) return state;
+
+  if (action.type === "briefcaseOpen") {
+    if (mini.turnPlayerId !== playerId || p.awaitingDecision) return state;
+    if (!Number.isInteger(action.index) || action.index < 0 || action.index >= mini.contents.length) return state;
+    if (mini.openedBy[action.index] != null) return state;
+    const value = mini.contents[action.index];
+    if (value == null) return state;
+
+    const next = cloneState(state);
+    const nextMini = next.miniState as BriefcaseMiniState;
+    const nextP = nextMini.players[playerId];
+    nextMini.openedBy[action.index] = playerId;
+    nextMini.lastOpenedIndex = action.index;
+    nextMini.lastOpenedBy = playerId;
+    nextMini.lastValue = value;
+    nextMini.revealEndsAt = Date.now() + 900;
+    nextP.lastOpenedIndex = action.index;
+    nextP.openedCount += 1;
+
+    if (value === "lose") {
+      nextP.done = true;
+      nextP.awaitingDecision = false;
+      losePlayer(next, playerId);
+      nextMini.turnPlayerId = nextBriefcasePlayer(next, nextMini, playerId);
+    } else {
+      nextP.accumulatedMultiplier = round2(nextP.accumulatedMultiplier + value);
+      nextP.awaitingDecision = true;
+    }
+    return touch(next);
+  }
+
+  if (action.type === "briefcaseContinue" && p.awaitingDecision && mini.turnPlayerId === playerId) {
+    const next = cloneState(state);
+    const nextMini = next.miniState as BriefcaseMiniState;
+    nextMini.players[playerId].awaitingDecision = false;
+    nextMini.turnPlayerId = nextBriefcasePlayer(next, nextMini, playerId);
+    return touch(next);
+  }
+
+  if (action.type === "cashOut" && p.awaitingDecision && mini.turnPlayerId === playerId) {
+    const next = cloneState(state);
+    const nextMini = next.miniState as BriefcaseMiniState;
+    cashBriefcasePlayer(next, playerId);
+    nextMini.turnPlayerId = nextBriefcasePlayer(next, nextMini, playerId);
     touch(next);
     return maybeCompleteIndividualRound(next);
   }
@@ -1696,6 +2041,8 @@ export class CasinoGame implements GameEngine<CasinoState, CasinoAction> {
       if (mini.kind === "dice") return handleDice(state, action, playerId);
       if (mini.kind === "hilo") return handleHiLo(state, action, playerId);
       if (mini.kind === "fortune") return handleFortune(state, action);
+      if (mini.kind === "plinko") return handlePlinko(state, action, playerId);
+      if (mini.kind === "briefcase") return handleBriefcase(state, action, playerId);
       return state;
     }
 
@@ -1784,8 +2131,8 @@ export function getCasinoStateForPlayer(state: CasinoState, playerId: string): C
     if (Object.values(mini.progress).every((value) => value < 100)) mini.winner = null;
   } else if (mini.kind === "slots") {
     for (const [id, p] of Object.entries(mini.players)) {
-      // O próprio jogador pode receber os três símbolos já sorteados enquanto
-      // os rolos giram, exclusivamente para fazê-los parar no desenho certo.
+      // O próprio jogador pode receber a grade 3x3 já sorteada enquanto
+      // as casas giram, exclusivamente para fazê-las parar no desenho certo.
       // O fator/pagamento continua oculto; o oponente não recebe os símbolos.
       if (p.spinning && id !== playerId) p.pendingSymbols = null;
       p.pendingFactor = null;
@@ -1804,9 +2151,20 @@ export function getCasinoStateForPlayer(state: CasinoState, playerId: string): C
       p.pendingCorrect = null;
       p.pendingFactor = null;
     }
+  } else if (mini.kind === "plinko") {
+    for (const [id, p] of Object.entries(mini.players)) {
+      if (id !== playerId && p.dropping) {
+        p.path = null;
+        p.pendingBucket = null;
+      }
+    }
   } else if (mini.kind === "fortune") {
     // resultIndex é o alvo visual do giro único. Neste ponto as apostas já
     // estão fechadas, portanto não há ação que possa ser alterada com isso.
+  } else if (mini.kind === "briefcase") {
+    // O conteúdo de cada maleta só é revelado depois que alguém a abriu.
+    // O BOT usa apenas openedBy para escolher e nunca consulta contents.
+    mini.contents = mini.contents.map((value, index) => mini.openedBy[index] == null ? null : value);
   } else if (mini.kind === "lastChance") {
     for (const id of mini.eligibleIds) mini.pendingCoinResults[id] = null;
   }
