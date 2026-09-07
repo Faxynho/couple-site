@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, CircleHelp, Crown, LockKeyhole, Shield, Sparkles, X, Zap } from "lucide-react";
+import { Bot, CircleHelp, Crown, Keyboard, LockKeyhole, Shield, Sparkles, Vault, X, Zap } from "lucide-react";
 import AccountAvatar from "@/components/account/AccountAvatar";
 import { useAccountPhotos } from "@/hooks/useAccountPhotos";
 import { BoardRacePlayerState } from "@/lib/boardRaceTypes";
@@ -59,6 +59,8 @@ export default function BoardRaceHud({
       <div className={styles.statusStack}>
         {progress.skipNextTurn && <span className={styles.statusPill} title="Perde a próxima jogada"><LockKeyhole size={10} /> Preso</span>}
         {progress.pendingQuiz && <span className={styles.statusPill} title="Precisa responder antes de jogar o dado"><CircleHelp size={10} /> Quiz</span>}
+        {progress.pendingWordChallenge && <span className={styles.statusPill} title="Precisa resolver antes de jogar o dado"><Keyboard size={10} /> {progress.pendingWordChallenge.kind === "anagram" ? "Anagrama" : "Enigma"}</span>}
+        {progress.pendingSafe && <span className={styles.statusPill} title="Precisa abrir o cofre antes de jogar o dado"><Vault size={10} /> Cofre</span>}
         {progress.shieldActive && <span className={styles.statusPill} title="Bloqueia o próximo efeito negativo"><Shield size={10} /> Escudo</span>}
         {progress.pendingRollPenalty > 0 && <span className={styles.statusPill} title={`Perde ${progress.pendingRollPenalty} no próximo movimento`}>🪤 Armadilha</span>}
         {progress.rollBonus > 0 && <span className={styles.statusPill} title={`Ganha +${progress.rollBonus} no próximo movimento`}><Zap size={10} /> Impulso</span>}

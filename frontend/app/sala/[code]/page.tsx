@@ -31,6 +31,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
     selectGame,
     backToGameSelect,
     setConfig,
+    setBoardRacePawnColor,
     startGame,
     kickPlayer,
     shuffleSequence,
@@ -208,7 +209,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             />
 
             <div className="mt-2">
-              <GameConfigPanel room={room} isHost={isHost} selfId={selfId} setConfig={setConfig} />
+              <GameConfigPanel room={room} isHost={isHost} selfId={selfId} setConfig={setConfig} setBoardRacePawnColor={setBoardRacePawnColor} />
             </div>
 
             {isHost ? (

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import BoardRacePage from "../app/game/boardrace/[code]/page";
-import BoardRaceChallengePanel from "../components/boardrace/BoardRaceChallengePanel";
+import BoardRaceChallengePanel, { BoardRaceSafePanel, BoardRaceWordPanel } from "../components/boardrace/BoardRaceChallengePanel";
 import BoardRaceEventPopup from "../components/boardrace/BoardRaceEventPopup";
 import type { BoardRaceState } from "../lib/boardRaceTypes";
 import type { RoomSnapshot } from "../lib/types";
@@ -33,10 +33,10 @@ function state(phase: BoardRaceState["phase"] = "awaitingRoll"): BoardRaceState 
     label: index === 0 ? "Início" : index === 30 ? "Chegada" : "Normal",
   }));
   return {
-    mode: "duel", boardVersion: 1, spaces, lastPosition: 30, playerOrder: ["self", "other"],
+    mode: "duel", boardVersion: 1, spaces, lastPosition: 30, playerOrder: ["self", "other"], pawnColors: { self: "pink", other: "blue" },
     currentPlayerId: "self", players: {
-      self: { position: 4, pendingSpaceIndex: null, skipNextTurn: false, powers: ["boost"], shieldActive: false, rollBonus: 0, pendingRollPenalty: 0, pendingQuiz: null },
-      other: { position: 3, pendingSpaceIndex: null, skipNextTurn: false, powers: [], shieldActive: false, rollBonus: 0, pendingRollPenalty: 0, pendingQuiz: null },
+      self: { position: 4, pendingSpaceIndex: null, skipNextTurn: false, powers: ["boost"], shieldActive: false, rollBonus: 0, pendingRollPenalty: 0, pendingQuiz: null, pendingWordChallenge: null, pendingSafe: null },
+      other: { position: 3, pendingSpaceIndex: null, skipNextTurn: false, powers: [], shieldActive: false, rollBonus: 0, pendingRollPenalty: 0, pendingQuiz: null, pendingWordChallenge: null, pendingSafe: null },
     },
     phase, phaseReadyAt: 0, dice: { value: null, total: null, rolledBy: null, serial: 0 },
     lastMove: null, pendingMinigame: null, winnerId: null, startedAt: Date.now(), finishedAt: null,
@@ -47,6 +47,9 @@ function state(phase: BoardRaceState["phase"] = "awaitingRoll"): BoardRaceState 
 describe("Trilha da Sorte", () => {
   const roll = vi.fn();
   const answerQuiz = vi.fn();
+  const answerWord = vi.fn();
+  const giveUpWord = vi.fn();
+  const chooseSafe = vi.fn();
   const usePower = vi.fn();
   const newGame = vi.fn();
 
@@ -54,7 +57,7 @@ describe("Trilha da Sorte", () => {
     cleanup();
     vi.clearAllMocks();
     mockRoom.mockReturnValue({ room, selfId: "self", notFound: false, kicked: false, backToConfig: vi.fn(), backToGameSelect: vi.fn(), kickPlayer: vi.fn() });
-    mockGame.mockReturnValue({ state: state(), roll, answerQuiz, usePower, minigameAction: vi.fn(), newGame });
+    mockGame.mockReturnValue({ state: state(), roll, answerQuiz, answerWord, giveUpWord, chooseSafe, usePower, minigameAction: vi.fn(), newGame });
   });
 
   it("renderiza o tabuleiro responsivo e envia apenas a intenção de rolar/usar poder", () => {
@@ -180,8 +183,8 @@ describe("Trilha da Sorte", () => {
       [{ id: 7, message: "recuo", tone: "negative", kind: "retreat", playerId: "self", amount: 1 }, "Você recuou 1 casa"],
       [{ id: 8, message: "prisão", tone: "negative", kind: "prison", playerId: "self" }, "Você ficou preso"],
       [{ id: 9, message: "poder", tone: "positive", kind: "powerGranted", playerId: "self", powerId: "shield" }, "Você recebeu Escudo"],
-      [{ id: 10, message: "armadilha", tone: "negative", kind: "powerUsed", playerId: "other", targetPlayerId: "self", powerId: "snare" }, "Flávia bloqueou você"],
-      [{ id: 11, message: "efeito", tone: "negative", kind: "surpriseNegative", playerId: "self" }, "Você recebeu uma surpresa ruim"],
+      [{ id: 10, message: "armadilha", tone: "negative", kind: "powerUsed", playerId: "other", targetPlayerId: "self", powerId: "snare" }, "Flávia lançou Armadilha em você"],
+      [{ id: 11, message: "efeito", tone: "negative", kind: "surpriseNegative", playerId: "self", amount: 2 }, "Você recuou 2 casas"],
       [{ id: 12, message: "fim", tone: "positive", kind: "finish", playerId: "self" }, "Você venceu a corrida"],
     ];
     for (const [event, title] of cases) {
@@ -192,6 +195,23 @@ describe("Trilha da Sorte", () => {
       expect(popup.querySelectorAll("p")).toHaveLength(0);
       unmount();
     }
+  });
+
+  it("abre os desafios de palavra e o Cofre no mesmo overlay da trilha", () => {
+    const onAnswer = vi.fn();
+    const onChoose = vi.fn();
+    const onGiveUp = vi.fn();
+    const { rerender } = render(<BoardRaceWordPanel challenge={{ id: "anagram-1", kind: "anagram", prompt: "LOVACA", assignedAt: 0, attempts: 0 }} onAnswer={onAnswer} onGiveUp={onGiveUp} />);
+    fireEvent.change(screen.getByLabelText("Sua resposta"), { target: { value: "cavalo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Responder" }));
+    expect(onAnswer).toHaveBeenCalledWith("cavalo");
+    rerender(<BoardRaceWordPanel challenge={{ id: "anagram-1", kind: "anagram", prompt: "LOVACA", assignedAt: 0, attempts: 1 }} onAnswer={onAnswer} onGiveUp={onGiveUp} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Ainda não foi dessa vez");
+    fireEvent.click(screen.getByRole("button", { name: "Desistir" }));
+    expect(onGiveUp).toHaveBeenCalledTimes(1);
+    rerender(<BoardRaceSafePanel safe={{ id: "safe-1", assignedAt: 0, options: ["power", "advance", "empty", "penalty"] }} onChoose={onChoose} />);
+    fireEvent.click(screen.getByRole("button", { name: /Abra esta gaveta/ }));
+    expect(onChoose).toHaveBeenCalledWith(0);
   });
 
   it("mostra apenas os efeitos ativos no card do jogador", () => {

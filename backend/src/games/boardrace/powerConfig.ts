@@ -30,8 +30,21 @@ export const BOARD_RACE_POWERS: Record<BoardRacePowerId, BoardRacePowerDefinitio
     category: "defense",
     description: "Cancela o próximo efeito negativo, exceto Quiz e Minijogo.",
   },
+  swap: {
+    id: "swap",
+    name: "Troca de Lugar",
+    emoji: "🔄",
+    category: "attack",
+    description: "Troca sua posição com a do adversário, sem ativar as casas.",
+  },
+  magnet: {
+    id: "magnet",
+    name: "Ímã",
+    emoji: "🧲",
+    category: "attack",
+    description: "Puxa o adversário 2 casas para trás. O Escudo bloqueia.",
+  },
 };
 
 export const BOARD_RACE_POWER_IDS = Object.keys(BOARD_RACE_POWERS) as BoardRacePowerId[];
 export const BOARD_RACE_MAX_POWERS = 2;
-

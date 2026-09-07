@@ -109,11 +109,16 @@ export function useRoomSession(code: string) {
       whoamiCategory?: string;
       chessPinkPlayerId?: string | null;
       rpgAppearance?: "man" | "woman";
+      boardRacePawnColor?: "blue" | "pink";
     }) => {
       getSocket().emit("room:setConfig", payload);
     },
     []
   );
+
+  const setBoardRacePawnColor = useCallback((color: "blue" | "pink") => {
+    getSocket().emit("room:setBoardRacePawn", { color });
+  }, []);
 
   const startGame = useCallback(() => {
     return new Promise<AckResult>((resolve) => {
@@ -149,6 +154,7 @@ export function useRoomSession(code: string) {
     backToConfig,
     backToGameSelect,
     setConfig,
+    setBoardRacePawnColor,
     startGame,
     kickPlayer,
     shuffleSequence,

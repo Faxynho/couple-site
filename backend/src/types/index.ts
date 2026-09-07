@@ -75,6 +75,8 @@ export interface RoomSnapshot {
   pendingChessPinkPlayerId: string | null;
   /** Aparência base do anfitrião no RPG; o outro jogador recebe a outra. */
   pendingRpgAppearance: "man" | "woman";
+  /** Peças escolhidas para a próxima Corrida de Tabuleiro. */
+  pendingBoardRacePawnColors: Record<string, "blue" | "pink">;
   /** Sugestão de sequência de jogos da sala Duo: uma ordem sorteada com todos
    *  os jogos do catálogo. Sem efeito numa sala Solo. */
   sequence: GameId[];

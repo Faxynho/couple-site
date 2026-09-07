@@ -802,12 +802,12 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     // recebendo a atualização em tempo real via room:update.
     socket.on(
       "room:setConfig",
-      (payload: StartPayload & { colorMode?: string; seerId?: string | null; matchMode?: string; whoamiCategory?: string; chessPinkPlayerId?: string | null; rpgAppearance?: "man" | "woman" }) => {
+      (payload: StartPayload & { colorMode?: string; seerId?: string | null; matchMode?: string; whoamiCategory?: string; chessPinkPlayerId?: string | null; rpgAppearance?: "man" | "woman"; boardRacePawnColor?: "blue" | "pink" }) => {
         const code = socket.data.roomCode;
         const room = code ? roomManager.getRoom(code) : undefined;
         if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
 
-        const options: { colorMode?: string; seerId?: string | null; matchMode?: string; whoamiCategory?: string; chessPinkPlayerId?: string; rpgAppearance?: "man" | "woman" } = {};
+        const options: { colorMode?: string; seerId?: string | null; matchMode?: string; whoamiCategory?: string; chessPinkPlayerId?: string; rpgAppearance?: "man" | "woman"; boardRacePawnColor?: "blue" | "pink" } = {};
         if (payload?.colorMode && isValidColorMode(payload.colorMode)) options.colorMode = payload.colorMode;
         if (payload?.seerId === null || (payload?.seerId && room.players.has(payload.seerId))) {
           options.seerId = payload.seerId;
@@ -854,6 +854,10 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
           ) return;
           options.rpgAppearance = payload.rpgAppearance;
         }
+        if (payload?.boardRacePawnColor !== undefined) {
+          if (room.gameId !== "boardrace" || room.roomMode !== "solo" || (payload.boardRacePawnColor !== "blue" && payload.boardRacePawnColor !== "pink")) return;
+          options.boardRacePawnColor = payload.boardRacePawnColor;
+        }
         if (room.gameId === "whoami" && payload?.whoamiCategory && isValidWhoAmICategory(payload.whoamiCategory)) {
           options.whoamiCategory = payload.whoamiCategory;
         }
@@ -861,6 +865,18 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         broadcastRoom(io, code!, roomManager);
       }
     );
+
+    // A peça é uma escolha individual no Duo. O Room atribui a cor oposta ao
+    // par e devolve um único snapshot sincronizado aos dois navegadores.
+    socket.on("room:setBoardRacePawn", (payload: { color?: "blue" | "pink" }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const playerId = socket.data.playerId;
+      if (!room || !playerId || room.gameId !== "boardrace" || (room.status !== "waiting" && room.status !== "ready")) return;
+      if (payload?.color !== "blue" && payload?.color !== "pink") return;
+      room.setBoardRacePawnColor(playerId, payload.color);
+      broadcastRoom(io, code!, roomManager);
+    });
 
     // ---- Sala Duo: escolher jogo / voltar / expulsar / sequência ----
     // (Uma sala Solo nunca usa esses eventos — nasce direto com o jogo
@@ -1590,7 +1606,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (!room || room.gameId !== "boardrace" || room.status !== "playing") return;
       if (!payload || typeof payload !== "object") return;
       const type = (payload as { type?: unknown }).type;
-      if (type !== "roll" && type !== "answerQuiz" && type !== "usePower" && type !== "minigameAction") return;
+      if (type !== "roll" && type !== "answerQuiz" && type !== "answerWord" && type !== "giveUpWord" && type !== "chooseSafe" && type !== "usePower" && type !== "minigameAction") return;
       room.applyAction(payload, socket.data.playerId ?? socket.id);
       broadcastGameState(io, code!, roomManager);
       if ((room.status as string) === "finished") broadcastRoom(io, code!, roomManager);

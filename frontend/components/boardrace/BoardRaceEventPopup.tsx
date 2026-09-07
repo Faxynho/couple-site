@@ -24,15 +24,27 @@ function eventTitle(event: RaceEvent, selfId: string, playerName: Props["playerN
     case "quizPending": return `${subject} recebeu um quiz`;
     case "quizCorrect": return `${subject} acertou o quiz`;
     case "quizWrong": return `${subject} errou o quiz`;
+    case "wordPending": return `${subject} recebeu ${event.challengeKind === "anagram" ? "um Anagrama" : "um Enigma"}`;
+    case "wordCorrect": return `${subject} acertou o ${event.challengeKind === "anagram" ? "Anagrama" : "Enigma"}`;
+    case "wordWrong": return `${subject} ${event.gaveUp ? "desistiu do" : "errou o"} ${event.challengeKind === "anagram" ? "Anagrama" : "Enigma"}${event.answer ? ` · era ${event.answer}` : ""}`;
+    case "safePending": return `${subject} encontrou um Cofre`;
+    case "safeResult": {
+      if (event.powerId) return `${subject} encontrou ${BOARD_RACE_POWER_INFO[event.powerId].name}`;
+      if (event.amount) return `${subject} avançou ${event.amount} casas pelo Cofre`;
+      return event.message;
+    }
     case "minigameStart": return `${subject} iniciou o minijogo`;
     case "minigameWin": return `${subject} venceu o minijogo`;
     case "minigameLoss": return `${subject} não venceu o minijogo`;
-    case "surprisePositive": return `${subject} recebeu uma surpresa boa`;
-    case "surpriseNegative": return `${subject} recebeu uma surpresa ruim`;
+    case "surprisePositive": return movementTitle(subject, "avançou", amount);
+    case "surpriseNegative": return movementTitle(subject, "recuou", amount);
     case "extraTurn": return `${subject} ganhou turno extra`;
     case "powerUsed": {
       const target = event.targetPlayerId ? (event.targetPlayerId === selfId ? "você" : playerName(event.targetPlayerId)) : null;
-      return event.powerId === "snare" && target ? `${subject} bloqueou ${target}` : `${subject} usou um poder`;
+      if (event.powerId === "snare" && target) return `${subject} lançou Armadilha em ${target}`;
+      if (event.powerId === "swap" && target) return `${subject} trocou de lugar com ${target}`;
+      if (event.powerId === "magnet" && target) return `${subject} puxou ${target} com o Ímã`;
+      return `${subject} usou um poder`;
     }
     case "shieldBlocked": return `${subject} bloqueou o efeito`;
     case "lostTurn": return `${subject} perdeu a jogada`;

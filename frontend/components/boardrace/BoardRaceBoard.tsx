@@ -10,8 +10,11 @@ import {
   Gamepad2,
   Gift,
   Heart,
+  Lightbulb,
   LockKeyhole,
   Sparkles,
+  Vault,
+  WholeWord,
   type LucideIcon,
 } from "lucide-react";
 import { BOARD_SPACE_INFO, BoardSpaceType, BoardRaceState } from "@/lib/boardRaceTypes";
@@ -41,6 +44,9 @@ const TILE_CLASS: Record<BoardSpaceType, string> = {
   minigame: styles.tileMinigame,
   surprise: styles.tileSurprise,
   treasure: styles.tileTreasure,
+  anagram: styles.tileAnagram,
+  riddle: styles.tileRiddle,
+  safe: styles.tileSafe,
   finish: styles.tileFinish,
 };
 
@@ -53,6 +59,9 @@ const TILE_ICON: Partial<Record<BoardSpaceType, LucideIcon>> = {
   minigame: Gamepad2,
   surprise: Sparkles,
   treasure: Gift,
+  anagram: WholeWord,
+  riddle: Lightbulb,
+  safe: Vault,
   finish: Crown,
 };
 
@@ -66,7 +75,15 @@ function transitionIsVisible(state: BoardRaceState) {
 
 function initialDisplayedPositions(state: BoardRaceState) {
   const positions = Object.fromEntries(Object.entries(state.players).map(([id, player]) => [id, player.position]));
-  if (transitionIsVisible(state) && state.lastMove) positions[state.lastMove.playerId] = state.lastMove.from;
+  if (transitionIsVisible(state) && state.lastMove) {
+    positions[state.lastMove.playerId] = state.lastMove.from;
+    // A outra peça permanece no ponto de origem até a troca terminar, para a
+    // animação não parecer um teleporte nem disparar efeitos das casas.
+    if (state.lastMove.cause === "swap") {
+      const opponentId = state.playerOrder.find((id) => id !== state.lastMove?.playerId);
+      if (opponentId) positions[opponentId] = state.lastMove.to;
+    }
+  }
   return positions;
 }
 
@@ -108,7 +125,14 @@ export default function BoardRaceBoard({ state, players, selfId }: Props) {
       return elapsed >= dueAt ? stepIndex : completed;
     }, 0);
     const initialPosition = completedSteps > 0 ? move.path[completedSteps - 1] : move.from;
-    setDisplayedPositions((current) => ({ ...current, [move.playerId]: initialPosition }));
+    setDisplayedPositions((current) => {
+      const next = { ...current, [move.playerId]: initialPosition };
+      if (move.cause === "swap") {
+        const opponentId = state.playerOrder.find((id) => id !== move.playerId);
+        if (opponentId) next[opponentId] = move.to;
+      }
+      return next;
+    });
 
     move.path.slice(completedSteps).forEach((position, offset) => {
       const stepIndex = completedSteps + offset + 1;
@@ -139,10 +163,12 @@ export default function BoardRaceBoard({ state, players, selfId }: Props) {
   }, [moveId]);
 
   const playerInfo = (id: string) => players.find((player) => player.id === id);
-  const colorByPlayer = useMemo(() => Object.fromEntries(state.playerOrder.map((id, index) => [
-    id,
-    id === "BOT" ? "#8c75d6" : index === 0 ? "#f25d97" : "#6f71d8",
-  ])), [state.playerOrder]);
+  const colorByPlayer = useMemo(() => Object.fromEntries(state.playerOrder.map((id, index) => {
+    // O fallback também torna partidas Solo antigas (salvas antes da escolha)
+    // visualizáveis; as partidas novas sempre recebem pawnColors do servidor.
+    const pawnColor = state.pawnColors?.[id] ?? (index === 0 ? "pink" : "blue");
+    return [id, pawnColor === "blue" ? "#5d8fe8" : "#f25d97"];
+  })), [state.pawnColors, state.playerOrder]);
   const focusPlayerId = movingPlayerId ?? state.currentPlayerId;
   const focusPosition = displayedPositions[focusPlayerId] ?? state.players[focusPlayerId]?.position ?? 0;
 

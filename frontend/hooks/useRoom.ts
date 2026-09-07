@@ -98,6 +98,7 @@ export function useRoom() {
       colorMode?: string;
       seerId?: string | null;
       matchMode?: string;
+      boardRacePawnColor?: "blue" | "pink";
     }) => {
       getSocket().emit("room:setConfig", payload);
     },

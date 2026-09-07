@@ -12,6 +12,9 @@ const SPACE_GUIDE = [
   { emoji: "⬇️", name: "Recuar", text: "Volte de 1 a 3 casas. O evento do destino fica para a sua próxima vez." },
   { emoji: "🔒", name: "Prisão", text: "Você perde a próxima jogada. Não acumula." },
   { emoji: "❓", name: "Quiz", text: "Na sua próxima vez, acerte a pergunta para liberar o dado." },
+  { emoji: "🔤", name: "Anagrama", text: "Na sua próxima vez, descubra a palavra embaralhada antes do dado." },
+  { emoji: "💡", name: "Enigma", text: "Na sua próxima vez, responda ao enigma curto antes do dado." },
+  { emoji: "🧰", name: "Cofre", text: "Escolha um compartimento: a maioria traz uma pequena recompensa." },
   { emoji: "🎮", name: "Minijogo", text: "Os dois entram no jogo real do site. Quem vence ganha turno extra." },
   { emoji: "✨", name: "Surpresa", text: "Um evento positivo ou negativo muda a sua sorte." },
   { emoji: "🎁", name: "Tesouro", text: "Receba um poder, se ainda tiver espaço para guardar." },
@@ -19,7 +22,7 @@ const SPACE_GUIDE = [
 
 const POWER_GUIDE = [
   { title: "Movimento", powers: ["boost"] as const },
-  { title: "Ataque", powers: ["snare"] as const },
+  { title: "Ataque", powers: ["snare", "swap", "magnet"] as const },
   { title: "Defesa", powers: ["shield"] as const },
 ];
 

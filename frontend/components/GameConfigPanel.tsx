@@ -34,6 +34,7 @@ interface GameConfigPanelProps {
     chessPinkPlayerId?: string | null;
     rpgAppearance?: "man" | "woman";
   }) => void;
+  setBoardRacePawnColor: (color: "blue" | "pink") => void;
 }
 
 function OptionGrid<K extends string>({
@@ -83,7 +84,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
  * room-colors, etc.) num único painel, já que agora a sala é a mesma para
  * todos os jogos. Só o host interage; o convidado vê tudo em modo leitura.
  */
-export default function GameConfigPanel({ room, isHost, selfId, setConfig }: GameConfigPanelProps) {
+export default function GameConfigPanel({ room, isHost, selfId, setConfig, setBoardRacePawnColor }: GameConfigPanelProps) {
   const { images, loading: imagesLoading } = usePuzzleImages();
   const connectedPlayers = room.players.filter((p) => p.connected);
   const bothConnected = connectedPlayers.length === room.maxPlayers;
@@ -426,10 +427,33 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig }: Gam
   }
 
   if (room.gameId === "boardrace") {
+    const selectedColor = selfId ? room.pendingBoardRacePawnColors?.[selfId] : undefined;
+    const opponent = connectedPlayers.find((player) => player.id !== selfId);
+    const opponentColor = opponent ? room.pendingBoardRacePawnColors?.[opponent.id] : undefined;
     return (
-      <div className="rounded-xl2 border border-surface/70 bg-surface/50 p-4 text-center">
-        <p className="text-sm font-medium text-ink">⚔️ Duelo 1x1</p>
-        <p className="mt-1 text-xs text-ink-soft">Dado de 1 a 6, 30 casas e desafios compartilhados. O primeiro a chegar vence.</p>
+      <div className="text-left">
+        <SectionLabel>Escolha seu peão</SectionLabel>
+        <div className="grid grid-cols-2 gap-2">
+          {(["pink", "blue"] as const).map((color) => {
+            const selected = selectedColor === color;
+            return (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setBoardRacePawnColor(color)}
+                className={`rounded-xl2 border p-3 text-center transition-colors ${selected ? color === "pink" ? "border-rose bg-rose/10" : "border-sky-400 bg-sky-100/60" : "border-surface/70 bg-surface/50 hover:bg-surface/70"}`}
+              >
+                <span className={`mx-auto block h-6 w-6 rounded-full border-2 border-white shadow-sm ${color === "pink" ? "bg-rose" : "bg-sky-500"}`} />
+                <span className="mt-1.5 block text-sm font-medium text-ink">{color === "pink" ? "Rosa" : "Azul"}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-3 text-center text-xs text-ink-soft">
+          {selectedColor ? `Seu peão: ${selectedColor === "pink" ? "Rosa" : "Azul"}.` : "Escolha uma cor para seu peão."}
+          {opponent && opponentColor ? ` ${opponent.name} fica com ${opponentColor === "pink" ? "Rosa" : "Azul"}.` : ""}
+        </p>
+        <p className="mt-2 rounded-xl2 border border-surface/70 bg-surface/50 p-3 text-center text-xs text-ink-soft">⚔️ Duelo 1x1 · dado de 1 a 6, 30 casas e desafios compartilhados.</p>
       </div>
     );
   }

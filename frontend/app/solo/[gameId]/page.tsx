@@ -69,6 +69,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
   const [difficulty, setDifficulty] = useState<string>(() => gameId === "termo" ? "one" : gameId === "casino" ? "normal" : "medium");
   const [imageId, setImageId] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<{ width: number; height: number } | null>(null);
+  const [pawnColor, setPawnColor] = useState<"blue" | "pink">("pink");
   const [starting, setStarting] = useState(false);
   const [conflictSave, setConflictSave] = useState<SoloMatchSave | null>(null);
   const [conflictError, setConflictError] = useState<string | null>(null);
@@ -129,6 +130,8 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
       // Não existe dificuldade do BOT: a única escolha continua sendo a
       // duração/meta da sessão. O servidor força Solo -> soloBot também.
       setConfig({ difficulty, matchMode: "soloBot" });
+    } else if (gameId === "boardrace") {
+      setConfig({ difficulty, boardRacePawnColor: pawnColor });
     } else {
       setConfig({ difficulty });
     }
@@ -334,6 +337,24 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
 
         {gameId === "rpg" && (
           <p className="text-center text-sm text-ink-soft">Sorteie sua classe e batalhe contra o BOT.</p>
+        )}
+
+        {gameId === "boardrace" && (
+          <div className="text-left">
+            <p className="mb-2 text-xs uppercase tracking-wide text-ink-soft">Escolha seu peão</p>
+            <div className="grid grid-cols-2 gap-2">
+              {(["pink", "blue"] as const).map((color) => {
+                const selected = pawnColor === color;
+                return (
+                  <button key={color} type="button" onClick={() => setPawnColor(color)} className={`rounded-xl2 border p-3 text-center transition-colors ${selected ? color === "pink" ? "border-rose bg-rose/10" : "border-sky-400 bg-sky-100/60" : "border-surface/70 bg-surface/50 hover:bg-surface/70"}`}>
+                    <span className={`mx-auto block h-7 w-7 rounded-full border-2 border-white shadow-sm ${color === "pink" ? "bg-rose" : "bg-sky-500"}`} />
+                    <span className="mt-1.5 block text-sm font-medium text-ink">{color === "pink" ? "Rosa" : "Azul"}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-center text-xs text-ink-soft">Você joga de {pawnColor === "pink" ? "Rosa" : "Azul"}; o BOT usará o peão {pawnColor === "pink" ? "Azul" : "Rosa"}.</p>
+          </div>
         )}
 
         <Button onClick={handleStart} disabled={!canStart || loading || starting} className="mt-6 w-full">

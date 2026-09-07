@@ -13,11 +13,13 @@ import {
   tickEmbeddedMinigame,
 } from "./minigameAdapters";
 import { BOARD_RACE_MAX_POWERS, BOARD_RACE_POWER_IDS } from "./powerConfig";
+import { createWordChallenge, normalizeWordAnswer } from "./wordChallenges";
 import {
   BoardRaceAction,
   BoardRaceLogEntry,
   BoardRaceMinigameKind,
   BoardRaceMoveState,
+  BoardRacePawnColor,
   BoardRacePlayerState,
   BoardRacePowerId,
   BoardSpaceType,
@@ -50,11 +52,36 @@ function blankPlayer(): BoardRacePlayerState {
     rollBonus: 0,
     pendingRollPenalty: 0,
     pendingQuiz: null,
+    pendingWordChallenge: null,
+    pendingSafe: null,
   };
 }
 
 function isValidMode(value: unknown): value is "solo" | "duel" {
   return value === "solo" || value === "duel";
+}
+
+function isPawnColor(value: unknown): value is BoardRacePawnColor {
+  return value === "blue" || value === "pink";
+}
+
+function oppositePawnColor(color: BoardRacePawnColor): BoardRacePawnColor {
+  return color === "blue" ? "pink" : "blue";
+}
+
+/** A cor solicitada pelo primeiro jogador define automaticamente a outra peça.
+ * Assim, inclusive com dados antigos ou payloads inválidos, nunca há duas peças
+ * iguais em uma partida de dois jogadores. */
+function createPawnColors(playerOrder: string[], requested: unknown): Record<string, BoardRacePawnColor> {
+  const requestedColors = requested && typeof requested === "object"
+    ? requested as Record<string, unknown>
+    : {};
+  const firstId = playerOrder[0];
+  const firstColor = firstId && isPawnColor(requestedColors[firstId]) ? requestedColors[firstId] : "pink";
+  return Object.fromEntries(playerOrder.map((playerId, index) => [
+    playerId,
+    index === 0 ? firstColor : oppositePawnColor(firstColor),
+  ]));
 }
 
 export function isValidBoardRaceMode(value: string): value is "solo" | "duel" {
@@ -106,7 +133,7 @@ function pauseBeforeForcedMove(movement: BoardRaceMoveState) {
 function deferForcedDestination(state: BoardRaceState, playerId: string): BoardSpaceType | null {
   const player = state.players[playerId];
   const destination = state.spaces[player.position];
-  if (!destination || !["prison", "quiz", "minigame", "treasure"].includes(destination.type)) return null;
+  if (!destination || !["prison", "quiz", "minigame", "treasure", "anagram", "riddle", "safe"].includes(destination.type)) return null;
   player.pendingSpaceIndex = destination.index;
   return destination.type;
 }
@@ -119,15 +146,16 @@ function consumeShield(state: BoardRaceState, playerId: string, effectName: stri
   return true;
 }
 
-function grantRandomPower(state: BoardRaceState, playerId: string) {
+function grantRandomPower(state: BoardRaceState, playerId: string, announce = true): BoardRacePowerId | null {
   const player = state.players[playerId];
   if (player.powers.length >= BOARD_RACE_MAX_POWERS) {
     addLog(state, "O inventário já está cheio (máximo de 2 poderes).", "neutral");
-    return;
+    return null;
   }
   const powerId = BOARD_RACE_POWER_IDS[randomInt(0, BOARD_RACE_POWER_IDS.length - 1)];
   player.powers.push(powerId);
-  addLog(state, `Tesouro encontrado: poder ${powerId}.`, "positive", { kind: "powerGranted", playerId, powerId });
+  if (announce) addLog(state, `Tesouro encontrado: poder ${powerId}.`, "positive", { kind: "powerGranted", playerId, powerId });
+  return powerId;
 }
 
 function startMinigame(state: BoardRaceState, playerId: string, announce = true) {
@@ -211,6 +239,28 @@ function resolveSpace(
         if (!silentArrivalAnnouncement) addLog(state, "Quiz pendente para o próximo turno.", "neutral", { kind: "quizPending", playerId, spaceType: "quiz" });
         return;
       }
+      case "anagram":
+      case "riddle": {
+        player.pendingWordChallenge = createWordChallenge(space.type);
+        if (!silentArrivalAnnouncement) addLog(
+          state,
+          `${space.type === "anagram" ? "Anagrama" : "Enigma"} pendente para o próximo turno.`,
+          "neutral",
+          { kind: "wordPending", playerId, spaceType: space.type, challengeKind: space.type }
+        );
+        return;
+      }
+      case "safe": {
+        // A ordem é embaralhada no servidor e persiste no estado da partida.
+        const options: ("power" | "advance" | "penalty" | "empty")[] = ["power", "advance", "empty", "penalty"];
+        for (let index = options.length - 1; index > 0; index -= 1) {
+          const swapIndex = randomInt(0, index);
+          [options[index], options[swapIndex]] = [options[swapIndex], options[index]];
+        }
+        player.pendingSafe = { id: `safe-${Date.now()}-${playerId}`, assignedAt: Date.now(), options };
+        if (!silentArrivalAnnouncement) addLog(state, "Cofre pendente para o próximo turno.", "neutral", { kind: "safePending", playerId, spaceType: "safe" });
+        return;
+      }
       case "minigame":
         startMinigame(state, playerId, !silentArrivalAnnouncement);
         return;
@@ -222,7 +272,7 @@ function resolveSpace(
         if (event === 0 || event === 1) {
           const amount = event === 0 ? 2 : -2;
           const kind = event === 0 ? "surprisePositive" : "surpriseNegative";
-          const message = event === 0 ? "Surpresa boa: avance 2 casas." : "Surpresa ruim: recue 2 casas.";
+          const message = event === 0 ? "Surpresa: avance 2 casas." : "Surpresa: recue 2 casas.";
           if (event === 1 && consumeShield(state, playerId, "a surpresa negativa")) return;
           addLog(state, message, event === 0 ? "positive" : "negative", { kind, playerId, amount: 2, spaceType: "surprise" });
           lastMovementEventId = state.eventSerial;
@@ -311,6 +361,20 @@ function beginTurn(state: BoardRaceState) {
       }
       return;
     }
+    if (player.pendingWordChallenge) {
+      state.lastMove = movement.path.length > 0 ? movement : null;
+      state.phase = "awaitingWord";
+      state.phaseReadyAt = Date.now() + (movement.path.length > 0 ? presentationDelay(movement, true) : 0);
+      if (state.currentPlayerId === BOT_ID) state.phaseReadyAt = Math.max(state.phaseReadyAt, Date.now() + BOT_THINK_MS);
+      return;
+    }
+    if (player.pendingSafe) {
+      state.lastMove = movement.path.length > 0 ? movement : null;
+      state.phase = "awaitingSafe";
+      state.phaseReadyAt = Date.now() + (movement.path.length > 0 ? presentationDelay(movement, true) : 0);
+      if (state.currentPlayerId === BOT_ID) state.phaseReadyAt = Math.max(state.phaseReadyAt, Date.now() + BOT_THINK_MS);
+      return;
+    }
     if (player.pendingQuiz) {
       state.lastMove = movement.path.length > 0 ? movement : null;
       state.phase = "awaitingQuiz";
@@ -329,6 +393,16 @@ function beginTurn(state: BoardRaceState) {
     state.lastMove = null;
     state.phase = "turnStart";
     state.phaseReadyAt = Date.now();
+    return;
+  }
+  if (player.pendingWordChallenge) {
+    state.phase = "awaitingWord";
+    if (state.currentPlayerId === BOT_ID) state.phaseReadyAt = Date.now() + BOT_THINK_MS;
+    return;
+  }
+  if (player.pendingSafe) {
+    state.phase = "awaitingSafe";
+    if (state.currentPlayerId === BOT_ID) state.phaseReadyAt = Date.now() + BOT_THINK_MS;
     return;
   }
   if (player.pendingQuiz) {
@@ -406,8 +480,97 @@ function answerQuiz(state: BoardRaceState, playerId: string, optionIndex: number
     if (playerId === BOT_ID) next.phaseReadyAt = Date.now() + BOT_THINK_MS;
   } else {
     next.lastMove = null;
-    endTurn(next);
+    endTurn(next, false, SPECIAL_LANDING_FEEDBACK_MS);
   }
+  return next;
+}
+
+function answerWord(state: BoardRaceState, playerId: string, answer: string): BoardRaceState {
+  if (state.phase !== "awaitingWord" || state.currentPlayerId !== playerId || Date.now() < state.phaseReadyAt || typeof answer !== "string") return state;
+  const pending = state.players[playerId]?.pendingWordChallenge;
+  if (!pending) return state;
+  const next = structuredClone(state);
+  const correct = normalizeWordAnswer(answer) === normalizeWordAnswer(pending.answer);
+  // Anagrama é o único desafio de tentativa livre: um erro atualiza o estado
+  // compartilhado, mas preserva o pendente e o mesmo turno.
+  if (!correct && pending.kind === "anagram") {
+    next.players[playerId].pendingWordChallenge!.attempts = (pending.attempts ?? 0) + 1;
+    if (playerId === BOT_ID) next.phaseReadyAt = Date.now() + BOT_THINK_MS;
+    return next;
+  }
+  next.players[playerId].pendingWordChallenge = null;
+  const label = pending.kind === "anagram" ? "Anagrama" : "Enigma";
+  addLog(next, correct ? `${label} correto: o dado foi liberado.` : `${label} incorreto.`, correct ? "positive" : "negative", {
+    kind: correct ? "wordCorrect" : "wordWrong", playerId, challengeKind: pending.kind, answer: correct ? undefined : pending.answer,
+  });
+  if (correct) {
+    next.phase = "awaitingRoll";
+    if (playerId === BOT_ID) next.phaseReadyAt = Date.now() + BOT_THINK_MS;
+  } else {
+    next.lastMove = null;
+    endTurn(next, false, SPECIAL_LANDING_FEEDBACK_MS);
+  }
+  return next;
+}
+
+function giveUpWord(state: BoardRaceState, playerId: string): BoardRaceState {
+  if (state.phase !== "awaitingWord" || state.currentPlayerId !== playerId || Date.now() < state.phaseReadyAt) return state;
+  const pending = state.players[playerId]?.pendingWordChallenge;
+  // O botão existe somente para o Anagrama; o Enigma mantém a regra de um
+  // único palpite e revela a resposta quando ele falha.
+  if (!pending || pending.kind !== "anagram") return state;
+  const next = structuredClone(state);
+  next.players[playerId].pendingWordChallenge = null;
+  addLog(next, "Anagrama encerrado por desistência.", "negative", {
+    kind: "wordWrong", playerId, challengeKind: "anagram", answer: pending.answer, gaveUp: true,
+  });
+  next.lastMove = null;
+  endTurn(next, false, SPECIAL_LANDING_FEEDBACK_MS);
+  return next;
+}
+
+function chooseSafe(state: BoardRaceState, playerId: string, optionIndex: number): BoardRaceState {
+  if (state.phase !== "awaitingSafe" || state.currentPlayerId !== playerId || Date.now() < state.phaseReadyAt || !Number.isInteger(optionIndex)) return state;
+  const pending = state.players[playerId]?.pendingSafe;
+  if (!pending || optionIndex < 0 || optionIndex >= pending.options.length) return state;
+  const next = structuredClone(state);
+  const outcome = pending.options[optionIndex];
+  const player = next.players[playerId];
+  player.pendingSafe = null;
+  if (outcome === "power") {
+    const powerId = grantRandomPower(next, playerId, false);
+    addLog(next, powerId ? "O cofre guardava um novo poder." : "O cofre tinha um poder, mas seu inventário está cheio.", powerId ? "positive" : "neutral", {
+      kind: "safeResult", playerId, powerId: powerId ?? undefined, amount: 0,
+    });
+  } else if (outcome === "advance") {
+    const amount = 2;
+    const movement: BoardRaceMoveState = {
+      serial: (next.lastMove?.serial ?? 0) + 1,
+      playerId,
+      from: player.position,
+      to: player.position,
+      path: [],
+      cause: "advance",
+      effectEventId: null,
+      feedbackMs: SPECIAL_LANDING_FEEDBACK_MS,
+    };
+    moveBy(next, playerId, amount, movement);
+    const destinationSpaceType = deferForcedDestination(next, playerId);
+    addLog(next, `O cofre fez você avançar ${amount} casas.`, "positive", { kind: "safeResult", playerId, amount, destinationSpaceType: destinationSpaceType ?? undefined });
+    movement.effectEventId = next.eventSerial;
+    next.lastMove = movement;
+    if (finishIfNeeded(next, playerId)) {
+      next.phaseReadyAt = Date.now() + presentationDelay(movement, true);
+      return next;
+    }
+  } else if (outcome === "penalty") {
+    player.skipNextTurn = true;
+    addLog(next, "O cofre tinha uma pequena trava: você perderá a próxima jogada.", "negative", { kind: "safeResult", playerId });
+  } else {
+    addLog(next, "O cofre estava vazio, mas a corrida continua.", "neutral", { kind: "safeResult", playerId });
+  }
+  if (outcome !== "advance") next.lastMove = null;
+  endTurn(next, false, outcome === "advance" ? presentationDelay(next.lastMove!, true) : SPECIAL_LANDING_FEEDBACK_MS);
   return next;
 }
 
@@ -439,6 +602,47 @@ function usePower(state: BoardRaceState, playerId: string, powerId: BoardRacePow
     : otherPlayerId(next, playerId);
   if (!opponentId) return state;
   removePower(nextPlayer, powerId);
+  if (powerId === "swap") {
+    const ownPosition = nextPlayer.position;
+    const opponentPosition = next.players[opponentId].position;
+    nextPlayer.position = opponentPosition;
+    next.players[opponentId].position = ownPosition;
+    next.lastMove = {
+      serial: (next.lastMove?.serial ?? 0) + 1,
+      playerId,
+      from: ownPosition,
+      to: opponentPosition,
+      path: [opponentPosition],
+      cause: "swap",
+      effectEventId: null,
+      feedbackMs: SPECIAL_LANDING_FEEDBACK_MS,
+    };
+    next.phase = "moving";
+    next.phaseReadyAt = Date.now() + MOVE_STEP_MS + SPECIAL_LANDING_FEEDBACK_MS;
+    addLog(next, "Troca de Lugar: as peças trocaram de posição.", "positive", { kind: "powerUsed", playerId, targetPlayerId: opponentId, powerId });
+    return next;
+  }
+  if (powerId === "magnet") {
+    if (consumeShield(next, opponentId, "o Ímã")) return next;
+    const target = next.players[opponentId];
+    const from = target.position;
+    const path: number[] = [];
+    moveBy(next, opponentId, -2, { serial: 0, playerId: opponentId, from, to: from, path, cause: "magnet" });
+    next.lastMove = {
+      serial: (next.lastMove?.serial ?? 0) + 1,
+      playerId: opponentId,
+      from,
+      to: target.position,
+      path,
+      cause: "magnet",
+      effectEventId: null,
+      feedbackMs: SPECIAL_LANDING_FEEDBACK_MS,
+    };
+    next.phase = "moving";
+    next.phaseReadyAt = Date.now() + path.length * MOVE_STEP_MS + SPECIAL_LANDING_FEEDBACK_MS;
+    addLog(next, `Ímã: o adversário recuou ${from - target.position} casas.`, "negative", { kind: "powerUsed", playerId, targetPlayerId: opponentId, powerId, amount: from - target.position });
+    return next;
+  }
   if (!consumeShield(next, opponentId, "a armadilha")) {
     next.players[opponentId].pendingRollPenalty = Math.max(next.players[opponentId].pendingRollPenalty, 2);
     addLog(next, "Armadilha lançada: -2 no próximo movimento adversário.", "negative", { kind: "powerUsed", playerId, targetPlayerId: opponentId, powerId });
@@ -464,8 +668,9 @@ function tick(state: BoardRaceState): BoardRaceState {
   const now = Date.now();
   let next = structuredClone(state);
 
-  if (next.phase === "moving" && now >= next.phaseReadyAt && next.pendingMinigame) {
-    next.phase = "minigame";
+  if (next.phase === "moving" && now >= next.phaseReadyAt) {
+    next.phase = next.pendingMinigame ? "minigame" : "awaitingRoll";
+    if (next.currentPlayerId === BOT_ID) next.phaseReadyAt = now + BOT_THINK_MS;
   }
 
   if (next.phase === "turnStart" && now >= next.phaseReadyAt) beginTurn(next);
@@ -490,6 +695,16 @@ function tick(state: BoardRaceState): BoardRaceState {
     }
   }
 
+  if (next.currentPlayerId === BOT_ID && next.phase === "awaitingWord" && now >= next.phaseReadyAt) {
+    const word = next.players[BOT_ID].pendingWordChallenge;
+    if (word) return answerWord(next, BOT_ID, Math.random() < 0.68 ? word.answer : "resposta errada");
+  }
+
+  if (next.currentPlayerId === BOT_ID && next.phase === "awaitingSafe" && now >= next.phaseReadyAt) {
+    const safe = next.players[BOT_ID].pendingSafe;
+    if (safe) return chooseSafe(next, BOT_ID, randomInt(0, safe.options.length - 1));
+  }
+
   if (next.currentPlayerId === BOT_ID && next.phase === "awaitingRoll" && now >= next.phaseReadyAt) {
     const bot = next.players[BOT_ID];
     const power = bot.powers[0];
@@ -510,6 +725,10 @@ export function getBoardRaceStateForPlayer(state: BoardRaceState, playerId: stri
       const { correctIndex: _correctIndex, explanation: _explanation, ...publicQuiz } = player.pendingQuiz;
       player.pendingQuiz = publicQuiz as typeof player.pendingQuiz;
     }
+    if (player.pendingWordChallenge) {
+      const { answer: _answer, ...publicChallenge } = player.pendingWordChallenge;
+      player.pendingWordChallenge = publicChallenge as typeof player.pendingWordChallenge;
+    }
   }
   if (clone.pendingMinigame) {
     clone.pendingMinigame.state = maskEmbeddedMinigameState(clone.pendingMinigame.kind, clone.pendingMinigame.state, playerId);
@@ -528,6 +747,7 @@ export class BoardRaceGame implements GameEngine<BoardRaceState, BoardRaceAction
     const playerOrder = mode === "solo" ? [humans[0] ?? "PLAYER", BOT_ID] : humans;
     const safeOrder = playerOrder.length >= 2 ? playerOrder : [playerOrder[0] ?? "PLAYER", "OPPONENT"];
     const players = Object.fromEntries(safeOrder.map((id) => [id, blankPlayer()]));
+    const pawnColors = createPawnColors(safeOrder, options?.pawnColors);
     const spaces = cloneBoardRaceSpaces();
     const now = Date.now();
     return {
@@ -536,6 +756,7 @@ export class BoardRaceGame implements GameEngine<BoardRaceState, BoardRaceAction
       spaces,
       lastPosition: spaces.length - 1,
       playerOrder: safeOrder,
+      pawnColors,
       currentPlayerId: safeOrder[0],
       players,
       phase: "turnStart",
@@ -557,6 +778,9 @@ export class BoardRaceGame implements GameEngine<BoardRaceState, BoardRaceAction
     if (action.type === "tick" && playerId === "system") return tick(state);
     if (action.type === "roll") return rollTurn(state, playerId);
     if (action.type === "answerQuiz") return answerQuiz(state, playerId, action.optionIndex);
+    if (action.type === "answerWord") return answerWord(state, playerId, action.answer);
+    if (action.type === "giveUpWord") return giveUpWord(state, playerId);
+    if (action.type === "chooseSafe") return chooseSafe(state, playerId, action.optionIndex);
     if (action.type === "usePower") return usePower(state, playerId, action.powerId, action.targetPlayerId);
     if (action.type === "minigameAction" && state.phase === "minigame" && state.pendingMinigame) {
       if (!state.pendingMinigame.playerIds.includes(playerId) || playerId === BOT_ID) return state;
@@ -582,6 +806,7 @@ export class BoardRaceGame implements GameEngine<BoardRaceState, BoardRaceAction
     return this.createInitialState({
       mode: state.mode,
       playerIds: state.mode === "solo" ? state.playerOrder.filter((id) => id !== BOT_ID) : state.playerOrder,
+      pawnColors: state.pawnColors,
     });
   }
 }

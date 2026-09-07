@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Swords } from "lucide-react";
 import MemoryBoard from "@/components/memory/MemoryBoard";
 import TermoBoard from "@/components/termo/TermoBoard";
@@ -48,6 +48,76 @@ export function BoardRaceQuizPanel({ quiz, onAnswer }: { quiz: BoardRacePendingQ
         ))}
       </div>
       <p className="mt-3 text-xs text-ink-soft">Acerte para liberar o dado. Se errar, a vez passa.</p>
+    </section>
+  );
+}
+
+export function BoardRaceWordPanel({ challenge, onAnswer, onGiveUp }: {
+  challenge: NonNullable<BoardRaceState["players"][string]["pendingWordChallenge"]>;
+  onAnswer: (answer: string) => void;
+  onGiveUp: () => void;
+}) {
+  const [answer, setAnswer] = useState("");
+  const [sent, setSent] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const isAnagram = challenge.kind === "anagram";
+  useEffect(() => {
+    setAnswer("");
+    setSent(false);
+    setFeedback(isAnagram && challenge.attempts > 0 ? "Ainda não foi dessa vez. Tente outra combinação." : null);
+  }, [challenge.attempts, challenge.id, isAnagram]);
+
+  useEffect(() => {
+    if (!sent) return;
+    // Caso uma transmissão seja perdida, a interface nunca fica bloqueada.
+    const timeout = window.setTimeout(() => setSent(false), 1_250);
+    return () => window.clearTimeout(timeout);
+  }, [sent]);
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!answer.trim() || sent) return;
+    setSent(true);
+    setFeedback(null);
+    onAnswer(answer);
+  };
+  return (
+    <section className={`${styles.challengePanel} ${styles.wordChallengePanel}`}>
+      <p className={styles.panelEyebrow}>{isAnagram ? "🔤 Anagrama" : "💡 Enigma"} · antes do dado</p>
+      <h2 className={styles.challengeTitle}>{isAnagram ? "Desembaralhe a palavra" : "Resolva o enigma"}</h2>
+      <p className={styles.wordPrompt}>{isAnagram ? challenge.prompt.split("").join(" · ") : challenge.prompt}</p>
+      <form className={styles.wordForm} onSubmit={submit}>
+        <label className="sr-only" htmlFor={`word-answer-${challenge.id}`}>Sua resposta</label>
+        <input id={`word-answer-${challenge.id}`} autoFocus value={answer} onChange={(event) => setAnswer(event.target.value)} disabled={sent} placeholder="Digite sua resposta" className={styles.wordInput} />
+        <button type="submit" disabled={!answer.trim() || sent} className="app-button app-button-primary rounded-full px-4 py-2 text-sm font-semibold text-white">Responder</button>
+      </form>
+      {feedback && <p className={styles.wordFeedback} role="status">{feedback}</p>}
+      <div className={styles.wordFooter}>
+        <p className={styles.wordHint}>{isAnagram ? "Você pode tentar quantas vezes quiser." : "Acerte para liberar o dado. Se errar, a vez passa."}</p>
+        {isAnagram && <button type="button" disabled={sent} onClick={() => { setSent(true); onGiveUp(); }} className={styles.wordGiveUp}>Desistir</button>}
+      </div>
+    </section>
+  );
+}
+
+const SAFE_OPTION_LABELS = ["Abra esta gaveta", "Escolha este compartimento", "Tente esta chave", "Revele esta caixa"];
+
+export function BoardRaceSafePanel({ safe, onChoose }: {
+  safe: NonNullable<BoardRaceState["players"][string]["pendingSafe"]>;
+  onChoose: (index: number) => void;
+}) {
+  const [choice, setChoice] = useState<number | null>(null);
+  return (
+    <section className={`${styles.challengePanel} ${styles.safeChallengePanel}`}>
+      <p className={styles.panelEyebrow}>🧰 Cofre da trilha</p>
+      <h2 className={styles.challengeTitle}>Escolha um compartimento</h2>
+      <p className={styles.wordHint}>Há uma recompensa na maioria deles. Escolha com carinho.</p>
+      <div className={styles.safeChoices}>
+        {safe.options.map((_option, index) => (
+          <button key={index} type="button" disabled={choice !== null} onClick={() => { setChoice(index); onChoose(index); }} className={styles.safeChoice}>
+            <span aria-hidden="true">🔐</span><strong>{SAFE_OPTION_LABELS[index]}</strong><small>Toque para abrir</small>
+          </button>
+        ))}
+      </div>
     </section>
   );
 }

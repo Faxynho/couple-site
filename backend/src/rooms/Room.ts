@@ -57,6 +57,8 @@ export class Room {
   pendingChessPinkPlayerId: string | null = null;
   /** Aparência do host para o RPG; o outro humano recebe a oposta. */
   pendingRpgAppearance: "man" | "woman" = "man";
+  /** Escolha de peão da Corrida de Tabuleiro. No Duo as cores são opostas. */
+  pendingBoardRacePawnColors: Record<string, "blue" | "pink"> = {};
 
   /** Sugestão de sequência de jogos (só relevante em salas Duo). */
   sequence: GameId[] = [];
@@ -221,6 +223,7 @@ export class Room {
       ? [...this.players.keys()][0] ?? null
       : null;
     this.pendingRpgAppearance = "man";
+    this.pendingBoardRacePawnColors = {};
     this.status = this.players.size === this.maxPlayers ? "ready" : "waiting";
   }
 
@@ -270,6 +273,7 @@ export class Room {
     whoamiCategory?: string;
     chessPinkPlayerId?: string | null;
     rpgAppearance?: "man" | "woman";
+    boardRacePawnColor?: "blue" | "pink";
   }) {
     if (config.imageId !== undefined) this.pendingImageId = config.imageId;
     if (config.imageWidth !== undefined) this.pendingImageWidth = config.imageWidth;
@@ -281,6 +285,17 @@ export class Room {
     if (config.whoamiCategory !== undefined) this.pendingWhoAmICategory = config.whoamiCategory;
     if (config.chessPinkPlayerId !== undefined) this.pendingChessPinkPlayerId = config.chessPinkPlayerId;
     if (config.rpgAppearance !== undefined) this.pendingRpgAppearance = config.rpgAppearance;
+    if (config.boardRacePawnColor !== undefined && this.hostId) this.setBoardRacePawnColor(this.hostId, config.boardRacePawnColor);
+  }
+
+  /** A escolha mais recente fica com quem a fez; o outro jogador recebe a cor
+   * oposta. O servidor mantém essa regra antes de iniciar a partida. */
+  setBoardRacePawnColor(playerId: string, color: "blue" | "pink") {
+    if (this.gameId !== "boardrace" || !this.players.has(playerId)) return;
+    const opposite = color === "blue" ? "pink" : "blue";
+    const next: Record<string, "blue" | "pink"> = {};
+    for (const id of this.players.keys()) next[id] = id === playerId ? color : opposite;
+    this.pendingBoardRacePawnColors = next;
   }
 
   startGame(overrides?: Record<string, unknown>) {
@@ -340,6 +355,7 @@ export class Room {
       playerIds: connectedIds,
       pinkPlayerId: this.gameId === "chess" && this.roomMode === "duo" ? this.pendingChessPinkPlayerId : undefined,
       rpgAppearance: this.gameId === "rpg" ? this.pendingRpgAppearance : undefined,
+      pawnColors: this.gameId === "boardrace" ? this.pendingBoardRacePawnColors : undefined,
       hostPlayerId: this.gameId === "rpg" ? this.hostId : undefined,
       ...overrides,
     };
@@ -428,6 +444,7 @@ export class Room {
       pendingWhoAmICategory: this.pendingWhoAmICategory,
       pendingChessPinkPlayerId: this.pendingChessPinkPlayerId,
       pendingRpgAppearance: this.pendingRpgAppearance,
+      pendingBoardRacePawnColors: this.pendingBoardRacePawnColors,
       sequence: this.sequence,
       sequenceProgress: this.sequenceProgress,
     };

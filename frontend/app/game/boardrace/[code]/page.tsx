@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import LoadingScreen from "@/components/LoadingScreen";
 import Logo from "@/components/Logo";
 import BoardRaceBoard from "@/components/boardrace/BoardRaceBoard";
-import BoardRaceChallengePanel, { BoardRaceQuizPanel } from "@/components/boardrace/BoardRaceChallengePanel";
+import BoardRaceChallengePanel, { BoardRaceQuizPanel, BoardRaceSafePanel, BoardRaceWordPanel } from "@/components/boardrace/BoardRaceChallengePanel";
 import BoardRaceDie from "@/components/boardrace/BoardRaceDie";
 import BoardRaceEventPopup from "@/components/boardrace/BoardRaceEventPopup";
 import BoardRaceHud from "@/components/boardrace/BoardRaceHud";
@@ -22,7 +22,7 @@ import type { BoardRaceState } from "@/lib/boardRaceTypes";
 
 type RaceEvent = BoardRaceState["eventLog"][number];
 type QueuedPopup = { event: RaceEvent; showAt: number };
-const POPUP_DURATION_MS = 2_750;
+const POPUP_DURATION_MS = 2_000;
 const SPECIAL_FEEDBACK_MS = 3_200;
 const NORMAL_FEEDBACK_MS = 750;
 
@@ -30,7 +30,7 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
   const router = useRouter();
   const code = params.code.toUpperCase();
   const { room, selfId, notFound, kicked, backToConfig, backToGameSelect, kickPlayer } = useRoomSession(code);
-  const { state, roll, answerQuiz, usePower, minigameAction, newGame } = useBoardRaceGame(code);
+  const { state, roll, answerQuiz, answerWord, giveUpWord, chooseSafe, usePower, minigameAction, newGame } = useBoardRaceGame(code);
   const [showResult, setShowResult] = useState(false);
   const [popupQueue, setPopupQueue] = useState<QueuedPopup[]>([]);
   const [activePopup, setActivePopup] = useState<RaceEvent | null>(null);
@@ -143,6 +143,8 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
   // phaseReadyAt, mas nenhum novo render atualiza o relógio local.
   const interactionReady = Math.max(now, Date.now()) >= state.phaseReadyAt && !activePopup && !popupLeaving && popupQueue.length === 0;
   const ownQuiz = isMyTurn && state.phase === "awaitingQuiz" && interactionReady ? self.pendingQuiz : null;
+  const ownWord = isMyTurn && state.phase === "awaitingWord" && interactionReady ? self.pendingWordChallenge : null;
+  const ownSafe = isMyTurn && state.phase === "awaitingSafe" && interactionReady ? self.pendingSafe : null;
   const canRoll = isMyTurn && state.phase === "awaitingRoll" && interactionReady;
   const elapsed = formatDuration(Math.max(0, (state.finishedAt ?? Date.now()) - state.startedAt));
   const latestEffect = state.eventLog.at(-1);
@@ -182,6 +184,10 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
             ? "Preparando sua vez..."
             : state.phase === "awaitingQuiz"
               ? "Responda ao Quiz para continuar"
+              : state.phase === "awaitingWord"
+                ? "Resolva o desafio para continuar"
+                : state.phase === "awaitingSafe"
+                  ? "Abra o Cofre para continuar"
               : "Sua vez de jogar"
           : `Vez de ${currentName}`;
   const playerName = (playerId?: string) => {
@@ -266,7 +272,7 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
         </aside>
 
         <AnimatePresence>
-          {(ownQuiz || (state.phase === "minigame" && state.pendingMinigame && interactionReady)) && (
+          {(ownQuiz || ownWord || ownSafe || (state.phase === "minigame" && state.pendingMinigame && interactionReady)) && (
             <motion.div
               className={styles.stageOverlay}
               initial={{ opacity: 0 }}
@@ -274,11 +280,15 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
               exit={{ opacity: 0 }}
               role="dialog"
               aria-modal="true"
-              aria-label={ownQuiz ? "Quiz da trilha" : "Minijogo da trilha"}
+              aria-label={ownQuiz ? "Quiz da trilha" : ownWord ? `${ownWord.kind === "anagram" ? "Anagrama" : "Enigma"} da trilha` : ownSafe ? "Cofre da trilha" : "Minijogo da trilha"}
             >
               <motion.div className={styles.stageOverlayCard} initial={{ y: 18, scale: 0.97 }} animate={{ y: 0, scale: 1 }} exit={{ y: 12, scale: 0.98 }}>
                 {ownQuiz ? (
                   <BoardRaceQuizPanel key={ownQuiz.id} quiz={ownQuiz} onAnswer={answerQuiz} />
+                ) : ownWord ? (
+                  <BoardRaceWordPanel key={ownWord.id} challenge={ownWord} onAnswer={answerWord} onGiveUp={giveUpWord} />
+                ) : ownSafe ? (
+                  <BoardRaceSafePanel key={ownSafe.id} safe={ownSafe} onChoose={chooseSafe} />
                 ) : state.pendingMinigame ? (
                   <BoardRaceChallengePanel challenge={state.pendingMinigame} selfId={selfId} players={displayPlayers} onAction={minigameAction} />
                 ) : null}

@@ -1,9 +1,10 @@
 export type BoardRaceMode = "solo" | "duel";
-export type BoardSpaceType = "start" | "normal" | "advance" | "retreat" | "prison" | "quiz" | "minigame" | "surprise" | "treasure" | "finish";
-export type BoardRacePowerId = "boost" | "snare" | "shield";
+export type BoardRacePawnColor = "blue" | "pink";
+export type BoardSpaceType = "start" | "normal" | "advance" | "retreat" | "prison" | "quiz" | "minigame" | "surprise" | "treasure" | "anagram" | "riddle" | "safe" | "finish";
+export type BoardRacePowerId = "boost" | "snare" | "shield" | "swap" | "magnet";
 export type BoardRaceMinigameKind = "rpg" | "termo" | "memory" | "crossword" | "wordsearch";
-export type BoardRacePhase = "turnStart" | "moving" | "awaitingQuiz" | "awaitingRoll" | "minigame" | "finished";
-export type BoardRaceEventKind = "landNormal" | "advance" | "retreat" | "prison" | "quizPending" | "quizCorrect" | "quizWrong" | "minigameStart" | "minigameWin" | "minigameLoss" | "surprisePositive" | "surpriseNegative" | "extraTurn" | "powerGranted" | "powerUsed" | "shieldBlocked" | "lostTurn" | "finish";
+export type BoardRacePhase = "turnStart" | "moving" | "awaitingQuiz" | "awaitingWord" | "awaitingSafe" | "awaitingRoll" | "minigame" | "finished";
+export type BoardRaceEventKind = "landNormal" | "advance" | "retreat" | "prison" | "quizPending" | "quizCorrect" | "quizWrong" | "wordPending" | "wordCorrect" | "wordWrong" | "safePending" | "safeResult" | "minigameStart" | "minigameWin" | "minigameLoss" | "surprisePositive" | "surpriseNegative" | "extraTurn" | "powerGranted" | "powerUsed" | "shieldBlocked" | "lostTurn" | "finish";
 
 export interface BoardSpace {
   index: number;
@@ -29,6 +30,8 @@ export interface BoardRacePlayerState {
   rollBonus: number;
   pendingRollPenalty: number;
   pendingQuiz: BoardRacePendingQuiz | null;
+  pendingWordChallenge: { id: string; kind: "anagram" | "riddle"; prompt: string; assignedAt: number; attempts: number } | null;
+  pendingSafe: { id: string; assignedAt: number; options: ("power" | "advance" | "penalty" | "empty")[] } | null;
 }
 
 export interface BoardRaceState {
@@ -37,6 +40,7 @@ export interface BoardRaceState {
   spaces: BoardSpace[];
   lastPosition: number;
   playerOrder: string[];
+  pawnColors: Record<string, BoardRacePawnColor>;
   currentPlayerId: string;
   players: Record<string, BoardRacePlayerState>;
   phase: BoardRacePhase;
@@ -70,6 +74,9 @@ export interface BoardRaceState {
     spaceType?: BoardSpaceType;
     destinationSpaceType?: BoardSpaceType;
     amount?: number;
+    challengeKind?: "anagram" | "riddle";
+    answer?: string;
+    gaveUp?: boolean;
   }[];
 }
 
@@ -77,6 +84,8 @@ export const BOARD_RACE_POWER_INFO: Record<BoardRacePowerId, { name: string; emo
   boost: { name: "Impulso +2", emoji: "🚀", category: "Movimentação", description: "Soma 2 ao seu próximo movimento." },
   snare: { name: "Armadilha -2", emoji: "🕸️", category: "Ataque", description: "Reduz o próximo movimento adversário." },
   shield: { name: "Escudo", emoji: "🛡️", category: "Defesa", description: "Cancela o próximo efeito negativo, exceto desafios." },
+  swap: { name: "Troca de Lugar", emoji: "🔄", category: "Ataque", description: "Troca sua posição com a do adversário, sem ativar casas." },
+  magnet: { name: "Ímã", emoji: "🧲", category: "Ataque", description: "Puxa o adversário 2 casas para trás; o Escudo bloqueia." },
 };
 
 export const BOARD_SPACE_INFO: Record<BoardSpaceType, { emoji: string; short: string; className: string }> = {
@@ -89,5 +98,8 @@ export const BOARD_SPACE_INFO: Record<BoardSpaceType, { emoji: string; short: st
   minigame: { emoji: "🎮", short: "Minijogo", className: "border-violet-300 bg-violet-100/70 dark:bg-violet-900/25" },
   surprise: { emoji: "✨", short: "Surpresa", className: "border-fuchsia-300 bg-fuchsia-100/70 dark:bg-fuchsia-900/25" },
   treasure: { emoji: "🎁", short: "Tesouro", className: "border-amber-300 bg-amber-100/70 dark:bg-amber-900/25" },
+  anagram: { emoji: "ABC", short: "Anagrama", className: "border-cyan-300 bg-cyan-100/70 dark:bg-cyan-900/25" },
+  riddle: { emoji: "💡", short: "Enigma", className: "border-indigo-300 bg-indigo-100/70 dark:bg-indigo-900/25" },
+  safe: { emoji: "🧰", short: "Cofre", className: "border-yellow-300 bg-yellow-100/70 dark:bg-yellow-900/25" },
   finish: { emoji: "🏆", short: "Chegada", className: "border-yellow-400 bg-yellow-100/80 dark:bg-yellow-900/30" },
 };
