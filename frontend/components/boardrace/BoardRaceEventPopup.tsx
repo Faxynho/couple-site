@@ -1,9 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { CSSProperties } from "react";
 import { CircleCheck, CircleX, Gift, Sparkles } from "lucide-react";
-import { BOARD_RACE_POWER_INFO, BoardRaceState } from "@/lib/boardRaceTypes";
+import { BOARD_RACE_POWER_INFO, BoardRaceState, BoardSpaceType } from "@/lib/boardRaceTypes";
 import styles from "./BoardRaceVisual.module.css";
 
 type RaceEvent = BoardRaceState["eventLog"][number];
@@ -14,40 +13,58 @@ interface Props {
   playerName: (playerId?: string) => string;
 }
 
-function eventCopy(event: RaceEvent, selfId: string, playerName: Props["playerName"]) {
+function eventTitle(event: RaceEvent, selfId: string, playerName: Props["playerName"]) {
   const subject = event.playerId === selfId ? "Você" : playerName(event.playerId);
   const amount = event.amount ?? 0;
   switch (event.kind) {
-    case "landNormal": return { eyebrow: "Casa normal", title: `${subject} caiu em uma casa normal`, detail: "Caminho livre — nada muda nesta rodada." };
-    case "advance": return { eyebrow: "Boa sorte!", title: `${subject} avançou ${amount} ${amount === 1 ? "casa" : "casas"}`, detail: "O bônus da casa já foi aplicado." };
-    case "retreat": return { eyebrow: "Ops!", title: `${subject} recuou ${amount} ${amount === 1 ? "casa" : "casas"}`, detail: "A casa de destino não dispara outro efeito." };
-    case "prison": return { eyebrow: "Casa prisão", title: `${subject} perdeu a próxima jogada`, detail: "A prisão não acumula com outra prisão." };
-    case "quizPending": return { eyebrow: "Casa do Quiz", title: `${subject} recebeu um Quiz`, detail: "Na próxima vez, é preciso acertar para liberar o dado." };
-    case "quizCorrect": return { eyebrow: "Resposta certa!", title: `${subject} acertou o Quiz`, detail: "O dado está liberado para continuar a rodada." };
-    case "quizWrong": return { eyebrow: "Resposta incorreta", title: `${subject} errou o Quiz`, detail: "Essa oportunidade foi perdida e a vez passou." };
-    case "minigameStart": return { eyebrow: "Casa Minijogo", title: `${subject} iniciou um desafio`, detail: "Os dois jogadores terão a mesma contagem para se preparar." };
-    case "minigameWin": return { eyebrow: "Desafio vencido!", title: `${subject} ganhou um turno extra`, detail: "A recompensa será aplicada na próxima rodada." };
-    case "minigameLoss": return { eyebrow: "Fim do desafio", title: `${subject} não ganhou o turno extra`, detail: "A corrida continua normalmente." };
-    case "surprisePositive": return { eyebrow: "Surpresa boa!", title: `${subject} ganhou um benefício`, detail: event.message };
-    case "surpriseNegative": return { eyebrow: "Surpresa ruim", title: `${subject} recebeu uma penalidade`, detail: event.message };
-    case "extraTurn": return { eyebrow: "Turno extra!", title: `${subject} joga novamente`, detail: "A sorte resolveu dar mais uma chance." };
-    case "powerUsed": return { eyebrow: "Poder ativado", title: `${subject} usou um poder`, detail: event.message };
-    case "shieldBlocked": return { eyebrow: "Escudo ativado", title: `${subject} bloqueou a penalidade`, detail: "O escudo foi consumido e protegeu deste efeito negativo." };
-    case "lostTurn": return { eyebrow: "Jogada perdida", title: `${subject} perdeu a vez`, detail: "A corrida segue com o próximo jogador." };
-    case "finish": return { eyebrow: "Chegada!", title: `${subject} alcançou o fim da trilha`, detail: "A corrida terminou." };
-    default: return { eyebrow: "Acontecimento da rodada", title: event.message, detail: "" };
+    case "landNormal": return `${subject} caiu em uma casa normal`;
+    case "advance": return movementTitle(subject, "avançou", amount, event.destinationSpaceType);
+    case "retreat": return movementTitle(subject, "recuou", amount, event.destinationSpaceType);
+    case "prison": return `${subject} ficou preso`;
+    case "quizPending": return `${subject} recebeu um quiz`;
+    case "quizCorrect": return `${subject} acertou o quiz`;
+    case "quizWrong": return `${subject} errou o quiz`;
+    case "minigameStart": return `${subject} iniciou o minijogo`;
+    case "minigameWin": return `${subject} venceu o minijogo`;
+    case "minigameLoss": return `${subject} não venceu o minijogo`;
+    case "surprisePositive": return `${subject} recebeu uma surpresa boa`;
+    case "surpriseNegative": return `${subject} recebeu uma surpresa ruim`;
+    case "extraTurn": return `${subject} ganhou turno extra`;
+    case "powerUsed": {
+      const target = event.targetPlayerId ? (event.targetPlayerId === selfId ? "você" : playerName(event.targetPlayerId)) : null;
+      return event.powerId === "snare" && target ? `${subject} bloqueou ${target}` : `${subject} usou um poder`;
+    }
+    case "shieldBlocked": return `${subject} bloqueou o efeito`;
+    case "lostTurn": return `${subject} perdeu a jogada`;
+    case "finish": return `${subject} venceu a corrida`;
+    default: return event.message;
   }
+}
+
+function destinationText(type?: BoardSpaceType) {
+  switch (type) {
+    case "quiz": return "recebeu um Quiz";
+    case "minigame": return "caiu em uma casa de Minijogo";
+    case "prison": return "caiu na Prisão";
+    case "treasure": return "encontrou um Tesouro";
+    case "surprise": return "caiu em uma Surpresa";
+    case "advance": return "caiu em Avançar";
+    case "retreat": return "caiu em Recuar";
+    default: return null;
+  }
+}
+
+function movementTitle(subject: string, verb: "avançou" | "recuou", amount: number, destination?: BoardSpaceType) {
+  const movement = `${subject} ${verb} ${amount} ${amount === 1 ? "casa" : "casas"}`;
+  const destinationLabel = destinationText(destination);
+  return destinationLabel ? `${movement} e ${destinationLabel}` : movement;
 }
 
 export default function BoardRaceEventPopup({ event, selfId, playerName }: Props) {
   const power = event.kind === "powerGranted" && event.powerId ? BOARD_RACE_POWER_INFO[event.powerId] : null;
-  const copy = power
-    ? {
-        eyebrow: "Novo superpoder!",
-        title: `${event.playerId === selfId ? "Você ganhou" : `${playerName(event.playerId)} ganhou`} ${power.name}`,
-        detail: power.description,
-      }
-    : eventCopy(event, selfId, playerName);
+  const title = power
+    ? `${event.playerId === selfId ? "Você" : playerName(event.playerId)} recebeu ${power.name}`
+    : eventTitle(event, selfId, playerName);
   const Icon = power ? Gift : event.tone === "positive" ? CircleCheck : event.tone === "negative" ? CircleX : Sparkles;
 
   return (
@@ -60,17 +77,9 @@ export default function BoardRaceEventPopup({ event, selfId, playerName }: Props
       role="status"
       aria-live="polite"
     >
-      {event.tone === "positive" && (
-        <span className={styles.eventCelebration} aria-hidden="true">
-          {Array.from({ length: 10 }, (_, index) => <i key={index} style={{ "--spark-index": index } as CSSProperties} />)}
-        </span>
-      )}
       <span className={styles.eventPopupIcon}>{power ? power.emoji : <Icon size={28} strokeWidth={2.25} />}</span>
       <div className={styles.eventPopupCopy}>
-        <small>{copy.eyebrow}</small>
-        <strong>{copy.title}</strong>
-        {copy.detail && <span>{copy.detail}</span>}
-        {power && <em>{power.category} · máximo de 2 poderes</em>}
+        <strong>{title}</strong>
       </div>
     </motion.div>
   );

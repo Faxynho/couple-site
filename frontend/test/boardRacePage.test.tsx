@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import "@testing-library/jest-dom";
 import BoardRacePage from "../app/game/boardrace/[code]/page";
 import BoardRaceChallengePanel from "../components/boardrace/BoardRaceChallengePanel";
+import BoardRaceEventPopup from "../components/boardrace/BoardRaceEventPopup";
 import type { BoardRaceState } from "../lib/boardRaceTypes";
 import type { RoomSnapshot } from "../lib/types";
 
@@ -22,7 +23,7 @@ const room: RoomSnapshot = {
   ],
   maxPlayers: 2, hostId: "self", pendingImageId: null, pendingImageWidth: null,
   pendingImageHeight: null, pendingDifficulty: "medium", pendingColorMode: "competitive",
-  pendingSeerId: null, pendingMatchMode: "duel", sequence: [], sequenceProgress: [],
+  pendingSeerId: null, pendingWhoAmICategory: "all", pendingMatchMode: "duel", sequence: [], sequenceProgress: [],
 };
 
 function state(phase: BoardRaceState["phase"] = "awaitingRoll"): BoardRaceState {
@@ -34,8 +35,8 @@ function state(phase: BoardRaceState["phase"] = "awaitingRoll"): BoardRaceState 
   return {
     mode: "duel", boardVersion: 1, spaces, lastPosition: 30, playerOrder: ["self", "other"],
     currentPlayerId: "self", players: {
-      self: { position: 4, skipNextTurn: false, powers: ["boost"], shieldActive: false, rollBonus: 0, pendingRollPenalty: 0, pendingQuiz: null },
-      other: { position: 3, skipNextTurn: false, powers: [], shieldActive: false, rollBonus: 0, pendingRollPenalty: 0, pendingQuiz: null },
+      self: { position: 4, pendingSpaceIndex: null, skipNextTurn: false, powers: ["boost"], shieldActive: false, rollBonus: 0, pendingRollPenalty: 0, pendingQuiz: null },
+      other: { position: 3, pendingSpaceIndex: null, skipNextTurn: false, powers: [], shieldActive: false, rollBonus: 0, pendingRollPenalty: 0, pendingQuiz: null },
     },
     phase, phaseReadyAt: 0, dice: { value: null, total: null, rolledBy: null, serial: 0 },
     lastMove: null, pendingMinigame: null, winnerId: null, startedAt: Date.now(), finishedAt: null,
@@ -135,17 +136,107 @@ describe("Trilha da Sorte", () => {
     expect(screen.queryByLabelText("Teclado virtual")).not.toBeInTheDocument();
   });
 
-  it("exibe o poder recebido em um pop-up central com explicação", async () => {
-    const first = state();
+  it("exibe o poder recebido em um pop-up central e conciso", async () => {
+    const initial = state();
+    mockGame.mockReturnValue({ state: initial, roll, answerQuiz, usePower, minigameAction: vi.fn(), newGame });
     const view = render(<BoardRacePage params={{ code: "abcde" }} />);
     const updated = state();
+    updated.startedAt = initial.startedAt;
     updated.eventSerial = 1;
     updated.eventLog = [{ id: 1, message: "Tesouro encontrado: poder shield.", tone: "positive", kind: "powerGranted", playerId: "self", powerId: "shield" }];
     mockGame.mockReturnValue({ state: updated, roll, answerQuiz, usePower, minigameAction: vi.fn(), newGame });
     view.rerender(<BoardRacePage params={{ code: "abcde" }} />);
-    expect(await screen.findByText("Você ganhou Escudo")).toBeVisible();
-    expect(screen.getByText(/Cancela o próximo efeito negativo/)).toBeVisible();
-    expect(first.eventSerial).toBe(0);
+    expect(await screen.findByText("Você recebeu Escudo")).toBeInTheDocument();
+    expect(screen.queryByText(/Cancela o próximo efeito negativo/)).not.toBeInTheDocument();
+    expect(initial.eventSerial).toBe(0);
+  });
+
+  it("enfileira avisos válidos na ordem em que chegam", async () => {
+    const initial = state();
+    mockGame.mockReturnValue({ state: initial, roll, answerQuiz, usePower, minigameAction: vi.fn(), newGame });
+    const view = render(<BoardRacePage params={{ code: "abcde" }} />);
+    const updated = state();
+    updated.startedAt = initial.startedAt;
+    updated.eventSerial = 2;
+    updated.eventLog = [
+      { id: 1, message: "Quiz correto", tone: "positive", kind: "quizCorrect", playerId: "self" },
+      { id: 2, message: "Tesouro", tone: "positive", kind: "powerGranted", playerId: "self", powerId: "shield" },
+    ];
+    mockGame.mockReturnValue({ state: updated, roll, answerQuiz, usePower, minigameAction: vi.fn(), newGame });
+    view.rerender(<BoardRacePage params={{ code: "abcde" }} />);
+    expect(await screen.findByText("Você acertou o quiz")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Você recebeu Escudo")).toBeInTheDocument(), { timeout: 5_000 });
+  });
+
+  it("mantém os avisos de rodada curtos, sem descrições nem spinner decorativo", () => {
+    const cases: Array<[BoardRaceState["eventLog"][number], string]> = [
+      [{ id: 1, message: "normal", tone: "neutral", kind: "landNormal", playerId: "self" }, "Você caiu em uma casa normal"],
+      [{ id: 2, message: "quiz", tone: "neutral", kind: "quizPending", playerId: "self" }, "Você recebeu um quiz"],
+      [{ id: 3, message: "acertou", tone: "positive", kind: "quizCorrect", playerId: "other" }, "Flávia acertou o quiz"],
+      [{ id: 4, message: "errou", tone: "negative", kind: "quizWrong", playerId: "other" }, "Flávia errou o quiz"],
+      [{ id: 5, message: "minijogo", tone: "positive", kind: "minigameWin", playerId: "other" }, "Flávia venceu o minijogo"],
+      [{ id: 6, message: "avanço", tone: "positive", kind: "advance", playerId: "self", amount: 2 }, "Você avançou 2 casas"],
+      [{ id: 61, message: "avanço", tone: "positive", kind: "advance", playerId: "self", amount: 2, destinationSpaceType: "minigame" }, "Você avançou 2 casas e caiu em uma casa de Minijogo"],
+      [{ id: 7, message: "recuo", tone: "negative", kind: "retreat", playerId: "self", amount: 1 }, "Você recuou 1 casa"],
+      [{ id: 8, message: "prisão", tone: "negative", kind: "prison", playerId: "self" }, "Você ficou preso"],
+      [{ id: 9, message: "poder", tone: "positive", kind: "powerGranted", playerId: "self", powerId: "shield" }, "Você recebeu Escudo"],
+      [{ id: 10, message: "armadilha", tone: "negative", kind: "powerUsed", playerId: "other", targetPlayerId: "self", powerId: "snare" }, "Flávia bloqueou você"],
+      [{ id: 11, message: "efeito", tone: "negative", kind: "surpriseNegative", playerId: "self" }, "Você recebeu uma surpresa ruim"],
+      [{ id: 12, message: "fim", tone: "positive", kind: "finish", playerId: "self" }, "Você venceu a corrida"],
+    ];
+    for (const [event, title] of cases) {
+      const { unmount } = render(<BoardRaceEventPopup event={event} selfId="self" playerName={(id) => id === "other" ? "Flávia" : "Você"} />);
+      const popup = screen.getByRole("status");
+      expect(popup).toHaveTextContent(title);
+      expect(popup.querySelectorAll("i")).toHaveLength(0);
+      expect(popup.querySelectorAll("p")).toHaveLength(0);
+      unmount();
+    }
+  });
+
+  it("mostra apenas os efeitos ativos no card do jogador", () => {
+    const updated = state();
+    updated.players.self.pendingSpaceIndex = 8;
+    updated.players.self.skipNextTurn = true;
+    updated.players.self.shieldActive = true;
+    updated.players.self.pendingRollPenalty = 2;
+    updated.players.self.rollBonus = 2;
+    mockGame.mockReturnValue({ state: updated, roll, answerQuiz, usePower, minigameAction: vi.fn(), newGame });
+    render(<BoardRacePage params={{ code: "abcde" }} />);
+    expect(screen.getByText("Preso")).toBeVisible();
+    expect(screen.getByText("Escudo")).toBeVisible();
+    expect(screen.getByText("🪤 Armadilha")).toBeVisible();
+    expect(screen.getByText("Impulso")).toBeVisible();
+    expect(screen.getByText("Evento")).toBeVisible();
+  });
+
+  it("mantém o Quiz ou Minijogo fechado até o aviso da rodada terminar", async () => {
+    const initial = state();
+    mockGame.mockReturnValue({ state: initial, roll, answerQuiz, usePower, minigameAction: vi.fn(), newGame });
+    const view = render(<BoardRacePage params={{ code: "abcde" }} />);
+    const updated = state("minigame");
+    updated.startedAt = initial.startedAt;
+    updated.phaseReadyAt = Date.now() + 3_200;
+    updated.lastMove = { serial: 1, playerId: "self", from: 4, to: 8, path: [5, 6, 7, 8], cause: "dice", effectEventId: 1, feedbackMs: 3_200 };
+    updated.eventSerial = 1;
+    updated.eventLog = [{ id: 1, message: "Desafio iniciado", tone: "neutral", kind: "minigameStart", playerId: "self" }];
+    updated.pendingMinigame = {
+      kind: "memory", title: "Memória", challengerId: "self", playerIds: ["self", "other"], state: {},
+      startedAt: Date.now(), readyAt: Date.now() + 7_200, expiresAt: Date.now() + 60_000, botNextActionAt: null,
+    };
+    mockGame.mockReturnValue({ state: updated, roll, answerQuiz, usePower, minigameAction: vi.fn(), newGame });
+    view.rerender(<BoardRacePage params={{ code: "abcde" }} />);
+    expect(await screen.findByText("Você iniciou o minijogo")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Minijogo da trilha" })).not.toBeInTheDocument();
+  });
+
+  it("mantém as explicações das casas e poderes em um guia separado", () => {
+    render(<BoardRacePage params={{ code: "abcde" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Guia da trilha" }));
+    expect(screen.getByRole("dialog", { name: "Guia da Trilha da Sorte" })).toBeInTheDocument();
+    expect(screen.getByText("Casas da trilha")).toBeInTheDocument();
+    expect(screen.getByText("Superpoderes")).toBeInTheDocument();
+    expect(screen.getByText(/O Escudo protege apenas do próximo efeito negativo/)).toBeInTheDocument();
   });
 
   it("permite reabrir o resultado e reiniciar depois de ver o tabuleiro final", async () => {
@@ -159,7 +250,7 @@ describe("Trilha da Sorte", () => {
     fireEvent.click(viewBoard);
     await waitFor(() => expect(screen.getByRole("navigation", { name: "Opções após a partida" })).toBeVisible());
     fireEvent.click(screen.getByRole("button", { name: "Ver resultado" }));
-    expect(await screen.findByText("Você venceu a corrida!")).toBeVisible();
+    expect(await screen.findByText("Você venceu a corrida!")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
     expect(newGame).toHaveBeenCalledTimes(1);
   });

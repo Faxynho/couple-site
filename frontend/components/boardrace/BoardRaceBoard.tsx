@@ -27,8 +27,9 @@ interface Props {
 
 const DICE_REVEAL_MS = 650;
 const MOVE_STEP_MS = 420;
+const FORCED_MOVE_PAUSE_MS = 650;
 const NORMAL_FEEDBACK_MS = 750;
-const SPECIAL_FEEDBACK_MS = 1_350;
+const SPECIAL_FEEDBACK_MS = 3_200;
 
 const TILE_CLASS: Record<BoardSpaceType, string> = {
   start: styles.tileStart,
@@ -72,13 +73,16 @@ function initialDisplayedPositions(state: BoardRaceState) {
 export default function BoardRaceBoard({ state, players, selfId }: Props) {
   const [displayedPositions, setDisplayedPositions] = useState<Record<string, number>>(() => initialDisplayedPositions(state));
   const [movingPlayerId, setMovingPlayerId] = useState<string | null>(() => transitionIsVisible(state) ? state.lastMove?.playerId ?? null : null);
-  const animatedSerial = useRef<number | null>(null);
+  const animatedMoveId = useRef<string | null>(null);
+  const moveId = state.lastMove
+    ? `${state.startedAt}:${state.dice.serial}:${state.lastMove.serial}:${state.lastMove.effectEventId ?? state.eventSerial}:${state.lastMove.path.join(",")}`
+    : null;
 
   useEffect(() => {
     const move = state.lastMove;
     const canPresent = move && state.phaseReadyAt > Date.now()
       && (state.phase === "turnStart" || state.phase === "moving" || state.phase === "finished");
-    if (!move || !canPresent || animatedSerial.current === move.serial) {
+    if (!move || !canPresent || animatedMoveId.current === moveId) {
       if (!canPresent) {
         setMovingPlayerId(null);
         setDisplayedPositions(Object.fromEntries(Object.entries(state.players).map(([id, player]) => [id, player.position])));
@@ -86,24 +90,29 @@ export default function BoardRaceBoard({ state, players, selfId }: Props) {
       return;
     }
 
-    animatedSerial.current = move.serial;
+    animatedMoveId.current = moveId;
     setMovingPlayerId(move.playerId);
     let cancelled = false;
     const timers: number[] = [];
-    const landing = state.spaces[move.to];
-    const feedbackMs = landing && landing.type !== "normal" ? SPECIAL_FEEDBACK_MS : NORMAL_FEEDBACK_MS;
+    // A duração vem do servidor: uma casa de recuo pode terminar em uma casa
+    // normal, mas ainda precisa manter o feedback especial e o trajeto inteiro.
+    const feedbackMs = move.feedbackMs ?? (move.effectEventId ? SPECIAL_FEEDBACK_MS : NORMAL_FEEDBACK_MS);
     const moveEndsAt = state.phaseReadyAt - feedbackMs;
-    const moveStartsAt = moveEndsAt - DICE_REVEAL_MS - move.path.length * MOVE_STEP_MS;
+    const pauses = move.pauseAfterSteps ?? [];
+    const pausesBeforeStep = (stepIndex: number) => pauses.filter((pauseAfter) => pauseAfter < stepIndex).length;
+    const moveStartsAt = moveEndsAt - DICE_REVEAL_MS - move.path.length * MOVE_STEP_MS - pauses.length * FORCED_MOVE_PAUSE_MS;
     const elapsed = Math.max(0, Date.now() - moveStartsAt);
-    const completedSteps = elapsed <= DICE_REVEAL_MS
-      ? 0
-      : Math.min(move.path.length, Math.floor((elapsed - DICE_REVEAL_MS) / MOVE_STEP_MS));
+    const completedSteps = move.path.reduce((completed, _position, index) => {
+      const stepIndex = index + 1;
+      const dueAt = DICE_REVEAL_MS + stepIndex * MOVE_STEP_MS + pausesBeforeStep(stepIndex) * FORCED_MOVE_PAUSE_MS;
+      return elapsed >= dueAt ? stepIndex : completed;
+    }, 0);
     const initialPosition = completedSteps > 0 ? move.path[completedSteps - 1] : move.from;
     setDisplayedPositions((current) => ({ ...current, [move.playerId]: initialPosition }));
 
     move.path.slice(completedSteps).forEach((position, offset) => {
       const stepIndex = completedSteps + offset + 1;
-      const dueIn = Math.max(0, DICE_REVEAL_MS + stepIndex * MOVE_STEP_MS - elapsed);
+      const dueIn = Math.max(0, DICE_REVEAL_MS + stepIndex * MOVE_STEP_MS + pausesBeforeStep(stepIndex) * FORCED_MOVE_PAUSE_MS - elapsed);
       timers.push(window.setTimeout(() => {
         if (!cancelled) setDisplayedPositions((current) => ({ ...current, [move.playerId]: position }));
       }, dueIn));
@@ -118,11 +127,16 @@ export default function BoardRaceBoard({ state, players, selfId }: Props) {
     return () => {
       cancelled = true;
       timers.forEach((timer) => window.clearTimeout(timer));
+      // Em Strict Mode o efeito de montagem é limpo e executado novamente.
+      // Liberar somente esta identidade permite que a segunda passagem programe
+      // o mesmo trajeto, sem reanimar snapshots posteriores.
+      if (animatedMoveId.current === moveId) animatedMoveId.current = null;
     };
-  // O serial identifica uma jogada completa. Snapshots intermediários do
-  // Socket.IO não reiniciam nem aceleram o percurso visual.
+  // A identidade inclui a partida e o dado/evento: o serial local pode ser
+  // reiniciado após Quiz, Minijogo ou uma nova partida.
+  // Snapshots intermediários do Socket.IO não reiniciam o percurso visual.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.lastMove?.serial]);
+  }, [moveId]);
 
   const playerInfo = (id: string) => players.find((player) => player.id === id);
   const colorByPlayer = useMemo(() => Object.fromEntries(state.playerOrder.map((id, index) => [
@@ -142,10 +156,10 @@ export default function BoardRaceBoard({ state, players, selfId }: Props) {
           const Icon = TILE_ICON[space.type];
           const style = {
             "--tile-left": String(desktop.x) + "%",
-            "--tile-top": String(desktop.y) + "%",
+            "--tile-y": String(desktop.y) + "%",
             "--tile-rotation": String(desktop.rotation) + "deg",
             "--tile-left-portrait": String(portrait.x) + "%",
-            "--tile-top-portrait": String(portrait.y) + "%",
+            "--tile-y-portrait": String(portrait.y) + "%",
             "--tile-rotation-portrait": String(portrait.rotation) + "deg",
           } as CSSProperties;
           return (

@@ -30,6 +30,8 @@ export interface BoardRacePendingQuiz extends QuizQuestion {
 
 export interface BoardRacePlayerState {
   position: number;
+  /** Casa de evento alcançada por movimento forçado; é resolvida no próximo turno. */
+  pendingSpaceIndex: number | null;
   skipNextTurn: boolean;
   powers: BoardRacePowerId[];
   shieldActive: boolean;
@@ -51,8 +53,11 @@ export interface BoardRaceMoveState {
   from: number;
   to: number;
   path: number[];
+  pauseAfterSteps?: number[];
   cause: "dice" | "advance" | "retreat" | "surprise";
   effectEventId?: number | null;
+  /** Janela autoritativa reservada para o feedback após este trajeto. */
+  feedbackMs?: number;
 }
 
 export interface BoardRaceMinigameState {
@@ -94,8 +99,11 @@ export interface BoardRaceLogEntry {
   tone: "neutral" | "positive" | "negative";
   kind?: BoardRaceEventKind;
   playerId?: string;
+  targetPlayerId?: string;
   powerId?: BoardRacePowerId;
   spaceType?: BoardSpaceType;
+  /** Casa especial alcançada por um avanço/recuo, anunciada no mesmo aviso. */
+  destinationSpaceType?: BoardSpaceType;
   amount?: number;
 }
 

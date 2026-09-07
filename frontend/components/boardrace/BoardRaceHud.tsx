@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, CircleHelp, Crown, LockKeyhole, Shield, Sparkles, X } from "lucide-react";
+import { Bot, CircleHelp, Crown, LockKeyhole, Shield, Sparkles, X, Zap } from "lucide-react";
 import AccountAvatar from "@/components/account/AccountAvatar";
 import { useAccountPhotos } from "@/hooks/useAccountPhotos";
 import { BoardRacePlayerState } from "@/lib/boardRaceTypes";
@@ -49,6 +49,7 @@ export default function BoardRaceHud({
         )}
       </div>
       <div className={styles.playerMeta}>
+        {active && <span className={styles.turnIndicator}><Sparkles size={10} aria-hidden="true" /> Sua vez</span>}
         <strong>{isSelf ? "Você" : name}</strong>
         <span>{active ? "Jogando agora" : `Casa ${progress.position} de ${lastPosition}`}</span>
         <div className={styles.progressTrack}>
@@ -56,10 +57,12 @@ export default function BoardRaceHud({
         </div>
       </div>
       <div className={styles.statusStack}>
-        {progress.skipNextTurn && <span className={styles.statusPill}><LockKeyhole size={10} /> preso</span>}
-        {progress.pendingQuiz && <span className={styles.statusPill}><CircleHelp size={10} /> quiz</span>}
-        {progress.shieldActive && <span className={styles.statusPill}><Shield size={10} /> escudo</span>}
-        {progress.pendingRollPenalty > 0 && <span className={styles.statusPill}><Sparkles size={10} /> -{progress.pendingRollPenalty}</span>}
+        {progress.skipNextTurn && <span className={styles.statusPill} title="Perde a próxima jogada"><LockKeyhole size={10} /> Preso</span>}
+        {progress.pendingQuiz && <span className={styles.statusPill} title="Precisa responder antes de jogar o dado"><CircleHelp size={10} /> Quiz</span>}
+        {progress.shieldActive && <span className={styles.statusPill} title="Bloqueia o próximo efeito negativo"><Shield size={10} /> Escudo</span>}
+        {progress.pendingRollPenalty > 0 && <span className={styles.statusPill} title={`Perde ${progress.pendingRollPenalty} no próximo movimento`}>🪤 Armadilha</span>}
+        {progress.rollBonus > 0 && <span className={styles.statusPill} title={`Ganha +${progress.rollBonus} no próximo movimento`}><Zap size={10} /> Impulso</span>}
+        {typeof progress.pendingSpaceIndex === "number" && <span className={styles.statusPill} title="Uma casa especial será resolvida antes do próximo dado"><Sparkles size={10} /> Evento</span>}
         {canKick && (
           <button type="button" className={styles.statusPill} onClick={() => onKick?.(playerId)} aria-label={`Remover ${name} da sala`} title="Remover da sala">
             <X size={10} /> remover

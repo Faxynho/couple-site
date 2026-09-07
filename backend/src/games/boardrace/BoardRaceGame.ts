@@ -20,6 +20,7 @@ import {
   BoardRaceMoveState,
   BoardRacePlayerState,
   BoardRacePowerId,
+  BoardSpaceType,
   BoardRaceState,
 } from "./types";
 
@@ -27,11 +28,13 @@ const BOT_ID = "BOT";
 const TURN_TRANSITION_MS = 1_600;
 const DICE_REVEAL_MS = 650;
 const MOVE_STEP_MS = 420;
+const FORCED_MOVE_PAUSE_MS = 650;
 const NORMAL_LANDING_FEEDBACK_MS = 750;
-const SPECIAL_LANDING_FEEDBACK_MS = 1_350;
+// O painel visual usa 2,75 s e ainda recebe uma folga para a saída da animação.
+// Esta janela é a autoridade que impede um Quiz/Minijogo de abrir sobre o aviso.
+const SPECIAL_LANDING_FEEDBACK_MS = 3_200;
 const BOT_THINK_MS = 900;
 export const BOARD_RACE_MINIGAME_COUNTDOWN_MS = 4_000;
-const MAX_EFFECT_CHAIN = 4;
 
 function randomInt(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1));
@@ -40,6 +43,7 @@ function randomInt(min: number, max: number): number {
 function blankPlayer(): BoardRacePlayerState {
   return {
     position: 0,
+    pendingSpaceIndex: null,
     skipNextTurn: false,
     powers: [],
     shieldActive: false,
@@ -95,6 +99,18 @@ function moveBy(state: BoardRaceState, playerId: string, amount: number, movemen
   movement.to = player.position;
 }
 
+function pauseBeforeForcedMove(movement: BoardRaceMoveState) {
+  if (movement.path.length > 0) movement.pauseAfterSteps = [...(movement.pauseAfterSteps ?? []), movement.path.length];
+}
+
+function deferForcedDestination(state: BoardRaceState, playerId: string): BoardSpaceType | null {
+  const player = state.players[playerId];
+  const destination = state.spaces[player.position];
+  if (!destination || !["prison", "quiz", "minigame", "treasure"].includes(destination.type)) return null;
+  player.pendingSpaceIndex = destination.index;
+  return destination.type;
+}
+
 function consumeShield(state: BoardRaceState, playerId: string, effectName: string): boolean {
   const player = state.players[playerId];
   if (!player.shieldActive) return false;
@@ -114,7 +130,7 @@ function grantRandomPower(state: BoardRaceState, playerId: string) {
   addLog(state, `Tesouro encontrado: poder ${powerId}.`, "positive", { kind: "powerGranted", playerId, powerId });
 }
 
-function startMinigame(state: BoardRaceState, playerId: string) {
+function startMinigame(state: BoardRaceState, playerId: string, announce = true) {
   const kind = BOARD_RACE_MINIGAMES[randomInt(0, BOARD_RACE_MINIGAMES.length - 1)];
   const embedded = createEmbeddedMinigame(kind, state.playerOrder, state.mode === "solo");
   state.pendingMinigame = {
@@ -129,83 +145,110 @@ function startMinigame(state: BoardRaceState, playerId: string) {
     botNextActionAt: embedded.botNextActionAt,
   };
   state.phase = "minigame";
-  addLog(state, `Desafio iniciado: ${BOARD_RACE_MINIGAME_TITLES[kind]}.`, "neutral", { kind: "minigameStart", playerId, spaceType: "minigame" });
+  if (announce) addLog(state, `Desafio iniciado: ${BOARD_RACE_MINIGAME_TITLES[kind]}.`, "neutral", { kind: "minigameStart", playerId, spaceType: "minigame" });
 }
 
 function resolveSpace(
   state: BoardRaceState,
   playerId: string,
   movement: BoardRaceMoveState,
-  chainDepth = 0
+  silentArrivalAnnouncement = false
 ) {
-  if (state.phase === "finished" || chainDepth > MAX_EFFECT_CHAIN) return;
   const player = state.players[playerId];
-  const space = state.spaces[player.position];
-  if (!space) return;
+  let forcedArrival = false;
+  let lastMovementEventId: number | null = null;
+  const maxImmediateEffects = 8;
 
-  switch (space.type) {
-    case "normal":
-    case "start":
-    case "finish":
-      return;
-    case "advance": {
-      const amount = randomInt(1, 3);
-      addLog(state, `Casa Avançar: +${amount} casas.`, "positive", { kind: "advance", playerId, amount, spaceType: "advance" });
-      moveBy(state, playerId, amount, movement);
-      if (!finishIfNeeded(state, playerId)) resolveSpace(state, playerId, movement, chainDepth + 1);
-      return;
-    }
-    case "retreat": {
-      if (consumeShield(state, playerId, "o recuo")) return;
-      const amount = randomInt(1, 3);
-      addLog(state, `Casa Recuar: -${amount} casas.`, "negative", { kind: "retreat", playerId, amount, spaceType: "retreat" });
-      moveBy(state, playerId, -amount, movement);
-      // Regra deliberada: uma penalidade para trás nunca dispara o efeito da casa de destino.
-      return;
-    }
-    case "prison":
-      if (!consumeShield(state, playerId, "a prisão")) {
-        player.skipNextTurn = true;
-        addLog(state, "Prisão: a próxima jogada será perdida.", "negative", { kind: "prison", playerId, spaceType: "prison" });
+  for (let chainStep = 0; chainStep < maxImmediateEffects; chainStep += 1) {
+    if (state.phase === "finished") return;
+    const space = state.spaces[player.position];
+    if (!space) return;
+
+    // Só eventos interativos são adiados. Casas que movem continuam a cadeia.
+    if (forcedArrival) {
+      const destinationSpaceType = deferForcedDestination(state, playerId);
+      if (destinationSpaceType) {
+        const event = state.eventLog.find((entry) => entry.id === lastMovementEventId);
+        if (event) event.destinationSpaceType = destinationSpaceType;
+        return;
       }
-      return;
-    case "quiz": {
-      const question = selectQuizQuestions("medium", 1)[0];
-      if (question) player.pendingQuiz = { ...question, assignedAt: Date.now() };
-      addLog(state, "Quiz pendente para o próximo turno.", "neutral", { kind: "quizPending", playerId, spaceType: "quiz" });
-      return;
     }
-    case "minigame":
-      startMinigame(state, playerId);
-      return;
-    case "treasure":
-      grantRandomPower(state, playerId);
-      return;
-    case "surprise": {
-      const event = randomInt(0, 3);
-      if (event === 0) {
-        addLog(state, "Surpresa boa: avance 2 casas.", "positive", { kind: "surprisePositive", playerId, amount: 2, spaceType: "surprise" });
-        moveBy(state, playerId, 2, movement);
-        if (!finishIfNeeded(state, playerId)) resolveSpace(state, playerId, movement, chainDepth + 1);
-      } else if (event === 1) {
-        if (!consumeShield(state, playerId, "a surpresa negativa")) {
-          addLog(state, "Surpresa ruim: recue 2 casas.", "negative", { kind: "surpriseNegative", playerId, amount: 2, spaceType: "surprise" });
-          moveBy(state, playerId, -2, movement);
+
+    switch (space.type) {
+      case "normal":
+      case "start":
+      case "finish":
+        return;
+      case "advance": {
+        const amount = randomInt(1, 3);
+        addLog(state, `Casa Avançar: +${amount} casas.`, "positive", { kind: "advance", playerId, amount, spaceType: "advance" });
+        lastMovementEventId = state.eventSerial;
+        pauseBeforeForcedMove(movement);
+        moveBy(state, playerId, amount, movement);
+        if (finishIfNeeded(state, playerId)) return;
+        forcedArrival = true;
+        continue;
+      }
+      case "retreat": {
+        if (consumeShield(state, playerId, "o recuo")) return;
+        const amount = randomInt(1, 3);
+        addLog(state, `Casa Recuar: -${amount} casas.`, "negative", { kind: "retreat", playerId, amount, spaceType: "retreat" });
+        lastMovementEventId = state.eventSerial;
+        pauseBeforeForcedMove(movement);
+        moveBy(state, playerId, -amount, movement);
+        forcedArrival = true;
+        continue;
+      }
+      case "prison":
+        if (!consumeShield(state, playerId, "a prisão")) {
+          player.skipNextTurn = true;
+          if (!silentArrivalAnnouncement) addLog(state, "Prisão: a próxima jogada será perdida.", "negative", { kind: "prison", playerId, spaceType: "prison" });
         }
-      } else if (event === 2) {
-        addLog(state, "Surpresa: turno extra!", "positive", { kind: "extraTurn", playerId, spaceType: "surprise" });
-        state.phaseReadyAt = -1; // marcador consumido ao encerrar o turno
-      } else {
-        grantRandomPower(state, playerId);
+        return;
+      case "quiz": {
+        const question = selectQuizQuestions("medium", 1)[0];
+        if (question) player.pendingQuiz = { ...question, assignedAt: Date.now() };
+        if (!silentArrivalAnnouncement) addLog(state, "Quiz pendente para o próximo turno.", "neutral", { kind: "quizPending", playerId, spaceType: "quiz" });
+        return;
       }
-      return;
+      case "minigame":
+        startMinigame(state, playerId, !silentArrivalAnnouncement);
+        return;
+      case "treasure":
+        grantRandomPower(state, playerId);
+        return;
+      case "surprise": {
+        const event = randomInt(0, 3);
+        if (event === 0 || event === 1) {
+          const amount = event === 0 ? 2 : -2;
+          const kind = event === 0 ? "surprisePositive" : "surpriseNegative";
+          const message = event === 0 ? "Surpresa boa: avance 2 casas." : "Surpresa ruim: recue 2 casas.";
+          if (event === 1 && consumeShield(state, playerId, "a surpresa negativa")) return;
+          addLog(state, message, event === 0 ? "positive" : "negative", { kind, playerId, amount: 2, spaceType: "surprise" });
+          lastMovementEventId = state.eventSerial;
+          pauseBeforeForcedMove(movement);
+          moveBy(state, playerId, amount, movement);
+          if (finishIfNeeded(state, playerId)) return;
+          forcedArrival = true;
+          continue;
+        }
+        if (event === 2) {
+          addLog(state, "Surpresa: turno extra!", "positive", { kind: "extraTurn", playerId, spaceType: "surprise" });
+          state.phaseReadyAt = -1;
+        } else grantRandomPower(state, playerId);
+        return;
+      }
     }
   }
+
+  // Proteção de segurança: nenhuma cadeia de casas pode prender a partida.
+  addLog(state, "A cadeia de movimentos terminou por segurança.", "neutral", { playerId });
 }
 
 function presentationDelay(movement: BoardRaceMoveState, hadEffect: boolean): number {
   return DICE_REVEAL_MS
     + movement.path.length * MOVE_STEP_MS
+    + (movement.pauseAfterSteps?.length ?? 0) * FORCED_MOVE_PAUSE_MS
     + (hadEffect ? SPECIAL_LANDING_FEEDBACK_MS : NORMAL_LANDING_FEEDBACK_MS);
 }
 
@@ -227,6 +270,65 @@ function beginTurn(state: BoardRaceState) {
     addLog(state, state.currentPlayerId === BOT_ID ? "O BOT perdeu a jogada por estar preso." : "Você perdeu a jogada por estar na prisão.", "negative", { kind: "lostTurn", playerId: state.currentPlayerId });
     state.lastMove = null;
     endTurn(state);
+    return;
+  }
+  const pendingSpaceIndex = player.pendingSpaceIndex;
+  if (typeof pendingSpaceIndex === "number" && Number.isInteger(pendingSpaceIndex) && state.spaces[pendingSpaceIndex]?.index === pendingSpaceIndex) {
+    // Limpa antes de resolver: se o efeito mover de novo, somente o novo destino fica pendente.
+    player.pendingSpaceIndex = null;
+    const movement: BoardRaceMoveState = {
+      serial: (state.lastMove?.serial ?? 0) + 1,
+      playerId: state.currentPlayerId,
+      from: player.position,
+      to: player.position,
+      path: [],
+      cause: state.spaces[pendingSpaceIndex].type === "retreat" ? "retreat" : state.spaces[pendingSpaceIndex].type === "surprise" ? "surprise" : "advance",
+      effectEventId: null,
+    };
+    const eventSerialBefore = state.eventSerial;
+    resolveSpace(state, state.currentPlayerId, movement, true);
+    movement.effectEventId = state.eventSerial > eventSerialBefore ? state.eventSerial : null;
+
+    if (state.phase === "finished") {
+      state.lastMove = movement;
+      movement.feedbackMs = SPECIAL_LANDING_FEEDBACK_MS;
+      state.phaseReadyAt = Date.now() + presentationDelay(movement, true);
+      return;
+    }
+    if (state.phase === "minigame") {
+      state.lastMove = movement.path.length > 0 ? movement : null;
+      movement.feedbackMs = SPECIAL_LANDING_FEEDBACK_MS;
+      const presentationMs = movement.path.length > 0 ? presentationDelay(movement, true) : 0;
+      state.phase = movement.path.length > 0 ? "moving" : "minigame";
+      state.phaseReadyAt = Date.now() + presentationMs;
+      if (state.pendingMinigame) {
+        const delayedBy = presentationMs + BOARD_RACE_MINIGAME_COUNTDOWN_MS;
+        state.pendingMinigame.readyAt = state.phaseReadyAt + BOARD_RACE_MINIGAME_COUNTDOWN_MS;
+        state.pendingMinigame.startedAt = state.pendingMinigame.readyAt;
+        state.pendingMinigame.expiresAt += delayedBy;
+        state.pendingMinigame.state = delayEmbeddedMinigameStart(state.pendingMinigame.kind, state.pendingMinigame.state, delayedBy);
+        if (state.pendingMinigame.botNextActionAt !== null) state.pendingMinigame.botNextActionAt += delayedBy;
+      }
+      return;
+    }
+    if (player.pendingQuiz) {
+      state.lastMove = movement.path.length > 0 ? movement : null;
+      state.phase = "awaitingQuiz";
+      state.phaseReadyAt = Date.now() + (movement.path.length > 0 ? presentationDelay(movement, true) : 0);
+      if (state.currentPlayerId === BOT_ID) state.phaseReadyAt = Math.max(state.phaseReadyAt, Date.now() + BOT_THINK_MS);
+      return;
+    }
+    if (movement.path.length > 0) {
+      state.lastMove = movement;
+      movement.feedbackMs = SPECIAL_LANDING_FEEDBACK_MS;
+      state.phase = "turnStart";
+      state.phaseReadyAt = Date.now() + presentationDelay(movement, true);
+      return;
+    }
+    // Tesouro, prisão e demais efeitos sem deslocamento também recebem feedback antes do dado.
+    state.lastMove = null;
+    state.phase = "turnStart";
+    state.phaseReadyAt = Date.now();
     return;
   }
   if (player.pendingQuiz) {
@@ -266,6 +368,7 @@ function rollTurn(state: BoardRaceState, playerId: string): BoardRaceState {
     addLog(next, "Casa normal: caminho livre.", "neutral", { kind: "landNormal", playerId, spaceType: "normal" });
   }
   movement.effectEventId = next.eventSerial > eventSerialBeforeLanding ? next.eventSerial : null;
+  movement.feedbackMs = hadSpecialEffect ? SPECIAL_LANDING_FEEDBACK_MS : NORMAL_LANDING_FEEDBACK_MS;
   next.lastMove = movement;
   const pacingMs = presentationDelay(movement, hadSpecialEffect);
   if (next.phase === "finished") {
@@ -291,7 +394,7 @@ function rollTurn(state: BoardRaceState, playerId: string): BoardRaceState {
 }
 
 function answerQuiz(state: BoardRaceState, playerId: string, optionIndex: number): BoardRaceState {
-  if (state.phase !== "awaitingQuiz" || state.currentPlayerId !== playerId) return state;
+  if (state.phase !== "awaitingQuiz" || state.currentPlayerId !== playerId || Date.now() < state.phaseReadyAt) return state;
   const pending = state.players[playerId]?.pendingQuiz;
   if (!pending || !Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex > 3) return state;
   const next = structuredClone(state);
@@ -338,7 +441,7 @@ function usePower(state: BoardRaceState, playerId: string, powerId: BoardRacePow
   removePower(nextPlayer, powerId);
   if (!consumeShield(next, opponentId, "a armadilha")) {
     next.players[opponentId].pendingRollPenalty = Math.max(next.players[opponentId].pendingRollPenalty, 2);
-    addLog(next, "Armadilha lançada: -2 no próximo movimento adversário.", "negative", { kind: "powerUsed", playerId, powerId });
+    addLog(next, "Armadilha lançada: -2 no próximo movimento adversário.", "negative", { kind: "powerUsed", playerId, targetPlayerId: opponentId, powerId });
   }
   return next;
 }

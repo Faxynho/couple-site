@@ -13,10 +13,18 @@ import BoardRaceEventPopup from "@/components/boardrace/BoardRaceEventPopup";
 import BoardRaceHud from "@/components/boardrace/BoardRaceHud";
 import BoardRacePowerBar from "@/components/boardrace/BoardRacePowerBar";
 import BoardRaceResultModal from "@/components/boardrace/BoardRaceResultModal";
+import BoardRaceTutorial from "@/components/boardrace/BoardRaceTutorial";
 import styles from "@/components/boardrace/BoardRaceVisual.module.css";
 import { useBoardRaceGame } from "@/hooks/useBoardRaceGame";
 import { useRoomSession } from "@/hooks/useRoomSession";
 import { formatDuration } from "@/lib/accountFormat";
+import type { BoardRaceState } from "@/lib/boardRaceTypes";
+
+type RaceEvent = BoardRaceState["eventLog"][number];
+type QueuedPopup = { event: RaceEvent; showAt: number };
+const POPUP_DURATION_MS = 2_750;
+const SPECIAL_FEEDBACK_MS = 3_200;
+const NORMAL_FEEDBACK_MS = 750;
 
 export default function BoardRacePage({ params }: { params: { code: string } }) {
   const router = useRouter();
@@ -24,8 +32,11 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
   const { room, selfId, notFound, kicked, backToConfig, backToGameSelect, kickPlayer } = useRoomSession(code);
   const { state, roll, answerQuiz, usePower, minigameAction, newGame } = useBoardRaceGame(code);
   const [showResult, setShowResult] = useState(false);
-  const [transientEvent, setTransientEvent] = useState<NonNullable<typeof state>["eventLog"][number] | null>(null);
+  const [popupQueue, setPopupQueue] = useState<QueuedPopup[]>([]);
+  const [activePopup, setActivePopup] = useState<RaceEvent | null>(null);
+  const [popupLeaving, setPopupLeaving] = useState(false);
   const seenEventId = useRef<number | null>(null);
+  const popupGameStartedAt = useRef<number | null>(null);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -59,21 +70,51 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
 
   useEffect(() => {
     if (!state) return;
-    if (seenEventId.current === null) {
+    if (popupGameStartedAt.current !== state.startedAt) {
+      popupGameStartedAt.current = state.startedAt;
       seenEventId.current = state.eventSerial;
+      setPopupQueue([]);
+      setActivePopup(null);
+      setPopupLeaving(false);
       return;
     }
-    if (state.eventSerial <= seenEventId.current) return;
+    const previousEventId = seenEventId.current;
+    if (previousEventId === null || state.eventSerial <= previousEventId) return;
+    const newEvents = state.eventLog.filter((event) => event.id > previousEventId);
     seenEventId.current = state.eventSerial;
-    const latest = state.eventLog.at(-1);
-    if (!latest) return;
-    const belongsToMove = latest.id === state.lastMove?.effectEventId;
-    const pacedTransition = !state.lastMove && state.phase === "turnStart" && state.phaseReadyAt > Date.now();
-    if (belongsToMove || pacedTransition) return;
-    setTransientEvent(latest);
-    const timer = window.setTimeout(() => setTransientEvent((current) => current?.id === latest.id ? null : current), 2_650);
+    if (newEvents.length === 0) return;
+    const feedbackMs = state.lastMove?.feedbackMs ?? (state.lastMove?.effectEventId ? SPECIAL_FEEDBACK_MS : NORMAL_FEEDBACK_MS);
+    const movementFeedbackAt = state.phaseReadyAt - feedbackMs;
+    setPopupQueue((current) => {
+      const visibleIds = new Set([activePopup?.id, ...current.map((item) => item.event.id)]);
+      const additions = newEvents
+        .filter((event) => !visibleIds.has(event.id))
+        .map((event) => ({
+          event,
+          showAt: event.id === state.lastMove?.effectEventId ? Math.max(Date.now(), movementFeedbackAt) : Date.now(),
+        }));
+      return additions.length ? [...current, ...additions] : current;
+    });
+  }, [state?.eventSerial, state?.lastMove?.effectEventId, state?.lastMove?.feedbackMs, state?.phaseReadyAt, activePopup?.id]);
+
+  useEffect(() => {
+    const next = popupQueue[0];
+    if (activePopup || !next) return;
+    const timer = window.setTimeout(() => {
+      setActivePopup(next.event);
+      setPopupQueue((current) => current[0]?.event.id === next.event.id ? current.slice(1) : current);
+    }, Math.max(0, next.showAt - Date.now()));
     return () => window.clearTimeout(timer);
-  }, [state?.eventSerial]);
+  }, [activePopup, popupQueue]);
+
+  useEffect(() => {
+    if (!activePopup) return;
+    const timer = window.setTimeout(() => {
+      setPopupLeaving(true);
+      setActivePopup(null);
+    }, POPUP_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [activePopup]);
 
   if (notFound) {
     return (
@@ -98,12 +139,14 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
   const winnerName = state.winnerId === "BOT"
     ? "BOT"
     : room.players.find((player) => player.id === state.winnerId)?.name ?? "Oponente";
-  const ownQuiz = isMyTurn && state.phase === "awaitingQuiz" ? self.pendingQuiz : null;
-  const canRoll = isMyTurn && state.phase === "awaitingRoll";
+  // Date.now evita o estado morto em que o snapshot chega poucos ms antes de
+  // phaseReadyAt, mas nenhum novo render atualiza o relógio local.
+  const interactionReady = Math.max(now, Date.now()) >= state.phaseReadyAt && !activePopup && !popupLeaving && popupQueue.length === 0;
+  const ownQuiz = isMyTurn && state.phase === "awaitingQuiz" && interactionReady ? self.pendingQuiz : null;
+  const canRoll = isMyTurn && state.phase === "awaitingRoll" && interactionReady;
   const elapsed = formatDuration(Math.max(0, (state.finishedAt ?? Date.now()) - state.startedAt));
   const latestEffect = state.eventLog.at(-1);
-  const landing = state.lastMove ? state.spaces[state.lastMove.to] : null;
-  const feedbackMs = landing?.type && landing.type !== "normal" ? 1_350 : 750;
+  const feedbackMs = state.lastMove?.feedbackMs ?? (state.lastMove?.effectEventId ? SPECIAL_FEEDBACK_MS : NORMAL_FEEDBACK_MS);
   const moveEndsAt = state.phaseReadyAt - feedbackMs;
   const presentingMove = Boolean(
     state.lastMove
@@ -147,7 +190,6 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
     if (playerId === "BOT") return "O BOT";
     return room.players.find((player) => player.id === playerId)?.name ?? "Seu oponente";
   };
-  const activePopup = presentationStage === "effect" ? presentationEvent : transientEvent;
 
   const handleBack = () => {
     if (room.roomMode === "duo") {
@@ -199,7 +241,7 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
       <section className={styles.playArea} aria-label="Área principal da partida">
         <div className={styles.boardSlot}>
           <BoardRaceBoard state={state} players={displayPlayers} selfId={selfId} />
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" onExitComplete={() => setPopupLeaving(false)}>
             {activePopup && <BoardRaceEventPopup key={activePopup.id} event={activePopup} selfId={selfId} playerName={playerName} />}
           </AnimatePresence>
           {state.phase === "finished" && !showResult && (
@@ -224,7 +266,7 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
         </aside>
 
         <AnimatePresence>
-          {(ownQuiz || (state.phase === "minigame" && state.pendingMinigame)) && (
+          {(ownQuiz || (state.phase === "minigame" && state.pendingMinigame && interactionReady)) && (
             <motion.div
               className={styles.stageOverlay}
               initial={{ opacity: 0 }}
@@ -258,6 +300,8 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
           ))}
         </div>
       </section>
+
+      <BoardRaceTutorial />
 
       <BoardRaceResultModal
         visible={showResult}

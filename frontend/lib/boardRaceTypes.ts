@@ -22,6 +22,7 @@ export interface BoardRacePendingQuiz {
 
 export interface BoardRacePlayerState {
   position: number;
+  pendingSpaceIndex: number | null;
   skipNextTurn: boolean;
   powers: BoardRacePowerId[];
   shieldActive: boolean;
@@ -41,7 +42,7 @@ export interface BoardRaceState {
   phase: BoardRacePhase;
   phaseReadyAt: number;
   dice: { value: number | null; total: number | null; rolledBy: string | null; serial: number };
-  lastMove: { serial: number; playerId: string; from: number; to: number; path: number[]; cause: string; effectEventId?: number | null } | null;
+  lastMove: { serial: number; playerId: string; from: number; to: number; path: number[]; pauseAfterSteps?: number[]; cause: string; effectEventId?: number | null; feedbackMs?: number } | null;
   pendingMinigame: {
     kind: BoardRaceMinigameKind;
     title: string;
@@ -64,8 +65,10 @@ export interface BoardRaceState {
     tone: "neutral" | "positive" | "negative";
     kind?: BoardRaceEventKind;
     playerId?: string;
+    targetPlayerId?: string;
     powerId?: BoardRacePowerId;
     spaceType?: BoardSpaceType;
+    destinationSpaceType?: BoardSpaceType;
     amount?: number;
   }[];
 }
