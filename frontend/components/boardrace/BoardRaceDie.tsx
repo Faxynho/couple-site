@@ -57,8 +57,21 @@ function getBounds(layer: HTMLDivElement | null, die: HTMLButtonElement | null):
   if (!layer || !die) return null;
   const rect = layer.getBoundingClientRect();
   const size = die.offsetWidth || Math.min(rect.width, rect.height) * 0.13;
-  if (rect.width <= 0 || rect.height <= 0 || size <= 0) return null;
+  if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height) || !Number.isFinite(size) || rect.width <= 0 || rect.height <= 0 || size <= 0) return null;
   return { width: rect.width, height: rect.height, size };
+}
+
+function isRenderableMotion(motion: DieMotion, bounds: DieBounds) {
+  const values = [
+    motion.x, motion.y, motion.vx, motion.vy, motion.height, motion.heightVelocity,
+    motion.rx, motion.ry, motion.rz, motion.spinX, motion.spinY, motion.spinZ,
+    bounds.width, bounds.height, bounds.size,
+  ];
+  if (!values.every(Number.isFinite)) return false;
+  if (bounds.width <= 0 || bounds.height <= 0 || bounds.size <= 0) return false;
+  if (motion.x < -bounds.size * 2 || motion.x > bounds.width + bounds.size) return false;
+  if (motion.y < -bounds.size * 2 || motion.y > bounds.height + bounds.size) return false;
+  return Math.abs(motion.rx) < 100_000 && Math.abs(motion.ry) < 100_000 && Math.abs(motion.rz) < 100_000;
 }
 
 export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, onRoll }: Props) {
@@ -78,6 +91,7 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
   const latestValueRef = useRef(value);
   const resultForThrowRef = useRef<number | null>(null);
   const latestCanRollRef = useRef(canRoll);
+  const previousCanRollRef = useRef(false);
   const settleTimerRef = useRef<number | null>(null);
   const rollTimeoutRef = useRef<number | null>(null);
   const [visible, setVisible] = useState(canRoll);
@@ -99,7 +113,12 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
   const paint = useCallback((motion: DieMotion, bounds: DieBounds) => {
     const die = dieRef.current;
     const shadow = shadowRef.current;
-    if (!die || !shadow) return;
+    if (!die || !shadow || !isRenderableMotion(motion, bounds)) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[BoardRaceDie] Estado visual inválido; o dado será restaurado na próxima oportunidade.", { motion, bounds });
+      }
+      return false;
+    }
     die.style.transition = "none";
     const lift = motion.height * 0.34;
     const scale = 1 + Math.min(0.075, motion.height / 900);
@@ -109,6 +128,7 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
     shadow.style.transform = `translate3d(${motion.x + bounds.size * 0.12}px, ${motion.y + bounds.size * 0.82}px, 0) scale(${shadowScale})`;
     shadow.style.opacity = String(Math.max(0.13, 0.42 - motion.height / 370));
     shadow.style.filter = `blur(${4 + Math.min(8, motion.height / 18)}px)`;
+    return true;
   }, []);
 
   const placeAtHome = useCallback(() => {
@@ -125,6 +145,32 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
     motionRef.current = motion;
     paint(motion, bounds);
   }, [paint]);
+
+  const clearGesture = useCallback((restoreHome = false) => {
+    const die = dieRef.current;
+    const pointerId = pointerRef.current;
+    if (die && pointerId !== null && die.hasPointerCapture?.(pointerId)) {
+      die.releasePointerCapture?.(pointerId);
+    }
+    pointerRef.current = null;
+    pointerStartRef.current = null;
+    pointsRef.current = [];
+    draggingRef.current = false;
+    setDragging(false);
+    if (restoreHome) window.requestAnimationFrame(placeAtHome);
+  }, [placeAtHome]);
+
+  const resetForAvailableTurn = useCallback(() => {
+    clearTimers();
+    clearGesture();
+    animatingRef.current = false;
+    releaseRef.current = false;
+    resultForThrowRef.current = null;
+    setThrowing(false);
+    setVisible(true);
+    setSettledValue(latestValueRef.current);
+    window.requestAnimationFrame(placeAtHome);
+  }, [clearGesture, clearTimers, placeAtHome]);
 
   const finishThrow = useCallback((motion: DieMotion, bounds: DieBounds, settling: SettlingMotion) => {
     const settled = {
@@ -165,7 +211,18 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
     const frame = (now: number) => {
       const bounds = getBounds(layerRef.current, dieRef.current);
       const current = motionRef.current;
-      if (!bounds || !current) return;
+      if (!bounds || !current) {
+        rafRef.current = null;
+        animatingRef.current = false;
+        setThrowing(false);
+        if (latestCanRollRef.current) {
+          setVisible(true);
+          window.requestAnimationFrame(placeAtHome);
+        } else {
+          setVisible(false);
+        }
+        return;
+      }
       const elapsed = now - startedAt;
       const next = stepDieMotion(current, bounds, (now - previous) / 1_000);
       previous = now;
@@ -198,8 +255,19 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
         next.spinY = settling.spin.y * remainingSpin;
         next.spinZ = settling.spin.z * remainingSpin;
       }
+      if (!isRenderableMotion(next, bounds) || !paint(next, bounds)) {
+        rafRef.current = null;
+        animatingRef.current = false;
+        setThrowing(false);
+        if (latestCanRollRef.current) {
+          setVisible(true);
+          window.requestAnimationFrame(placeAtHome);
+        } else {
+          setVisible(false);
+        }
+        return;
+      }
       motionRef.current = next;
-      paint(next, bounds);
       if (settling && settlingProgress >= 1) {
         rafRef.current = null;
         finishThrow(next, bounds, settling);
@@ -208,26 +276,28 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
       rafRef.current = window.requestAnimationFrame(frame);
     };
     rafRef.current = window.requestAnimationFrame(frame);
-  }, [clearTimers, finishThrow, paint]);
+  }, [clearTimers, finishThrow, paint, placeAtHome]);
 
   useLayoutEffect(() => {
     placeAtHome();
     const layer = layerRef.current;
     if (!layer || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() => {
-      if (!draggingRef.current && !animatingRef.current) placeAtHome();
+      if (latestCanRollRef.current && draggingRef.current) {
+        resetForAvailableTurn();
+      } else if (!draggingRef.current && !animatingRef.current) {
+        placeAtHome();
+      }
     });
     observer.observe(layer);
     return () => observer.disconnect();
-  }, [placeAtHome]);
+  }, [placeAtHome, resetForAvailableTurn]);
 
   useEffect(() => {
-    if (canRoll && !throwing && !draggingRef.current) {
-      setVisible(true);
-      setSettledValue(value);
-      window.requestAnimationFrame(placeAtHome);
-    }
-  }, [canRoll, placeAtHome, throwing, value]);
+    const wasAvailable = previousCanRollRef.current;
+    previousCanRollRef.current = canRoll;
+    if (canRoll && !wasAvailable) resetForAvailableTurn();
+  }, [canRoll, resetForAvailableTurn]);
 
   // O serial é a confirmação autoritativa. No cliente remoto/BOT ele também
   // inicia uma trajetória reproduzível; no lançador local apenas fixa a face.
@@ -255,6 +325,7 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
   }, [clearTimers]);
 
   const onPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (pointerRef.current !== null || draggingRef.current) clearGesture();
     if (!canRoll || throwing || releaseRef.current || pointerRef.current !== null || event.isPrimary === false) return;
     event.preventDefault();
     pointerRef.current = event.pointerId;
@@ -290,9 +361,8 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
     const finalPoint = { x: event.clientX, y: event.clientY, time: performance.now() };
     const start = pointerStartRef.current;
     const points = [...pointsRef.current, finalPoint].slice(-12);
-    pointerRef.current = null;
-    draggingRef.current = false;
-    setDragging(false);
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    clearGesture();
     if (!start) return;
     const dx = finalPoint.x - start.x;
     const dy = finalPoint.y - start.y;
@@ -315,10 +385,12 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
 
   const cancelPointer = (event: PointerEvent<HTMLButtonElement>) => {
     if (pointerRef.current !== event.pointerId) return;
-    pointerRef.current = null;
-    draggingRef.current = false;
-    setDragging(false);
-    window.requestAnimationFrame(placeAtHome);
+    clearGesture(true);
+  };
+
+  const recoverLostPointerCapture = (event: PointerEvent<HTMLButtonElement>) => {
+    if (pointerRef.current !== event.pointerId && !draggingRef.current) return;
+    clearGesture(true);
   };
 
   const accessibleValue = settledValue ?? value;
@@ -334,6 +406,7 @@ export default function BoardRaceDie({ value, total, serial, rolledBy, canRoll, 
         onPointerMove={onPointerMove}
         onPointerUp={releasePointer}
         onPointerCancel={cancelPointer}
+        onLostPointerCapture={recoverLostPointerCapture}
         className={`${styles.throwDie} ${canRoll ? styles.throwDieReady : ""} ${dragging ? styles.throwDieDragging : ""} ${throwing ? styles.throwDieRolling : ""}`}
       >
         <span className={styles.cubeCore} aria-hidden="true">
