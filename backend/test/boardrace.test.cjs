@@ -459,7 +459,7 @@ test("o turno reserva tempo para dado, percurso e feedback antes de liberar o pr
   const next = withRandom([0.5], () => game.applyAction(state, { type: "roll" }, "p1"));
   assert.equal(next.currentPlayerId, "p2");
   assert.equal(next.phase, "turnStart");
-  assert.ok(next.phaseReadyAt - startedAt >= 650 + next.lastMove.path.length * 420 + 700);
+  assert.ok(next.phaseReadyAt - startedAt >= 2_050 + next.lastMove.path.length * 420 + 700);
   const unchanged = game.applyAction(next, { type: "tick" }, "system");
   assert.equal(unchanged.phase, "turnStart", "o próximo jogador não pode agir durante a apresentação");
 });

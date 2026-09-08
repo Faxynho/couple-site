@@ -67,7 +67,10 @@ describe("Trilha da Sorte", () => {
     expect(screen.getByLabelText("Área principal da partida")).toContainElement(board);
     expect(board.querySelectorAll("[title]")).toHaveLength(31);
     expect(screen.getByLabelText("Sua peça")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Jogar dado" }));
+    const die = screen.getByRole("button", { name: "Arraste o dado e solte para jogar" });
+    fireEvent.pointerDown(die, { pointerId: 1, isPrimary: true, clientX: 100, clientY: 180 });
+    fireEvent.pointerMove(die, { pointerId: 1, isPrimary: true, clientX: 160, clientY: 145 });
+    fireEvent.pointerUp(die, { pointerId: 1, isPrimary: true, clientX: 160, clientY: 145 });
     expect(roll).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: /Impulso \+2/i }));
     expect(usePower).toHaveBeenCalledWith("boost");
@@ -81,7 +84,7 @@ describe("Trilha da Sorte", () => {
     };
     mockGame.mockReturnValue({ state: quizState, roll, answerQuiz, usePower, minigameAction: vi.fn(), newGame: vi.fn() });
     render(<BoardRacePage params={{ code: "abcde" }} />);
-    expect(screen.queryByRole("button", { name: "Jogar dado" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Arraste o dado e solte para jogar" })).not.toBeInTheDocument();
     expect(screen.getByRole("dialog", { name: "Quiz da trilha" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Opção/ })).toHaveLength(4);
     fireEvent.click(screen.getByRole("button", { name: /Opção B/ }));

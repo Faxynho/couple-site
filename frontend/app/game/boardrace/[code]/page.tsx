@@ -246,7 +246,12 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
 
       <section className={styles.playArea} aria-label="Área principal da partida">
         <div className={styles.boardSlot}>
-          <BoardRaceBoard state={state} players={displayPlayers} selfId={selfId} />
+          <BoardRaceBoard
+            state={state}
+            players={displayPlayers}
+            selfId={selfId}
+            overlay={<BoardRaceDie value={state.dice.value} total={state.dice.total} serial={state.dice.serial} rolledBy={state.dice.rolledBy} canRoll={canRoll} onRoll={roll} />}
+          />
           <AnimatePresence mode="wait" onExitComplete={() => setPopupLeaving(false)}>
             {activePopup && <BoardRaceEventPopup key={activePopup.id} event={activePopup} selfId={selfId} playerName={playerName} />}
           </AnimatePresence>
@@ -261,11 +266,10 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
 
         <aside className={styles.hudRail} aria-label="Controles da partida">
           <div className={styles.turnDock}>
-            <BoardRaceDie value={state.dice.value} total={state.dice.total} serial={state.dice.serial} canRoll={canRoll} onRoll={roll} />
             <div className={styles.turnCopy}>
-              <small>{canRoll ? "Toque no dado" : "Estado da rodada"}</small>
+              <small>{canRoll ? "Hora de lançar" : "Estado da rodada"}</small>
               <strong>{turnMessage}</strong>
-              <span>{state.dice.value !== null ? "Resultado visível até a próxima jogada." : "Dado tradicional de 1 a 6."}</span>
+              <span>{canRoll ? "Arraste o dado no tabuleiro e solte." : state.dice.value !== null ? "Resultado visível até a próxima jogada." : "Aguardando o próximo lançamento."}</span>
             </div>
           </div>
           <BoardRacePowerBar player={self} enabled={canRoll} onUse={usePower} />

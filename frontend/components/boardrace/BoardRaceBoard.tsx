@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronsDown,
   ChevronsUp,
@@ -26,9 +26,11 @@ interface Props {
   state: BoardRaceState;
   players: Player[];
   selfId: string | null;
+  /** Camada de interação visual, sempre acima de casas e peões. */
+  overlay?: ReactNode;
 }
 
-const DICE_REVEAL_MS = 650;
+const DICE_REVEAL_MS = 2_050;
 const MOVE_STEP_MS = 420;
 const FORCED_MOVE_PAUSE_MS = 650;
 const NORMAL_FEEDBACK_MS = 750;
@@ -87,7 +89,7 @@ function initialDisplayedPositions(state: BoardRaceState) {
   return positions;
 }
 
-export default function BoardRaceBoard({ state, players, selfId }: Props) {
+export default function BoardRaceBoard({ state, players, selfId, overlay }: Props) {
   const [displayedPositions, setDisplayedPositions] = useState<Record<string, number>>(() => initialDisplayedPositions(state));
   const [movingPlayerId, setMovingPlayerId] = useState<string | null>(() => transitionIsVisible(state) ? state.lastMove?.playerId ?? null : null);
   const animatedMoveId = useRef<string | null>(null);
@@ -235,6 +237,7 @@ export default function BoardRaceBoard({ state, players, selfId }: Props) {
             );
           })}
         </div>
+        {overlay}
       </div>
     </section>
   );

@@ -28,7 +28,9 @@ import {
 
 const BOT_ID = "BOT";
 const TURN_TRANSITION_MS = 1_600;
-const DICE_REVEAL_MS = 650;
+// Reserva a janela completa do lançamento pseudo-físico (até 1,65 s),
+// estabilização na face autoritativa e uma breve leitura antes do peão andar.
+const DICE_REVEAL_MS = 2_050;
 const MOVE_STEP_MS = 420;
 const FORCED_MOVE_PAUSE_MS = 650;
 const NORMAL_LANDING_FEEDBACK_MS = 750;
