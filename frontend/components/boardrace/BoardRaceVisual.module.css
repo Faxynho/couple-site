@@ -342,7 +342,7 @@
 .dieLaunchLayerHidden { visibility:hidden; }
 .throwDie { --die-size:clamp(3.5rem,7.6vw,5.25rem); --die-half:clamp(1.75rem,3.8vw,2.625rem); --die-face-depth:calc(var(--die-half) - .35px); --die-core-depth:clamp(1.61rem,3.5vw,2.415rem); position:absolute; z-index:2; width:var(--die-size); height:var(--die-size); padding:0; border:0; color:#70419a; background:transparent; opacity:1; transform-origin:center; -webkit-transform-style:preserve-3d; transform-style:preserve-3d; will-change:transform; touch-action:none; pointer-events:none; }
 .throwDie:disabled { cursor:default; }
-.throwDieReady { pointer-events:auto; cursor:grab; animation:die-ready 1.55s ease-in-out infinite; }
+.throwDieReady { pointer-events:auto; cursor:grab; }
 .throwDieReady:focus-visible { outline:3px solid rgba(117,194,233,.86); outline-offset:4px; }
 .throwDieDragging { cursor:grabbing; animation:none; }
 .throwDieRolling { pointer-events:none; animation:none; }
@@ -361,6 +361,7 @@
 .cubeLeft { transform:rotateY(-90deg) translateZ(var(--die-face-depth)); background:radial-gradient(circle at 25% 18%,#fff9fa,#f5d2e1 72%,#dfa9c5); }
 .cubeTop { transform:rotateX(90deg) translateZ(var(--die-face-depth)); background:radial-gradient(circle at 25% 18%,#fff,#fff3f1 65%,#eccbd8); }
 .cubeBottom { transform:rotateX(-90deg) translateZ(var(--die-face-depth)); background:radial-gradient(circle at 25% 18%,#fbe9ee,#e5b6cf 68%,#c985aa); }
+.throwDieReady:not(.throwDieDragging):not(.throwDieRolling) .cubeFace { animation:die-ready-face 1.55s ease-in-out infinite; }
 .throwDieShadow { position:absolute; z-index:1; width:clamp(2.8rem,6.2vw,4.1rem); aspect-ratio:1.8; border-radius:50%; background:rgba(75,31,62,.28); filter:blur(5px); will-change:transform,opacity; }
 .pipSlot { width:clamp(.32rem,.68vw,.46rem); height:clamp(.32rem,.68vw,.46rem); }
 .pip { border-radius: 50%; background: linear-gradient(145deg, #ba82ec, #7342bf); box-shadow: inset 1px 1px 1px rgba(255,255,255,.38), 0 1px 1px rgba(70,35,105,.28); }
@@ -500,7 +501,7 @@
 .resultActions { display:flex; flex-direction:column; gap:.5rem; margin-top:1.35rem; }
 
 @keyframes active-tile { 0%,100% { filter: brightness(1); box-shadow: inset 0 2px 2px rgba(255,255,255,.92), inset 0 -5px 9px color-mix(in srgb,var(--tile-bottom) 25%,transparent), 0 0 0 0 rgba(255,102,157,0); } 50% { filter: brightness(1.06); box-shadow: inset 0 2px 2px rgba(255,255,255,.92), inset 0 -5px 9px color-mix(in srgb,var(--tile-bottom) 25%,transparent), 0 0 0 7px rgba(255,102,157,.2); } }
-@keyframes die-ready { 0%,100% { filter:brightness(1) drop-shadow(0 0 0 rgba(255,119,173,0)); } 50% { filter:brightness(1.045) drop-shadow(0 0 8px rgba(255,119,173,.45)); } }
+@keyframes die-ready-face { 0%,100% { box-shadow:inset 3px 3px 5px rgba(255,255,255,.96),inset -8px -9px 13px rgba(167,74,124,.18),0 0 2px rgba(128,60,105,.28),0 0 0 rgba(255,119,173,0); } 50% { box-shadow:inset 3px 3px 5px rgba(255,255,255,.96),inset -8px -9px 13px rgba(167,74,124,.18),0 0 2px rgba(128,60,105,.28),0 0 8px rgba(255,119,173,.42); } }
 @keyframes die-hint { 0%,100% { translate:-50% 0; opacity:.82; } 50% { translate:-50% -3px; opacity:1; } }
 @keyframes sparkle { 0%,100% { opacity:.45; transform:scale(.8) rotate(0); } 50% { opacity:1; transform:scale(1.2) rotate(35deg); } }
 @keyframes pawn-hop { 0%,100% { translate:0 0; } 45% { translate:0 -13%; } }
@@ -640,6 +641,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .activeTile .tileFace,.throwDieReady,.throwDieHint,.resultCard::before,.resultCard::after,.pawnMoving .pawnHead,.pawnMoving .pawnBody,.pawnMoving .pawnHeart,.countdownOrb,.playerCardActive::after { animation:none; }
+  .activeTile .tileFace,.throwDieReady .cubeFace,.throwDieHint,.resultCard::before,.resultCard::after,.pawnMoving .pawnHead,.pawnMoving .pawnBody,.pawnMoving .pawnHeart,.countdownOrb,.playerCardActive::after { animation:none; }
   .pawn { transition:none; }
 }

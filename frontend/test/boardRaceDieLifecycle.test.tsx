@@ -1,4 +1,6 @@
 import { act, fireEvent, render } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import BoardRaceDie from "../components/boardrace/BoardRaceDie";
 
@@ -84,5 +86,14 @@ describe("ciclo de interação do dado da Trilha", () => {
         dispatchPointer(die, "lostpointercapture", turn);
       }
     }
+  });
+
+  it("não aplica propriedades de agrupamento ao elemento que preserva o cubo 3D", () => {
+    const css = readFileSync(resolve(process.cwd(), "components/boardrace/BoardRaceVisual.module.css"), "utf8");
+    const readyRule = css.match(/\.throwDieReady\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(readyRule).not.toMatch(/\bfilter\s*:/);
+    expect(readyRule).not.toMatch(/\banimation\s*:/);
+    expect(css).toContain(".throwDieReady:not(.throwDieDragging):not(.throwDieRolling) .cubeFace");
+    expect(css).toContain("@keyframes die-ready-face");
   });
 });
