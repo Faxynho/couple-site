@@ -8,6 +8,12 @@ export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "
  *  persistente. "duo": sala pensada para dois jogadores, criada ANTES de
  *  escolher o jogo, que sobrevive à troca de jogo/modo e a quedas de conexão. */
 export type RoomMode = "solo" | "duo";
+export type RoomKind = "standard" | "persistent-duo";
+export type PersistentDuoPresence = "offline" | "lobby" | "world" | "minigame";
+
+export interface PersistentDuoLobby {
+  displayName: string;
+}
 
 export interface Player {
   id: string;
@@ -27,12 +33,15 @@ export type RoomStatus = "lobby" | "waiting" | "ready" | "playing" | "finished";
 export interface RoomSnapshot {
   code: string;
   roomMode: RoomMode;
+  roomKind: RoomKind;
   /** `null` só enquanto uma sala Duo ainda não escolheu o primeiro jogo. */
   gameId: GameId | null;
   status: RoomStatus;
   players: Player[];
   maxPlayers: number;
   hostId: string | null;
+  persistentDuoPresence: Record<"andre" | "flavia", PersistentDuoPresence> | null;
+  persistentDuoLobby: PersistentDuoLobby | null;
   pendingImageId: string | null;
   pendingImageWidth: number | null;
   pendingImageHeight: number | null;

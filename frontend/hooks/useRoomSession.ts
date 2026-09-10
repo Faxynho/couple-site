@@ -2,13 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
-import { getPlayerId } from "@/lib/playerId";
+import { getRoomPlayerId } from "@/lib/playerId";
+import { getActiveAccountId } from "@/lib/accountSession";
 import { clearStoredRoomCode, setStoredRoomCode } from "@/lib/roomSession";
-import { GameId, RoomSnapshot } from "@/lib/types";
+import { GameId, PersistentDuoPresence, RoomSnapshot } from "@/lib/types";
+import { isPersistentDuoRoomCode } from "@/lib/persistentDuo";
+import { usePathname } from "next/navigation";
 
 interface AckResult {
   ok: boolean;
   error?: string;
+  room?: RoomSnapshot;
 }
 
 interface SyncResult {
@@ -16,6 +20,14 @@ interface SyncResult {
   room?: RoomSnapshot;
   gameState?: unknown;
   error?: string;
+}
+
+const pendingLeaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function cancelPendingLeave(code: string) {
+  const timer = pendingLeaveTimers.get(code);
+  if (timer) clearTimeout(timer);
+  pendingLeaveTimers.delete(code);
 }
 
 /**
@@ -30,23 +42,31 @@ interface SyncResult {
  * escolha de jogo), expulsar o convidado, sortear a sequência sugerida — e
  * escuta `room:kicked` para tirar o jogador expulso da tela.
  */
-export function useRoomSession(code: string) {
+export function useRoomSession(code: string, persistentPresence?: Exclude<PersistentDuoPresence, "offline">) {
+  const pathname = usePathname();
+  const resolvedPresence = persistentPresence ?? (pathname.startsWith("/game/") ? "minigame" : "lobby");
   const [room, setRoom] = useState<RoomSnapshot | null>(null);
   const selfId = useRef<string | null>(null);
-  if (selfId.current === null) selfId.current = getPlayerId() || null;
+  if (selfId.current === null) selfId.current = getRoomPlayerId(code) || null;
   const [notFound, setNotFound] = useState(false);
   const [kicked, setKicked] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const socket = getSocket();
+    cancelPendingLeave(code);
 
     const sync = () => {
-      socket.emit("room:sync", { code, playerId: getPlayerId() }, (res: SyncResult) => {
+      socket.emit("room:sync", {
+        code,
+        playerId: getRoomPlayerId(code),
+        accountId: getActiveAccountId(),
+        presence: resolvedPresence,
+      }, (res: SyncResult) => {
         if (res.ok && res.room) {
           setRoom(res.room);
           setNotFound(false);
-          if (res.room.roomMode === "duo") setStoredRoomCode(res.room.code);
+          if (res.room.roomMode === "duo" && res.room.roomKind !== "persistent-duo") setStoredRoomCode(res.room.code);
         } else {
           setNotFound(true);
         }
@@ -77,8 +97,15 @@ export function useRoomSession(code: string) {
       socket.off("room:update", onRoomUpdate);
       socket.off("connect", onConnect);
       socket.off("room:kicked", onKicked);
+      if (isPersistentDuoRoomCode(code)) {
+        const timer = setTimeout(() => {
+          pendingLeaveTimers.delete(code);
+          socket.emit("room:leave", { code });
+        }, 250);
+        pendingLeaveTimers.set(code, timer);
+      }
     };
-  }, [code]);
+  }, [code, resolvedPresence]);
 
   /** Só o host chama isso — escolhe (ou troca) o jogo ativo da sala. */
   const selectGame = useCallback((gameId: GameId) => {
@@ -139,10 +166,24 @@ export function useRoomSession(code: string) {
     getSocket().emit("room:shuffleSequence");
   }, []);
 
-  const leaveRoom = useCallback(() => {
-    getSocket().emit("room:leave");
-    clearStoredRoomCode();
+  const setPersistentPresence = useCallback((presence: Exclude<PersistentDuoPresence, "offline">) => {
+    getSocket().emit("room:setPersistentPresence", { presence });
   }, []);
+
+  const setPersistentDuoName = useCallback((displayName: string) => {
+    return new Promise<AckResult>((resolve) => {
+      getSocket().emit("room:setPersistentDuoName", { displayName }, (res: AckResult) => {
+        if (!res.ok) setError(res.error || "Não foi possível salvar o nome do lobby.");
+        resolve(res);
+      });
+    });
+  }, []);
+
+  const leaveRoom = useCallback(() => {
+    cancelPendingLeave(code);
+    getSocket().emit("room:leave", { code });
+    clearStoredRoomCode();
+  }, [code]);
 
   return {
     room,
@@ -158,6 +199,8 @@ export function useRoomSession(code: string) {
     startGame,
     kickPlayer,
     shuffleSequence,
+    setPersistentPresence,
+    setPersistentDuoName,
     leaveRoom,
   };
 }

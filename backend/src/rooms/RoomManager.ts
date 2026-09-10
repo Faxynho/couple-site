@@ -1,5 +1,6 @@
 import { GameId, RoomMode } from "../types";
 import { Room } from "./Room";
+import { PERSISTENT_DUO_ROOM_CODE } from "./persistentDuo";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem O/0/I/1 para evitar confusão
 
@@ -24,6 +25,16 @@ export class RoomManager {
     }
     const room = new Room(code, roomMode, gameId);
     this.rooms.set(code, room);
+    return room;
+  }
+
+  /** A instância pode ser limpa quando vazia; o identificador lógico é sempre
+   * o mesmo e a sala é recriada automaticamente na próxima entrada. */
+  getOrCreatePersistentDuoRoom(): Room {
+    const existing = this.rooms.get(PERSISTENT_DUO_ROOM_CODE);
+    if (existing) return existing;
+    const room = new Room(PERSISTENT_DUO_ROOM_CODE, "duo", null, "persistent-duo");
+    this.rooms.set(PERSISTENT_DUO_ROOM_CODE, room);
     return room;
   }
 

@@ -16,6 +16,9 @@ vi.mock("../hooks/useMemoryGame", () => ({ useMemoryGame: () => mockMemoryGame()
 const room: RoomSnapshot = {
   code: "ABCDE",
   roomMode: "duo",
+  roomKind: "standard",
+  persistentDuoPresence: null,
+  persistentDuoLobby: null,
   gameId: "memory",
   status: "playing",
   players: [
@@ -31,6 +34,7 @@ const room: RoomSnapshot = {
   pendingColorMode: "competitive",
   pendingSeerId: null,
   pendingMatchMode: "duel",
+  pendingWhoAmICategory: "all",
   sequence: [],
   sequenceProgress: [],
 };

@@ -1,14 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
 import Button from "@/components/Button";
-import AccountAvatar from "@/components/account/AccountAvatar";
 import { useRoom } from "@/hooks/useRoom";
-import { fetchAccounts } from "@/lib/accountApi";
 import { ActiveAccount, getActiveAccount } from "@/lib/accountSession";
 
 function DuoEntryContent() {
@@ -16,26 +14,22 @@ function DuoEntryContent() {
   const searchParams = useSearchParams();
   const prefillCode = searchParams.get("code") || "";
 
-  const { error, loading, createRoom, joinRoom } = useRoom();
+  const { error, loading, createRoom, joinRoom, joinPersistentDuoRoom } = useRoom();
   const [screen, setScreen] = useState<"choose" | "join">(prefillCode ? "join" : "choose");
   const [name, setName] = useState("");
   const [code, setCode] = useState(prefillCode);
-  const [account, setAccount] = useState<ActiveAccount | null>(null);
+  const [account, setAccount] = useState<ActiveAccount | null | undefined>(undefined);
+  const persistentJoinStarted = useRef(false);
 
-  // Com uma conta fixa selecionada, o nome já é conhecido — busca o nome
-  // (e a foto) atuais da conta em vez de pedir de novo, como pedia antes.
   useEffect(() => {
     const active = getActiveAccount();
     setAccount(active);
-    if (active?.type === "account") {
-      fetchAccounts()
-        .then((accounts) => {
-          const found = accounts.find((a) => a.id === active.id);
-          if (found) setName(found.name);
-        })
-        .catch(() => {});
-    }
-  }, []);
+    if (active?.type !== "account" || persistentJoinStarted.current) return;
+    persistentJoinStarted.current = true;
+    void joinPersistentDuoRoom(active.id).then((res) => {
+      if (res.ok && res.room) router.replace(`/sala/${res.room.code}`);
+    });
+  }, [joinPersistentDuoRoom, router]);
 
   const handleCreate = async () => {
     const res = await createRoom("duo", name);
@@ -47,6 +41,23 @@ function DuoEntryContent() {
     const res = await joinRoom(code, name);
     if (res.ok && res.room) router.push(`/sala/${res.room.code}`);
   };
+
+  if (account === undefined) return null;
+
+  if (account?.type === "account") {
+    return (
+      <main className="duo-shell app-shell mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-5 py-14 text-center">
+        <Logo size={48} />
+        <div className="glass-panel mt-7 w-full rounded-xl3 p-7">
+          <span className="text-3xl">💞</span>
+          <h1 className="mt-3 font-display text-xl font-semibold text-ink">Entrando no lobby de vocês</h1>
+          <p className="mt-2 text-sm text-ink-soft">Conectando você à sala compartilhada de André e Flávia...</p>
+          {error && <p className="mt-4 text-sm text-rose-deep">{error}</p>}
+          {error && <Button onClick={() => router.push("/")} variant="secondary" className="mt-5 w-full">Voltar</Button>}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="duo-shell app-shell mx-auto flex min-h-screen max-w-md flex-col items-center px-5 py-14">
@@ -78,20 +89,13 @@ function DuoEntryContent() {
             </p>
           </div>
 
-          <label className="text-sm font-medium text-ink">{account?.type === "account" ? "Sua conta" : "Seu nome"}</label>
-          {account?.type === "account" ? (
-            <div className="mt-2 flex items-center gap-3 rounded-full border border-surface/70 bg-surface/60 px-4 py-2.5">
-              <AccountAvatar name={name || "?"} accountId={account.id} size={30} />
-              <span className="text-sm font-medium text-ink">Jogando como {name || "..."}</span>
-            </div>
-          ) : (
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Como podemos te chamar?"
-              className="mt-2 w-full rounded-full border border-surface/70 bg-surface/60 px-5 py-3 text-ink placeholder:text-ink-soft/70 outline-none focus:border-rose"
-            />
-          )}
+          <label className="text-sm font-medium text-ink">Seu nome</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Como podemos te chamar?"
+            className="mt-2 w-full rounded-full border border-surface/70 bg-surface/60 px-5 py-3 text-ink placeholder:text-ink-soft/70 outline-none focus:border-rose"
+          />
 
           {screen === "choose" ? (
             <div className="mt-6 flex flex-col gap-3">

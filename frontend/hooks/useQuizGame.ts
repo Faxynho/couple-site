@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
-import { getPlayerId } from "@/lib/playerId";
+import { getRoomPlayerId } from "@/lib/playerId";
 import { QuizState } from "@/lib/quizTypes";
 
 interface SyncResult {
@@ -17,7 +17,7 @@ export function useQuizGame(roomCode: string) {
     const socket = getSocket();
 
     const sync = () => {
-      socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (res: SyncResult) => {
+      socket.emit("room:sync", { code: roomCode, playerId: getRoomPlayerId(roomCode) }, (res: SyncResult) => {
         if (res.ok && res.gameState) setState(res.gameState);
       });
     };

@@ -19,11 +19,17 @@ import { AirHockeyState, isValidAirHockeyDifficulty, isValidAirHockeyMode } from
 import { ChessState, isValidChessDifficulty, isValidChessMode } from "../games/chess/ChessGame";
 import { advanceAirHockeyInputTimeline, AIR_HOCKEY_AUTHORITATIVE_DELAY_MS, QueuedAirHockeyInput } from "../games/airhockey/AirHockeyInputTimeline";
 import { isAccountId } from "../accounts/types";
+import { accountStore } from "../accounts/AccountStore";
 import { isFinishedSoloState, isSoloResumePayload, rebaseSoloState } from "../solo/soloMatch";
 import { BoardRaceState } from "../games/boardrace/types";
 import { getWhoAmIStateForPlayer, isValidWhoAmICategory, isValidWhoAmIMode, WhoAmIState } from "../games/whoami/WhoAmIGame";
 import { getBoardRaceStateForPlayer, isValidBoardRaceMode } from "../games/boardrace/BoardRaceGame";
 import { CasinoState, getCasinoStateForPlayer, isValidCasinoLength } from "../games/casino/CasinoGame";
+import {
+  PERSISTENT_DUO_ROOM_CODE,
+  isPersistentDuoAccountId,
+  isPersistentDuoPresence,
+} from "../rooms/persistentDuo";
 
 interface SocketData {
   roomCode?: string;
@@ -31,6 +37,7 @@ interface SocketData {
   /** Identidade persistente do jogador nesta conexão (ver Player.id) — usada
    *  em toda ação de jogo em vez do socket.id, que muda a cada reconexão. */
   playerId?: string;
+  accountId?: "andre" | "flavia";
 }
 
 type AckCallback = (response: Record<string, unknown>) => void;
@@ -102,9 +109,10 @@ function getColorsStateForPlayer(state: unknown, playerId: string): unknown {
  *  nunca dá pra usar `io.to(player.id)` diretamente). Se ele nunca chegou a
  *  se conectar (ou está temporariamente desconectado), não há para onde
  *  mandar — a próxima reconexão (room:sync) traz o estado atualizado. */
-function emitToPlayer(io: Server, room: { getSocketId(playerId: string): string | undefined }, playerId: string, event: string, payload: unknown) {
-  const socketId = room.getSocketId(playerId);
-  if (socketId) io.to(socketId).emit(event, payload);
+function emitToPlayer(io: Server, room: { getSocketIds(playerId: string): string[] }, playerId: string, event: string, payload: unknown) {
+  for (const socketId of room.getSocketIds(playerId)) {
+    io.to(socketId).emit(event, payload);
+  }
 }
 
 function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManager) {
@@ -652,7 +660,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       const previousCode = socket.data.roomCode;
       if (previousCode) {
         const previousRoom = roomManager.getRoom(previousCode);
-        if (previousRoom && socket.data.playerId) previousRoom.markDisconnected(socket.data.playerId);
+        if (previousRoom && socket.data.playerId) previousRoom.markDisconnected(socket.data.playerId, socket.id);
         socket.leave(previousCode);
       }
 
@@ -667,6 +675,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       socket.data.roomCode = room.code;
       socket.data.playerId = payload.playerId;
       socket.data.playerName = payload.playerName;
+      socket.data.accountId = payload.ownerId;
       socket.join(room.code);
 
       callback?.({ ok: true, room: room.toSnapshot(), gameState: getMaskedStateForPlayer(room, payload.playerId) });
@@ -689,6 +698,46 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     });
 
     socket.on(
+      "room:joinPersistentDuo",
+      (payload: { accountId?: unknown }, callback: AckCallback) => {
+        const accountId = payload?.accountId;
+        if (!isPersistentDuoAccountId(accountId)) {
+          callback?.({ ok: false, error: "Selecione a conta André ou Flávia para entrar neste lobby." });
+          return;
+        }
+
+        const previousCode = socket.data.roomCode;
+        if (previousCode) {
+          const previousRoom = roomManager.getRoom(previousCode);
+          if (previousRoom && socket.data.playerId) {
+            previousRoom.markDisconnected(socket.data.playerId, socket.id);
+            broadcastRoom(io, previousCode, roomManager);
+          }
+          socket.leave(previousCode);
+        }
+
+        const profile = accountStore.getPublicProfiles().find((item) => item.id === accountId);
+        const room = roomManager.getOrCreatePersistentDuoRoom();
+        const player = room.addPlayer(accountId, profile?.name ?? (accountId === "andre" ? "André" : "Flávia"), accountId);
+        if (!player) {
+          callback?.({ ok: false, error: "Não foi possível entrar no lobby Duo persistente." });
+          return;
+        }
+        const presence = room.status === "playing" || room.status === "finished" ? "minigame" : "lobby";
+        room.setSocketId(accountId, socket.id, presence);
+        socket.data.roomCode = room.code;
+        socket.data.playerId = accountId;
+        socket.data.playerName = player.name;
+        socket.data.accountId = accountId;
+        socket.join(room.code);
+
+        callback?.({ ok: true, room: room.toSnapshot(), player });
+        broadcastRoom(io, room.code, roomManager);
+        if (room.gameState) broadcastGameState(io, room.code, roomManager);
+      }
+    );
+
+    socket.on(
       "room:create",
       (
         payload: {
@@ -704,7 +753,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         if (previousCode) {
           const previousRoom = roomManager.getRoom(previousCode);
           if (previousRoom && socket.data.playerId) {
-            previousRoom.markDisconnected(socket.data.playerId);
+            previousRoom.markDisconnected(socket.data.playerId, socket.id);
             broadcastRoom(io, previousCode, roomManager);
           }
           socket.leave(previousCode);
@@ -721,6 +770,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         socket.data.roomCode = room.code;
         socket.data.playerId = playerId;
         socket.data.playerName = payload.playerName;
+        socket.data.accountId = sanitizeAccountId(payload.accountId);
         socket.join(room.code);
         callback?.({ ok: true, room: room.toSnapshot(), player });
       }
@@ -732,6 +782,10 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         const room = roomManager.getRoom(payload.code);
         if (!room) {
           callback?.({ ok: false, error: "Sala não encontrada. Confira o código." });
+          return;
+        }
+        if (room.roomKind === "persistent-duo") {
+          callback?.({ ok: false, error: "Este lobby não aceita entrada por código." });
           return;
         }
         const playerId = payload.playerId?.trim() || randomUUID();
@@ -748,6 +802,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         socket.data.roomCode = room.code;
         socket.data.playerId = playerId;
         socket.data.playerName = payload.playerName;
+        socket.data.accountId = sanitizeAccountId(payload.accountId);
         socket.join(room.code);
         callback?.({ ok: true, room: room.toSnapshot(), player });
         broadcastRoom(io, room.code, roomManager);
@@ -763,38 +818,111 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     // no lugar certo. É essa reassociação que faltava e causava a sala
     // "esquecer" o jogador (e mostrar como se ele estivesse sozinho/travado
     // numa pergunta antiga) depois de qualquer soluço de rede.
-    socket.on("room:sync", (payload: { code: string; playerId?: string }, callback: AckCallback) => {
-      const code = payload?.code;
-      const playerId = payload?.playerId?.trim() || socket.data.playerId;
-      const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || !playerId || !room.players.has(playerId)) {
-        callback?.({ ok: false, error: "Sala não encontrada para este jogador." });
-        return;
-      }
-      const wasDisconnected = !room.players.get(playerId)?.connected;
-      room.addPlayer(playerId, socket.data.playerName ?? room.players.get(playerId)!.name);
-      room.setSocketId(playerId, socket.id);
-      socket.data.roomCode = room.code;
-      socket.data.playerId = playerId;
-      socket.join(room.code);
-      const gameState = getMaskedStateForPlayer(room, playerId);
-      callback?.({ ok: true, room: room.toSnapshot(), gameState });
-      // Se esse jogador estava marcado como desconectado, o outro lado da
-      // sala precisa saber que ele voltou.
-      if (wasDisconnected) broadcastRoom(io, room.code, roomManager);
-    });
+    socket.on(
+      "room:sync",
+      (
+        payload: { code: string; playerId?: string; accountId?: unknown; presence?: unknown },
+        callback: AckCallback
+      ) => {
+        const code = payload?.code?.toUpperCase();
+        const isPersistentDuo = code === PERSISTENT_DUO_ROOM_CODE;
+        let room = code ? roomManager.getRoom(code) : undefined;
+        let playerId = payload?.playerId?.trim() || socket.data.playerId;
 
-    socket.on("room:leave", () => {
+        if (isPersistentDuo) {
+          const accountId = isPersistentDuoAccountId(payload?.accountId)
+            ? payload.accountId
+            : socket.data.accountId ?? (isPersistentDuoAccountId(playerId) ? playerId : undefined);
+          if (!accountId || (playerId && playerId !== accountId && socket.data.playerId !== accountId)) {
+            callback?.({ ok: false, error: "Este lobby pertence apenas às contas André e Flávia." });
+            return;
+          }
+          room = room ?? roomManager.getOrCreatePersistentDuoRoom();
+          playerId = accountId;
+          const profile = accountStore.getPublicProfiles().find((item) => item.id === accountId);
+          const player = room.addPlayer(accountId, profile?.name ?? (accountId === "andre" ? "André" : "Flávia"), accountId);
+          if (!player) {
+            callback?.({ ok: false, error: "Não foi possível restaurar este lobby." });
+            return;
+          }
+          socket.data.accountId = accountId;
+          socket.data.playerName = player.name;
+        }
+
+        if (!room || !playerId || !room.players.has(playerId)) {
+          callback?.({ ok: false, error: "Sala não encontrada para este jogador." });
+          return;
+        }
+        const previousCode = socket.data.roomCode;
+        const previousPlayerId = socket.data.playerId;
+        if (previousCode && previousPlayerId && (previousCode !== room.code || previousPlayerId !== playerId)) {
+          const previousRoom = roomManager.getRoom(previousCode);
+          previousRoom?.markDisconnected(previousPlayerId, socket.id);
+          socket.leave(previousCode);
+          broadcastRoom(io, previousCode, roomManager);
+        }
+        const wasDisconnected = !room.players.get(playerId)?.connected;
+        const requestedPresence = isPersistentDuoPresence(payload?.presence) ? payload.presence : undefined;
+        const presence = room.roomKind === "persistent-duo"
+          ? (room.status === "playing" || room.status === "finished" ? "minigame" : requestedPresence ?? "lobby")
+          : "lobby";
+        room.addPlayer(playerId, socket.data.playerName ?? room.players.get(playerId)!.name, socket.data.accountId);
+        room.setSocketId(playerId, socket.id, presence);
+        socket.data.roomCode = room.code;
+        socket.data.playerId = playerId;
+        socket.join(room.code);
+        const gameState = getMaskedStateForPlayer(room, playerId);
+        callback?.({ ok: true, room: room.toSnapshot(), gameState });
+        if (room.roomKind === "persistent-duo" || wasDisconnected) {
+          broadcastRoom(io, room.code, roomManager);
+        }
+        if (room.roomKind === "persistent-duo" && gameState != null) {
+          socket.emit("game:state", gameState);
+        }
+      }
+    );
+
+    socket.on("room:leave", (payload?: { code?: string }) => {
       const code = socket.data.roomCode;
       const playerId = socket.data.playerId;
       if (!code || !playerId) return;
+      if (payload?.code && payload.code.toUpperCase() !== code) return;
       const room = roomManager.getRoom(code);
       if (room) {
-        room.markDisconnected(playerId);
+        room.markDisconnected(playerId, socket.id);
         socket.leave(code);
         broadcastRoom(io, code, roomManager);
       }
       socket.data.roomCode = undefined;
+    });
+
+    /** Ponto de integração do futuro Nosso Mundo. O servidor associa a
+     * presença ao socket atual e agrega múltiplas abas pela conta lógica. */
+    socket.on("room:setPersistentPresence", (payload: { presence?: unknown }) => {
+      const code = socket.data.roomCode;
+      const playerId = socket.data.playerId;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.roomKind !== "persistent-duo" || !playerId || !isPersistentDuoPresence(payload?.presence)) return;
+      const presence = room.status === "playing" || room.status === "finished" ? "minigame" : payload.presence;
+      room.setPersistentPresence(playerId, socket.id, presence);
+      broadcastRoom(io, room.code, roomManager);
+    });
+
+    socket.on("room:setPersistentDuoName", (payload: { displayName?: unknown }, callback: AckCallback) => {
+      const code = socket.data.roomCode;
+      const playerId = socket.data.playerId;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      if (!room || room.roomKind !== "persistent-duo" || !playerId || !room.canManage(playerId)) {
+        callback?.({ ok: false, error: "Você não pode editar o nome deste lobby." });
+        return;
+      }
+      const displayName = room.setPersistentDuoDisplayName(payload?.displayName);
+      if (!displayName) {
+        callback?.({ ok: false, error: "Digite um nome para o lobby." });
+        return;
+      }
+      callback?.({ ok: true, room: room.toSnapshot() });
+      broadcastRoom(io, room.code, roomManager);
     });
 
     // Só o host pode mudar a configuração da partida (imagem/dificuldade/modo)
@@ -805,7 +933,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       (payload: StartPayload & { colorMode?: string; seerId?: string | null; matchMode?: string; whoamiCategory?: string; chessPinkPlayerId?: string | null; rpgAppearance?: "man" | "woman"; boardRacePawnColor?: "blue" | "pink" }) => {
         const code = socket.data.roomCode;
         const room = code ? roomManager.getRoom(code) : undefined;
-        if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+        if (!room || !socket.data.playerId || !room.canManage(socket.data.playerId)) return;
+        if (room.roomKind === "persistent-duo" && room.status !== "waiting" && room.status !== "ready") return;
 
         const options: { colorMode?: string; seerId?: string | null; matchMode?: string; whoamiCategory?: string; chessPinkPlayerId?: string; rpgAppearance?: "man" | "woman"; boardRacePawnColor?: "blue" | "pink" } = {};
         if (payload?.colorMode && isValidColorMode(payload.colorMode)) options.colorMode = payload.colorMode;
@@ -861,7 +990,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         if (room.gameId === "whoami" && payload?.whoamiCategory && isValidWhoAmICategory(payload.whoamiCategory)) {
           options.whoamiCategory = payload.whoamiCategory;
         }
-        room.setPendingConfig({ ...baseOptions, ...options });
+        room.setPendingConfig({ ...baseOptions, ...options }, socket.data.playerId);
         broadcastRoom(io, code!, roomManager);
       }
     );
@@ -888,8 +1017,11 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     socket.on("room:selectGame", (payload: { gameId: GameId }) => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      if (!room || !socket.data.playerId || !room.canManage(socket.data.playerId)) return;
       if (!payload?.gameId || !ALL_GAME_IDS.includes(payload.gameId)) return;
+      if (room.roomKind === "persistent-duo") {
+        if (room.status !== "lobby" || !room.arePersistentDuoPlayersInLobby()) return;
+      }
       room.selectGame(payload.gameId);
       broadcastRoom(io, code!, roomManager);
     });
@@ -899,7 +1031,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     socket.on("room:backToConfig", () => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      if (!room || !socket.data.playerId || !room.canManage(socket.data.playerId)) return;
       room.backToConfig();
       broadcastRoom(io, code!, roomManager);
     });
@@ -909,7 +1041,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     socket.on("room:backToGameSelect", () => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      if (!room || !socket.data.playerId || !room.canManage(socket.data.playerId)) return;
       room.backToGameSelect();
       broadcastRoom(io, code!, roomManager);
     });
@@ -919,7 +1051,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     socket.on("room:shuffleSequence", () => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      if (!room || !socket.data.playerId || !room.canManage(socket.data.playerId)) return;
       room.shuffleSequence();
       broadcastRoom(io, code!, roomManager);
     });
@@ -930,17 +1062,19 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     socket.on("room:kick", (payload: { targetPlayerId: string }) => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      if (!room || room.roomKind === "persistent-duo" || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
       const targetId = payload?.targetPlayerId;
       if (!targetId || targetId === socket.data.playerId || !room.players.has(targetId)) return;
 
-      const targetSocketId = room.getSocketId(targetId);
+      const targetSocketIds = room.getSocketIds(targetId);
       room.removePlayer(targetId);
-      const targetSocket = targetSocketId ? io.sockets.sockets.get(targetSocketId) : undefined;
-      if (targetSocket) {
-        targetSocket.emit("room:kicked", { code: room.code });
-        targetSocket.leave(room.code);
-        targetSocket.data.roomCode = undefined;
+      for (const targetSocketId of targetSocketIds) {
+        const targetSocket = io.sockets.sockets.get(targetSocketId);
+        if (targetSocket) {
+          targetSocket.emit("room:kicked", { code: room.code });
+          targetSocket.leave(room.code);
+          targetSocket.data.roomCode = undefined;
+        }
       }
       broadcastRoom(io, code!, roomManager);
     });
@@ -952,8 +1086,16 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         callback?.({ ok: false, error: "Sala inválida." });
         return;
       }
-      if (!socket.data.playerId || !room.isHost(socket.data.playerId)) {
+      if (!socket.data.playerId || !room.canManage(socket.data.playerId)) {
         callback?.({ ok: false, error: "Só o anfitrião da sala pode iniciar a partida." });
+        return;
+      }
+      if (room.roomKind === "persistent-duo" && (room.status !== "waiting" && room.status !== "ready")) {
+        callback?.({ ok: false, error: "Esta seleção já foi concluída. Aguarde a sincronização da sala." });
+        return;
+      }
+      if (room.roomKind === "persistent-duo" && !room.arePersistentDuoPlayersInLobby()) {
+        callback?.({ ok: false, error: "André e Flávia precisam estar disponíveis no lobby para iniciar um minijogo." });
         return;
       }
       if (!room.gameId) {
@@ -1590,7 +1732,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     socket.on("casino:newGame", () => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || room.gameId !== "casino" || room.status !== "finished" || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      if (!room || room.gameId !== "casino" || room.status !== "finished" || !socket.data.playerId || !room.canManage(socket.data.playerId)) return;
       if (room.roomMode === "duo" && !room.bothConnected()) return;
       room.resetGame();
       broadcastRoom(io, code!, roomManager);
@@ -1615,7 +1757,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
     socket.on("boardrace:newGame", () => {
       const code = socket.data.roomCode;
       const room = code ? roomManager.getRoom(code) : undefined;
-      if (!room || room.gameId !== "boardrace" || !socket.data.playerId || !room.isHost(socket.data.playerId)) return;
+      if (!room || room.gameId !== "boardrace" || !socket.data.playerId || !room.canManage(socket.data.playerId)) return;
       room.resetGame();
       broadcastRoom(io, code!, roomManager);
       broadcastGameState(io, code!, roomManager);
@@ -1630,8 +1772,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       const playerId = socket.data.playerId;
       if (!code || !playerId) return;
       const room = roomManager.getRoom(code);
-      if (room && room.getSocketId(playerId) === socket.id) {
-        room.markDisconnected(playerId);
+      if (room && room.getSocketIds(playerId).includes(socket.id)) {
+        room.markDisconnected(playerId, socket.id);
         broadcastRoom(io, code, roomManager);
       }
     });

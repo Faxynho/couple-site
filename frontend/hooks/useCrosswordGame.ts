@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
-import { getPlayerId } from "@/lib/playerId";
+import { getRoomPlayerId } from "@/lib/playerId";
 import { CrosswordState } from "@/lib/crosswordTypes";
 
 export function useCrosswordGame(roomCode: string) {
@@ -14,7 +14,7 @@ export function useCrosswordGame(roomCode: string) {
     const sync = () => {
       socket.emit(
         "room:sync",
-        { code: roomCode, playerId: getPlayerId() },
+        { code: roomCode, playerId: getRoomPlayerId(roomCode) },
         (res: { ok: boolean; gameState?: CrosswordState }) => {
           if (res.ok && res.gameState) setState(res.gameState);
         }

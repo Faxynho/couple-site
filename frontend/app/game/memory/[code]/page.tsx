@@ -95,7 +95,7 @@ export default function MemoryGamePage({ params }: { params: { code: string } })
   }
 
   const ownProgress = state.progress[selfId];
-  const isHost = room.hostId === selfId;
+  const isHost = room.roomKind === "persistent-duo" || room.hostId === selfId;
   const previewing = state.playStartedAt === null;
   const locked = state.finished || ownProgress.finished;
   const completedWhileOpponentPlays = state.mode === "duel" && ownProgress.finished && !state.finished;
@@ -131,7 +131,7 @@ export default function MemoryGamePage({ params }: { params: { code: string } })
         players={room.players}
         selfId={selfId}
         isHost={isHost}
-        onKick={kickPlayer}
+        onKick={room.roomKind === "persistent-duo" ? undefined : kickPlayer}
         onNewGame={newGame}
         onBack={handleBackToConfig}
       />

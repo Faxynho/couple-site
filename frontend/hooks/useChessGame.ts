@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ChessPromotion, ChessState } from "@/lib/chessTypes";
-import { getPlayerId } from "@/lib/playerId";
+import { getRoomPlayerId } from "@/lib/playerId";
 import { getSocket } from "@/lib/socket";
 
 export function useChessGame(roomCode: string) {
@@ -10,7 +10,7 @@ export function useChessGame(roomCode: string) {
 
   useEffect(() => {
     const socket = getSocket();
-    const sync = () => socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (res: { ok: boolean; gameState?: ChessState }) => {
+    const sync = () => socket.emit("room:sync", { code: roomCode, playerId: getRoomPlayerId(roomCode) }, (res: { ok: boolean; gameState?: ChessState }) => {
       if (res.ok && res.gameState) setState(res.gameState);
     });
     sync();

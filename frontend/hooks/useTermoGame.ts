@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
-import { getPlayerId } from "@/lib/playerId";
+import { getRoomPlayerId } from "@/lib/playerId";
 import { TermoState } from "@/lib/termoTypes";
 
 export function useTermoGame(roomCode: string) {
@@ -11,7 +11,7 @@ export function useTermoGame(roomCode: string) {
   useEffect(() => {
     const socket = getSocket();
     const sync = () => {
-      socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (response: { ok: boolean; gameState?: TermoState }) => {
+      socket.emit("room:sync", { code: roomCode, playerId: getRoomPlayerId(roomCode) }, (response: { ok: boolean; gameState?: TermoState }) => {
         if (response.ok && response.gameState) setState(response.gameState);
       });
     };

@@ -82,7 +82,7 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
     return <LoadingScreen label="Preparando o quebra-cabeça..." />;
   }
 
-  const isHost = Boolean(selfId && room.hostId === selfId);
+  const isHost = room.roomKind === "persistent-duo" || Boolean(selfId && room.hostId === selfId);
   const handleBackToConfig = () => {
     if (room.roomMode === "duo") {
       backToConfig();
@@ -129,7 +129,7 @@ export default function PuzzleGamePage({ params }: { params: { code: string } })
             players={room.players}
             selfId={selfId}
             isHost={isHost}
-            onKick={kickPlayer}
+            onKick={room.roomKind === "persistent-duo" ? undefined : kickPlayer}
             onRestart={resetGame}
             onNewImage={() => {
               if (images.length === 0) return;

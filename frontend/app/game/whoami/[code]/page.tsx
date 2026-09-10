@@ -17,6 +17,7 @@ import {
   formatWhoAmITime,
   type WhoAmIState,
 } from "@/lib/whoAmITypes";
+import { isPersistentDuoRoomCode } from "@/lib/persistentDuo";
 import styles from "./WhoAmIGame.module.css";
 
 export default function WhoAmIGamePage({ params }: { params: { code: string } }) {
@@ -88,7 +89,7 @@ export default function WhoAmIGamePage({ params }: { params: { code: string } })
     return <LoadingScreen label="Escolhendo uma identidade..." />;
   }
 
-  const isHost = Boolean(selfId && room.hostId === selfId);
+  const isHost = room.roomKind === "persistent-duo" || Boolean(selfId && room.hostId === selfId);
   const modeInfo = WHOAMI_MODES[state.mode];
   const difficultyInfo = WHOAMI_DIFFICULTIES[state.difficulty];
   const categoryInfo = WHOAMI_CATEGORIES[state.category];
@@ -131,7 +132,7 @@ export default function WhoAmIGamePage({ params }: { params: { code: string } })
           <ArrowLeft size={18} />
         </button>
         <Logo size={38} />
-        <div className={styles.roomPill}>Sala {room.code}</div>
+        <div className={styles.roomPill}>{isPersistentDuoRoomCode(room.code) ? "Nosso lobby" : `Sala ${room.code}`}</div>
       </div>
 
       <section className={`${styles.hero} glass-panel`}>

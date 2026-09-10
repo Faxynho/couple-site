@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { BoardRacePowerId, BoardRaceState } from "@/lib/boardRaceTypes";
-import { getPlayerId } from "@/lib/playerId";
+import { getRoomPlayerId } from "@/lib/playerId";
 import { getSocket } from "@/lib/socket";
 
 export function useBoardRaceGame(roomCode: string) {
@@ -11,7 +11,7 @@ export function useBoardRaceGame(roomCode: string) {
   useEffect(() => {
     const socket = getSocket();
     const sync = () => {
-      socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (response: { ok: boolean; gameState?: BoardRaceState }) => {
+      socket.emit("room:sync", { code: roomCode, playerId: getRoomPlayerId(roomCode) }, (response: { ok: boolean; gameState?: BoardRaceState }) => {
         if (response.ok && response.gameState) setState(response.gameState);
       });
     };

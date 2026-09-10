@@ -77,7 +77,9 @@ function HomeContent() {
           <span className="text-4xl">💞</span>
           <h2 className="font-display text-xl font-semibold text-ink">Jogar em Duo</h2>
           <p className="text-sm text-ink-soft">
-            Crie uma sala, chame seu par com um código e escolham juntos o que jogar.
+            {account.type === "account"
+              ? "Entre direto no lobby compartilhado e escolham juntos o que jogar."
+              : "Crie uma sala, chame seu par com um código e escolham juntos o que jogar."}
           </p>
         </motion.button>
 
@@ -96,7 +98,7 @@ function HomeContent() {
         </motion.button>
       </div>
 
-      {storedRoomCode && (
+      {account.type === "visitor" && storedRoomCode && (
         <button
           onClick={() => router.push(`/sala/${storedRoomCode}`)}
           className="mt-8 text-sm font-medium text-ink-soft underline decoration-dotted underline-offset-4 transition-colors hover:text-ink"

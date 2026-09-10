@@ -189,7 +189,7 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
     !isChoosingPhase;
   const alreadyChosen = Boolean(selfCombatant?.chosenCardId);
 
-  const isHost = Boolean(selfId && room.hostId === selfId);
+  const isHost = room.roomKind === "persistent-duo" || Boolean(selfId && room.hostId === selfId);
   const handleBackToConfig = () => {
     if (room.roomMode === "duo") {
       backToConfig();
@@ -230,7 +230,7 @@ export default function RPGGamePage({ params }: { params: { code: string } }) {
         {room.roomMode === "duo" && (
           <div className="flex items-center justify-center gap-2">
             {room.players.map((p) => (
-              <PlayerChip key={p.id} player={p} isHost={isHost} selfId={selfId} onKick={kickPlayer} />
+              <PlayerChip key={p.id} player={p} isHost={isHost} selfId={selfId} onKick={room.roomKind === "persistent-duo" ? undefined : kickPlayer} />
             ))}
           </div>
         )}

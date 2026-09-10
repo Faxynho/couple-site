@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
-import { getPlayerId } from "@/lib/playerId";
+import { getRoomPlayerId } from "@/lib/playerId";
 import type { CasinoMiniGame, CasinoRacerId, CasinoState, LastChanceCoinSide, RouletteBet } from "@/lib/casinoTypes";
 
 interface SyncResult {
@@ -16,7 +16,7 @@ export function useCasinoGame(roomCode: string) {
   useEffect(() => {
     const socket = getSocket();
     const sync = () => {
-      socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (res: SyncResult) => {
+      socket.emit("room:sync", { code: roomCode, playerId: getRoomPlayerId(roomCode) }, (res: SyncResult) => {
         if (res.ok && res.gameState) setState(res.gameState);
       });
     };

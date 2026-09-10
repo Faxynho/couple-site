@@ -16,7 +16,7 @@ vi.mock("../hooks/useRoomSession", () => ({ useRoomSession: () => mockRoom() }))
 vi.mock("../hooks/useBoardRaceGame", () => ({ useBoardRaceGame: () => mockGame() }));
 
 const room: RoomSnapshot = {
-  code: "ABCDE", roomMode: "duo", gameId: "boardrace", status: "playing",
+  code: "ABCDE", roomMode: "duo", roomKind: "standard", persistentDuoPresence: null, persistentDuoLobby: null, gameId: "boardrace", status: "playing",
   players: [
     { id: "self", name: "André", color: "#F2A6B8", connected: true },
     { id: "other", name: "Flávia", color: "#9FC3E8", connected: true },

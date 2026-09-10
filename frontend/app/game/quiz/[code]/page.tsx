@@ -98,7 +98,7 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
     submitAnswer(state.currentIndex, optionIndex);
   };
 
-  const isHost = Boolean(selfId && room.hostId === selfId);
+  const isHost = room.roomKind === "persistent-duo" || Boolean(selfId && room.hostId === selfId);
   // Numa sala Duo, "voltar" leva para a configuração (sem sair da sala); numa
   // sala Solo, não há sala para voltar — sai direto para a grade de jogos.
   const handleBackToConfig = () => {
@@ -173,7 +173,7 @@ export default function QuizGamePage({ params }: { params: { code: string } }) {
         players={players}
         selfId={selfId}
         isHost={isHost}
-        onKick={kickPlayer}
+        onKick={room.roomKind === "persistent-duo" ? undefined : kickPlayer}
         onNewGame={(difficulty) => newGame(difficulty)}
         onBack={handleBackToConfig}
       />

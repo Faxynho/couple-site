@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
-import { getPlayerId } from "@/lib/playerId";
+import { getRoomPlayerId } from "@/lib/playerId";
 import { PuzzleState } from "@/lib/types";
 import { playSoundEffect } from "@/lib/sound";
 
@@ -68,7 +68,7 @@ export function usePuzzle(roomCode: string) {
 
     // Estado inicial (a página do jogo é montada depois que o game:start já foi disparado).
     const sync = () => {
-      socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (res: { ok: boolean; gameState?: PuzzleState }) => {
+      socket.emit("room:sync", { code: roomCode, playerId: getRoomPlayerId(roomCode) }, (res: { ok: boolean; gameState?: PuzzleState }) => {
         if (res.ok && res.gameState) {
           prevGroupCount.current = Object.keys(res.gameState.groups).length;
           applyState(res.gameState);

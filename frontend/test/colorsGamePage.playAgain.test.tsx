@@ -51,6 +51,9 @@ function freshState(gameNum: number): ColorMemoryState {
 const room: RoomSnapshot = {
   code: "ABCDE",
   roomMode: "duo",
+  roomKind: "standard",
+  persistentDuoPresence: null,
+  persistentDuoLobby: null,
   gameId: "colors",
   status: "playing",
   players: [{ id: "self", name: "Andre", color: "#E893AA", connected: true }],
@@ -63,6 +66,7 @@ const room: RoomSnapshot = {
   pendingColorMode: "competitive",
   pendingSeerId: null,
   pendingMatchMode: "together",
+  pendingWhoAmICategory: "all",
   sequence: [],
   sequenceProgress: [],
 };

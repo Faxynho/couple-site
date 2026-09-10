@@ -95,7 +95,7 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
     return <LoadingScreen label="Escondendo as palavras..." />;
   }
 
-  const isHost = Boolean(selfId && room.hostId === selfId);
+  const isHost = room.roomKind === "persistent-duo" || Boolean(selfId && room.hostId === selfId);
   const handleBackToConfig = () => {
     if (room.roomMode === "duo") {
       backToConfig();
@@ -133,7 +133,7 @@ export default function WordSearchGamePage({ params }: { params: { code: string 
         progress={state.progress}
         selfId={selfId}
         isHost={isHost}
-        onKick={kickPlayer}
+        onKick={room.roomKind === "persistent-duo" ? undefined : kickPlayer}
         onNewPuzzle={(difficulty) => newPuzzle(difficulty)}
         onBack={handleBackToConfig}
       />

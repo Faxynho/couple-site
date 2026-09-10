@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { COLOR_DIFFICULTIES, ColorDifficulty } from "@/lib/colorTypes";
 import { Player } from "@/lib/types";
 import PlayerChip from "@/components/PlayerChip";
+import { isPersistentDuoRoomCode } from "@/lib/persistentDuo";
 
 interface ColorsControlsProps {
   roomCode: string;
@@ -63,7 +64,7 @@ export default function ColorsControls({
           <ArrowLeft size={18} />
         </button>
 
-        <span className="font-display text-xs font-medium tracking-[0.15em] text-ink-soft">Sala {roomCode}</span>
+        <span className="font-display text-xs font-medium tracking-[0.15em] text-ink-soft">{isPersistentDuoRoomCode(roomCode) ? "Nosso lobby" : `Sala ${roomCode}`}</span>
 
         <div className="flex items-center gap-1.5">
           <span className="rounded-full bg-surface/60 px-3 py-1 text-xs font-medium text-ink">

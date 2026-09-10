@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Clock3, MoreVertical, RotateCcw, ImagePlus, X } from "lucide-react";
 import { Player } from "@/lib/types";
+import { isPersistentDuoRoomCode } from "@/lib/persistentDuo";
 
 interface SidePanelProps {
   roomCode?: string;
@@ -81,7 +82,7 @@ export default function SidePanel({
 
       {roomCode && (
         <span className="hidden font-display text-xs font-medium tracking-[0.15em] text-ink-soft sm:inline">
-          {roomCode}
+          {isPersistentDuoRoomCode(roomCode) ? "Nosso lobby" : roomCode}
         </span>
       )}
 

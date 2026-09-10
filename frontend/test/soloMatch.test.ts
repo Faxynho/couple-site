@@ -11,10 +11,10 @@ import { RoomSnapshot } from "@/lib/types";
 
 function room(status: RoomSnapshot["status"] = "playing"): RoomSnapshot {
   return {
-    code: "SOLO1", roomMode: "solo", gameId: "sudoku", status,
+    code: "SOLO1", roomMode: "solo", roomKind: "standard", persistentDuoPresence: null, persistentDuoLobby: null, gameId: "sudoku", status,
     players: [], maxPlayers: 1, hostId: "player-1", pendingImageId: null,
     pendingImageWidth: null, pendingImageHeight: null, pendingDifficulty: "medium",
-    pendingColorMode: "competitive", pendingSeerId: null, pendingMatchMode: "together",
+    pendingColorMode: "competitive", pendingSeerId: null, pendingMatchMode: "together", pendingWhoAmICategory: "all",
     sequence: [], sequenceProgress: [],
   };
 }

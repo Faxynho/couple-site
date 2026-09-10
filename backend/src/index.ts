@@ -6,6 +6,7 @@ import { RoomManager } from "./rooms/RoomManager";
 import { registerSocketHandlers } from "./socket/socketHandlers";
 import { accountsRouter } from "./accounts/accountsRoutes";
 import { accountStore } from "./accounts/AccountStore";
+import { persistentDuoStore } from "./rooms/persistentDuo";
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -63,7 +64,7 @@ setInterval(() => roomManager.sweepEmptyRooms(), 1000 * 60 * 10);
 
 // Garante que backend/data/accounts.json já esteja carregado em memória
 // antes de aceitar qualquer request (rotas REST e o primeiro room:create).
-accountStore.ready().then(() => {
+Promise.all([accountStore.ready(), persistentDuoStore.ready()]).then(() => {
   httpServer.listen(PORT, () => {
     console.log(`🎮 Servidor de jogos cooperativos rodando em http://localhost:${PORT}`);
   });

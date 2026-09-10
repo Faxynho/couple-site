@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
-import { getPlayerId } from "@/lib/playerId";
+import { getRoomPlayerId } from "@/lib/playerId";
 import { MemoryState } from "@/lib/memoryTypes";
 
 export function useMemoryGame(roomCode: string) {
@@ -11,7 +11,7 @@ export function useMemoryGame(roomCode: string) {
   useEffect(() => {
     const socket = getSocket();
     const sync = () => {
-      socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (res: { ok: boolean; gameState?: MemoryState }) => {
+      socket.emit("room:sync", { code: roomCode, playerId: getRoomPlayerId(roomCode) }, (res: { ok: boolean; gameState?: MemoryState }) => {
         if (res.ok && res.gameState) setState(res.gameState);
       });
     };

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AirHockeyState } from "@/lib/airHockeyTypes";
-import { getPlayerId } from "@/lib/playerId";
+import { getRoomPlayerId } from "@/lib/playerId";
 import { getSocket } from "@/lib/socket";
 import { updateActiveSoloState } from "@/lib/soloMatch";
 import { AirHockeyGame } from "../../backend/src/games/airhockey/AirHockeyGame";
@@ -164,7 +164,7 @@ export function useAirHockeyGame(roomCode: string) {
         lastDuoTick.current = snapshotTick;
         authoritativeRef.current = next;
 
-        const selfId = getPlayerId();
+        const selfId = getRoomPlayerId(roomCode);
         const confirmed = next.lastProcessedInputSequence?.[selfId] ?? 0;
         pendingInputs.current = pendingInputs.current.filter((input) => input.sequence > confirmed);
         nextInputSequence.current = Math.max(nextInputSequence.current, confirmed);
@@ -252,7 +252,7 @@ export function useAirHockeyGame(roomCode: string) {
     };
     const sync = () => {
       syncClock();
-      socket.emit("room:sync", { code: roomCode, playerId: getPlayerId() }, (response: { ok: boolean; gameState?: AirHockeyState }) => {
+      socket.emit("room:sync", { code: roomCode, playerId: getRoomPlayerId(roomCode) }, (response: { ok: boolean; gameState?: AirHockeyState }) => {
       if (response.ok && response.gameState) accept(response.gameState);
       });
     };
@@ -281,7 +281,7 @@ export function useAirHockeyGame(roomCode: string) {
       } else if (state?.mode === "duel" && state.phase !== "finished") {
         // O estado renderizado é esta previsão, não o último pacote recebido.
         const predicted = advancePrediction(engineRef.current, state, frameMs);
-        const selfId = getPlayerId();
+        const selfId = getRoomPlayerId(roomCode);
         const beforeContact = (state as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
         const afterContact = (predicted as AirHockeyState & { paddleContact?: Record<string, boolean> }).paddleContact?.[selfId];
         if (!beforeContact && afterContact && predicted.impactKind === "paddle" && predicted.impactSerial > state.impactSerial) {
@@ -316,7 +316,7 @@ export function useAirHockeyGame(roomCode: string) {
     if (!state) return;
 
     if (state.mode === "solo") {
-      stateRef.current = engineRef.current.applyAction(state as never, { type: "move", x, y }, getPlayerId()) as AirHockeyState;
+      stateRef.current = engineRef.current.applyAction(state as never, { type: "move", x, y }, getRoomPlayerId(roomCode)) as AirHockeyState;
       return;
     }
 
@@ -333,7 +333,7 @@ export function useAirHockeyGame(roomCode: string) {
       predictedTick: simulationTick,
       target: { x, y },
     });
-    const predicted = engineRef.current.applyAction(cloneState(base) as never, { type: "move", x, y, sequence }, getPlayerId()) as AirHockeyState;
+    const predicted = engineRef.current.applyAction(cloneState(base) as never, { type: "move", x, y, sequence }, getRoomPlayerId(roomCode)) as AirHockeyState;
     predictedLocalRef.current = predicted;
     predictedPuckRef.current = { ...predicted.puck };
     stateRef.current = predicted;

@@ -130,7 +130,7 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
     return <LoadingScreen label="Montando o tabuleiro..." />;
   }
 
-  const isHost = room.hostId === selfId;
+  const isHost = room.roomKind === "persistent-duo" || room.hostId === selfId;
   const isMyTurn = state.currentPlayerId === selfId;
   const self = state.players[selfId];
   const currentName = state.currentPlayerId === "BOT"
@@ -238,7 +238,7 @@ export default function BoardRacePage({ params }: { params: { code: string } }) 
             active={presentedPlayerId === id && (state.phase !== "finished" || presentingMove)}
             isSelf={id === selfId}
             isHost={isHost}
-            onKick={room.roomMode === "duo" ? kickPlayer : undefined}
+            onKick={room.roomMode === "duo" && room.roomKind !== "persistent-duo" ? kickPlayer : undefined}
             visualIndex={index}
           />
         ))}

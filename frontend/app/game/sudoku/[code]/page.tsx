@@ -100,7 +100,7 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
     return <LoadingScreen label="Preparando o Sudoku..." />;
   }
 
-  const isHost = Boolean(selfId && room.hostId === selfId);
+  const isHost = room.roomKind === "persistent-duo" || Boolean(selfId && room.hostId === selfId);
   const handleBackToConfig = () => {
     if (room.roomMode === "duo") {
       backToConfig();
@@ -143,7 +143,7 @@ export default function SudokuGamePage({ params }: { params: { code: string } })
         hintsUsedByPlayer={state.hintsUsedByPlayer}
         selfId={selfId}
         isHost={isHost}
-        onKick={kickPlayer}
+        onKick={room.roomKind === "persistent-duo" ? undefined : kickPlayer}
         onNewPuzzle={(difficulty) => newPuzzle(difficulty)}
         onRestart={resetGame}
         onHint={hint}

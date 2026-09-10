@@ -79,7 +79,7 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
     return <LoadingScreen label="Preparando as cores..." />;
   }
 
-  const isHost = Boolean(selfId && room.hostId === selfId);
+  const isHost = room.roomKind === "persistent-duo" || Boolean(selfId && room.hostId === selfId);
   const handleBackToConfig = () => {
     if (room.roomMode === "duo") {
       backToConfig();
@@ -143,7 +143,7 @@ export default function ColorsGamePage({ params }: { params: { code: string } })
         players={room.players}
         selfId={selfId}
         isHost={isHost}
-        onKick={kickPlayer}
+        onKick={room.roomKind === "persistent-duo" ? undefined : kickPlayer}
         scores={scores}
         onBack={handleBackToConfig}
       />

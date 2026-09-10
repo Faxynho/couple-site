@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Clock3, RotateCw, SlidersHorizontal } from "lucide-react";
 import { QUIZ_DIFFICULTIES, QUIZ_MODES, QuizDifficulty, QuizMode, QuizPhase } from "@/lib/quizTypes";
 import PlayerChip from "@/components/PlayerChip";
+import { isPersistentDuoRoomCode } from "@/lib/persistentDuo";
 
 interface Player {
   id: string;
@@ -78,7 +79,7 @@ export default function QuizControls({
         </button>
 
         <span className="font-display text-xs font-medium tracking-[0.15em] text-ink-soft">
-          {mode === "solo" ? "Modo solo" : `Sala ${roomCode}`}
+          {mode === "solo" ? "Modo solo" : isPersistentDuoRoomCode(roomCode) ? "Nosso lobby" : `Sala ${roomCode}`}
         </span>
 
         <div className={`flex items-center gap-1.5 ${urgent ? "text-rose-deep" : "text-ink"}`}>

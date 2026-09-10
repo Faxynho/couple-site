@@ -16,6 +16,12 @@ export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "
  *  "duo": sala persistente pensada para dois jogadores, criada ANTES de
  *  escolher o jogo, que sobrevive à troca de jogo/modo e a quedas de conexão. */
 export type RoomMode = "solo" | "duo";
+export type RoomKind = "standard" | "persistent-duo";
+export type PersistentDuoPresence = "offline" | "lobby" | "world" | "minigame";
+
+export interface PersistentDuoLobby {
+  displayName: string;
+}
 
 export interface Player {
   // Identidade PERSISTENTE do jogador (gerada uma vez pelo cliente e salva no
@@ -44,6 +50,7 @@ export type RoomStatus = "lobby" | "waiting" | "ready" | "playing" | "finished";
 export interface RoomSnapshot {
   code: string;
   roomMode: RoomMode;
+  roomKind: RoomKind;
   /** Jogo atualmente selecionado na sala — `null` enquanto a sala Duo está no
    *  lobby (nenhum jogo escolhido ainda). Nunca é `null` numa sala Solo. */
   gameId: GameId | null;
@@ -54,6 +61,10 @@ export interface RoomSnapshot {
    *  posição depois que o anfitrião original caiu) — só ele pode mudar a
    *  configuração, trocar de jogo/modo e expulsar o convidado. */
   hostId: string | null;
+  /** Presença das duas contas fixas. Só existe na sala Duo persistente. */
+  persistentDuoPresence: Record<"andre" | "flavia", PersistentDuoPresence> | null;
+  /** Nome visual editável do lobby persistente; nunca altera o código interno. */
+  persistentDuoLobby: PersistentDuoLobby | null;
   /** Configuração escolhida pelo host, sincronizada em tempo real com o outro jogador. */
   pendingImageId: string | null;
   pendingImageWidth: number | null;

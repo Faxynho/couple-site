@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import { getPlayerId } from "@/lib/playerId";
-import { getActiveAccountId } from "@/lib/accountSession";
+import { AccountId, getActiveAccountId } from "@/lib/accountSession";
 import { setStoredRoomCode } from "@/lib/roomSession";
 import { GameId, Player, RoomMode, RoomSnapshot } from "@/lib/types";
 
@@ -78,6 +78,22 @@ export function useRoom() {
     });
   }, []);
 
+  const joinPersistentDuoRoom = useCallback((accountId: AccountId) => {
+    setLoading(true);
+    setError(null);
+    return new Promise<CreateOrJoinResult>((resolve) => {
+      getSocket().emit("room:joinPersistentDuo", { accountId }, (res: CreateOrJoinResult) => {
+        setLoading(false);
+        if (res.ok && res.room) {
+          setRoom(res.room);
+        } else {
+          setError(res.error || "Não foi possível entrar no lobby Duo.");
+        }
+        resolve(res);
+      });
+    });
+  }, []);
+
   const startGame = useCallback(() => {
     return new Promise<CreateOrJoinResult>((resolve) => {
       getSocket().emit("game:start", {}, (res: CreateOrJoinResult) => {
@@ -105,5 +121,5 @@ export function useRoom() {
     []
   );
 
-  return { room, selfId, error, loading, createRoom, joinRoom, startGame, setConfig };
+  return { room, selfId, error, loading, createRoom, joinRoom, joinPersistentDuoRoom, startGame, setConfig };
 }

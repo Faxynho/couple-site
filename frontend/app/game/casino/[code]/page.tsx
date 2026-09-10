@@ -46,6 +46,7 @@ import {
   type RouletteBet,
   type SlotSymbolId,
 } from "@/lib/casinoTypes";
+import { isPersistentDuoRoomCode } from "@/lib/persistentDuo";
 import { playCasinoSound } from "@/lib/casinoSound";
 import styles from "./CasinoGame.module.css";
 
@@ -203,7 +204,7 @@ export default function CasinoGamePage({ params }: { params: { code: string } })
     return <LoadingScreen label="Abrindo as mesas do cassino..." />;
   }
 
-  const isHost = room.hostId === selfId;
+  const isHost = room.roomKind === "persistent-duo" || room.hostId === selfId;
   const isSoloBot = state.mode === "soloBot";
   const lengthInfo = CASINO_LENGTHS[state.length];
   const goToConfig = () => {
@@ -236,7 +237,7 @@ export default function CasinoGamePage({ params }: { params: { code: string } })
           <ArrowLeft size={18} />
         </button>
         <Logo size={38} />
-        <div className={styles.roomPill}>{isSoloBot ? "Solo · BOT" : `Sala ${room.code}`}</div>
+        <div className={styles.roomPill}>{isSoloBot ? "Solo · BOT" : isPersistentDuoRoomCode(room.code) ? "Nosso lobby" : `Sala ${room.code}`}</div>
       </header>
 
       <section className={styles.hero}>

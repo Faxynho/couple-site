@@ -1,5 +1,8 @@
 "use client";
 
+import { getActiveAccountId } from "@/lib/accountSession";
+import { isPersistentDuoRoomCode } from "@/lib/persistentDuo";
+
 const STORAGE_KEY = "couple-site:playerId";
 
 /**
@@ -18,4 +21,11 @@ export function getPlayerId(): string {
     window.localStorage.setItem(STORAGE_KEY, id);
   }
   return id;
+}
+
+/** Na sala fixa, a conta é a identidade lógica em todas as abas. Salas Solo
+ * e salas temporárias continuam usando o UUID estável do navegador. */
+export function getRoomPlayerId(roomCode: string): string {
+  if (isPersistentDuoRoomCode(roomCode)) return getActiveAccountId() ?? "";
+  return getPlayerId();
 }

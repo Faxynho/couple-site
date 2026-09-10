@@ -33,10 +33,10 @@ vi.mock("@/lib/socket", () => ({ getSocket: () => ({ emit: mocks.socketEmit }) }
 
 function room(gameId: GameId, code: string): RoomSnapshot {
   return {
-    code, roomMode: "solo", gameId, status: "playing",
+    code, roomMode: "solo", roomKind: "standard", persistentDuoPresence: null, persistentDuoLobby: null, gameId, status: "playing",
     players: [], maxPlayers: 1, hostId: "player-1", pendingImageId: null,
     pendingImageWidth: null, pendingImageHeight: null, pendingDifficulty: "medium",
-    pendingColorMode: "competitive", pendingSeerId: null, pendingMatchMode: "together",
+    pendingColorMode: "competitive", pendingSeerId: null, pendingMatchMode: "together", pendingWhoAmICategory: "all",
     sequence: [], sequenceProgress: [],
   };
 }

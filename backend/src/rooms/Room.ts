@@ -1,6 +1,7 @@
-import { ALL_GAME_IDS, GameId, Player, RoomMode, RoomSnapshot, RoomStatus } from "../types";
+import { ALL_GAME_IDS, GameId, PersistentDuoLobby, PersistentDuoPresence, Player, RoomKind, RoomMode, RoomSnapshot, RoomStatus } from "../types";
 import { getGameEngine } from "../games/GameRegistry";
 import { recordFinishedMatch } from "../accounts/gameResult";
+import { PERSISTENT_DUO_ACCOUNT_IDS, isPersistentDuoAccountId, normalizePersistentDuoDisplayName, persistentDuoStore } from "./persistentDuo";
 
 const PLAYER_COLORS = ["#F2A6B8", "#9FC3E8"]; // rosa e azul pastel, um por jogador
 const DEFAULT_PENDING_DIFFICULTY = "medium";
@@ -17,6 +18,7 @@ function shuffle<T>(items: T[]): T[] {
 export class Room {
   readonly code: string;
   readonly roomMode: RoomMode;
+  readonly roomKind: RoomKind;
   /** Jogo selecionado no momento — `null` só é possível numa sala Duo que
    *  ainda não escolheu o primeiro jogo (status "lobby"). Mutável: é isso que
    *  permite trocar de jogo sem sair da sala. */
@@ -26,13 +28,15 @@ export class Room {
   status: RoomStatus;
   gameState: unknown = null;
   createdAt = Date.now();
+  persistentDuoLobby: PersistentDuoLobby | null;
 
   /** Mapeia a identidade PERSISTENTE de cada jogador (Player.id, gerada uma
    *  vez pelo cliente e guardada no navegador) para o socket.id da conexão
    *  ATUAL desse jogador — que muda a cada reconexão de WebSocket (queda de
    *  wifi, app em segundo plano no celular, etc). É assim que sabemos para
    *  qual conexão enviar os eventos direcionados a um jogador específico. */
-  private socketIds: Map<string, string> = new Map();
+  private socketIds: Map<string, Set<string>> = new Map();
+  private socketPresences: Map<string, Map<string, Exclude<PersistentDuoPresence, "offline">>> = new Map();
 
   /** O primeiro jogador a entrar vira o host — só ele configura, troca de
    *  jogo/modo, expulsa o convidado e inicia a partida. Se o host cair da
@@ -57,6 +61,7 @@ export class Room {
   pendingChessPinkPlayerId: string | null = null;
   /** Aparência do host para o RPG; o outro humano recebe a oposta. */
   pendingRpgAppearance: "man" | "woman" = "man";
+  private pendingRpgAppearancePlayerId: string | null = null;
   /** Escolha de peão da Corrida de Tabuleiro. No Duo as cores são opostas. */
   pendingBoardRacePawnColors: Record<string, "blue" | "pink"> = {};
 
@@ -71,18 +76,23 @@ export class Room {
    *  novo a cada uma dessas ações. Zerado sempre que uma partida nova começa. */
   private statsRecordedForMatch = false;
 
-  constructor(code: string, roomMode: RoomMode, gameId: GameId | null = null) {
+  constructor(code: string, roomMode: RoomMode, gameId: GameId | null = null, roomKind: RoomKind = "standard") {
     this.code = code;
     this.roomMode = roomMode;
+    this.roomKind = roomKind;
     this.maxPlayers = roomMode === "solo" ? 1 : 2;
     this.gameId = gameId;
     this.status = gameId ? "waiting" : "lobby";
+    this.persistentDuoLobby = roomKind === "persistent-duo" ? persistentDuoStore.getLobby() : null;
     if (roomMode === "duo") {
       this.sequence = shuffle(ALL_GAME_IDS);
     }
   }
 
   addPlayer(id: string, name: string, accountId?: "andre" | "flavia"): Player | null {
+    if (this.roomKind === "persistent-duo" && (!isPersistentDuoAccountId(accountId) || id !== accountId)) {
+      return null;
+    }
     // Mesma identidade persistente já presente na sala: é uma RECONEXÃO
     // (refresh, nova aba, ou o WebSocket caiu e reabriu com um socket.id
     // novo por baixo dos panos), não um terceiro jogador entrando — nunca
@@ -103,7 +113,7 @@ export class Room {
     if (this.players.size >= this.maxPlayers) {
       return null;
     }
-    if (this.hostId === null) {
+    if (this.roomKind === "standard" && this.hostId === null) {
       this.hostId = id;
     }
     const colorIndex = this.players.size % PLAYER_COLORS.length;
@@ -125,22 +135,94 @@ export class Room {
 
   /** Associa a identidade persistente de um jogador ao socket.id da conexão
    *  atual — chamado em todo room:create/room:join/room:sync bem-sucedido. */
-  setSocketId(playerId: string, socketId: string) {
-    this.socketIds.set(playerId, socketId);
+  setSocketId(
+    playerId: string,
+    socketId: string,
+    presence: Exclude<PersistentDuoPresence, "offline"> = "lobby"
+  ) {
+    const ids = this.socketIds.get(playerId) ?? new Set<string>();
+    ids.add(socketId);
+    this.socketIds.set(playerId, ids);
+    if (this.roomKind === "persistent-duo") {
+      const presences = this.socketPresences.get(playerId) ?? new Map();
+      presences.set(socketId, presence);
+      this.socketPresences.set(playerId, presences);
+    }
   }
 
   /** socket.id atual de um jogador (para eventos direcionados a ele), ou
    *  undefined se ele nunca se conectou ou já foi substituído por uma
    *  reconexão mais nova. */
   getSocketId(playerId: string): string | undefined {
-    return this.socketIds.get(playerId);
+    return this.socketIds.get(playerId)?.values().next().value;
+  }
+
+  getSocketIds(playerId: string): string[] {
+    return [...(this.socketIds.get(playerId) ?? [])];
+  }
+
+  setPersistentPresence(playerId: string, socketId: string, presence: Exclude<PersistentDuoPresence, "offline">) {
+    if (this.roomKind !== "persistent-duo" || !this.socketIds.get(playerId)?.has(socketId)) return;
+    const presences = this.socketPresences.get(playerId) ?? new Map();
+    presences.set(socketId, presence);
+    this.socketPresences.set(playerId, presences);
+  }
+
+  setAllConnectedPersistentPresence(presence: Exclude<PersistentDuoPresence, "offline">) {
+    if (this.roomKind !== "persistent-duo") return;
+    for (const [playerId, socketIds] of this.socketIds) {
+      const presences = this.socketPresences.get(playerId) ?? new Map();
+      for (const socketId of socketIds) presences.set(socketId, presence);
+      this.socketPresences.set(playerId, presences);
+    }
+  }
+
+  private getPersistentPresence(playerId: string): PersistentDuoPresence {
+    const values = [...(this.socketPresences.get(playerId)?.values() ?? [])];
+    if (values.includes("minigame")) return "minigame";
+    if (values.includes("world")) return "world";
+    if (values.includes("lobby")) return "lobby";
+    return "offline";
+  }
+
+  getPersistentDuoPresence(): Record<"andre" | "flavia", PersistentDuoPresence> | null {
+    if (this.roomKind !== "persistent-duo") return null;
+    return {
+      andre: this.getPersistentPresence("andre"),
+      flavia: this.getPersistentPresence("flavia"),
+    };
+  }
+
+  arePersistentDuoPlayersInLobby(): boolean {
+    const presence = this.getPersistentDuoPresence();
+    return Boolean(presence && PERSISTENT_DUO_ACCOUNT_IDS.every((id) => presence[id] === "lobby"));
+  }
+
+  setPersistentDuoDisplayName(value: unknown): string | null {
+    if (this.roomKind !== "persistent-duo") return null;
+    const displayName = normalizePersistentDuoDisplayName(value);
+    if (!displayName) return null;
+    this.persistentDuoLobby = { displayName: persistentDuoStore.setDisplayName(displayName) ?? displayName };
+    return this.persistentDuoLobby.displayName;
   }
 
   /** Chamado tanto numa queda de conexão quanto numa saída deliberada
    *  (room:leave). Marca o jogador como desconectado e, se ele era o host,
    *  passa a posição para o outro jogador (se algum ainda estiver
    *  conectado) — assim a sala nunca fica "sem dono" e travada. */
-  markDisconnected(id: string) {
+  markDisconnected(id: string, socketId?: string) {
+    if (socketId) {
+      const ids = this.socketIds.get(id);
+      ids?.delete(socketId);
+      this.socketPresences.get(id)?.delete(socketId);
+      if (ids && ids.size > 0) {
+        const player = this.players.get(id);
+        if (player) player.connected = true;
+        return;
+      }
+    }
+    this.socketIds.delete(id);
+    this.socketPresences.delete(id);
     const player = this.players.get(id);
     if (player) {
       player.connected = false;
@@ -161,7 +243,6 @@ export class Room {
       const successor = [...this.players.values()].find((p) => p.id !== id && p.connected);
       if (successor) this.hostId = successor.id;
     }
-    this.socketIds.delete(id);
   }
 
   /** Remove um jogador definitivamente da sala (usado só para expulsar o
@@ -171,6 +252,7 @@ export class Room {
   removePlayer(id: string) {
     this.players.delete(id);
     this.socketIds.delete(id);
+    this.socketPresences.delete(id);
     if (this.hostId === id) {
       const successor = [...this.players.values()][0];
       this.hostId = successor?.id ?? null;
@@ -187,6 +269,12 @@ export class Room {
 
   isHost(playerId: string): boolean {
     return this.hostId === playerId;
+  }
+
+  canManage(playerId: string): boolean {
+    return this.roomKind === "persistent-duo"
+      ? this.players.has(playerId) && Boolean(this.players.get(playerId)?.connected)
+      : this.isHost(playerId);
   }
 
   /** Configuração inicial de cada jogo ao ser selecionado — os valores de
@@ -223,6 +311,7 @@ export class Room {
       ? [...this.players.keys()][0] ?? null
       : null;
     this.pendingRpgAppearance = "man";
+    this.pendingRpgAppearancePlayerId = null;
     this.pendingBoardRacePawnColors = {};
     this.status = this.players.size === this.maxPlayers ? "ready" : "waiting";
   }
@@ -235,6 +324,7 @@ export class Room {
     if (!this.gameId) return;
     this.gameState = null;
     this.status = this.players.size === this.maxPlayers ? "ready" : "waiting";
+    this.setAllConnectedPersistentPresence("lobby");
   }
 
   /** "Voltar" mais uma vez — sai da configuração/jogo atual e volta para a
@@ -243,6 +333,7 @@ export class Room {
     this.gameId = null;
     this.gameState = null;
     this.status = "lobby";
+    this.setAllConnectedPersistentPresence("lobby");
   }
 
   /** Sorteia uma nova ordem para a sugestão de sequência de jogos e zera o
@@ -274,7 +365,7 @@ export class Room {
     chessPinkPlayerId?: string | null;
     rpgAppearance?: "man" | "woman";
     boardRacePawnColor?: "blue" | "pink";
-  }) {
+  }, actorPlayerId?: string) {
     if (config.imageId !== undefined) this.pendingImageId = config.imageId;
     if (config.imageWidth !== undefined) this.pendingImageWidth = config.imageWidth;
     if (config.imageHeight !== undefined) this.pendingImageHeight = config.imageHeight;
@@ -284,7 +375,10 @@ export class Room {
     if (config.matchMode !== undefined) this.pendingMatchMode = config.matchMode;
     if (config.whoamiCategory !== undefined) this.pendingWhoAmICategory = config.whoamiCategory;
     if (config.chessPinkPlayerId !== undefined) this.pendingChessPinkPlayerId = config.chessPinkPlayerId;
-    if (config.rpgAppearance !== undefined) this.pendingRpgAppearance = config.rpgAppearance;
+    if (config.rpgAppearance !== undefined) {
+      this.pendingRpgAppearance = config.rpgAppearance;
+      if (this.roomKind === "persistent-duo" && actorPlayerId) this.pendingRpgAppearancePlayerId = actorPlayerId;
+    }
     if (config.boardRacePawnColor !== undefined && this.hostId) this.setBoardRacePawnColor(this.hostId, config.boardRacePawnColor);
   }
 
@@ -356,11 +450,12 @@ export class Room {
       pinkPlayerId: this.gameId === "chess" && this.roomMode === "duo" ? this.pendingChessPinkPlayerId : undefined,
       rpgAppearance: this.gameId === "rpg" ? this.pendingRpgAppearance : undefined,
       pawnColors: this.gameId === "boardrace" ? this.pendingBoardRacePawnColors : undefined,
-      hostPlayerId: this.gameId === "rpg" ? this.hostId : undefined,
+      hostPlayerId: this.gameId === "rpg" ? (this.pendingRpgAppearancePlayerId ?? this.hostId ?? connectedIds[0]) : undefined,
       ...overrides,
     };
     this.gameState = engine.createInitialState(options);
     this.status = "playing";
+    this.setAllConnectedPersistentPresence("minigame");
     this.statsRecordedForMatch = false;
   }
 
@@ -429,11 +524,14 @@ export class Room {
     return {
       code: this.code,
       roomMode: this.roomMode,
+      roomKind: this.roomKind,
       gameId: this.gameId,
       status: this.status,
       players: [...this.players.values()],
       maxPlayers: this.maxPlayers,
       hostId: this.hostId,
+      persistentDuoPresence: this.getPersistentDuoPresence(),
+      persistentDuoLobby: this.persistentDuoLobby,
       pendingImageId: this.pendingImageId,
       pendingImageWidth: this.pendingImageWidth,
       pendingImageHeight: this.pendingImageHeight,

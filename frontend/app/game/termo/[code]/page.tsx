@@ -147,7 +147,7 @@ export default function TermoGamePage({ params }: { params: { code: string } }) 
   const active = !state.finished && !ownProgress.finished;
   const opponent = state.mode === "duel" ? room.players.find((player) => player.id !== selfId) : null;
   const opponentProgress = opponent ? state.progress[opponent.id] : null;
-  const isHost = room.hostId === selfId;
+  const isHost = room.roomKind === "persistent-duo" || room.hostId === selfId;
   const handleBack = () => {
     if (room.roomMode === "duo") { backToConfig(); router.push(`/sala/${room.code}`); }
     else router.push("/solo");
