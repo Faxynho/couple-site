@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import SoloMatchModal from "@/components/SoloMatchModal";
 import { getActiveAccount, subscribeToActiveAccountChange } from "@/lib/accountSession";
 import { getSocket } from "@/lib/socket";
@@ -16,6 +17,7 @@ import {
 
 export default function SoloMatchGate() {
   const router = useRouter();
+  const pathname = usePathname();
   const [save, setSave] = useState<SoloMatchSave | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export default function SoloMatchGate() {
     return () => { socket.off("solo:state", onSoloState); };
   }, []);
 
-  if (!save) return null;
+  if (!save || pathname === "/mundo") return null;
 
   const cancel = () => {
     clearSoloMatch(save.ownerId);

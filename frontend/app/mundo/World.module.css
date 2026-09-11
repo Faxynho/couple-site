@@ -1,0 +1,71 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  color: #fff8da;
+  background: #40683d;
+  font-family: var(--font-body), sans-serif;
+  image-rendering: pixelated;
+  touch-action: none;
+}
+
+.root button { font-family: var(--font-display), sans-serif; }
+.root :global(.world-topbar) { position: absolute; z-index: 20; top: 12px; left: 50%; transform: translateX(-50%); min-width: min(94vw, 520px); height: 58px; display: grid; grid-template-columns: 84px 1fr 46px; align-items: center; gap: 8px; padding: 6px 8px; border: 3px solid #573622; border-radius: 8px; background: linear-gradient(#c98645, #9d572f); box-shadow: inset 0 2px #efbd6f, 0 4px 0 #392619, 0 8px 18px #14291680; text-align: center; }
+.root :global(.world-topbar button), .root :global(.world-actions button) { min-height: 38px; border: 2px solid #55331f; border-radius: 5px; color: #fff3c4; background: linear-gradient(#88522e, #63351f); box-shadow: inset 0 1px #b97943, 0 2px 0 #332116; font-weight: 700; }
+.root :global(.world-topbar button:active), .root :global(.world-actions button:active) { transform: translateY(2px); box-shadow: inset 0 1px #3a2117; }
+.root :global(.world-topbar strong) { display: block; font-size: 17px; letter-spacing: .03em; text-shadow: 1px 2px #583321; }
+.root :global(.world-topbar small) { display: block; color: #f5d79a; font-size: 11px; }
+.root :global(.world-actions) { position: absolute; z-index: 20; right: 14px; top: 84px; }
+.root :global(.world-actions button) { padding: 0 13px; }
+.root :global(.world-actions .active) { color: #efffc1; outline: 2px solid #a8cf64; }
+.root :global(.world-decoration-bar) { position: absolute; z-index: 25; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; max-width: calc(100vw - 28px); gap: 5px; overflow-x: auto; padding: 7px; border: 3px solid #573622; border-radius: 8px; background: #b96f3ef2; box-shadow: inset 0 2px #eda763, 0 4px #3b291b; }
+.root :global(.world-decoration-bar button) { min-width: 62px; min-height: 54px; padding: 4px 8px; border: 2px solid #633d25; border-radius: 5px; background: #f2cf83; color: #50321f; font-size: 10px; font-weight: 800; box-shadow: inset 0 2px #fff0b6, 0 2px #674025; }
+.root :global(.world-decoration-bar button span) { display: block; font-size: 19px; line-height: 22px; }
+.root :global(.world-decoration-bar .selected) { background: #a8d36d; outline: 2px solid #efffbf; }
+.root :global(.world-decoration-bar .danger) { background: #e99b76; }
+.root :global(.world-hint), .root :global(.world-notice) { position: absolute; z-index: 24; left: 50%; transform: translateX(-50%); padding: 8px 14px; border: 2px solid #5d3924; border-radius: 6px; color: #4b301e; background: #ffe7a6; box-shadow: 0 3px #563824; font-weight: 800; font-size: 12px; white-space: nowrap; }
+.root :global(.world-hint) { bottom: 24px; }
+.root :global(.world-decoration-bar) ~ :global(.world-hint) { bottom: 92px; }
+.root :global(.world-notice) { top: 86px; background: #fff2bd; }
+.root :global(.world-debug) { position: absolute; z-index: 30; left: 10px; top: 82px; padding: 7px 9px; border: 1px solid #fff8; color: #efffda; background: #102416cc; font: 11px/1.45 monospace; pointer-events: none; }
+.root :global(.world-curtain), .root :global(.world-error), .root :global(.world-loading) { position: absolute; z-index: 50; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: radial-gradient(circle, #6e9b55, #2f5135); text-align: center; }
+.root :global(.world-loading span) { font-size: 54px; }
+.root :global(.world-loading strong), .root :global(.world-error strong) { font: 800 22px var(--font-display); text-shadow: 2px 2px #294127; }
+.root :global(.world-loading small), .root :global(.world-error p) { max-width: 360px; color: #d9efb8; }
+.root :global(.world-error button) { padding: 9px 16px; border: 2px solid #5f3b23; border-radius: 5px; background: #f2cf83; color: #4b301e; font-weight: 800; }
+.root :global(.world-modal-backdrop) { position: absolute; z-index: 60; inset: 0; display: grid; place-items: center; padding: 18px; background: #162317aa; backdrop-filter: blur(3px); touch-action: auto; }
+.root :global(.world-panel) { width: min(430px, 94vw); border: 4px solid #5a3823; border-radius: 9px; padding: 16px; color: #4b301e; background: #edc879; box-shadow: inset 0 0 0 3px #ffeba8, 0 7px 0 #342319, 0 18px 40px #13201599; }
+.root :global(.world-panel-title) { display: flex; align-items: center; justify-content: space-between; margin: -7px -5px 16px; border-bottom: 2px solid #9b6338; padding: 5px 8px 11px; font: 800 20px var(--font-display); }
+.root :global(.world-panel-title button) { width: 32px; height: 32px; border: 2px solid #694029; border-radius: 4px; background: #bd7440; color: #fff0b8; font-size: 22px; }
+.root :global(.world-settings label) { display: flex; justify-content: space-between; margin: 13px 1px 5px; font-weight: 800; }
+.root :global(.world-settings input[type="range"]) { width: 100%; accent-color: #527c3d; }
+.root :global(.world-skin-card) { display: grid; grid-template-columns: 76px 1fr; gap: 12px; align-items: center; margin-top: 18px; border: 2px solid #946039; border-radius: 6px; padding: 10px; background: #ffe5a0; }
+.root :global(.world-skin-card img) { width: 64px; height: 64px; object-fit: none; object-position: left top; image-rendering: pixelated; transform: scale(1); border: 2px solid #704629; background: #8ebd65; }
+.root :global(.world-skin-card small), .root :global(.world-skin-card strong) { display: block; }
+.root :global(.world-skin-card p) { margin: 3px 0 0; font-size: 11px; color: #775135; }
+.root :global(.world-mobile-controls), .root :global(.world-rotate) { display: none; }
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .root :global(.world-mobile-controls) { position: absolute; z-index: 30; inset: 0; display: block; pointer-events: none; }
+  .root :global(.world-dpad) { position: absolute; left: 22px; bottom: 20px; width: 132px; height: 114px; pointer-events: auto; }
+  .root :global(.world-dpad button), .root :global(.world-interact-button) { position: absolute; width: 44px; height: 44px; border: 3px solid #4f321f; border-radius: 8px; color: #fff0bd; background: #80502ed9; box-shadow: inset 0 2px #b77945, 0 3px #342216; font-weight: 900; }
+  .root :global(.world-dpad .up) { left: 44px; top: 0; } .root :global(.world-dpad .left) { left: 0; top: 40px; } .root :global(.world-dpad .right) { right: 0; top: 40px; } .root :global(.world-dpad .down) { left: 44px; bottom: 0; }
+  .root :global(.world-interact-button) { right: 25px; bottom: 28px; width: 62px; height: 62px; border-radius: 50%; pointer-events: auto; font-size: 23px; }
+  .root :global(.world-decoration-bar) { bottom: 8px; max-width: 58vw; }
+  .root :global(.world-hint) { bottom: 18px; }
+  .root :global(.world-actions) { top: 76px; right: 10px; }
+}
+
+@media (pointer: coarse) and (orientation: portrait) {
+  .root :global(.world-rotate) { position: absolute; z-index: 100; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px; color: #fff1bd; background: radial-gradient(circle, #6d9854, #29442f); text-align: center; }
+  .root :global(.world-rotate span) { font-size: 62px; }
+  .root :global(.world-rotate strong) { font: 800 24px var(--font-display); }
+  .root :global(.world-rotate p) { max-width: 290px; color: #d9edb5; }
+}
+
+@media (max-height: 430px) {
+  .root :global(.world-topbar) { top: 6px; height: 50px; }
+  .root :global(.world-topbar small) { display: none; }
+  .root :global(.world-actions) { top: 62px; }
+}

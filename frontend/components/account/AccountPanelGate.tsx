@@ -18,7 +18,7 @@ import { PublicAccountProfile } from "@/lib/accountTypes";
 export default function AccountPanelGate() {
   const pathname = usePathname();
   const router = useRouter();
-  const isGameScreen = pathname?.startsWith("/game/");
+  const isGameScreen = pathname?.startsWith("/game/") || pathname === "/mundo";
 
   const [accountId, setAccountId] = useState<AccountId | null>(null);
   const [profile, setProfile] = useState<PublicAccountProfile | null>(null);

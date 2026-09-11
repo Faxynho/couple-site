@@ -30,6 +30,7 @@ import {
   isPersistentDuoAccountId,
   isPersistentDuoPresence,
 } from "../rooms/persistentDuo";
+import { registerWorldSocketHandlers } from "../world/worldSocketHandlers";
 
 interface SocketData {
   roomCode?: string;
@@ -646,6 +647,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
   };
 
   io.on("connection", (socket: Socket<any, any, any, SocketData>) => {
+    registerWorldSocketHandlers(io, socket, roomManager);
     socket.on("solo:resume", (payload: unknown, callback: AckCallback) => {
       if (!isSoloResumePayload(payload)) {
         callback?.({ ok: false, error: "O save desta partida é inválido." });

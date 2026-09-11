@@ -250,13 +250,12 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
               <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
                 <button
                   type="button"
-                  disabled
-                  className="glass-panel relative flex min-h-40 flex-col items-center justify-center rounded-xl3 p-6 text-center opacity-65"
+                  onClick={() => router.push("/mundo")}
+                  className="glass-panel relative flex min-h-40 flex-col items-center justify-center rounded-xl3 p-6 text-center transition-transform hover:-translate-y-1 hover:shadow-glow"
                 >
-                  <span className="absolute right-4 top-4 rounded-full bg-surface/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-ink-soft">Em breve</span>
                   <span className="text-4xl">🏡</span>
                   <h2 className="mt-3 font-display text-lg font-semibold text-ink">Nosso Mundo</h2>
-                  <p className="mt-1 text-xs text-ink-soft">Um espaço que cada um poderá explorar sozinho ou junto.</p>
+                  <p className="mt-1 text-xs text-ink-soft">Entre sozinho ou encontre seu par no mundo compartilhado.</p>
                 </button>
                 <button
                   type="button"
