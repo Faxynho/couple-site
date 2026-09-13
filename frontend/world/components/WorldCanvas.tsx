@@ -16,8 +16,38 @@ export default function WorldCanvas({ accountId, snapshot, actionEvent, callback
 
   useEffect(() => {
     let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
+    let resizeFrame: number | null = null;
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const resizeGame = () => {
+      const host = hostRef.current;
+      const api = apiRef.current;
+      if (!host || !api) return;
+
+      const width = Math.max(1, Math.round(host.clientWidth));
+      const height = Math.max(1, Math.round(host.clientHeight));
+      api.resize(width, height);
+    };
+
+    const scheduleResize = () => {
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null;
+        resizeGame();
+
+        // Android pode terminar fullscreen/orientação alguns ms depois do primeiro resize.
+        if (settleTimer) clearTimeout(settleTimer);
+        settleTimer = setTimeout(resizeGame, 180);
+      });
+    };
+
+    const handleViewportChange = () => scheduleResize();
+
     void import("@/world/game/createWorldGame").then(({ createWorldGame }) => {
       if (cancelled || !hostRef.current) return;
+
       const forwardingCallbacks: WorldGameCallbacks = {
         onMove: (...args) => callbacksRef.current.onMove(...args),
         onAction: (...args) => callbacksRef.current.onAction(...args),
@@ -31,11 +61,39 @@ export default function WorldCanvas({ accountId, snapshot, actionEvent, callback
         onReady: (...args) => callbacksRef.current.onReady(...args),
         onError: (...args) => callbacksRef.current.onError(...args),
       };
+
       apiRef.current = createWorldGame(hostRef.current, accountId, initialRef.current, forwardingCallbacks);
       onApiReady(apiRef.current);
       if (actionRef.current) apiRef.current.playRemoteAction(actionRef.current);
+
+      resizeObserver = new ResizeObserver(scheduleResize);
+      resizeObserver.observe(hostRef.current);
+
+      window.addEventListener("resize", handleViewportChange);
+      window.addEventListener("orientationchange", handleViewportChange);
+      document.addEventListener("fullscreenchange", handleViewportChange);
+      window.visualViewport?.addEventListener("resize", handleViewportChange);
+
+      // Sincroniza também o tamanho inicial real do container.
+      scheduleResize();
     });
-    return () => { cancelled = true; apiRef.current?.destroy(); apiRef.current = null; onApiReady(null); };
+
+    return () => {
+      cancelled = true;
+
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("orientationchange", handleViewportChange);
+      document.removeEventListener("fullscreenchange", handleViewportChange);
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+      if (settleTimer) clearTimeout(settleTimer);
+
+      apiRef.current?.destroy();
+      apiRef.current = null;
+      onApiReady(null);
+    };
   }, [accountId, onApiReady]);
 
   useEffect(() => { apiRef.current?.updatePlayers(snapshot.players); }, [snapshot.players]);

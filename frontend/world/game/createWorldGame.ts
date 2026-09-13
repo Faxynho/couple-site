@@ -20,6 +20,7 @@ export function createWorldGame(parent: HTMLElement, accountId: AccountId, snaps
     physics: { default: "arcade", arcade: { debug: false, gravity: { x: 0, y: 0 } } },
     scene: [scene],
   });
+
   return {
     setTouchDirection: (x, y) => scene.setTouchDirection(x, y),
     interact: () => scene.interact(),
@@ -29,6 +30,10 @@ export function createWorldGame(parent: HTMLElement, accountId: AccountId, snaps
     updatePlayers: (players) => scene.updatePlayers(players),
     updateDecorations: (decorations) => scene.updateDecorations(decorations),
     playRemoteAction: (event) => scene.playRemoteAction(event),
+    resize: (width, height) => {
+      if (width <= 0 || height <= 0) return;
+      game.scale.resize(width, height);
+    },
     destroy: () => game.destroy(true),
   };
 }

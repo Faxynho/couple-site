@@ -9,6 +9,7 @@ export interface WorldGameApi {
   updatePlayers(players: WorldPlayerState[]): void;
   updateDecorations(decorations: WorldDecoration[]): void;
   playRemoteAction(event: WorldPlayerActionEvent): void;
+  resize(width: number, height: number): void;
   destroy(): void;
 }
 
