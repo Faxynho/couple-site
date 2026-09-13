@@ -61,6 +61,7 @@ export default function WorldPage() {
   const onApiReady = useCallback((next: WorldGameApi | null) => setApi(next), []);
   const callbacks = useMemo<WorldGameCallbacks>(() => ({
     onMove: world.sendMovement,
+    onAction: world.sendAction,
     onChangeScene: world.changeScene,
     onPlaceDecoration: world.placeDecoration,
     onMoveDecoration: world.moveDecoration,
@@ -70,7 +71,7 @@ export default function WorldPage() {
     onDebug: setDebug,
     onReady: () => setReady(true),
     onError: setFatalError,
-  }), [showNotice, world.changeScene, world.moveDecoration, world.placeDecoration, world.removeDecoration, world.sendMovement]);
+  }), [showNotice, world.changeScene, world.moveDecoration, world.placeDecoration, world.removeDecoration, world.sendAction, world.sendMovement]);
 
   const chooseTool = (next: DecorationTool) => {
     setTool(next);
@@ -92,7 +93,7 @@ export default function WorldPage() {
 
   return (
     <main className={styles.root}>
-      <WorldCanvas accountId={accountId} snapshot={world.snapshot} callbacks={callbacks} onApiReady={onApiReady} />
+      <WorldCanvas accountId={accountId} snapshot={world.snapshot} actionEvent={world.remoteAction} callbacks={callbacks} onApiReady={onApiReady} />
 
       <header className="world-topbar">
         <button onClick={() => router.push(`/sala/${PERSISTENT_DUO_ROOM_CODE}`)}>← Lobby</button>

@@ -112,6 +112,23 @@ export function registerWorldSocketHandlers(io: Server, socket: WorldSocket, roo
     socket.to(WORLD_LIVE_ROOM).emit("world:playerMoved", state);
   });
 
+  /**
+   * Ações de personagem são eventos momentâneos. Elas são apenas retransmitidas
+   * para o outro jogador e nunca entram no save persistente do mundo.
+   */
+  socket.on("world:action", (payload: unknown) => {
+    if (!validMember(socket) || !liveSockets.get(socket.data.accountId)?.has(socket.id) || !payload || typeof payload !== "object") return;
+    const input = payload as Record<string, unknown>;
+    if (typeof input.action !== "string" || input.action.length < 1 || input.action.length > 48 || !/^[a-z][a-z0-9-]*$/.test(input.action) || !isWorldDirection(input.direction)) return;
+
+    socket.to(WORLD_LIVE_ROOM).emit("world:playerAction", {
+      accountId: socket.data.accountId,
+      action: input.action,
+      direction: input.direction,
+      sentAt: Date.now(),
+    });
+  });
+
   socket.on("world:changeScene", (payload: unknown, callback?: Ack) => {
     if (!validMember(socket) || !liveSockets.get(socket.data.accountId)?.has(socket.id) || !payload || typeof payload !== "object") {
       callback?.({ ok: false, error: "Sessão do mundo inválida." });
@@ -125,7 +142,7 @@ export function registerWorldSocketHandlers(io: Server, socket: WorldSocket, roo
     }
     const spawn = target === "house-interior"
       ? WORLD_SCENE_RULES["house-interior"].spawn
-      : { x: 30 * WORLD_TILE_SIZE, y: 15 * WORLD_TILE_SIZE };
+      : { x: 30 * WORLD_TILE_SIZE, y: 17 * WORLD_TILE_SIZE };
     const state = worldStore.changeScene(socket.data.accountId, target, spawn.x, spawn.y);
     livePlayers.set(socket.data.accountId, state);
     callback?.({ ok: true, player: state });

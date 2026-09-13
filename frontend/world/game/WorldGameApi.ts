@@ -1,4 +1,4 @@
-import { DecorationTool, WorldDebugInfo, WorldDecoration, WorldPlayerState } from "@/world/types";
+import { DecorationTool, WorldDebugInfo, WorldDecoration, WorldDirection, WorldPlayerActionEvent, WorldPlayerState } from "@/world/types";
 
 export interface WorldGameApi {
   setTouchDirection(x: number, y: number): void;
@@ -8,11 +8,13 @@ export interface WorldGameApi {
   cancelDecoration(): void;
   updatePlayers(players: WorldPlayerState[]): void;
   updateDecorations(decorations: WorldDecoration[]): void;
+  playRemoteAction(event: WorldPlayerActionEvent): void;
   destroy(): void;
 }
 
 export interface WorldGameCallbacks {
   onMove(state: Omit<WorldPlayerState, "accountId" | "skinId" | "updatedAt">): void;
+  onAction(action: string, direction: WorldDirection): void;
   onChangeScene(scene: WorldPlayerState["scene"]): Promise<{ ok: boolean; error?: string; player?: WorldPlayerState }>;
   onPlaceDecoration(type: WorldDecoration["type"], scene: WorldPlayerState["scene"], gridX: number, gridY: number): Promise<{ ok: boolean; error?: string }>;
   onMoveDecoration(id: string, scene: WorldPlayerState["scene"], gridX: number, gridY: number): Promise<{ ok: boolean; error?: string }>;

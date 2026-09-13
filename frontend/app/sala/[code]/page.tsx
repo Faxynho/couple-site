@@ -225,6 +225,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                       </button>
                     </div>
                   )}
+
                   <p className="mb-5 mt-1 text-xs text-ink-soft">O cantinho compartilhado de vocês, sempre no mesmo lugar.</p>
                   <PersistentDuoStatus presence={persistentPresence} />
                 </>

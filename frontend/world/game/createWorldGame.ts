@@ -28,6 +28,7 @@ export function createWorldGame(parent: HTMLElement, accountId: AccountId, snaps
     cancelDecoration: () => scene.cancelDecoration(),
     updatePlayers: (players) => scene.updatePlayers(players),
     updateDecorations: (decorations) => scene.updateDecorations(decorations),
+    playRemoteAction: (event) => scene.playRemoteAction(event),
     destroy: () => game.destroy(true),
   };
 }

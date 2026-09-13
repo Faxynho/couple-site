@@ -15,6 +15,18 @@ export interface WorldPlayerState {
   updatedAt: number;
 }
 
+/**
+ * Evento efêmero de animação de ação. Não é salvo no mundo.
+ * `action` fica como string de propósito para o registry de animações continuar
+ * genérico: animações novas não exigem alterar este tipo.
+ */
+export interface WorldPlayerActionEvent {
+  accountId: AccountId;
+  action: string;
+  direction: WorldDirection;
+  sentAt: number;
+}
+
 export interface WorldDecoration {
   id: string;
   type: WorldDecorationType;
