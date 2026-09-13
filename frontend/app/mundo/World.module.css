@@ -8,9 +8,20 @@
   font-family: var(--font-body), sans-serif;
   image-rendering: pixelated;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.root button { font-family: var(--font-display), sans-serif; }
+.root button {
+  font-family: var(--font-display), sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .root :global(.world-topbar) { position: absolute; z-index: 20; top: 12px; left: 50%; transform: translateX(-50%); min-width: min(94vw, 520px); height: 58px; display: grid; grid-template-columns: 84px 1fr 46px; align-items: center; gap: 8px; padding: 6px 8px; border: 3px solid #573622; border-radius: 8px; background: linear-gradient(#c98645, #9d572f); box-shadow: inset 0 2px #efbd6f, 0 4px 0 #392619, 0 8px 18px #14291680; text-align: center; }
 .root :global(.world-topbar button), .root :global(.world-actions button) { min-height: 38px; border: 2px solid #55331f; border-radius: 5px; color: #fff3c4; background: linear-gradient(#88522e, #63351f); box-shadow: inset 0 1px #b97943, 0 2px 0 #332116; font-weight: 700; }
 .root :global(.world-topbar button:active), .root :global(.world-actions button:active) { transform: translateY(2px); box-shadow: inset 0 1px #3a2117; }
@@ -47,9 +58,30 @@
 .root :global(.world-mobile-controls), .root :global(.world-rotate) { display: none; }
 
 @media (pointer: coarse) and (orientation: landscape) {
-  .root :global(.world-mobile-controls) { position: absolute; z-index: 30; inset: 0; display: block; pointer-events: none; }
-  .root :global(.world-dpad) { position: absolute; left: 22px; bottom: 20px; width: 132px; height: 114px; pointer-events: auto; }
-  .root :global(.world-dpad button), .root :global(.world-interact-button) { position: absolute; width: 44px; height: 44px; border: 3px solid #4f321f; border-radius: 8px; color: #fff0bd; background: #80502ed9; box-shadow: inset 0 2px #b77945, 0 3px #342216; font-weight: 900; }
+  .root :global(.world-mobile-controls) {
+    position: absolute;
+    z-index: 30;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+
+  .root :global(.world-mobile-controls *),
+  .root :global(.world-mobile-controls button) {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+
+  .root :global(.world-dpad) { position: absolute; left: 22px; bottom: 20px; width: 132px; height: 114px; pointer-events: auto; touch-action: none; }
+  .root :global(.world-dpad button), .root :global(.world-interact-button) { position: absolute; width: 44px; height: 44px; border: 3px solid #4f321f; border-radius: 8px; color: #fff0bd; background: #80502ed9; box-shadow: inset 0 2px #b77945, 0 3px #342216; font-weight: 900; touch-action: none; }
   .root :global(.world-dpad .up) { left: 44px; top: 0; } .root :global(.world-dpad .left) { left: 0; top: 40px; } .root :global(.world-dpad .right) { right: 0; top: 40px; } .root :global(.world-dpad .down) { left: 44px; bottom: 0; }
   .root :global(.world-interact-button) { right: 25px; bottom: 28px; width: 62px; height: 62px; border-radius: 50%; pointer-events: auto; font-size: 23px; }
   .root :global(.world-decoration-bar) { bottom: 8px; max-width: 58vw; }

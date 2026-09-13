@@ -189,7 +189,7 @@ function createCharacterConfig(accountId: AccountId): CharacterConfig {
       width: 10,
       height: 8,
       offsetX: 11,
-      offsetY: 22,
+      offsetY: 18,
     },
 
     walkSpeed: 88,

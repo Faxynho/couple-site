@@ -73,20 +73,20 @@ export const WORLD_TILESET_ASSETS = {
     spacing: 0,
   },
   "house-red": {
-  textureKey: "world-house-red",
-  url: "/world/buildings/house-red.png",
-  tileWidth: 131,
-  tileHeight: 128,
-  margin: 0,
-  spacing: 0,
+    textureKey: "world-house-red",
+    url: "/world/buildings/house-red.png",
+    tileWidth: 131,
+    tileHeight: 128,
+    margin: 0,
+    spacing: 0,
   },
   "trees-v2": {
-  textureKey: "world-trees-v2",
-  url: "/world/nature/trees_v2.png",
-  tileWidth: 64,
-  tileHeight: 80,
-  margin: 0,
-  spacing: 0,
+    textureKey: "world-trees-v2",
+    url: "/world/nature/trees_v2.png",
+    tileWidth: 64,
+    tileHeight: 80,
+    margin: 0,
+    spacing: 0,
   },
   "wood-bridge": {
     textureKey: "world-wood-bridge",
@@ -96,10 +96,7 @@ export const WORLD_TILESET_ASSETS = {
     margin: 0,
     spacing: 0,
   },
-
-  // Objetos em sheets regulares já existentes no projeto.
-  // Estes podem ser usados como Tile Objects visuais na layer Objects.
-  fences: {
+  "fences": {
     textureKey: "world-objects-fences",
     url: "/world/buildings/fences.png",
     tileWidth: 16,
@@ -107,6 +104,25 @@ export const WORLD_TILESET_ASSETS = {
     margin: 0,
     spacing: 0,
   },
+  "bushes": {
+    textureKey: "world-objects-bushes",
+    url: "/world/nature/bushes.png",
+    tileWidth: 48,
+    tileHeight: 48,
+    margin: 0,
+    spacing: 0,
+  },
+  "plants-v2": {
+    textureKey: "world-objects-plants-v2",
+    url: "/world/plants/plants-v2.png",
+    tileWidth: 32,
+    tileHeight: 32,
+    margin: 0,
+    spacing: 0,
+  },
+
+  // Objetos em sheets regulares já existentes no projeto.
+  // Estes podem ser usados como Tile Objects visuais na layer Objects.
   doors: {
     textureKey: "world-objects-doors",
     url: "/world/buildings/doors.png",

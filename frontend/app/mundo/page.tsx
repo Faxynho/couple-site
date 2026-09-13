@@ -15,6 +15,26 @@ import { useWorldSession } from "@/world/multiplayer/useWorldSession";
 import { DecorationTool, WorldDebugInfo, WorldDecorationType } from "@/world/types";
 import styles from "./World.module.css";
 
+async function requestWorldFullscreen() {
+  if (typeof document === "undefined" || document.fullscreenElement) return;
+
+  try {
+    await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+  } catch {
+    // Alguns navegadores mobile só permitem fullscreen durante um gesto direto.
+  }
+}
+
+async function exitWorldFullscreen() {
+  if (typeof document === "undefined" || !document.fullscreenElement) return;
+
+  try {
+    await document.exitFullscreen();
+  } catch {
+    // Sair do fullscreen não deve impedir a volta ao lobby.
+  }
+}
+
 export default function WorldPage() {
   const router = useRouter();
   const [accountId, setAccountId] = useState<AccountId | null>(null);
@@ -39,6 +59,20 @@ export default function WorldPage() {
     else router.replace("/");
     setCheckedAccount(true);
   }, [router]);
+
+  useEffect(() => {
+    void requestWorldFullscreen();
+
+    const retryFullscreen = () => {
+      void requestWorldFullscreen();
+    };
+
+    document.addEventListener("pointerdown", retryFullscreen, { once: true, capture: true });
+
+    return () => {
+      document.removeEventListener("pointerdown", retryFullscreen, true);
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -83,6 +117,11 @@ export default function WorldPage() {
     setWorldAudioSettings(next);
   };
 
+  const returnToLobby = async () => {
+    await exitWorldFullscreen();
+    router.push(`/sala/${PERSISTENT_DUO_ROOM_CODE}`);
+  };
+
   if (!checkedAccount || !accountId || !roomSession.room || !world.snapshot) {
     return (
       <main className={styles.root}>
@@ -96,7 +135,7 @@ export default function WorldPage() {
       <WorldCanvas accountId={accountId} snapshot={world.snapshot} actionEvent={world.remoteAction} callbacks={callbacks} onApiReady={onApiReady} />
 
       <header className="world-topbar">
-        <button onClick={() => router.push(`/sala/${PERSISTENT_DUO_ROOM_CODE}`)}>← Lobby</button>
+        <button onClick={() => void returnToLobby()}>← Lobby</button>
         <div><strong>Nosso Mundo</strong><small>{debug?.scene === "house-interior" ? "Nossa casa" : "Vale das Duas Árvores"}</small></div>
         <button onClick={() => setSettingsOpen(true)} aria-label="Abrir configurações">⚙</button>
       </header>
