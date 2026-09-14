@@ -26,7 +26,7 @@ type TapMoveTarget = {
 };
 
 const CAMERA_MIN_ZOOM = 0.75;
-const CAMERA_BASE_MAX_ZOOM = 4;
+const CAMERA_BASE_MAX_ZOOM = 8;
 const TAP_STOP_DISTANCE = 6;
 const TAP_INTERACTION_DISTANCE = 48;
 const TAP_INTERACTION_HIT_PADDING = 18;
@@ -485,7 +485,9 @@ export class WorldScene extends Phaser.Scene {
       CAMERA_MIN_ZOOM,
     );
     // O arredondamento final de pixel só é estável com zoom inteiro no Phaser 3.90.
-    // Por isso o zoom do mundo é mantido em níveis inteiros.
+    // Por isso continuamos usando SOMENTE níveis inteiros. A faixa máxima foi
+    // ampliada para oferecer mais opções sem introduzir zoom fracionário, que
+    // poderia reabrir os bugs de ghost/jitter já corrigidos.
     const min = Math.max(1, Math.ceil(requiredToKeepReferenceMapCoveringView));
     const max = Math.max(Math.ceil(CAMERA_BASE_MAX_ZOOM), min + 2);
     const zoom = Phaser.Math.Clamp(Math.round(this.requestedCameraZoom), min, max);
