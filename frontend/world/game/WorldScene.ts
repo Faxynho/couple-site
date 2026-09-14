@@ -142,9 +142,30 @@ export class WorldScene extends Phaser.Scene {
     } else {
       const input = this.movementInput(time);
       const speed = CHARACTER_CONFIGS[this.accountId].walkSpeed;
-      const magnitude = Math.min(1, Math.hypot(input.x, input.y));
-      body.setVelocity(input.x * speed, input.y * speed);
-      if (magnitude > 0) body.velocity.normalize().scale(speed * magnitude);
+
+      // Pixel art + monitor de alta taxa de atualização: normalizar uma diagonal
+      // (1, 1) para (~0.707, ~0.707) reduz cada eixo para ~62 px/s quando
+      // walkSpeed=88. Em zoom 2 e 165 Hz isso dá menos de 1 pixel de tela
+      // por frame em X e Y, criando o padrão de "anda / para" que faz o
+      // cenário parecer balançar na diagonal. Cardinal já é estável porque
+      // cada eixo usa os 88 px/s completos.
+      //
+      // Para movimentos em força total (teclado, D-pad, tap e joystick no
+      // limite), usamos normalização Chebyshev: o maior eixo vira 1 e a
+      // proporção entre X/Y é mantida. Assim uma diagonal 45° usa a mesma
+      // cadência por eixo de um movimento horizontal/vertical. Movimentos
+      // analógicos suaves abaixo de 95% continuam preservando sua intensidade.
+      const inputLength = Math.hypot(input.x, input.y);
+      const inputPeak = Math.max(Math.abs(input.x), Math.abs(input.y));
+      let moveX = input.x;
+      let moveY = input.y;
+
+      if (inputLength >= 0.95 && inputPeak > 0.001) {
+        moveX /= inputPeak;
+        moveY /= inputPeak;
+      }
+
+      body.setVelocity(moveX * speed, moveY * speed);
       moving = body.velocity.lengthSq() > 0.5;
 
       if (moving) {
@@ -349,10 +370,17 @@ export class WorldScene extends Phaser.Scene {
     if (this.cursors?.up.isDown || this.keys?.W.isDown) y -= 1;
     if (this.cursors?.down.isDown || this.keys?.S.isDown) y += 1;
 
-    const manualLength = Math.hypot(x, y);
-    if (manualLength > 0.001) {
+    const manualPeak = Math.max(Math.abs(x), Math.abs(y));
+    if (manualPeak > 0.001) {
       this.clearTapMoveTarget();
-      return manualLength > 1 ? { x: x / manualLength, y: y / manualLength } : { x, y };
+
+      // Não use normalização euclidiana aqui. Ela transforma a diagonal
+      // digital (1, 1) em (~0.707, ~0.707), justamente a cadência fracionária
+      // que provoca o wobble do mapa em pixel art. Apenas limitamos cada eixo
+      // ao intervalo [-1, 1], preservando a direção.
+      return manualPeak > 1
+        ? { x: x / manualPeak, y: y / manualPeak }
+        : { x, y };
     }
 
     return this.tapMovementInput(time);

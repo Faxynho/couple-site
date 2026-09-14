@@ -14,8 +14,10 @@ export function createWorldGame(parent: HTMLElement, accountId: AccountId, snaps
     backgroundColor: "#76a85a",
     pixelArt: true,
     antialias: false,
-    roundPixels: true,
-    render: { antialias: false, pixelArt: true, roundPixels: true },
+    // O mundo precisa poder deslizar em subpixel durante o follow diagonal.
+    // O avatar local é snapado separadamente no WorldScene.
+    roundPixels: false,
+    render: { antialias: false, pixelArt: true, roundPixels: false },
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
     physics: {
       default: "arcade",
