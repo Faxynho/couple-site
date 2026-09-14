@@ -35,10 +35,10 @@ export default function WorldSettings({
     if (!showMobileControls && tab === "controls") setTab("general");
   }, [showMobileControls, tab]);
 
-  // Zoom fracionário quebra o pixel snapping do Phaser durante camera follow.
-  // Mantemos níveis inteiros para preservar pixel art sem jitter.
+  // 1..8 são níveis de distância. O zoom bruto do Phaser permanece sempre
+  // INTEIRO (2x/3x/4x) para não reabrir ghost/jitter de pixel art.
   const zoomStep = 1;
-  const zoomValue = Math.min(camera.max, Math.max(camera.min, camera.zoom));
+  const zoomValue = Math.min(camera.max, Math.max(camera.min, Math.round(camera.zoom)));
 
   return (
     <div className="world-modal-backdrop" role="dialog" aria-modal="true" aria-label="Configurações do Nosso Mundo">
@@ -54,7 +54,7 @@ export default function WorldSettings({
 
         {tab === "general" && (
           <div className="world-settings-section">
-            <label>Distância da câmera <strong>{zoomValue.toFixed(1)}×</strong></label>
+            <label>Distância da câmera <strong>Nível {zoomValue}/{camera.max}</strong></label>
             <input
               type="range"
               min={camera.min}
@@ -62,7 +62,7 @@ export default function WorldSettings({
               step={zoomStep}
               value={zoomValue}
               onChange={(event) => onCameraZoomChange(Number(event.target.value))}
-              aria-label="Zoom da câmera"
+              aria-label="Distância da câmera"
             />
             <div className="world-range-labels"><span>Mais longe</span><span>Mais perto</span></div>
 

@@ -1,33 +1,55 @@
 import * as Phaser from "phaser";
 import { AccountId } from "@/lib/accountSession";
+import { WORLD_CONFIG } from "@/world/config/worldConfig";
 import { WorldSnapshot } from "@/world/types";
+import { getWorldCameraLayout } from "./WorldCameraLayout";
 import { WorldGameApi, WorldGameCallbacks } from "./WorldGameApi";
 import { WorldScene } from "./WorldScene";
 
 export function createWorldGame(parent: HTMLElement, accountId: AccountId, snapshot: WorldSnapshot, callbacks: WorldGameCallbacks): WorldGameApi {
+  const viewportWidth = Math.max(1, parent.clientWidth || window.innerWidth);
+  const viewportHeight = Math.max(1, parent.clientHeight || window.innerHeight);
+  const initialLayout = getWorldCameraLayout(WORLD_CONFIG.camera.zoom, viewportWidth, viewportHeight);
   const scene = new WorldScene(accountId, snapshot, callbacks);
+
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: parent.clientWidth || window.innerWidth,
-    height: parent.clientHeight || window.innerHeight,
+    width: initialLayout.gameWidth,
+    height: initialLayout.gameHeight,
     backgroundColor: "#76a85a",
     pixelArt: true,
     antialias: false,
-    // O mundo precisa poder deslizar em subpixel durante o follow diagonal.
-    // O avatar local é snapado separadamente no WorldScene.
+
+    // O mundo precisa deslizar em subpixel. Não arredondamos câmera, tiles
+    // nem objetos individualmente; apenas o avatar local é snapado no Scene.
     roundPixels: false,
     render: { antialias: false, pixelArt: true, roundPixels: false },
-    scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+
+    // FIT mantém um buffer virtual estável e deixa o ScaleManager fazer UMA
+    // escala final do canvas inteiro. Isso permite 8 níveis de distância sem
+    // usar zoom fracionário nos objetos do mundo.
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      autoRound: true,
+    },
+
+    // O problema aparece justamente em telas de 120/165 Hz. Phaser 3.90
+    // executa o follow da câmera por frame; limitar o loop a 60 Hz dá uma
+    // cadência única em PC e mobile e evita passos subpixel minúsculos que
+    // viram shimmer em pixel art. O movimento continua delta-based.
+    fps: {
+      target: 60,
+      limit: 60,
+    },
+
     physics: {
       default: "arcade",
       arcade: {
         debug: false,
         gravity: { x: 0, y: 0 },
-        // O passo fixo padrão do Arcade Physics é 60 Hz. Em monitores com
-        // refresh maior, o jogador atualiza em uma frequência e a câmera
-        // renderiza em outra, gerando o jitter/"fantasma" durante o follow.
-        // Com passo variável, física, sprite e câmera avançam no mesmo frame.
+        // Mantém física, sprite e câmera no mesmo frame de renderização.
         fixedStep: false,
       },
     },
@@ -46,10 +68,12 @@ export function createWorldGame(parent: HTMLElement, accountId: AccountId, snaps
     updatePlayers: (players) => scene.updatePlayers(players),
     updateDecorations: (decorations) => scene.updateDecorations(decorations),
     playRemoteAction: (event) => scene.playRemoteAction(event),
-    resize: (width, height) => {
+    resize: (width, height, topInset = 0) => {
       if (width <= 0 || height <= 0) return;
-      game.scale.resize(width, height);
-      scene.handleViewportResize(width, height);
+      // Em FIT não chamamos game.scale.resize(). A documentação do Phaser
+      // recomenda setGameSize para alterar a resolução base enquanto o
+      // ScaleManager continua responsável pela escala de exibição.
+      scene.handleViewportResize(width, height, topInset);
     },
     destroy: () => game.destroy(true),
   };

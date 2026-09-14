@@ -27,7 +27,18 @@ export default function WorldCanvas({ accountId, snapshot, actionEvent, callback
 
       const width = Math.max(1, Math.round(host.clientWidth));
       const height = Math.max(1, Math.round(host.clientHeight));
-      api.resize(width, height);
+
+      // Mede o HUD real em vez de assumir um tamanho fixo. No mobile ele
+      // ocupa uma fração bem maior da tela e a câmera precisa reservar essa
+      // área para não esconder o personagem no limite norte do mapa.
+      const hostRect = host.getBoundingClientRect();
+      const topbar = host.parentElement?.querySelector<HTMLElement>(".world-topbar");
+      const topbarRect = topbar?.getBoundingClientRect();
+      const topInset = topbarRect
+        ? Math.max(0, Math.min(height, Math.round(topbarRect.bottom - hostRect.top + 8)))
+        : 0;
+
+      api.resize(width, height, topInset);
     };
 
     const scheduleResize = () => {
@@ -99,5 +110,8 @@ export default function WorldCanvas({ accountId, snapshot, actionEvent, callback
   useEffect(() => { apiRef.current?.updateDecorations(snapshot.decorations); }, [snapshot.decorations]);
   useEffect(() => { if (actionEvent) apiRef.current?.playRemoteAction(actionEvent); }, [actionEvent]);
 
-  return <div ref={hostRef} className="absolute inset-0 [&>canvas]:block [&>canvas]:h-full [&>canvas]:w-full [&>canvas]:[image-rendering:pixelated]" aria-label="Nosso Mundo" />;
+  // NÃO force h-full/w-full no canvas. Em Phaser.Scale.FIT o ScaleManager é
+  // quem deve controlar o tamanho CSS do canvas; sobrescrever isso recria
+  // escala fracionária/esticamento fora do controle do Phaser.
+  return <div ref={hostRef} className="absolute inset-0 overflow-hidden [&>canvas]:block [&>canvas]:[image-rendering:pixelated]" aria-label="Nosso Mundo" />;
 }

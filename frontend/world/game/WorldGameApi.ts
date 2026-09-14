@@ -1,6 +1,7 @@
 import { DecorationTool, WorldDebugInfo, WorldDecoration, WorldDirection, WorldPlayerActionEvent, WorldPlayerState } from "@/world/types";
 
 export interface WorldCameraZoomInfo {
+  /** Nível de distância da câmera (1 = mais longe, 8 = mais perto). */
   zoom: number;
   min: number;
   max: number;
@@ -18,7 +19,8 @@ export interface WorldGameApi {
   updatePlayers(players: WorldPlayerState[]): void;
   updateDecorations(decorations: WorldDecoration[]): void;
   playRemoteAction(event: WorldPlayerActionEvent): void;
-  resize(width: number, height: number): void;
+  /** topInset = área em CSS pixels ocupada pelo HUD superior. */
+  resize(width: number, height: number, topInset?: number): void;
   destroy(): void;
 }
 
