@@ -77,7 +77,7 @@ export class WorldScene extends Phaser.Scene {
   private tapLastX = 0;
   private tapLastY = 0;
 
-  private requestedCameraZoom = WORLD_CONFIG.camera.zoom;
+  private requestedCameraZoom: number = WORLD_CONFIG.camera.zoom;
   private viewportWidth = 0;
   private viewportHeight = 0;
 
