@@ -17,7 +17,18 @@ export function createWorldGame(parent: HTMLElement, accountId: AccountId, snaps
     roundPixels: true,
     render: { antialias: false, pixelArt: true, roundPixels: true },
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
-    physics: { default: "arcade", arcade: { debug: false, gravity: { x: 0, y: 0 } } },
+    physics: {
+      default: "arcade",
+      arcade: {
+        debug: false,
+        gravity: { x: 0, y: 0 },
+        // O passo fixo padrão do Arcade Physics é 60 Hz. Em monitores com
+        // refresh maior, o jogador atualiza em uma frequência e a câmera
+        // renderiza em outra, gerando o jitter/"fantasma" durante o follow.
+        // Com passo variável, física, sprite e câmera avançam no mesmo frame.
+        fixedStep: false,
+      },
+    },
     scene: [scene],
   });
 

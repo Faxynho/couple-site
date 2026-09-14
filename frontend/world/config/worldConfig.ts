@@ -4,8 +4,8 @@ export const WORLD_CONFIG = {
   id: "andre-flavia-world-v1",
   tileSize: 16,
   networkHz: 12,
-  camera: { zoom: 2, lerpX: 0.12, lerpY: 0.12, deadzoneWidth: 48, deadzoneHeight: 32 },
-  debugKey: "F3",
+  camera: { zoom: 2, lerpX: 0.18, lerpY: 0.18, deadzoneWidth: 48, deadzoneHeight: 32 },
+  debugKey: "F8",
   mobile: { joystickRadius: 48, joystickDeadzone: 0.18 },
   audio: { defaultMusicVolume: 0.45, defaultSfxVolume: 0.65 },
   scenes: {

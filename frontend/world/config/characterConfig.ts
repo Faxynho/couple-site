@@ -183,7 +183,7 @@ function createCharacterConfig(accountId: AccountId): CharacterConfig {
       },
     },
 
-    scale: 2,
+    scale: 1.5,
 
     collision: {
       width: 10,

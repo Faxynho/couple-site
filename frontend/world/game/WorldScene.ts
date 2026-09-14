@@ -120,10 +120,11 @@ export class WorldScene extends Phaser.Scene {
     this.keys = this.input.keyboard?.addKeys("W,A,S,D") as Record<"W" | "A" | "S" | "D", Phaser.Input.Keyboard.Key> | undefined;
     this.input.keyboard?.on("keydown-E", () => this.interact());
     this.input.keyboard?.on("keydown-ESC", () => this.cancelDecoration());
-    this.input.keyboard?.on("keydown-F3", () => this.toggleDebug());
+    this.input.keyboard?.on(`keydown-${WORLD_CONFIG.debugKey}`, () => this.toggleDebug());
     this.input.keyboard?.on("keydown", this.handleActionDebugKey, this);
     this.input.on("pointermove", this.handlePointerMove, this);
     this.input.on("pointerdown", this.handlePointerDown, this);
+    this.cameras.main.on(Phaser.Cameras.Scene2D.Events.FOLLOW_UPDATE, this.handleCameraFollowUpdate, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.cleanup());
     const local = this.players.find((item) => item.accountId === this.accountId);
     if (!local) { this.callbacks.onError("O servidor não devolveu o personagem desta conta."); return; }
@@ -191,7 +192,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   setCameraZoom(zoom: number): WorldCameraZoomInfo {
-    if (Number.isFinite(zoom)) this.requestedCameraZoom = Number(zoom);
+    if (Number.isFinite(zoom)) this.requestedCameraZoom = Math.round(Number(zoom));
     return this.applyCameraZoom();
   }
 
@@ -290,6 +291,7 @@ export class WorldScene extends Phaser.Scene {
     this.input.off("pointermove", this.handlePointerMove, this);
     this.input.off("pointerdown", this.handlePointerDown, this);
     this.input.keyboard?.off("keydown", this.handleActionDebugKey, this);
+    this.cameras.main.off(Phaser.Cameras.Scene2D.Events.FOLLOW_UPDATE, this.handleCameraFollowUpdate, this);
     this.clearTapMoveTarget();
     this.remoteActions.clear();
     this.callbacks.onDebug(null);
@@ -426,24 +428,74 @@ export class WorldScene extends Phaser.Scene {
     }) ?? null;
   }
 
+  private handleCameraFollowUpdate(camera: Phaser.Cameras.Scene2D.Camera) {
+    // Phaser 3.90 mistura duas coisas em camera.roundPixels:
+    // 1) arredonda scroll/posição do objeto com Math.floor ANTES do render;
+    // 2) arredonda o quad FINAL já transformado para a grade da tela.
+    //
+    // O primeiro passo é o que cria o viés direita/esquerda com lerp.
+    // Mantemos roundPixels=false no follow para preservar o scroll suave,
+    // mas reativamos SOMENTE o arredondamento final do quad aqui, depois
+    // que Camera.preRender terminou de calcular a câmera.
+    Reflect.set(camera, "renderRoundPixels", Number.isInteger(camera.zoomX) && Number.isInteger(camera.zoomY));
+  }
+
   private calculateCameraZoomInfo(): WorldCameraZoomInfo {
     const viewportWidth = Math.max(1, this.viewportWidth || Number(this.scale?.width ?? 0) || Number(this.game?.canvas?.width ?? 0));
     const viewportHeight = Math.max(1, this.viewportHeight || Number(this.scale?.height ?? 0) || Number(this.game?.canvas?.height ?? 0));
-    const mapWidth = Math.max(1, this.tilemap?.widthInPixels ?? viewportWidth);
-    const mapHeight = Math.max(1, this.tilemap?.heightInPixels ?? viewportHeight);
-    const requiredToKeepMapCoveringView = Math.max(viewportWidth / mapWidth, viewportHeight / mapHeight, CAMERA_MIN_ZOOM);
-    const min = Math.ceil(requiredToKeepMapCoveringView * 10) / 10;
-    const max = Math.max(CAMERA_BASE_MAX_ZOOM, Math.ceil((min + 1.5) * 10) / 10);
-    const zoom = Phaser.Math.Clamp(this.requestedCameraZoom, min, max);
+
+    // O zoom é uma configuração GLOBAL do Nosso Mundo.
+    // Usamos o exterior como mapa de referência para definir os limites do slider,
+    // assim entrar numa cena menor (como o interior da casa) não força a câmera
+    // a aproximar e não altera visualmente a distância escolhida pelo jogador.
+    const exteriorConfig = WORLD_CONFIG.scenes.exterior;
+    const referenceMapWidth = Math.max(1, exteriorConfig.width * WORLD_CONFIG.tileSize);
+    const referenceMapHeight = Math.max(1, exteriorConfig.height * WORLD_CONFIG.tileSize);
+    const requiredToKeepReferenceMapCoveringView = Math.max(
+      viewportWidth / referenceMapWidth,
+      viewportHeight / referenceMapHeight,
+      CAMERA_MIN_ZOOM,
+    );
+    // O arredondamento final de pixel só é estável com zoom inteiro no Phaser 3.90.
+    // Por isso o zoom do mundo é mantido em níveis inteiros.
+    const min = Math.max(1, Math.ceil(requiredToKeepReferenceMapCoveringView));
+    const max = Math.max(Math.ceil(CAMERA_BASE_MAX_ZOOM), min + 2);
+    const zoom = Phaser.Math.Clamp(Math.round(this.requestedCameraZoom), min, max);
     return { zoom, min, max };
   }
 
   private applyCameraZoom() {
     const info = this.calculateCameraZoomInfo();
     const camera = this.cameras?.main;
-    if (camera) camera.setZoom(info.zoom);
+    if (camera) {
+      this.requestedCameraZoom = info.zoom;
+      camera.setZoom(info.zoom);
+      this.updateCameraBoundsForCurrentZoom();
+    }
     this.callbacks.onCameraZoomChange(info);
     return info;
+  }
+
+  private updateCameraBoundsForCurrentZoom() {
+    if (!this.tilemap) return;
+
+    const camera = this.cameras.main;
+    const zoom = Math.max(0.01, camera.zoom);
+    const visibleWorldWidth = camera.width / zoom;
+    const visibleWorldHeight = camera.height / zoom;
+    const mapWidth = this.tilemap.widthInPixels;
+    const mapHeight = this.tilemap.heightInPixels;
+
+    // Se uma cena for menor que a área visível da câmera (como o interior
+    // da casa), aumentamos apenas os limites virtuais da câmera e
+    // centralizamos o mapa dentro deles. Assim podemos manter o MESMO zoom
+    // global sem o Phaser prender o scroll no canto inferior/direito.
+    const boundsWidth = Math.max(mapWidth, visibleWorldWidth);
+    const boundsHeight = Math.max(mapHeight, visibleWorldHeight);
+    const boundsX = (mapWidth - boundsWidth) / 2;
+    const boundsY = (mapHeight - boundsHeight) / 2;
+
+    camera.setBounds(boundsX, boundsY, boundsWidth, boundsHeight);
   }
 
   private createAnimations() {
@@ -550,11 +602,18 @@ export class WorldScene extends Phaser.Scene {
     this.direction = state.direction;
     for (const obstacle of this.fixedObstacles) this.fixedColliders.push(this.physics.add.collider(this.localPlayer, obstacle));
     this.physics.world.setBounds(0, 0, this.tilemap.widthInPixels, this.tilemap.heightInPixels);
-    this.cameras.main.setBounds(0, 0, this.tilemap.widthInPixels, this.tilemap.heightInPixels);
-    this.cameras.main.roundPixels = true;
-    this.cameras.main.setDeadzone(WORLD_CONFIG.camera.deadzoneWidth, WORLD_CONFIG.camera.deadzoneHeight);
-    this.cameras.main.startFollow(this.localPlayer, true, WORLD_CONFIG.camera.lerpX, WORLD_CONFIG.camera.lerpY);
     this.applyCameraZoom();
+    this.cameras.main.setDeadzone(WORLD_CONFIG.camera.deadzoneWidth, WORLD_CONFIG.camera.deadzoneHeight);
+
+    // IMPORTANTE: false aqui é intencional.
+    // Com true, o Phaser 3.90 executa Math.floor no scroll e na posição
+    // do sprite antes do render. Com lerp isso é assimétrico: para a direita
+    // a câmera fica alguns frames parada e depois salta; para a esquerda o
+    // floor reage imediatamente. É exatamente o padrão do bug observado.
+    // O handleCameraFollowUpdate reativa apenas o arredondamento FINAL do
+    // quad em screen-space, mantendo pixel art nítida sem estragar o lerp.
+    this.cameras.main.startFollow(this.localPlayer, false, WORLD_CONFIG.camera.lerpX, WORLD_CONFIG.camera.lerpY);
+    this.cameras.main.centerOn(this.localPlayer.x, this.localPlayer.y);
     this.renderDecorations();
     this.updatePlayers(this.players);
     this.createDebugGrid();

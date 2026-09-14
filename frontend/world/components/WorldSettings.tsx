@@ -35,7 +35,9 @@ export default function WorldSettings({
     if (!showMobileControls && tab === "controls") setTab("general");
   }, [showMobileControls, tab]);
 
-  const zoomStep = 0.1;
+  // Zoom fracionário quebra o pixel snapping do Phaser durante camera follow.
+  // Mantemos níveis inteiros para preservar pixel art sem jitter.
+  const zoomStep = 1;
   const zoomValue = Math.min(camera.max, Math.max(camera.min, camera.zoom));
 
   return (
