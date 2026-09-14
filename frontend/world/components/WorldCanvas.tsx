@@ -37,7 +37,6 @@ export default function WorldCanvas({ accountId, snapshot, actionEvent, callback
         resizeFrame = null;
         resizeGame();
 
-        // Android pode terminar fullscreen/orientação alguns ms depois do primeiro resize.
         if (settleTimer) clearTimeout(settleTimer);
         settleTimer = setTimeout(resizeGame, 180);
       });
@@ -58,6 +57,7 @@ export default function WorldCanvas({ accountId, snapshot, actionEvent, callback
         onHint: (...args) => callbacksRef.current.onHint(...args),
         onNotice: (...args) => callbacksRef.current.onNotice(...args),
         onDebug: (...args) => callbacksRef.current.onDebug(...args),
+        onCameraZoomChange: (...args) => callbacksRef.current.onCameraZoomChange(...args),
         onReady: (...args) => callbacksRef.current.onReady(...args),
         onError: (...args) => callbacksRef.current.onError(...args),
       };
@@ -74,7 +74,6 @@ export default function WorldCanvas({ accountId, snapshot, actionEvent, callback
       document.addEventListener("fullscreenchange", handleViewportChange);
       window.visualViewport?.addEventListener("resize", handleViewportChange);
 
-      // Sincroniza também o tamanho inicial real do container.
       scheduleResize();
     });
 

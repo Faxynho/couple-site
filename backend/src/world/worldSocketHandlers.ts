@@ -142,7 +142,7 @@ export function registerWorldSocketHandlers(io: Server, socket: WorldSocket, roo
     }
     const spawn = target === "house-interior"
       ? WORLD_SCENE_RULES["house-interior"].spawn
-      : { x: 30 * WORLD_TILE_SIZE, y: 17 * WORLD_TILE_SIZE };
+      : { x: 47 * WORLD_TILE_SIZE, y: 17 * WORLD_TILE_SIZE };
     const state = worldStore.changeScene(socket.data.accountId, target, spawn.x, spawn.y);
     livePlayers.set(socket.data.accountId, state);
     callback?.({ ok: true, player: state });

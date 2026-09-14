@@ -4,9 +4,33 @@ import { CHARACTER_CONFIGS } from "@/world/config/characterConfig";
 import { DECORATION_ASSETS, WORLD_CONFIG, WORLD_OBJECT_ASSETS, WorldVisualAsset } from "@/world/config/worldConfig";
 import { getWorldTilesetAsset, WORLD_TILESET_ASSETS, WorldTilesetAsset } from "@/world/config/tilesetConfig";
 import { DecorationTool, WorldDecoration, WorldDirection, WorldPlayerActionEvent, WorldPlayerState, WorldSceneId, WorldSnapshot } from "@/world/types";
-import { WorldGameCallbacks } from "./WorldGameApi";
+import { WorldCameraZoomInfo, WorldGameCallbacks } from "./WorldGameApi";
 
 type TiledObject = Phaser.Types.Tilemaps.TiledObject & { properties?: Array<{ name: string; value: unknown }> };
+
+type WorldInteraction = {
+  name: string;
+  x: number;
+  y: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  target: WorldSceneId;
+};
+
+type TapMoveTarget = {
+  x: number;
+  y: number;
+  interaction?: WorldInteraction;
+};
+
+const CAMERA_MIN_ZOOM = 0.75;
+const CAMERA_BASE_MAX_ZOOM = 4;
+const TAP_STOP_DISTANCE = 6;
+const TAP_INTERACTION_DISTANCE = 48;
+const TAP_INTERACTION_HIT_PADDING = 18;
+const TAP_STUCK_TIMEOUT_MS = 900;
 
 function property(object: TiledObject, name: string): unknown {
   return object.properties?.find((item: { name: string; value: unknown }) => item.name === name)?.value;
@@ -30,7 +54,7 @@ export class WorldScene extends Phaser.Scene {
   private decorationObstacles: Phaser.GameObjects.GameObject[] = [];
   private fixedColliders: Phaser.Physics.Arcade.Collider[] = [];
   private decorationColliders: Phaser.Physics.Arcade.Collider[] = [];
-  private interactions: Array<{ name: string; x: number; y: number; target: WorldSceneId }> = [];
+  private interactions: WorldInteraction[] = [];
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private keys?: Record<"W" | "A" | "S" | "D", Phaser.Input.Keyboard.Key>;
   private touchDirection = { x: 0, y: 0 };
@@ -46,6 +70,16 @@ export class WorldScene extends Phaser.Scene {
   private lastDebugAt = 0;
   private changingScene = false;
   private destroyed = false;
+
+  private tapToMoveEnabled = false;
+  private tapMoveTarget: TapMoveTarget | null = null;
+  private tapLastProgressAt = 0;
+  private tapLastX = 0;
+  private tapLastY = 0;
+
+  private requestedCameraZoom = WORLD_CONFIG.camera.zoom;
+  private viewportWidth = 0;
+  private viewportHeight = 0;
 
   constructor(accountId: AccountId, snapshot: WorldSnapshot, callbacks: WorldGameCallbacks) {
     super({ key: "WorldScene" });
@@ -71,8 +105,6 @@ export class WorldScene extends Phaser.Scene {
 
     const assets = [...Object.values(WORLD_OBJECT_ASSETS), ...Object.values(DECORATION_ASSETS)];
     for (const asset of assets) if (!this.load.textureManager.exists(asset.texture)) this.load.image(asset.texture, asset.url);
-    // Tilesets usados pelo Tiled. O Phaser precisa receber explicitamente as
-    // imagens dos tilesets antes de conseguir renderizar as Tile Layers.
     for (const tileset of Object.values(WORLD_TILESET_ASSETS)) {
       if (!this.textures.exists(tileset.textureKey)) this.load.image(tileset.textureKey, tileset.url);
     }
@@ -81,6 +113,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create() {
+    this.viewportWidth = Math.max(1, Number(this.scale.width || this.game.canvas.width));
+    this.viewportHeight = Math.max(1, Number(this.scale.height || this.game.canvas.height));
     this.createAnimations();
     this.cursors = this.input.keyboard?.createCursorKeys();
     this.keys = this.input.keyboard?.addKeys("W,A,S,D") as Record<"W" | "A" | "S" | "D", Phaser.Input.Keyboard.Key> | undefined;
@@ -103,14 +137,13 @@ export class WorldScene extends Phaser.Scene {
     let moving = false;
 
     if (this.currentAction) {
-      // Ações temporárias têm prioridade sobre idle/walk e travam o movimento
-      // até a animação terminar.
       body.setVelocity(0, 0);
     } else {
-      const input = this.movementInput();
+      const input = this.movementInput(time);
       const speed = CHARACTER_CONFIGS[this.accountId].walkSpeed;
+      const magnitude = Math.min(1, Math.hypot(input.x, input.y));
       body.setVelocity(input.x * speed, input.y * speed);
-      if (input.x !== 0 || input.y !== 0) body.velocity.normalize().scale(speed);
+      if (magnitude > 0) body.velocity.normalize().scale(speed * magnitude);
       moving = body.velocity.lengthSq() > 0.5;
 
       if (moving) {
@@ -146,7 +179,31 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  setTouchDirection(x: number, y: number) { this.touchDirection = { x, y }; }
+  setTouchDirection(x: number, y: number) {
+    if (Math.abs(x) > 0.001 || Math.abs(y) > 0.001) this.clearTapMoveTarget();
+    this.touchDirection = { x, y };
+  }
+
+  setTapToMoveEnabled(enabled: boolean) {
+    this.tapToMoveEnabled = enabled;
+    this.touchDirection = { x: 0, y: 0 };
+    if (!enabled) this.clearTapMoveTarget();
+  }
+
+  setCameraZoom(zoom: number): WorldCameraZoomInfo {
+    if (Number.isFinite(zoom)) this.requestedCameraZoom = Number(zoom);
+    return this.applyCameraZoom();
+  }
+
+  getCameraZoomInfo(): WorldCameraZoomInfo {
+    return this.calculateCameraZoomInfo();
+  }
+
+  handleViewportResize(width: number, height: number) {
+    this.viewportWidth = Math.max(1, width);
+    this.viewportHeight = Math.max(1, height);
+    if (this.tilemap) this.applyCameraZoom();
+  }
 
   updatePlayers(players: WorldPlayerState[]) {
     this.players = players;
@@ -168,38 +225,25 @@ export class WorldScene extends Phaser.Scene {
 
   updateDecorations(decorations: WorldDecoration[]) { this.decorations = decorations; if (this.localPlayer) this.renderDecorations(); }
 
-  /**
-   * Toca no outro jogador uma ação recebida pelo Socket.IO. A ação é efêmera:
-   * não entra no save e, quando termina, o personagem remoto volta ao estado
-   * de movimento/idle mais recente recebido do servidor.
-   */
   playRemoteAction(event: WorldPlayerActionEvent) {
     if (event.accountId === this.accountId) return;
-
     const sprite = this.remotePlayers.get(event.accountId);
     if (!sprite) return;
-
     const target = sprite.getData("target") as WorldPlayerState | undefined;
     if (!target || target.scene !== this.currentScene) return;
-
     const config = CHARACTER_CONFIGS[event.accountId];
     const action = config.animations[event.action];
     if (!action?.directions[event.direction]) return;
 
     const active = { action: event.action, direction: event.direction };
     this.remoteActions.set(event.accountId, active);
-
     const played = this.playCharacterAnimation(sprite, event.accountId, event.action, event.direction);
-    if (!played) {
-      this.remoteActions.delete(event.accountId);
-      return;
-    }
+    if (!played) { this.remoteActions.delete(event.accountId); return; }
 
     const expectedKey = `${event.accountId}-${event.action}-${event.direction}`;
     sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, (animation: Phaser.Animations.Animation) => {
       if (animation.key !== expectedKey) return;
       if (this.remoteActions.get(event.accountId) !== active) return;
-
       this.remoteActions.delete(event.accountId);
       const latest = sprite.getData("target") as WorldPlayerState | undefined;
       if (!latest || latest.scene !== this.currentScene) return;
@@ -208,6 +252,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   setDecorationTool(tool: DecorationTool) {
+    this.clearTapMoveTarget();
     this.decorationTool = tool;
     this.movingDecoration = null;
     this.destroyPreview();
@@ -221,6 +266,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.changingScene || !this.localPlayer) return;
     const nearest = this.nearestInteraction();
     if (!nearest || Phaser.Math.Distance.Between(this.localPlayer.x, this.localPlayer.y, nearest.x, nearest.y) > 52) return;
+    this.clearTapMoveTarget();
     this.changingScene = true;
     void this.callbacks.onChangeScene(nearest.target).then((result) => {
       this.changingScene = false;
@@ -244,19 +290,11 @@ export class WorldScene extends Phaser.Scene {
     this.input.off("pointermove", this.handlePointerMove, this);
     this.input.off("pointerdown", this.handlePointerDown, this);
     this.input.keyboard?.off("keydown", this.handleActionDebugKey, this);
+    this.clearTapMoveTarget();
     this.remoteActions.clear();
     this.callbacks.onDebug(null);
   }
 
-  /**
-   * Triggers TEMPORÁRIOS para testar as ações sem implementar as mecânicas.
-   * 1 = minerar
-   * 2 = cortar árvore
-   * 3 = enxada
-   * 4 = regador
-   * 5 = colocar decoração
-   * 6 = pickup / pegar item
-   */
   private handleActionDebugKey(event: KeyboardEvent) {
     const debugActions: Record<string, string> = {
       "1": "mining",
@@ -269,25 +307,19 @@ export class WorldScene extends Phaser.Scene {
 
     const action = debugActions[event.key];
     if (!action) return;
-
     event.preventDefault();
     this.startLocalAction(action);
   }
 
-  /**
-   * Inicia uma ação local, toca uma vez, trava o movimento e volta para idle.
-   * A mecânica real (minerar, cortar, colher etc.) será ligada a esta função
-   * depois; por enquanto ela serve apenas para validar as animações.
-   */
   private startLocalAction(animationName: string) {
     if (!this.localPlayer || this.currentAction) return false;
-
     const animation = CHARACTER_CONFIGS[this.accountId].animations[animationName];
     if (!animation) {
       console.warn(`[Nosso Mundo] Ação não cadastrada: ${animationName}`);
       return false;
     }
 
+    this.clearTapMoveTarget();
     this.localPlayer.body.setVelocity(0, 0);
     const played = this.playCharacterAnimation(this.localPlayer, this.accountId, animationName, this.direction);
     if (!played) return false;
@@ -297,10 +329,7 @@ export class WorldScene extends Phaser.Scene {
     const expectedKey = `${this.accountId}-${animationName}-${this.direction}`;
 
     this.localPlayer.once(Phaser.Animations.Events.ANIMATION_COMPLETE, (animation: Phaser.Animations.Animation) => {
-      // Ignora conclusão de qualquer outra animação que eventualmente tenha
-      // sido disparada no mesmo sprite.
       if (animation.key !== expectedKey || this.currentAction !== animationName) return;
-
       this.currentAction = null;
       if (this.localPlayer) this.playCharacterAnimation(this.localPlayer, this.accountId, "idle", this.direction);
     });
@@ -308,22 +337,115 @@ export class WorldScene extends Phaser.Scene {
     return true;
   }
 
-  private movementInput() {
+  private movementInput(time: number) {
     if (this.decorationTool) return { x: 0, y: 0 };
+
     let x = this.touchDirection.x;
     let y = this.touchDirection.y;
     if (this.cursors?.left.isDown || this.keys?.A.isDown) x -= 1;
     if (this.cursors?.right.isDown || this.keys?.D.isDown) x += 1;
     if (this.cursors?.up.isDown || this.keys?.W.isDown) y -= 1;
     if (this.cursors?.down.isDown || this.keys?.S.isDown) y += 1;
-    const length = Math.hypot(x, y);
-    return length > 1 ? { x: x / length, y: y / length } : { x, y };
+
+    const manualLength = Math.hypot(x, y);
+    if (manualLength > 0.001) {
+      this.clearTapMoveTarget();
+      return manualLength > 1 ? { x: x / manualLength, y: y / manualLength } : { x, y };
+    }
+
+    return this.tapMovementInput(time);
   }
 
-  /**
-   * Registra automaticamente TODAS as animações cadastradas no characterConfig.
-   * Nenhum nome (idle, walk, run, watering...) é especial aqui.
-   */
+  private tapMovementInput(time: number) {
+    if (!this.tapToMoveEnabled || !this.tapMoveTarget || !this.localPlayer || this.changingScene) return { x: 0, y: 0 };
+
+    const dx = this.tapMoveTarget.x - this.localPlayer.x;
+    const dy = this.tapMoveTarget.y - this.localPlayer.y;
+    const distance = Math.hypot(dx, dy);
+
+    if (this.tapMoveTarget.interaction && distance <= TAP_INTERACTION_DISTANCE) {
+      this.clearTapMoveTarget();
+      this.localPlayer.body.setVelocity(0, 0);
+      this.interact();
+      return { x: 0, y: 0 };
+    }
+
+    if (distance <= TAP_STOP_DISTANCE) {
+      this.clearTapMoveTarget();
+      return { x: 0, y: 0 };
+    }
+
+    const movedSinceProgress = Phaser.Math.Distance.Between(this.localPlayer.x, this.localPlayer.y, this.tapLastX, this.tapLastY);
+    if (movedSinceProgress >= 1.5) {
+      this.tapLastX = this.localPlayer.x;
+      this.tapLastY = this.localPlayer.y;
+      this.tapLastProgressAt = time;
+    } else if (time - this.tapLastProgressAt >= TAP_STUCK_TIMEOUT_MS) {
+      this.clearTapMoveTarget();
+      this.callbacks.onNotice("O caminho até esse ponto está bloqueado.");
+      return { x: 0, y: 0 };
+    }
+
+    return distance > 0 ? { x: dx / distance, y: dy / distance } : { x: 0, y: 0 };
+  }
+
+  private setTapMoveTarget(worldX: number, worldY: number) {
+    if (!this.tapToMoveEnabled || !this.localPlayer || this.decorationTool || this.currentAction || this.changingScene) return;
+
+    const interaction = this.interactionAt(worldX, worldY);
+    const bounds = this.physics.world.bounds;
+    const padding = 4;
+    const x = interaction
+      ? interaction.x
+      : Phaser.Math.Clamp(worldX, bounds.left + padding, bounds.right - padding);
+    const y = interaction
+      ? interaction.y
+      : Phaser.Math.Clamp(worldY, bounds.top + padding, bounds.bottom - padding);
+
+    this.tapMoveTarget = { x, y, interaction: interaction ?? undefined };
+    this.tapLastX = this.localPlayer.x;
+    this.tapLastY = this.localPlayer.y;
+    this.tapLastProgressAt = this.time.now;
+  }
+
+  private clearTapMoveTarget() {
+    this.tapMoveTarget = null;
+    this.tapLastProgressAt = 0;
+  }
+
+  private interactionAt(worldX: number, worldY: number) {
+    return this.interactions.find((item) => {
+      const width = Math.max(item.width, WORLD_CONFIG.tileSize);
+      const height = Math.max(item.height, WORLD_CONFIG.tileSize);
+      const left = item.width > 0 ? item.left : item.x - width / 2;
+      const top = item.height > 0 ? item.top : item.y - height / 2;
+      return worldX >= left - TAP_INTERACTION_HIT_PADDING
+        && worldX <= left + width + TAP_INTERACTION_HIT_PADDING
+        && worldY >= top - TAP_INTERACTION_HIT_PADDING
+        && worldY <= top + height + TAP_INTERACTION_HIT_PADDING;
+    }) ?? null;
+  }
+
+  private calculateCameraZoomInfo(): WorldCameraZoomInfo {
+    const viewportWidth = Math.max(1, this.viewportWidth || Number(this.scale?.width ?? 0) || Number(this.game?.canvas?.width ?? 0));
+    const viewportHeight = Math.max(1, this.viewportHeight || Number(this.scale?.height ?? 0) || Number(this.game?.canvas?.height ?? 0));
+    const mapWidth = Math.max(1, this.tilemap?.widthInPixels ?? viewportWidth);
+    const mapHeight = Math.max(1, this.tilemap?.heightInPixels ?? viewportHeight);
+    const requiredToKeepMapCoveringView = Math.max(viewportWidth / mapWidth, viewportHeight / mapHeight, CAMERA_MIN_ZOOM);
+    const min = Math.ceil(requiredToKeepMapCoveringView * 10) / 10;
+    const max = Math.max(CAMERA_BASE_MAX_ZOOM, Math.ceil((min + 1.5) * 10) / 10);
+    const zoom = Phaser.Math.Clamp(this.requestedCameraZoom, min, max);
+    return { zoom, min, max };
+  }
+
+  private applyCameraZoom() {
+    const info = this.calculateCameraZoomInfo();
+    const camera = this.cameras?.main;
+    if (camera) camera.setZoom(info.zoom);
+    this.callbacks.onCameraZoomChange(info);
+    return info;
+  }
+
   private createAnimations() {
     for (const [accountId, config] of Object.entries(CHARACTER_CONFIGS) as Array<[AccountId, typeof CHARACTER_CONFIGS[AccountId]]>) {
       for (const [animationName, animation] of Object.entries(config.animations)) {
@@ -349,11 +471,6 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Toca qualquer animação registrada por nome.
-   * Ex.: playCharacterAnimation(sprite, "andre", "walk", "down")
-   * Ex.: playCharacterAnimation(sprite, "andre", "watering", "left")
-   */
   private playCharacterAnimation(
     sprite: Phaser.GameObjects.Sprite,
     accountId: AccountId,
@@ -379,7 +496,6 @@ export class WorldScene extends Phaser.Scene {
     return true;
   }
 
-  /** Retorna texture + primeiro frame para criar o sprite já na pose correta. */
   private getCharacterAnimationStart(accountId: AccountId, animationName: string, direction: WorldDirection) {
     const config = CHARACTER_CONFIGS[accountId];
     const animation = config.animations[animationName];
@@ -397,6 +513,7 @@ export class WorldScene extends Phaser.Scene {
 
   private switchMap(state: WorldPlayerState) {
     this.currentAction = null;
+    this.clearTapMoveTarget();
     this.remoteActions.clear();
     this.clearMap();
     this.currentScene = state.scene;
@@ -408,8 +525,6 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    // Ground e GroundDetails são Tile Layers visuais. GroundDetails ainda
-    // aceita o formato antigo (Object Layer) durante a migração do mapa.
     this.groundLayer = this.createMapTileLayer("Ground", mapTilesets, 0);
     this.groundDetailsLayer = this.createMapTileLayer("GroundDetails", mapTilesets, 0.1);
     this.groundDetailsTopLayer = this.createMapTileLayer("GroundDetailsTop", mapTilesets, 0.2);
@@ -437,9 +552,9 @@ export class WorldScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.tilemap.widthInPixels, this.tilemap.heightInPixels);
     this.cameras.main.setBounds(0, 0, this.tilemap.widthInPixels, this.tilemap.heightInPixels);
     this.cameras.main.roundPixels = true;
-    this.cameras.main.setZoom(WORLD_CONFIG.camera.zoom);
     this.cameras.main.setDeadzone(WORLD_CONFIG.camera.deadzoneWidth, WORLD_CONFIG.camera.deadzoneHeight);
     this.cameras.main.startFollow(this.localPlayer, true, WORLD_CONFIG.camera.lerpX, WORLD_CONFIG.camera.lerpY);
+    this.applyCameraZoom();
     this.renderDecorations();
     this.updatePlayers(this.players);
     this.createDebugGrid();
@@ -463,18 +578,17 @@ export class WorldScene extends Phaser.Scene {
     this.remotePlayers.clear();
     this.remoteActions.clear();
     [...this.mapVisuals, ...this.fixedObstacles, ...this.decorationVisuals, ...this.decorationObstacles].forEach((item) => item.destroy());
-    this.mapVisuals = []; this.fixedObstacles = []; this.decorationVisuals = []; this.decorationObstacles = []; this.interactions = [];
-    this.debugGrid?.destroy(); this.debugGrid = undefined;
+    this.mapVisuals = [];
+    this.fixedObstacles = [];
+    this.decorationVisuals = [];
+    this.decorationObstacles = [];
+    this.interactions = [];
+    this.debugGrid?.destroy();
+    this.debugGrid = undefined;
   }
 
-  /**
-   * Liga cada tileset que existe no arquivo do Tiled à textura carregada no Phaser.
-   * Assim Ground/GroundDetails podem usar vários PNGs no MESMO layer, exatamente
-   * como foram pintados no Tiled.
-   */
   private linkMapTilesets() {
     if (!this.tilemap) return [] as Phaser.Tilemaps.Tileset[];
-
     const linked: Phaser.Tilemaps.Tileset[] = [];
     const names = this.tilemap.tilesets.map((tileset) => tileset.name);
 
@@ -493,14 +607,12 @@ export class WorldScene extends Phaser.Scene {
         asset.margin,
         asset.spacing,
       );
-
       if (tileset) linked.push(tileset);
     }
 
     return linked;
   }
 
-  /** Cria uma Tile Layer somente se ela realmente for uma tilelayer no .tmj. */
   private createMapTileLayer(name: string, tilesets: Phaser.Tilemaps.Tileset[], depth: number) {
     if (!this.tilemap?.layers.some((layer) => layer.name === name)) return undefined;
     const layer = this.tilemap.createLayer(name, tilesets, 0, 0) ?? undefined;
@@ -508,14 +620,6 @@ export class WorldScene extends Phaser.Scene {
     return layer;
   }
 
-  /**
-   * Compatibilidade TEMPORÁRIA com o GroundDetails antigo em Object Layer.
-   * O formato recomendado daqui para frente é GroundDetails como Tile Layer.
-   *
-   * Enquanto os retângulos antigos existirem, eles agora usam o PNG correto:
-   * water -> water.png | path -> paths.png | farm -> tilled-dirt.png
-   * e aceitam a propriedade inteira `frame` para escolher o tile do PNG.
-   */
   private renderLegacyGroundDetails(objects: TiledObject[] | undefined) {
     const presets = {
       water: { tileset: "water", defaultFrame: 0, depth: 0.2, alpha: 1 },
@@ -527,20 +631,15 @@ export class WorldScene extends Phaser.Scene {
       const kind = String(property(object, "kind") ?? object.name ?? "").toLowerCase();
       const preset = presets[kind as keyof typeof presets];
       if (!preset) continue;
-
       const asset = getWorldTilesetAsset(preset.tileset);
       if (!asset) continue;
 
       const requestedFrame = Number(property(object, "frame"));
-      const frame = Number.isInteger(requestedFrame) && requestedFrame >= 0
-        ? requestedFrame
-        : preset.defaultFrame;
-
+      const frame = Number.isInteger(requestedFrame) && requestedFrame >= 0 ? requestedFrame : preset.defaultFrame;
       const x = Number(object.x ?? 0);
       const y = Number(object.y ?? 0);
       const width = Number(object.width ?? asset.tileWidth);
       const height = Number(object.height ?? asset.tileHeight);
-
       const frameName = this.ensureTilesetFrame(asset, frame);
       if (!frameName) {
         console.warn(`[Nosso Mundo] Frame ${frame} inválido em ${preset.tileset}.`);
@@ -548,19 +647,13 @@ export class WorldScene extends Phaser.Scene {
       }
 
       this.mapVisuals.push(
-        this.add
-          .tileSprite(x + width / 2, y + height / 2, width, height, asset.textureKey, frameName)
+        this.add.tileSprite(x + width / 2, y + height / 2, width, height, asset.textureKey, frameName)
           .setDepth(preset.depth)
           .setAlpha(preset.alpha),
       );
     }
   }
 
-  /**
-   * Recorta um tile individual de uma imagem de tileset carregada como image.
-   * Só é necessário para o renderer legado de retângulos; Tile Layers do Tiled
-   * já selecionam o tile correto automaticamente pelo GID.
-   */
   private ensureTilesetFrame(asset: WorldTilesetAsset, frame: number) {
     const texture = this.textures.get(asset.textureKey);
     const frameName = `tile-${frame}`;
@@ -586,23 +679,16 @@ export class WorldScene extends Phaser.Scene {
     return frameName;
   }
 
-  /**
-   * Renderiza a Object Layer em dois formatos:
-   * 1) NOVO: Tile Objects visuais colocados diretamente no Tiled (object.gid).
-   * 2) LEGADO: pontos com propriedade `asset`, mantidos para não quebrar o mapa atual.
-   */
   private renderMapObjects(objects: TiledObject[] | undefined, depthOffset: number) {
     for (const object of objects ?? []) {
       if (typeof object.gid === "number") {
         this.renderTiledTileObject(object, depthOffset);
         continue;
       }
-
       this.renderLegacyMapObject(object, depthOffset);
     }
   }
 
-  /** Mantém os antigos pontos `asset = tree-green`, `rock`, `house` etc. funcionando. */
   private renderLegacyMapObject(object: TiledObject, depthOffset: number) {
     const key = String(property(object, "asset") ?? object.type ?? object.name ?? "");
     const asset = WORLD_OBJECT_ASSETS[key];
@@ -633,10 +719,6 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Tile Object = o objeto aparece VISUALMENTE no próprio Tiled.
-   * O GID diz qual tile/sprite foi escolhido dentro do tileset.
-   */
   private renderTiledTileObject(object: TiledObject, depthOffset: number) {
     if (!this.tilemap || typeof object.gid !== "number") return;
 
@@ -660,8 +742,6 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    // Em mapas ortogonais, Tile Objects do Tiled usam por padrão a âncora
-    // inferior-esquerda. Origin (0, 1) reproduz a mesma posição no Phaser.
     const x = Number(object.x ?? 0);
     const y = Number(object.y ?? 0);
     const width = Math.abs(Number(object.width ?? asset.tileWidth)) || asset.tileWidth;
@@ -680,67 +760,113 @@ export class WorldScene extends Phaser.Scene {
     sprite.setDepth(y + sortOffsetY + depthOffset + extraDepth);
     this.mapVisuals.push(sprite);
 
-    this.playTiledObjectAnimation(sprite, tileset, asset, gid);
+    this.playTiledObjectAnimation(sprite, object, tileset, asset, gid);
 
     const collisionEnabled = this.getTiledObjectSetting(object, tileset, gid, "collision") !== false;
     if (collisionEnabled) this.createTiledObjectPresetCollisions(object, tileset, gid, width, height);
   }
 
-  /**
-   * Propriedades configuradas numa instância no mapa ganham prioridade.
-   * Se não houver, usa as propriedades do próprio tile no Tileset do Tiled,
-   * permitindo configurar uma árvore UMA VEZ e reutilizar o preset.
-   */
   private getTiledObjectSetting(object: TiledObject, tileset: Phaser.Tilemaps.Tileset, gid: number, name: string) {
     const instanceValue = property(object, name);
     if (instanceValue !== undefined) return instanceValue;
-
     const tileProperties = tileset.getTileProperties(gid) as Record<string, unknown> | undefined;
     return tileProperties?.[name];
   }
 
-  /**
-   * Reproduz no Phaser a animação cadastrada no Tile Animation Editor do Tiled.
-   * Se o tile não tiver animação, permanece como sprite estático.
-   */
   private playTiledObjectAnimation(
     sprite: Phaser.GameObjects.Sprite,
+    object: TiledObject,
     tileset: Phaser.Tilemaps.Tileset,
     asset: WorldTilesetAsset,
     gid: number,
   ) {
-    const tileData = tileset.getTileData(gid) as { animation?: Array<{ tileid?: number; duration?: number }> } | undefined;
-    const animation = tileData?.animation;
-    if (!Array.isArray(animation) || animation.length === 0) return;
+    const mode = String(
+      this.getTiledObjectSetting(object, tileset, gid, "animationMode") ?? ""
+    );
 
-    const animationKey = `world-tiled-${tileset.name}-${gid}`;
-    if (!this.anims.exists(animationKey)) {
-      const frames = animation.flatMap((frame) => {
-        const tileId = Number(frame.tileid);
-        if (!Number.isInteger(tileId) || tileId < 0) return [];
-        const frameName = this.ensureTilesetFrame(asset, tileId);
-        if (!frameName) return [];
-        return [{ key: asset.textureKey, frame: frameName, duration: Math.max(0, Number(frame.duration ?? 100)) }];
-      });
+    if (!mode) return;
 
-      if (frames.length > 0) {
-        this.anims.create({
-          key: animationKey,
-          frames,
-          duration: 1,
-          repeat: -1,
-        });
-      }
+    const startFrame = Number(
+      this.getTiledObjectSetting(object, tileset, gid, "animationStart") ?? 0
+    );
+
+    const endFrame = Number(
+      this.getTiledObjectSetting(object, tileset, gid, "animationEnd") ?? startFrame
+    );
+
+    const fps = Math.max(
+      1,
+      Number(
+        this.getTiledObjectSetting(object, tileset, gid, "animationFps") ?? 10
+      )
+    );
+
+    if (!Number.isInteger(startFrame) || !Number.isInteger(endFrame) || endFrame < startFrame) {
+      console.warn(`[Nosso Mundo] Animação inválida em ${tileset.name}: ${startFrame}-${endFrame}`);
+      return;
     }
 
-    if (this.anims.exists(animationKey)) sprite.anims.play(animationKey, true);
+    const frames: Array<{ key: string; frame: string }> = [];
+    for (let frame = startFrame; frame <= endFrame; frame++) {
+      const nextFrameName = this.ensureTilesetFrame(asset, frame);
+      if (!nextFrameName) {
+        console.warn(`[Nosso Mundo] Frame ${frame} não encontrado no tileset ${tileset.name}.`);
+        continue;
+      }
+      frames.push({ key: asset.textureKey, frame: nextFrameName });
+    }
+
+    if (frames.length === 0) return;
+
+    const animationKey = `world-object-${tileset.name}-${startFrame}-${endFrame}-${fps}-${mode}`;
+    if (!this.anims.exists(animationKey)) {
+      this.anims.create({
+        key: animationKey,
+        frames,
+        frameRate: fps,
+        repeat: mode === "loop" ? -1 : 0,
+      });
+    }
+
+    if (mode === "loop") {
+      sprite.anims.play(animationKey, true);
+      return;
+    }
+
+    if (mode !== "ambient") return;
+
+    const idleFrameName = this.ensureTilesetFrame(asset, startFrame);
+    if (idleFrameName) sprite.setFrame(idleFrameName);
+
+    const minDelay = Math.max(
+      0,
+      Number(this.getTiledObjectSetting(object, tileset, gid, "animationMinDelay") ?? 5000)
+    );
+    const maxDelay = Math.max(
+      minDelay,
+      Number(this.getTiledObjectSetting(object, tileset, gid, "animationMaxDelay") ?? 15000)
+    );
+
+    const scheduleNextAnimation = () => {
+      if (!sprite.active) return;
+      const delay = Phaser.Math.Between(Math.round(minDelay), Math.round(maxDelay));
+      this.time.delayedCall(delay, () => {
+        if (!sprite.active) return;
+        sprite.anims.play(animationKey, true);
+        sprite.once(
+          Phaser.Animations.Events.ANIMATION_COMPLETE,
+          (animation: Phaser.Animations.Animation) => {
+            if (animation.key !== animationKey || !sprite.active) return;
+            if (idleFrameName) sprite.setFrame(idleFrameName);
+            scheduleNextAnimation();
+          },
+        );
+      });
+    };
+
+    scheduleNextAnimation();
   }
 
-  /**
-   * Lê as formas feitas no Tile Collision Editor do Tiled.
-   * Para o Arcade Physics usamos retângulos estáticos; retângulos são o preset
-   * recomendado para troncos, pedras, cercas, móveis e construções.
-   */
   private createTiledObjectPresetCollisions(
     object: TiledObject,
     tileset: Phaser.Tilemaps.Tileset,
@@ -787,8 +913,11 @@ export class WorldScene extends Phaser.Scene {
 
   private renderCollisions(objects: TiledObject[] | undefined) {
     for (const object of objects ?? []) {
-      const width = Number(object.width ?? 0), height = Number(object.height ?? 0);
-      if (width > 0 && height > 0) this.fixedObstacles.push(this.createObstacle(Number(object.x ?? 0) + width / 2, Number(object.y ?? 0) + height / 2, width, height));
+      const width = Number(object.width ?? 0);
+      const height = Number(object.height ?? 0);
+      if (width > 0 && height > 0) {
+        this.fixedObstacles.push(this.createObstacle(Number(object.x ?? 0) + width / 2, Number(object.y ?? 0) + height / 2, width, height));
+      }
     }
   }
 
@@ -796,7 +925,20 @@ export class WorldScene extends Phaser.Scene {
     this.interactions = (objects ?? []).flatMap((object) => {
       const target = property(object, "target");
       if (target !== "exterior" && target !== "house-interior") return [];
-      return [{ name: object.name ?? "porta", x: Number(object.x ?? 0) + Number(object.width ?? 0) / 2, y: Number(object.y ?? 0) + Number(object.height ?? 0) / 2, target }];
+      const left = Number(object.x ?? 0);
+      const top = Number(object.y ?? 0);
+      const width = Number(object.width ?? 0);
+      const height = Number(object.height ?? 0);
+      return [{
+        name: object.name ?? "porta",
+        x: left + width / 2,
+        y: top + height / 2,
+        left,
+        top,
+        width,
+        height,
+        target,
+      }];
     });
   }
 
@@ -804,7 +946,9 @@ export class WorldScene extends Phaser.Scene {
     this.decorationColliders.forEach((collider) => collider.destroy());
     this.decorationColliders = [];
     [...this.decorationVisuals, ...this.decorationObstacles].forEach((item) => item.destroy());
-    this.decorationVisuals = []; this.decorationObstacles = [];
+    this.decorationVisuals = [];
+    this.decorationObstacles = [];
+
     for (const decoration of this.decorations.filter((item) => item.scene === this.currentScene)) {
       const asset = DECORATION_ASSETS[decoration.type];
       const footprint = asset.footprint;
@@ -835,14 +979,19 @@ export class WorldScene extends Phaser.Scene {
 
   private nearestInteraction() {
     if (!this.localPlayer || this.interactions.length === 0) return null;
-    return this.interactions.reduce((best, item) => Phaser.Math.Distance.Between(this.localPlayer!.x, this.localPlayer!.y, item.x, item.y) < Phaser.Math.Distance.Between(this.localPlayer!.x, this.localPlayer!.y, best.x, best.y) ? item : best);
+    return this.interactions.reduce((best, item) =>
+      Phaser.Math.Distance.Between(this.localPlayer!.x, this.localPlayer!.y, item.x, item.y)
+        < Phaser.Math.Distance.Between(this.localPlayer!.x, this.localPlayer!.y, best.x, best.y)
+        ? item
+        : best,
+    );
   }
 
   private refreshInteractionHint() {
     if (this.decorationTool || !this.localPlayer) return;
     const nearest = this.nearestInteraction();
     const close = nearest && Phaser.Math.Distance.Between(this.localPlayer.x, this.localPlayer.y, nearest.x, nearest.y) <= 52;
-    this.callbacks.onHint(close ? "E · Entrar / sair" : null);
+    this.callbacks.onHint(close ? (this.tapToMoveEnabled ? "Toque na porta para entrar / sair" : "E · Entrar / sair") : null);
   }
 
   private handlePointerMove(pointer: Phaser.Input.Pointer) {
@@ -857,13 +1006,24 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
-    if (!this.decorationTool || pointer.rightButtonDown()) { if (pointer.rightButtonDown()) this.cancelDecoration(); return; }
+    if (pointer.rightButtonDown()) {
+      if (this.decorationTool) this.cancelDecoration();
+      else this.clearTapMoveTarget();
+      return;
+    }
+
+    if (!this.decorationTool) {
+      if (this.tapToMoveEnabled) this.setTapMoveTarget(pointer.worldX, pointer.worldY);
+      return;
+    }
+
     const hit = this.decorationAt(pointer.worldX, pointer.worldY);
     if (this.decorationTool.kind === "remove") {
       if (!hit) { this.callbacks.onNotice("Clique em uma decoração para remover."); return; }
       void this.callbacks.onRemoveDecoration(hit.id).then((result) => { if (!result.ok) this.callbacks.onNotice(result.error ?? "Não foi possível remover."); });
       return;
     }
+
     if (this.decorationTool.kind === "move" && !this.movingDecoration) {
       if (!hit) { this.callbacks.onNotice("Clique primeiro na decoração que deseja mover."); return; }
       this.movingDecoration = hit;
@@ -872,21 +1032,25 @@ export class WorldScene extends Phaser.Scene {
       this.callbacks.onNotice("Agora clique no novo lugar.");
       return;
     }
+
     const type = this.decorationTool.kind === "place" ? this.decorationTool.type : this.movingDecoration?.type;
     if (!type) return;
-    const gridX = Math.floor(pointer.worldX / WORLD_CONFIG.tileSize), gridY = Math.floor(pointer.worldY / WORLD_CONFIG.tileSize);
-    if (!this.isGridAvailable(type, gridX, gridY, this.movingDecoration?.id)) { this.callbacks.onNotice("Esse espaço está ocupado ou fora da área decorável."); return; }
+    const gridX = Math.floor(pointer.worldX / WORLD_CONFIG.tileSize);
+    const gridY = Math.floor(pointer.worldY / WORLD_CONFIG.tileSize);
+    if (!this.isGridAvailable(type, gridX, gridY, this.movingDecoration?.id)) {
+      this.callbacks.onNotice("Esse espaço está ocupado ou fora da área decorável.");
+      return;
+    }
+
     const promise = this.movingDecoration
       ? this.callbacks.onMoveDecoration(this.movingDecoration.id, this.currentScene, gridX, gridY)
       : this.callbacks.onPlaceDecoration(type, this.currentScene, gridX, gridY);
+
     void promise.then((result) => {
       if (!result.ok) {
         this.callbacks.onNotice(result.error ?? "Não foi possível salvar a decoração.");
         return;
       }
-
-      // A decoração já existe de verdade no jogo, então aproveitamos para
-      // testar a animação de colocar também no fluxo real.
       this.startLocalAction("placing");
       if (this.movingDecoration) this.cancelDecoration();
     });
@@ -916,7 +1080,8 @@ export class WorldScene extends Phaser.Scene {
   private createDebugGrid() {
     this.debugGrid = this.add.graphics().setDepth(99998).setVisible(this.debugEnabled);
     this.debugGrid.lineStyle(0.5, 0xffffff, 0.24);
-    const width = this.tilemap?.widthInPixels ?? 0, height = this.tilemap?.heightInPixels ?? 0;
+    const width = this.tilemap?.widthInPixels ?? 0;
+    const height = this.tilemap?.heightInPixels ?? 0;
     for (let x = 0; x <= width; x += WORLD_CONFIG.tileSize) this.debugGrid.lineBetween(x, 0, x, height);
     for (let y = 0; y <= height; y += WORLD_CONFIG.tileSize) this.debugGrid.lineBetween(0, y, width, y);
   }

@@ -47,10 +47,23 @@
 .root :global(.world-error button) { padding: 9px 16px; border: 2px solid #5f3b23; border-radius: 5px; background: #f2cf83; color: #4b301e; font-weight: 800; }
 .root :global(.world-modal-backdrop) { position: absolute; z-index: 60; inset: 0; display: grid; place-items: center; padding: 18px; background: #162317aa; backdrop-filter: blur(3px); touch-action: auto; }
 .root :global(.world-panel) { width: min(430px, 94vw); border: 4px solid #5a3823; border-radius: 9px; padding: 16px; color: #4b301e; background: #edc879; box-shadow: inset 0 0 0 3px #ffeba8, 0 7px 0 #342319, 0 18px 40px #13201599; }
+.root :global(.world-settings) { max-height: min(88vh, 680px); overflow-y: auto; overscroll-behavior: contain; }
 .root :global(.world-panel-title) { display: flex; align-items: center; justify-content: space-between; margin: -7px -5px 16px; border-bottom: 2px solid #9b6338; padding: 5px 8px 11px; font: 800 20px var(--font-display); }
 .root :global(.world-panel-title button) { width: 32px; height: 32px; border: 2px solid #694029; border-radius: 4px; background: #bd7440; color: #fff0b8; font-size: 22px; }
 .root :global(.world-settings label) { display: flex; justify-content: space-between; margin: 13px 1px 5px; font-weight: 800; }
 .root :global(.world-settings input[type="range"]) { width: 100%; accent-color: #527c3d; }
+.root :global(.world-range-labels) { display: flex; justify-content: space-between; margin-top: 2px; color: #7b5538; font-size: 10px; font-weight: 700; }
+.root :global(.world-settings-tabs) { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: -4px 0 12px; }
+.root :global(.world-settings-tabs button) { min-height: 36px; border: 2px solid #7d4d2e; border-radius: 6px; background: #d99b58; color: #5a3823; font-weight: 800; box-shadow: inset 0 1px #f5c777; }
+.root :global(.world-settings-tabs button.active) { background: #a9cf69; outline: 2px solid #f3f8bd; }
+.root :global(.world-settings-help) { margin: 2px 0 12px; color: #765036; font-size: 12px; font-weight: 700; }
+.root :global(.world-controls-settings) { display: grid; gap: 8px; }
+.root :global(.world-control-option) { display: grid; grid-template-columns: 40px 1fr 28px; gap: 9px; align-items: center; width: 100%; min-height: 62px; padding: 8px 10px; border: 2px solid #8a5835; border-radius: 7px; color: #4b301e; background: #f3d48d; text-align: left; box-shadow: inset 0 2px #fff0b6, 0 2px #80502f; }
+.root :global(.world-control-option.selected) { background: #b6da79; outline: 2px solid #f5ffc8; }
+.root :global(.world-control-option-icon) { display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid #7a4c2d; border-radius: 50%; background: #e7b764; font-size: 20px; }
+.root :global(.world-control-option strong), .root :global(.world-control-option small) { display: block; }
+.root :global(.world-control-option small) { margin-top: 2px; color: #765137; font: 600 10px/1.25 var(--font-body); }
+.root :global(.world-control-check) { font-size: 20px; font-weight: 900; text-align: center; }
 .root :global(.world-skin-card) { display: grid; grid-template-columns: 76px 1fr; gap: 12px; align-items: center; margin-top: 18px; border: 2px solid #946039; border-radius: 6px; padding: 10px; background: #ffe5a0; }
 .root :global(.world-skin-card img) { width: 64px; height: 64px; object-fit: none; object-position: left top; image-rendering: pixelated; transform: scale(1); border: 2px solid #704629; background: #8ebd65; }
 .root :global(.world-skin-card small), .root :global(.world-skin-card strong) { display: block; }
@@ -71,8 +84,7 @@
     touch-action: none;
   }
 
-  .root :global(.world-mobile-controls *),
-  .root :global(.world-mobile-controls button) {
+  .root :global(.world-mobile-controls *) {
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
@@ -80,13 +92,68 @@
     touch-action: none;
   }
 
-  .root :global(.world-dpad) { position: absolute; left: 22px; bottom: 20px; width: 132px; height: 114px; pointer-events: auto; touch-action: none; }
-  .root :global(.world-dpad button), .root :global(.world-interact-button) { position: absolute; width: 44px; height: 44px; border: 3px solid #4f321f; border-radius: 8px; color: #fff0bd; background: #80502ed9; box-shadow: inset 0 2px #b77945, 0 3px #342216; font-weight: 900; touch-action: none; }
-  .root :global(.world-dpad .up) { left: 44px; top: 0; } .root :global(.world-dpad .left) { left: 0; top: 40px; } .root :global(.world-dpad .right) { right: 0; top: 40px; } .root :global(.world-dpad .down) { left: 44px; bottom: 0; }
-  .root :global(.world-interact-button) { right: 25px; bottom: 28px; width: 62px; height: 62px; border-radius: 50%; pointer-events: auto; font-size: 23px; }
+  .root :global(.world-mobile-controls.mode-tap) { pointer-events: none; }
+
+  .root :global(.world-dpad-eight) {
+    position: absolute;
+    left: 18px;
+    bottom: 16px;
+    width: 132px;
+    height: 132px;
+    display: grid;
+    grid-template-columns: repeat(3, 42px);
+    grid-template-rows: repeat(3, 42px);
+    gap: 3px;
+    pointer-events: auto;
+    touch-action: none;
+  }
+
+  .root :global(.world-dpad-eight button), .root :global(.world-interact-button) {
+    width: 42px;
+    height: 42px;
+    border: 3px solid #4f321f;
+    border-radius: 8px;
+    color: #fff0bd;
+    background: #80502ed9;
+    box-shadow: inset 0 2px #b77945, 0 3px #342216;
+    font-weight: 900;
+    touch-action: none;
+  }
+
+  .root :global(.world-dpad-eight button:active), .root :global(.world-interact-button:active) { transform: translateY(2px); box-shadow: inset 0 2px #5a351f; }
+  .root :global(.world-dpad-eight button.pressed) { transform: translateY(2px); box-shadow: inset 0 2px #5a351f; filter: brightness(1.18); }
+  .root :global(.world-dpad-eight .up-left) { grid-column: 1; grid-row: 1; }
+  .root :global(.world-dpad-eight .up) { grid-column: 2; grid-row: 1; }
+  .root :global(.world-dpad-eight .up-right) { grid-column: 3; grid-row: 1; }
+  .root :global(.world-dpad-eight .left) { grid-column: 1; grid-row: 2; }
+  .root :global(.world-dpad-eight .right) { grid-column: 3; grid-row: 2; }
+  .root :global(.world-dpad-eight .down-left) { grid-column: 1; grid-row: 3; }
+  .root :global(.world-dpad-eight .down) { grid-column: 2; grid-row: 3; }
+  .root :global(.world-dpad-eight .down-right) { grid-column: 3; grid-row: 3; }
+
+  .root :global(.world-joystick) {
+    position: absolute;
+    left: 22px;
+    bottom: 20px;
+    width: 124px;
+    height: 124px;
+    border: 3px solid #4e321f;
+    border-radius: 50%;
+    background: #5a3d2a73;
+    box-shadow: inset 0 0 0 5px #d4aa6852, 0 4px 0 #2f2118aa;
+    pointer-events: auto;
+    touch-action: none;
+  }
+
+  .root :global(.world-joystick-ring) { position: absolute; inset: 22px; border: 2px dashed #f4d79680; border-radius: 50%; pointer-events: none; }
+  .root :global(.world-joystick-knob) { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border: 3px solid #4f321f; border-radius: 50%; background: #96613c; box-shadow: inset 0 3px #c88a55, 0 3px #342216; pointer-events: none; will-change: transform; }
+
+  .root :global(.world-interact-button) { position: absolute; right: 25px; bottom: 28px; width: 62px; height: 62px; border-radius: 50%; pointer-events: auto; font-size: 23px; }
   .root :global(.world-decoration-bar) { bottom: 8px; max-width: 58vw; }
   .root :global(.world-hint) { bottom: 18px; }
   .root :global(.world-actions) { top: 76px; right: 10px; }
+  .root :global(.world-settings) { width: min(520px, 92vw); max-height: 86vh; padding: 13px; }
+  .root :global(.world-skin-card) { margin-top: 12px; }
 }
 
 @media (pointer: coarse) and (orientation: portrait) {
@@ -100,4 +167,9 @@
   .root :global(.world-topbar) { top: 6px; height: 50px; }
   .root :global(.world-topbar small) { display: none; }
   .root :global(.world-actions) { top: 62px; }
+  .root :global(.world-settings) { max-height: 90vh; }
+  .root :global(.world-panel-title) { margin-bottom: 10px; }
+  .root :global(.world-settings-tabs) { margin-bottom: 8px; }
+  .root :global(.world-control-option) { min-height: 52px; padding: 6px 8px; }
+  .root :global(.world-control-option-icon) { width: 32px; height: 32px; }
 }

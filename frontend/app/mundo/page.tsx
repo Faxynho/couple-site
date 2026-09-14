@@ -10,8 +10,9 @@ import { getWorldAudioSettings, setWorldAudioSettings, WorldAudioSettings } from
 import WorldCanvas from "@/world/components/WorldCanvas";
 import WorldSettings from "@/world/components/WorldSettings";
 import MobileControls from "@/world/components/MobileControls";
-import { WorldGameApi, WorldGameCallbacks } from "@/world/game/WorldGameApi";
+import { WorldCameraZoomInfo, WorldGameApi, WorldGameCallbacks } from "@/world/game/WorldGameApi";
 import { useWorldSession } from "@/world/multiplayer/useWorldSession";
+import { DEFAULT_WORLD_INPUT_SETTINGS, getWorldInputSettings, setWorldInputSettings, WorldInputSettings, WorldMobileControlMode } from "@/world/settings/WorldInputSettings";
 import { DecorationTool, WorldDebugInfo, WorldDecorationType } from "@/world/types";
 import styles from "./World.module.css";
 
@@ -35,6 +36,12 @@ async function exitWorldFullscreen() {
   }
 }
 
+const DEFAULT_CAMERA_INFO: WorldCameraZoomInfo = {
+  zoom: DEFAULT_WORLD_INPUT_SETTINGS.cameraZoom,
+  min: 1,
+  max: 4,
+};
+
 export default function WorldPage() {
   const router = useRouter();
   const [accountId, setAccountId] = useState<AccountId | null>(null);
@@ -51,6 +58,9 @@ export default function WorldPage() {
   const [fatalError, setFatalError] = useState<string | null>(null);
   const [debug, setDebug] = useState<WorldDebugInfo | null>(null);
   const [audioSettings, setAudioSettingsState] = useState<WorldAudioSettings>(() => getWorldAudioSettings());
+  const [inputSettings, setInputSettingsState] = useState<WorldInputSettings>(DEFAULT_WORLD_INPUT_SETTINGS);
+  const [cameraInfo, setCameraInfo] = useState<WorldCameraZoomInfo>(DEFAULT_CAMERA_INFO);
+  const [coarsePointer, setCoarsePointer] = useState(false);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -59,6 +69,16 @@ export default function WorldPage() {
     else router.replace("/");
     setCheckedAccount(true);
   }, [router]);
+
+  useEffect(() => {
+    setInputSettingsState(getWorldInputSettings());
+
+    const media = window.matchMedia("(pointer: coarse)");
+    const updatePointerMode = () => setCoarsePointer(media.matches);
+    updatePointerMode();
+    media.addEventListener?.("change", updatePointerMode);
+    return () => media.removeEventListener?.("change", updatePointerMode);
+  }, []);
 
   useEffect(() => {
     void requestWorldFullscreen();
@@ -86,6 +106,13 @@ export default function WorldPage() {
 
   useEffect(() => () => { if (noticeTimer.current) clearTimeout(noticeTimer.current); }, []);
 
+  useEffect(() => {
+    if (!api) return;
+    api.setTapToMoveEnabled(coarsePointer && inputSettings.mobileControlMode === "tap");
+    const info = api.setCameraZoom(inputSettings.cameraZoom);
+    setCameraInfo(info);
+  }, [api, coarsePointer, inputSettings.cameraZoom, inputSettings.mobileControlMode]);
+
   const showNotice = useCallback((message: string) => {
     setNotice(message);
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
@@ -103,6 +130,7 @@ export default function WorldPage() {
     onHint: setHint,
     onNotice: showNotice,
     onDebug: setDebug,
+    onCameraZoomChange: setCameraInfo,
     onReady: () => setReady(true),
     onError: setFatalError,
   }), [showNotice, world.changeScene, world.moveDecoration, world.placeDecoration, world.removeDecoration, world.sendAction, world.sendMovement]);
@@ -115,6 +143,21 @@ export default function WorldPage() {
   const changeAudio = (next: WorldAudioSettings) => {
     setAudioSettingsState(next);
     setWorldAudioSettings(next);
+  };
+
+  const saveInputSettings = (next: WorldInputSettings) => {
+    setInputSettingsState(next);
+    setWorldInputSettings(next);
+  };
+
+  const changeCameraZoom = (zoom: number) => {
+    saveInputSettings({ ...inputSettings, cameraZoom: zoom });
+    const info = api?.setCameraZoom(zoom);
+    if (info) setCameraInfo(info);
+  };
+
+  const changeMobileControlMode = (mode: WorldMobileControlMode) => {
+    saveInputSettings({ ...inputSettings, mobileControlMode: mode });
   };
 
   const returnToLobby = async () => {
@@ -163,9 +206,21 @@ export default function WorldPage() {
       {!ready && !fatalError && <div className="world-curtain">Preparando o mapa…</div>}
       {(fatalError || world.error) && <div className="world-error"><strong>O mundo não carregou</strong><p>{fatalError ?? world.error}</p><button onClick={() => window.location.reload()}>Tentar novamente</button></div>}
 
-      <MobileControls api={api} />
+      <MobileControls api={api} mode={inputSettings.mobileControlMode} />
       <div className="world-rotate"><span>↻</span><strong>Gire o dispositivo</strong><p>Nosso Mundo funciona no celular em modo paisagem.</p></div>
-      {settingsOpen && <WorldSettings accountId={accountId} settings={audioSettings} onChange={changeAudio} onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && (
+        <WorldSettings
+          accountId={accountId}
+          settings={audioSettings}
+          onChange={changeAudio}
+          camera={cameraInfo}
+          onCameraZoomChange={changeCameraZoom}
+          mobileControlMode={inputSettings.mobileControlMode}
+          onMobileControlModeChange={changeMobileControlMode}
+          showMobileControls={coarsePointer}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </main>
   );
 }

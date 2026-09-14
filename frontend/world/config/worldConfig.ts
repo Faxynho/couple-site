@@ -9,7 +9,7 @@ export const WORLD_CONFIG = {
   mobile: { joystickRadius: 48, joystickDeadzone: 0.18 },
   audio: { defaultMusicVolume: 0.45, defaultSfxVolume: 0.65 },
   scenes: {
-    exterior: { mapKey: "world-map-exterior", mapUrl: "/world/maps/main-world.tmj", width: 64, height: 40 },
+    exterior: { mapKey: "world-map-exterior", mapUrl: "/world/maps/main-world.tmj", width: 80, height: 50 },
     "house-interior": { mapKey: "world-map-house", mapUrl: "/world/maps/house-interior.tmj", width: 24, height: 18 },
   } satisfies Record<WorldSceneId, { mapKey: string; mapUrl: string; width: number; height: number }>,
 } as const;

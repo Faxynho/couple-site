@@ -1,7 +1,16 @@
 import { DecorationTool, WorldDebugInfo, WorldDecoration, WorldDirection, WorldPlayerActionEvent, WorldPlayerState } from "@/world/types";
 
+export interface WorldCameraZoomInfo {
+  zoom: number;
+  min: number;
+  max: number;
+}
+
 export interface WorldGameApi {
   setTouchDirection(x: number, y: number): void;
+  setTapToMoveEnabled(enabled: boolean): void;
+  setCameraZoom(zoom: number): WorldCameraZoomInfo;
+  getCameraZoomInfo(): WorldCameraZoomInfo;
   interact(): void;
   toggleDebug(): void;
   setDecorationTool(tool: DecorationTool): void;
@@ -23,6 +32,7 @@ export interface WorldGameCallbacks {
   onHint(hint: string | null): void;
   onNotice(message: string): void;
   onDebug(info: WorldDebugInfo | null): void;
+  onCameraZoomChange(info: WorldCameraZoomInfo): void;
   onReady(): void;
   onError(message: string): void;
 }

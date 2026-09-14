@@ -21,15 +21,16 @@ export const WORLD_SCENE_RULES: Record<WorldSceneId, {
   blockedDecorationRects: Array<{ x: number; y: number; width: number; height: number }>;
 }> = {
   exterior: {
-    width: 64 * WORLD_TILE_SIZE,
-    height: 40 * WORLD_TILE_SIZE,
-    spawn: { x: 31 * WORLD_TILE_SIZE, y: 19 * WORLD_TILE_SIZE },
-    decorationArea: { x: 3, y: 3, width: 58, height: 34 },
+    width: 80 * WORLD_TILE_SIZE,
+    height: 50 * WORLD_TILE_SIZE,
+    spawn: { x: 47 * WORLD_TILE_SIZE, y: 19 * WORLD_TILE_SIZE },
+    decorationArea: { x: 3, y: 3, width: 74, height: 44 },
     blockedDecorationRects: [
-      { x: 43, y: 5, width: 16, height: 13 },
-      { x: 26, y: 5, width: 8, height: 9 },
-      { x: 0, y: 0, width: 64, height: 2 },
-      { x: 0, y: 38, width: 64, height: 2 },
+      { x: 59, y: 5, width: 16, height: 13 },
+      { x: 42, y: 5, width: 8, height: 9 },
+
+      { x: 0, y: 0, width: 80, height: 2 },
+      { x: 0, y: 48, width: 80, height: 2 },
     ],
   },
   "house-interior": {

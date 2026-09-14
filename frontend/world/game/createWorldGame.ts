@@ -23,6 +23,9 @@ export function createWorldGame(parent: HTMLElement, accountId: AccountId, snaps
 
   return {
     setTouchDirection: (x, y) => scene.setTouchDirection(x, y),
+    setTapToMoveEnabled: (enabled) => scene.setTapToMoveEnabled(enabled),
+    setCameraZoom: (zoom) => scene.setCameraZoom(zoom),
+    getCameraZoomInfo: () => scene.getCameraZoomInfo(),
     interact: () => scene.interact(),
     toggleDebug: () => scene.toggleDebug(),
     setDecorationTool: (tool) => scene.setDecorationTool(tool),
@@ -33,6 +36,7 @@ export function createWorldGame(parent: HTMLElement, accountId: AccountId, snaps
     resize: (width, height) => {
       if (width <= 0 || height <= 0) return;
       game.scale.resize(width, height);
+      scene.handleViewportResize(width, height);
     },
     destroy: () => game.destroy(true),
   };
