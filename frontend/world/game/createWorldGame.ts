@@ -17,7 +17,7 @@ export function createWorldGame(parent: HTMLElement, accountId: AccountId, snaps
     parent,
     width: initialLayout.gameWidth,
     height: initialLayout.gameHeight,
-    backgroundColor: "#76a85a",
+    backgroundColor: "#2b2118",
     pixelArt: true,
     antialias: false,
 
