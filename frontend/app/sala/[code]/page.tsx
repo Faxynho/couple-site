@@ -19,6 +19,7 @@ import GameCatalogActions from "@/components/GameCatalogActions";
 import AccountPanel from "@/components/account/AccountPanel";
 import { fetchAccounts } from "@/lib/accountApi";
 import PersistentDuoStatus from "@/components/duo/PersistentDuoStatus";
+import SharedDrawingBoard from "@/components/duo/SharedDrawingBoard";
 import {
   getPersistentDuoAvailabilityMessage,
   normalizePersistentDuoDisplayName,
@@ -248,37 +249,40 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             </div>
 
             {isPersistentDuo && !showMinigames ? (
-              <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => router.push("/mundo")}
-                  className="glass-panel relative flex min-h-40 flex-col items-center justify-center rounded-xl3 p-6 text-center transition-transform hover:-translate-y-1 hover:shadow-glow"
-                >
-                  <span className="text-4xl">🏡</span>
-                  <h2 className="mt-3 font-display text-lg font-semibold text-ink">Nosso Mundo</h2>
-                  <p className="mt-1 text-xs text-ink-soft">Entre sozinho ou encontre seu par no mundo compartilhado.</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (persistentAvailabilityMessage) {
-                      setLobbyNotice(persistentAvailabilityMessage);
-                      return;
-                    }
-                    setLobbyNotice(null);
-                    setShowMinigames(true);
-                  }}
-                  className="glass-panel flex min-h-40 flex-col items-center justify-center rounded-xl3 p-6 text-center transition-transform hover:-translate-y-1 hover:shadow-glow"
-                >
-                  <span className="text-4xl">🎮</span>
-                  <h2 className="mt-3 font-display text-lg font-semibold text-ink">Minijogos</h2>
-                  <p className="mt-1 text-xs text-ink-soft">Escolham um jogo quando os dois estiverem disponíveis no lobby.</p>
-                </button>
-                {lobbyNotice && (
-                  <p className="rounded-xl2 bg-rose/10 px-4 py-3 text-center text-sm text-rose-deep sm:col-span-2" role="status">
-                    {lobbyNotice}
-                  </p>
-                )}
+              <div className="flex w-full flex-col gap-5">
+                <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => router.push("/mundo")}
+                    className="glass-panel relative flex min-h-40 flex-col items-center justify-center rounded-xl3 p-6 text-center transition-transform hover:-translate-y-1 hover:shadow-glow"
+                  >
+                    <span className="text-4xl">🏡</span>
+                    <h2 className="mt-3 font-display text-lg font-semibold text-ink">Nosso Mundo</h2>
+                    <p className="mt-1 text-xs text-ink-soft">Entre sozinho ou encontre seu par no mundo compartilhado.</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (persistentAvailabilityMessage) {
+                        setLobbyNotice(persistentAvailabilityMessage);
+                        return;
+                      }
+                      setLobbyNotice(null);
+                      setShowMinigames(true);
+                    }}
+                    className="glass-panel flex min-h-40 flex-col items-center justify-center rounded-xl3 p-6 text-center transition-transform hover:-translate-y-1 hover:shadow-glow"
+                  >
+                    <span className="text-4xl">🎮</span>
+                    <h2 className="mt-3 font-display text-lg font-semibold text-ink">Minijogos</h2>
+                    <p className="mt-1 text-xs text-ink-soft">Escolham um jogo quando os dois estiverem disponíveis no lobby.</p>
+                  </button>
+                  {lobbyNotice && (
+                    <p className="rounded-xl2 bg-rose/10 px-4 py-3 text-center text-sm text-rose-deep sm:col-span-2" role="status">
+                      {lobbyNotice}
+                    </p>
+                  )}
+                </div>
+                <SharedDrawingBoard />
               </div>
             ) : isHost ? (
               <div className="w-full">

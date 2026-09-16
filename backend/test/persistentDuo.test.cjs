@@ -5,6 +5,8 @@ const { RoomManager } = require("../dist/rooms/RoomManager.js");
 const {
   PERSISTENT_DUO_ROOM_CODE,
   PERSISTENT_DUO_DISPLAY_NAME_MAX_LENGTH,
+  SHARED_DRAWING_MAX_POINTS_PER_STROKE,
+  normalizeSharedDrawingStroke,
   normalizePersistentDuoDisplayName,
 } = require("../dist/rooms/persistentDuo.js");
 
@@ -80,4 +82,44 @@ test("iniciar e voltar de um minijogo atualiza a presença dos dois", () => {
   assert.deepEqual(room.getPersistentDuoPresence(), { andre: "minigame", flavia: "minigame" });
   room.backToConfig();
   assert.deepEqual(room.getPersistentDuoPresence(), { andre: "lobby", flavia: "lobby" });
+});
+
+test("traços do quadro aceitam apenas formato, paleta, tamanho e coordenadas seguros", () => {
+  const valid = normalizeSharedDrawingStroke({
+    id: "stroke_valid_123",
+    tool: "brush",
+    color: "#EF4444",
+    size: 0.014,
+    points: [{ x: 0 }, { x: 0.25, y: 0.75 }],
+  });
+  assert.equal(valid, null, "ponto sem y deve ser rejeitado");
+
+  const normalized = normalizeSharedDrawingStroke({
+    id: "stroke_valid_456",
+    tool: "eraser",
+    color: "#FFFFFF",
+    size: 0.026,
+    points: [{ x: 0.1234567, y: 0.7654321 }],
+  });
+  assert.deepEqual(normalized, {
+    id: "stroke_valid_456",
+    tool: "eraser",
+    color: "#ffffff",
+    size: 0.026,
+    points: [{ x: 0.12346, y: 0.76543 }],
+  });
+  assert.equal(normalizeSharedDrawingStroke({ ...normalized, color: "javascript:red" }), null);
+  assert.equal(normalizeSharedDrawingStroke({ ...normalized, size: 999 }), null);
+  assert.equal(normalizeSharedDrawingStroke({ ...normalized, points: [{ x: -0.1, y: 0.5 }] }), null);
+});
+
+test("payloads gigantes do quadro são rejeitados", () => {
+  const points = Array.from({ length: SHARED_DRAWING_MAX_POINTS_PER_STROKE + 1 }, () => ({ x: 0.5, y: 0.5 }));
+  assert.equal(normalizeSharedDrawingStroke({
+    id: "stroke_too_large",
+    tool: "brush",
+    color: "#111827",
+    size: 0.006,
+    points,
+  }), null);
 });
