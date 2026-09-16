@@ -29,6 +29,7 @@ import {
   PERSISTENT_DUO_ROOM_CODE,
   isPersistentDuoAccountId,
   isPersistentDuoPresence,
+  persistentDuoStore,
 } from "../rooms/persistentDuo";
 import { registerWorldSocketHandlers } from "../world/worldSocketHandlers";
 
@@ -925,6 +926,64 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
       callback?.({ ok: true, room: room.toSnapshot() });
       broadcastRoom(io, room.code, roomManager);
+    });
+
+    /** O quadro é carregado separadamente do snapshot da sala para não enviar
+     *  todos os traços em cada atualização de presença/configuração. */
+    socket.on("duoBoard:sync", (callback?: AckCallback) => {
+      const code = socket.data.roomCode;
+      const playerId = socket.data.playerId;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const isMember = room?.roomKind === "persistent-duo"
+        && code === PERSISTENT_DUO_ROOM_CODE
+        && Boolean(playerId)
+        && socket.data.accountId === playerId
+        && room.canManage(playerId!);
+      if (!isMember || !room || !playerId) {
+        callback?.({ ok: false, error: "Você não pode acessar este quadro." });
+        return;
+      }
+      callback?.({ ok: true, board: persistentDuoStore.getDrawingBoard() });
+    });
+
+    socket.on("duoBoard:addStroke", (payload: { stroke?: unknown } | undefined, callback?: AckCallback) => {
+      const code = socket.data.roomCode;
+      const playerId = socket.data.playerId;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const isMember = room?.roomKind === "persistent-duo"
+        && code === PERSISTENT_DUO_ROOM_CODE
+        && Boolean(playerId)
+        && socket.data.accountId === playerId
+        && room.canManage(playerId!);
+      if (!isMember || !room || !playerId) {
+        callback?.({ ok: false, error: "Você não pode desenhar neste quadro." });
+        return;
+      }
+      const result = persistentDuoStore.addDrawingStroke(payload?.stroke);
+      if (!result.stroke) {
+        callback?.({ ok: false, error: result.error ?? "Traço inválido." });
+        return;
+      }
+      callback?.({ ok: true, stroke: result.stroke });
+      io.to(room.code).emit("duoBoard:strokeAdded", result.stroke);
+    });
+
+    socket.on("duoBoard:clear", (callback?: AckCallback) => {
+      const code = socket.data.roomCode;
+      const playerId = socket.data.playerId;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const isMember = room?.roomKind === "persistent-duo"
+        && code === PERSISTENT_DUO_ROOM_CODE
+        && Boolean(playerId)
+        && socket.data.accountId === playerId
+        && room.canManage(playerId!);
+      if (!isMember || !room || !playerId) {
+        callback?.({ ok: false, error: "Você não pode apagar este quadro." });
+        return;
+      }
+      const cleared = persistentDuoStore.clearDrawingBoard();
+      callback?.({ ok: true, ...cleared });
+      io.to(room.code).emit("duoBoard:cleared", cleared);
     });
 
     // Só o host pode mudar a configuração da partida (imagem/dificuldade/modo)
