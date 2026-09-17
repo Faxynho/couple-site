@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Eraser, Heart, Paintbrush, Trash2 } from "lucide-react";
+import { Eraser, Heart, Paintbrush, Redo2, Trash2, Undo2 } from "lucide-react";
 import { getSocket } from "@/lib/socket";
 import {
   downsampleDrawingPoints,
@@ -71,6 +71,8 @@ export default function SharedDrawingBoard() {
   const [tool, setTool] = useState<SharedDrawingTool>("brush");
   const [color, setColor] = useState<string>(SHARED_DRAWING_COLORS[0].value);
   const [size, setSize] = useState<number>(SHARED_DRAWING_SIZES[1].value);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "saving" | "error">("loading");
   const [message, setMessage] = useState("Carregando desenho...");
 
@@ -93,6 +95,17 @@ export default function SharedDrawingBoard() {
     for (const stroke of strokesRef.current) drawStroke(context, stroke, rect.width, rect.height);
   }, []);
 
+  const applyBoard = useCallback((board: SharedDrawingBoardSnapshot, nextMessage: string) => {
+    strokesRef.current = board.strokes;
+    currentStrokeRef.current = null;
+    activePointerRef.current = null;
+    setCanUndo(board.canUndo);
+    setCanRedo(board.canRedo);
+    setStatus("ready");
+    setMessage(nextMessage);
+    redraw();
+  }, [redraw]);
+
   const requestSync = useCallback((showLoading = true) => {
     const socket = getSocket();
     if (showLoading) {
@@ -105,12 +118,9 @@ export default function SharedDrawingBoard() {
         setMessage(response.error ?? "Não foi possível carregar o quadro.");
         return;
       }
-      strokesRef.current = response.board.strokes;
-      setStatus("ready");
-      setMessage("Desenho salvo e compartilhado");
-      redraw();
+      applyBoard(response.board, "Desenho salvo e compartilhado");
     });
-  }, [redraw]);
+  }, [applyBoard]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -119,6 +129,8 @@ export default function SharedDrawingBoard() {
         strokesRef.current = [...strokesRef.current, stroke];
         redraw();
       }
+      setCanUndo(true);
+      setCanRedo(false);
       setStatus("ready");
       setMessage("Desenho salvo e compartilhado");
       // Dois traços podem terminar quase juntos em aparelhos diferentes. O
@@ -130,13 +142,19 @@ export default function SharedDrawingBoard() {
       strokesRef.current = [];
       currentStrokeRef.current = null;
       activePointerRef.current = null;
+      setCanUndo(false);
+      setCanRedo(false);
       setStatus("ready");
       setMessage("Quadro limpo e salvo");
       redraw();
     };
+    const handleBoardChanged = (board: SharedDrawingBoardSnapshot) => {
+      applyBoard(board, "Quadro atualizado e salvo");
+    };
     const handleConnect = () => requestSync();
 
     socket.on("duoBoard:strokeAdded", handleStroke);
+    socket.on("duoBoard:changed", handleBoardChanged);
     socket.on("duoBoard:cleared", handleClear);
     socket.on("connect", handleConnect);
     requestSync();
@@ -149,11 +167,12 @@ export default function SharedDrawingBoard() {
 
     return () => {
       socket.off("duoBoard:strokeAdded", handleStroke);
+      socket.off("duoBoard:changed", handleBoardChanged);
       socket.off("duoBoard:cleared", handleClear);
       socket.off("connect", handleConnect);
       observer?.disconnect();
     };
-  }, [redraw, requestSync]);
+  }, [applyBoard, redraw, requestSync]);
 
   const pointFromEvent = (event: React.PointerEvent<HTMLCanvasElement>): SharedDrawingPoint => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -212,6 +231,8 @@ export default function SharedDrawingBoard() {
     currentStrokeRef.current = null;
     const storedStroke = { ...stroke, points: downsampleDrawingPoints(stroke.points) };
     strokesRef.current = [...strokesRef.current, storedStroke];
+    setCanUndo(true);
+    setCanRedo(false);
     setStatus("saving");
     setMessage("Salvando...");
     getSocket().emit("duoBoard:addStroke", { stroke: storedStroke }, (response: StrokeAck) => {
@@ -223,6 +244,20 @@ export default function SharedDrawingBoard() {
       setStatus("error");
       setMessage(response.error ?? "Não foi possível salvar o traço.");
       requestSync();
+    });
+  };
+
+  const changeHistory = (action: "undo" | "redo") => {
+    setStatus("saving");
+    setMessage(action === "undo" ? "Desfazendo..." : "Refazendo...");
+    getSocket().emit(`duoBoard:${action}`, (response: BoardAck) => {
+      if (response.ok && response.board) {
+        applyBoard(response.board, action === "undo" ? "Último traço desfeito" : "Traço refeito");
+        return;
+      }
+      setStatus("error");
+      setMessage(response.error ?? `Não foi possível ${action === "undo" ? "desfazer" : "refazer"}.`);
+      requestSync(false);
     });
   };
 
@@ -273,11 +308,29 @@ export default function SharedDrawingBoard() {
       />
 
       <div className="mt-4 flex flex-col gap-4">
-        <div className="grid grid-cols-3 gap-2" aria-label="Ferramentas de desenho">
+        <div className="grid grid-cols-5 gap-2" aria-label="Ferramentas de desenho">
+          <button
+            type="button"
+            onClick={() => changeHistory("undo")}
+            disabled={!canUndo || status === "loading" || status === "saving"}
+            className="inline-flex min-h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl2 bg-surface/45 px-1 text-[10px] font-semibold text-ink-soft transition-colors hover:bg-surface/75 hover:text-ink disabled:cursor-not-allowed disabled:opacity-35 sm:min-h-10 sm:flex-row sm:gap-1.5 sm:rounded-full sm:text-xs"
+            aria-label="Desfazer último traço"
+          >
+            <Undo2 size={15} /> <span>Desfazer</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => changeHistory("redo")}
+            disabled={!canRedo || status === "loading" || status === "saving"}
+            className="inline-flex min-h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl2 bg-surface/45 px-1 text-[10px] font-semibold text-ink-soft transition-colors hover:bg-surface/75 hover:text-ink disabled:cursor-not-allowed disabled:opacity-35 sm:min-h-10 sm:flex-row sm:gap-1.5 sm:rounded-full sm:text-xs"
+            aria-label="Refazer último traço"
+          >
+            <Redo2 size={15} /> <span>Refazer</span>
+          </button>
           <button
             type="button"
             onClick={() => setTool("brush")}
-            className={`inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full px-2 text-[11px] font-semibold transition-colors sm:px-3 sm:text-xs ${tool === "brush" ? "bg-rose text-white shadow-soft" : "bg-surface/55 text-ink-soft hover:bg-surface/75 hover:text-ink"}`}
+            className={`inline-flex min-h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl2 px-1 text-[10px] font-semibold transition-colors sm:min-h-10 sm:flex-row sm:gap-1.5 sm:rounded-full sm:px-2 sm:text-xs ${tool === "brush" ? "bg-rose text-white shadow-soft" : "bg-surface/55 text-ink-soft hover:bg-surface/75 hover:text-ink"}`}
             aria-pressed={tool === "brush"}
           >
             <Paintbrush size={15} /> Pincel
@@ -285,7 +338,7 @@ export default function SharedDrawingBoard() {
           <button
             type="button"
             onClick={() => setTool("eraser")}
-            className={`inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full px-2 text-[11px] font-semibold transition-colors sm:px-3 sm:text-xs ${tool === "eraser" ? "bg-rose text-white shadow-soft" : "bg-surface/55 text-ink-soft hover:bg-surface/75 hover:text-ink"}`}
+            className={`inline-flex min-h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl2 px-1 text-[10px] font-semibold transition-colors sm:min-h-10 sm:flex-row sm:gap-1.5 sm:rounded-full sm:px-2 sm:text-xs ${tool === "eraser" ? "bg-rose text-white shadow-soft" : "bg-surface/55 text-ink-soft hover:bg-surface/75 hover:text-ink"}`}
             aria-pressed={tool === "eraser"}
           >
             <Eraser size={15} /> Borracha
@@ -293,13 +346,13 @@ export default function SharedDrawingBoard() {
           <button
             type="button"
             onClick={clearBoard}
-            className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full bg-surface/35 px-2 text-[11px] font-semibold text-rose-deep transition-colors hover:bg-rose/10 sm:px-3 sm:text-xs"
+            className="inline-flex min-h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl2 bg-surface/35 px-1 text-center text-[10px] font-semibold leading-tight text-rose-deep transition-colors hover:bg-rose/10 sm:min-h-10 sm:flex-row sm:gap-1.5 sm:rounded-full sm:px-2 sm:text-xs"
           >
             <Trash2 size={15} /> Apagar tudo
           </button>
         </div>
 
-        <div className="grid grid-cols-8 gap-2" aria-label="Cores do pincel">
+        <div className="flex flex-wrap items-center justify-center gap-2" aria-label="Cores do pincel">
           {SHARED_DRAWING_COLORS.map((item) => (
             <button
               key={item.value}
@@ -311,6 +364,23 @@ export default function SharedDrawingBoard() {
               aria-pressed={color === item.value && tool === "brush"}
             />
           ))}
+          <label
+            className={`relative inline-flex h-7 w-7 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/70 shadow-sm transition-transform hover:scale-110 sm:h-8 sm:w-8 ${!SHARED_DRAWING_COLORS.some((item) => item.value === color) && tool === "brush" ? "scale-110 ring-2 ring-rose ring-offset-2 ring-offset-transparent" : ""}`}
+            style={{ backgroundColor: color }}
+            title="Escolher qualquer cor"
+          >
+            <span className="text-sm font-bold text-white mix-blend-difference" aria-hidden="true">+</span>
+            <input
+              type="color"
+              value={color}
+              onChange={(event) => {
+                setColor(event.target.value.toLowerCase());
+                setTool("brush");
+              }}
+              className="absolute inset-0 cursor-pointer opacity-0"
+              aria-label="Escolher qualquer cor"
+            />
+          </label>
         </div>
 
         <div className="grid grid-cols-[auto_repeat(3,minmax(0,1fr))] items-center gap-2" aria-label="Tamanho do pincel">

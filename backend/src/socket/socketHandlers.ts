@@ -968,6 +968,50 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       io.to(room.code).emit("duoBoard:strokeAdded", result.stroke);
     });
 
+    socket.on("duoBoard:undo", (callback?: AckCallback) => {
+      const code = socket.data.roomCode;
+      const playerId = socket.data.playerId;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const isMember = room?.roomKind === "persistent-duo"
+        && code === PERSISTENT_DUO_ROOM_CODE
+        && Boolean(playerId)
+        && socket.data.accountId === playerId
+        && room.canManage(playerId!);
+      if (!isMember || !room || !playerId) {
+        callback?.({ ok: false, error: "Você não pode alterar este quadro." });
+        return;
+      }
+      const result = persistentDuoStore.undoDrawingStroke();
+      if (!result.board) {
+        callback?.({ ok: false, error: result.error ?? "Não foi possível desfazer." });
+        return;
+      }
+      callback?.({ ok: true, board: result.board });
+      io.to(room.code).emit("duoBoard:changed", result.board);
+    });
+
+    socket.on("duoBoard:redo", (callback?: AckCallback) => {
+      const code = socket.data.roomCode;
+      const playerId = socket.data.playerId;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const isMember = room?.roomKind === "persistent-duo"
+        && code === PERSISTENT_DUO_ROOM_CODE
+        && Boolean(playerId)
+        && socket.data.accountId === playerId
+        && room.canManage(playerId!);
+      if (!isMember || !room || !playerId) {
+        callback?.({ ok: false, error: "Você não pode alterar este quadro." });
+        return;
+      }
+      const result = persistentDuoStore.redoDrawingStroke();
+      if (!result.board) {
+        callback?.({ ok: false, error: result.error ?? "Não foi possível refazer." });
+        return;
+      }
+      callback?.({ ok: true, board: result.board });
+      io.to(room.code).emit("duoBoard:changed", result.board);
+    });
+
     socket.on("duoBoard:clear", (callback?: AckCallback) => {
       const code = socket.data.roomCode;
       const playerId = socket.data.playerId;

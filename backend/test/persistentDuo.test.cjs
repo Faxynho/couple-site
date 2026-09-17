@@ -5,6 +5,7 @@ const { RoomManager } = require("../dist/rooms/RoomManager.js");
 const {
   PERSISTENT_DUO_ROOM_CODE,
   PERSISTENT_DUO_DISPLAY_NAME_MAX_LENGTH,
+  PersistentDuoStore,
   SHARED_DRAWING_MAX_POINTS_PER_STROKE,
   normalizeSharedDrawingStroke,
   normalizePersistentDuoDisplayName,
@@ -111,6 +112,47 @@ test("traços do quadro aceitam apenas formato, paleta, tamanho e coordenadas se
   assert.equal(normalizeSharedDrawingStroke({ ...normalized, color: "javascript:red" }), null);
   assert.equal(normalizeSharedDrawingStroke({ ...normalized, size: 999 }), null);
   assert.equal(normalizeSharedDrawingStroke({ ...normalized, points: [{ x: -0.1, y: 0.5 }] }), null);
+});
+
+test("traços do quadro aceitam cores hexadecimais personalizadas seguras", () => {
+  const normalized = normalizeSharedDrawingStroke({
+    id: "stroke_custom_color",
+    tool: "brush",
+    color: "#12AbEf",
+    size: 0.014,
+    points: [{ x: 0.25, y: 0.75 }],
+  });
+
+  assert.equal(normalized.color, "#12abef");
+  assert.equal(normalizeSharedDrawingStroke({ ...normalized, color: "red" }), null);
+  assert.equal(normalizeSharedDrawingStroke({ ...normalized, color: "#12345g" }), null);
+});
+
+test("desfazer e refazer atualizam o estado compartilhado do quadro", () => {
+  const store = new PersistentDuoStore(false);
+  const first = {
+    id: "stroke_history_1",
+    tool: "brush",
+    color: "#123456",
+    size: 0.014,
+    points: [{ x: 0.1, y: 0.2 }],
+  };
+  const second = { ...first, id: "stroke_history_2", color: "#abcdef" };
+
+  assert.ok(store.addDrawingStroke(first).stroke);
+  assert.ok(store.addDrawingStroke(second).stroke);
+  const undone = store.undoDrawingStroke().board;
+  assert.deepEqual(undone.strokes.map((stroke) => stroke.id), ["stroke_history_1"]);
+  assert.equal(undone.canUndo, true);
+  assert.equal(undone.canRedo, true);
+
+  const redone = store.redoDrawingStroke().board;
+  assert.deepEqual(redone.strokes.map((stroke) => stroke.id), ["stroke_history_1", "stroke_history_2"]);
+  assert.equal(redone.canRedo, false);
+
+  store.undoDrawingStroke();
+  store.addDrawingStroke({ ...second, id: "stroke_history_3" });
+  assert.equal(store.getDrawingBoard().canRedo, false, "um traço novo limpa o histórico de refazer");
 });
 
 test("payloads gigantes do quadro são rejeitados", () => {
