@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Eraser, Paintbrush, Trash2 } from "lucide-react";
+import { Eraser, Heart, Paintbrush, Trash2 } from "lucide-react";
 import { getSocket } from "@/lib/socket";
 import {
   downsampleDrawingPoints,
@@ -238,18 +238,31 @@ export default function SharedDrawingBoard() {
   };
 
   return (
-    <section className="glass-panel w-full rounded-xl3 p-4 sm:p-5" aria-labelledby="shared-drawing-title">
-      <div className="mb-3 flex items-start justify-between gap-3 text-left">
-        <div>
-          <h2 id="shared-drawing-title" className="font-display text-lg font-semibold text-ink">Nosso Quadro</h2>
-          <p className="mt-0.5 text-xs text-ink-soft">Desenhem juntos e continuem de onde pararam.</p>
-        </div>
-        <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${status === "error" ? "bg-red-500" : status === "saving" || status === "loading" ? "animate-pulse bg-amber-400" : "bg-emerald-500"}`} aria-hidden="true" />
+    <section className="mx-auto w-full max-w-2xl py-1" aria-labelledby="shared-drawing-title">
+      <div className="mb-4 flex items-center justify-center gap-2 text-center">
+        <Heart
+          size={17}
+          className="text-rose-deep drop-shadow-[0_0_8px_rgba(232,80,140,0.4)]"
+          fill="currentColor"
+          aria-hidden="true"
+        />
+        <h2
+          id="shared-drawing-title"
+          className="font-display text-xl font-extrabold tracking-tight text-rose-deep drop-shadow-[0_2px_8px_rgba(232,80,140,0.28)] sm:text-2xl"
+        >
+          Nosso Quadro
+        </h2>
+        <Heart
+          size={17}
+          className="text-rose-deep drop-shadow-[0_0_8px_rgba(232,80,140,0.4)]"
+          fill="currentColor"
+          aria-hidden="true"
+        />
       </div>
 
       <canvas
         ref={canvasRef}
-        className="block aspect-[3/2] w-full cursor-crosshair select-none rounded-xl2 border border-black/10 bg-white shadow-inner"
+        className="block aspect-[3/2] w-full cursor-crosshair select-none rounded-xl2 border border-white/80 bg-white shadow-[0_18px_38px_-22px_rgba(68,24,62,0.55)] sm:aspect-[5/3]"
         style={{ touchAction: "none", WebkitUserSelect: "none", userSelect: "none" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -259,42 +272,40 @@ export default function SharedDrawingBoard() {
         aria-label="Tela branca do Nosso Quadro"
       />
 
-      <div className="mt-4 flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2" aria-label="Ferramentas de desenho">
-            <button
-              type="button"
-              onClick={() => setTool("brush")}
-              className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors ${tool === "brush" ? "bg-rose text-white shadow-soft" : "bg-surface/80 text-ink-soft hover:text-ink"}`}
-              aria-pressed={tool === "brush"}
-            >
-              <Paintbrush size={15} /> Pincel
-            </button>
-            <button
-              type="button"
-              onClick={() => setTool("eraser")}
-              className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors ${tool === "eraser" ? "bg-rose text-white shadow-soft" : "bg-surface/80 text-ink-soft hover:text-ink"}`}
-              aria-pressed={tool === "eraser"}
-            >
-              <Eraser size={15} /> Borracha
-            </button>
-          </div>
+      <div className="mt-4 flex flex-col gap-4">
+        <div className="grid grid-cols-3 gap-2" aria-label="Ferramentas de desenho">
+          <button
+            type="button"
+            onClick={() => setTool("brush")}
+            className={`inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full px-2 text-[11px] font-semibold transition-colors sm:px-3 sm:text-xs ${tool === "brush" ? "bg-rose text-white shadow-soft" : "bg-surface/55 text-ink-soft hover:bg-surface/75 hover:text-ink"}`}
+            aria-pressed={tool === "brush"}
+          >
+            <Paintbrush size={15} /> Pincel
+          </button>
+          <button
+            type="button"
+            onClick={() => setTool("eraser")}
+            className={`inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full px-2 text-[11px] font-semibold transition-colors sm:px-3 sm:text-xs ${tool === "eraser" ? "bg-rose text-white shadow-soft" : "bg-surface/55 text-ink-soft hover:bg-surface/75 hover:text-ink"}`}
+            aria-pressed={tool === "eraser"}
+          >
+            <Eraser size={15} /> Borracha
+          </button>
           <button
             type="button"
             onClick={clearBoard}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-rose-deep transition-colors hover:bg-rose/10"
+            className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full bg-surface/35 px-2 text-[11px] font-semibold text-rose-deep transition-colors hover:bg-rose/10 sm:px-3 sm:text-xs"
           >
             <Trash2 size={15} /> Apagar tudo
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2" aria-label="Cores do pincel">
+        <div className="grid grid-cols-8 gap-2" aria-label="Cores do pincel">
           {SHARED_DRAWING_COLORS.map((item) => (
             <button
               key={item.value}
               type="button"
               onClick={() => { setColor(item.value); setTool("brush"); }}
-              className={`h-8 w-8 rounded-full border shadow-sm transition-transform hover:scale-110 ${color === item.value && tool === "brush" ? "scale-110 ring-2 ring-rose ring-offset-2 ring-offset-transparent" : "border-black/15"}`}
+              className={`h-7 w-7 justify-self-center rounded-full border shadow-sm transition-transform hover:scale-110 sm:h-8 sm:w-8 ${color === item.value && tool === "brush" ? "scale-110 ring-2 ring-rose ring-offset-2 ring-offset-transparent" : "border-black/15"}`}
               style={{ backgroundColor: item.value }}
               aria-label={item.label}
               aria-pressed={color === item.value && tool === "brush"}
@@ -302,14 +313,14 @@ export default function SharedDrawingBoard() {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2" aria-label="Tamanho do pincel">
-          <span className="mr-1 text-xs font-medium text-ink-soft">Tamanho</span>
+        <div className="grid grid-cols-[auto_repeat(3,minmax(0,1fr))] items-center gap-2" aria-label="Tamanho do pincel">
+          <span className="text-xs font-medium text-ink-soft">Tamanho</span>
           {SHARED_DRAWING_SIZES.map((item) => (
             <button
               key={item.value}
               type="button"
               onClick={() => setSize(item.value)}
-              className={`min-h-9 rounded-full px-3 text-xs font-semibold transition-colors ${size === item.value ? "bg-ink text-surface" : "bg-surface/80 text-ink-soft hover:text-ink"}`}
+              className={`min-h-9 w-full rounded-full px-2 text-xs font-semibold transition-colors ${size === item.value ? "bg-surface text-ink shadow-soft" : "bg-surface/45 text-ink-soft hover:bg-surface/70 hover:text-ink"}`}
               aria-pressed={size === item.value}
             >
               {item.label}
@@ -318,7 +329,7 @@ export default function SharedDrawingBoard() {
         </div>
       </div>
 
-      <p className={`mt-3 text-left text-[11px] ${status === "error" ? "text-red-600" : "text-ink-soft/80"}`} role="status">
+      <p className={`mt-3 text-center text-[11px] ${status === "error" ? "text-red-600" : "text-ink-soft/80"}`} role="status">
         {message}
       </p>
     </section>
