@@ -16,7 +16,20 @@ vi.mock("@/lib/socket", () => ({
       const callback = args.at(-1);
       if (typeof callback !== "function") return;
       if (event === "duoBoard:sync") {
-        callback({ ok: true, board: { revision: 0, strokes: [], updatedAt: 0 } });
+        callback({ ok: true, board: { revision: 0, strokes: [], canUndo: false, canRedo: false, updatedAt: 0 } });
+      } else if (event === "duoBoard:undo") {
+        callback({ ok: true, board: { revision: 1, strokes: [], canUndo: false, canRedo: true, updatedAt: 1 } });
+      } else if (event === "duoBoard:redo") {
+        callback({
+          ok: true,
+          board: {
+            revision: 2,
+            strokes: [{ id: "stroke_redone", tool: "brush", color: "#123456", size: 0.014, points: [{ x: 0.1, y: 0.1 }] }],
+            canUndo: true,
+            canRedo: false,
+            updatedAt: 2,
+          },
+        });
       } else {
         callback({ ok: true });
       }
@@ -86,5 +99,40 @@ describe("quadro compartilhado no navegador", () => {
     fireEvent.click(screen.getByRole("button", { name: /Apagar tudo/i }));
     expect(window.confirm).toHaveBeenCalledOnce();
     expect(socketState.emitted.some((item) => item.event === "duoBoard:clear")).toBe(true);
+  });
+
+  it("aceita uma cor personalizada e envia a cor escolhida no traço", async () => {
+    render(<SharedDrawingBoard />);
+    await waitFor(() => expect(screen.getByText("Desenho salvo e compartilhado")).toBeTruthy());
+    const canvas = screen.getByLabelText("Tela branca do Nosso Quadro");
+    const picker = screen.getByLabelText("Escolher qualquer cor");
+
+    fireEvent.change(picker, { target: { value: "#12abef" } });
+    fireEvent.pointerDown(canvas, { pointerId: 4, pointerType: "touch", clientX: 40, clientY: 40, button: 0 });
+    fireEvent.pointerUp(canvas, { pointerId: 4, pointerType: "touch", clientX: 40, clientY: 40, button: 0 });
+
+    const addEvent = socketState.emitted.find((item) => item.event === "duoBoard:addStroke");
+    expect((addEvent?.args[0] as { stroke: { color: string } }).stroke.color).toBe("#12abef");
+  });
+
+  it("envia desfazer e refazer e atualiza a disponibilidade dos botões", async () => {
+    render(<SharedDrawingBoard />);
+    await waitFor(() => expect(screen.getByText("Desenho salvo e compartilhado")).toBeTruthy());
+    const canvas = screen.getByLabelText("Tela branca do Nosso Quadro");
+    const undo = screen.getByRole("button", { name: "Desfazer último traço" });
+    const redo = screen.getByRole("button", { name: "Refazer último traço" });
+    expect(undo).toHaveProperty("disabled", true);
+    expect(redo).toHaveProperty("disabled", true);
+
+    fireEvent.pointerDown(canvas, { pointerId: 8, pointerType: "mouse", clientX: 25, clientY: 25, button: 0 });
+    fireEvent.pointerUp(canvas, { pointerId: 8, pointerType: "mouse", clientX: 25, clientY: 25, button: 0 });
+    expect(undo).toHaveProperty("disabled", false);
+
+    fireEvent.click(undo);
+    expect(socketState.emitted.some((item) => item.event === "duoBoard:undo")).toBe(true);
+    expect(redo).toHaveProperty("disabled", false);
+
+    fireEvent.click(redo);
+    expect(socketState.emitted.some((item) => item.event === "duoBoard:redo")).toBe(true);
   });
 });

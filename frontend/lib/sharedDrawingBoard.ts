@@ -16,6 +16,8 @@ export interface SharedDrawingStroke {
 export interface SharedDrawingBoardSnapshot {
   revision: number;
   strokes: SharedDrawingStroke[];
+  canUndo: boolean;
+  canRedo: boolean;
   updatedAt: number;
 }
 

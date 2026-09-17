@@ -30,6 +30,15 @@ export interface SharedDrawingStroke {
 export interface SharedDrawingBoard {
   revision: number;
   strokes: SharedDrawingStroke[];
+  redoStrokes: SharedDrawingStroke[];
+  updatedAt: number;
+}
+
+export interface SharedDrawingBoardSnapshot {
+  revision: number;
+  strokes: SharedDrawingStroke[];
+  canUndo: boolean;
+  canRedo: boolean;
   updatedAt: number;
 }
 
@@ -57,19 +66,25 @@ const DATA_FILE = path.join(DATA_DIR, "persistent-duo-lobby.json");
 const SAVE_DEBOUNCE_MS = 800;
 
 function emptyDrawingBoard(): SharedDrawingBoard {
-  return { revision: 0, strokes: [], updatedAt: Date.now() };
+  return { revision: 0, strokes: [], redoStrokes: [], updatedAt: Date.now() };
 }
 
 function cloneStroke(stroke: SharedDrawingStroke): SharedDrawingStroke {
   return { ...stroke, points: stroke.points.map((point) => ({ ...point })) };
 }
 
-function cloneDrawingBoard(board: SharedDrawingBoard): SharedDrawingBoard {
-  return { ...board, strokes: board.strokes.map(cloneStroke) };
+function cloneDrawingBoard(board: SharedDrawingBoard): SharedDrawingBoardSnapshot {
+  return {
+    revision: board.revision,
+    strokes: board.strokes.map(cloneStroke),
+    canUndo: board.strokes.length > 0,
+    canRedo: board.redoStrokes.length > 0,
+    updatedAt: board.updatedAt,
+  };
 }
 
-function isDrawingColor(value: unknown): value is (typeof SHARED_DRAWING_COLORS)[number] {
-  return typeof value === "string" && (SHARED_DRAWING_COLORS as readonly string[]).includes(value.toLowerCase());
+function isDrawingColor(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
 }
 
 function isDrawingSize(value: unknown): value is (typeof SHARED_DRAWING_SIZES)[number] {
@@ -110,6 +125,7 @@ function sanitizeDrawingBoard(value: unknown): SharedDrawingBoard {
   if (!value || typeof value !== "object") return empty;
   const input = value as Partial<SharedDrawingBoard>;
   const strokes: SharedDrawingStroke[] = [];
+  const redoStrokes: SharedDrawingStroke[] = [];
   let pointCount = 0;
   for (const rawStroke of Array.isArray(input.strokes) ? input.strokes : []) {
     if (strokes.length >= SHARED_DRAWING_MAX_STROKES) break;
@@ -118,9 +134,17 @@ function sanitizeDrawingBoard(value: unknown): SharedDrawingBoard {
     strokes.push(stroke);
     pointCount += stroke.points.length;
   }
+  for (const rawStroke of Array.isArray(input.redoStrokes) ? input.redoStrokes : []) {
+    if (strokes.length + redoStrokes.length >= SHARED_DRAWING_MAX_STROKES) break;
+    const stroke = normalizeSharedDrawingStroke(rawStroke);
+    if (!stroke || pointCount + stroke.points.length > SHARED_DRAWING_MAX_TOTAL_POINTS) continue;
+    redoStrokes.push(stroke);
+    pointCount += stroke.points.length;
+  }
   return {
     revision: Number.isSafeInteger(input.revision) && Number(input.revision) >= 0 ? Number(input.revision) : 0,
     strokes,
+    redoStrokes,
     updatedAt: Number.isFinite(input.updatedAt) ? Number(input.updatedAt) : empty.updatedAt,
   };
 }
@@ -132,7 +156,7 @@ export function normalizePersistentDuoDisplayName(value: unknown): string | null
   return Array.from(normalized).slice(0, PERSISTENT_DUO_DISPLAY_NAME_MAX_LENGTH).join("");
 }
 
-class PersistentDuoStore {
+export class PersistentDuoStore {
   private data: PersistentDuoStoredData = {
     displayName: PERSISTENT_DUO_DEFAULT_DISPLAY_NAME,
     drawing: emptyDrawingBoard(),
@@ -141,6 +165,8 @@ class PersistentDuoStore {
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private savingNow = false;
   private saveAgainAfter = false;
+
+  constructor(private readonly shouldPersist = true) {}
 
   ready(): Promise<void> {
     if (!this.loadPromise) this.loadPromise = this.load();
@@ -151,7 +177,7 @@ class PersistentDuoStore {
     return { displayName: this.data.displayName };
   }
 
-  getDrawingBoard(): SharedDrawingBoard {
+  getDrawingBoard(): SharedDrawingBoardSnapshot {
     return cloneDrawingBoard(this.data.drawing);
   }
 
@@ -175,16 +201,38 @@ class PersistentDuoStore {
       return { error: "O quadro atingiu o limite de detalhes. Apague tudo para começar um desenho novo." };
     }
     this.data.drawing.strokes.push(stroke);
+    this.data.drawing.redoStrokes = [];
     this.data.drawing.revision += 1;
     this.data.drawing.updatedAt = Date.now();
     this.scheduleSave();
     return { stroke: cloneStroke(stroke) };
   }
 
+  undoDrawingStroke(): { board?: SharedDrawingBoardSnapshot; error?: string } {
+    const stroke = this.data.drawing.strokes.pop();
+    if (!stroke) return { error: "Não há traços para desfazer." };
+    this.data.drawing.redoStrokes.push(stroke);
+    this.data.drawing.revision += 1;
+    this.data.drawing.updatedAt = Date.now();
+    this.scheduleSave();
+    return { board: this.getDrawingBoard() };
+  }
+
+  redoDrawingStroke(): { board?: SharedDrawingBoardSnapshot; error?: string } {
+    const stroke = this.data.drawing.redoStrokes.pop();
+    if (!stroke) return { error: "Não há traços para refazer." };
+    this.data.drawing.strokes.push(stroke);
+    this.data.drawing.revision += 1;
+    this.data.drawing.updatedAt = Date.now();
+    this.scheduleSave();
+    return { board: this.getDrawingBoard() };
+  }
+
   clearDrawingBoard(): Pick<SharedDrawingBoard, "revision" | "updatedAt"> {
     this.data.drawing = {
       revision: this.data.drawing.revision + 1,
       strokes: [],
+      redoStrokes: [],
       updatedAt: Date.now(),
     };
     this.scheduleSave();
@@ -205,6 +253,7 @@ class PersistentDuoStore {
   }
 
   private scheduleSave() {
+    if (!this.shouldPersist) return;
     if (this.saveTimer) return;
     this.saveTimer = setTimeout(() => {
       this.saveTimer = null;
