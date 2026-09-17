@@ -1,128 +1,135 @@
-# Nosso Mundo — guia de edição
+# Nosso Mundo — mapas e decoração
 
-Este guia explica os ajustes mais comuns sem exigir que você entenda todo o jogo.
+Este guia descreve a estrutura que está em produção. O mapa Tiled é sempre a
+base imutável; decorações e alterações de terreno dos jogadores são overlays
+persistidos pelo backend.
 
-## Onde está cada coisa
+## Arquivos principais
 
-- Sprites e imagens: `frontend/public/world/`
-- Mapa externo: `frontend/public/world/maps/main-world.tmj`
-- Interior da casa: `frontend/public/world/maps/house-interior.tmj`
-- Configuração do personagem: `frontend/world/config/characterConfig.ts`
-- Configuração de câmera, mapa e assets: `frontend/world/config/worldConfig.ts`
-- Regras autoritativas de decoração: `backend/src/world/worldConfig.ts`
-- Código principal do Phaser: `frontend/world/game/WorldScene.ts`
-- Persistência criada em runtime: `backend/data/persistent-world.json`
+- Exterior: `frontend/public/world/maps/main-world.tmj`
+- Casa: `frontend/public/world/maps/house-interior.tmj`
+- Tilesets carregáveis: `frontend/world/config/tilesetConfig.ts`
+- Catálogo visual e comportamental: `frontend/world/config/decorationCatalog.ts`
+- Validação autoritativa mínima: `backend/src/world/decorationCatalog.ts`
+- Render, preview, colisão e autotile: `frontend/world/game/WorldScene.ts`
+- Persistência: `backend/src/world/WorldStore.ts`
+- Eventos Socket.IO: `backend/src/world/worldSocketHandlers.ts`
+- Save de runtime, fora do Git: `backend/data/persistent-world.json`
 
-`persistent-world.json` não fica no Git. Em produção ele usa o mesmo diretório persistente já montado no Railway para `backend/data/`. Não edite `accounts.json` para mudar o mundo.
+## Auditoria dos mapas atuais
 
-## Personagens
+Os dois mapas usam grid de 16×16 px e as mesmas oito layers:
 
-Abra `frontend/world/config/characterConfig.ts`.
+| Layer | Tipo | Uso atual |
+| --- | --- | --- |
+| `Ground` | Tile Layer | piso-base; no exterior também contém a água |
+| `GroundDetails` | Tile Layer | detalhes baixos; terra/areia/caminhos externos e piso/paredes da casa |
+| `GroundDetailsTop` | Tile Layer | detalhes superiores; cultivos externos e tapete/parede interna |
+| `Objects` | Object Layer | árvores, construções, cercas e móveis com Y-sort |
+| `reference` | Object Layer | referências de edição, não renderizadas como decoração dinâmica |
+| `AbovePlayer` | Object Layer | partes que devem aparecer acima do jogador |
+| `Collisions` | Object Layer | bloqueios manuais do mapa |
+| `Interactions` | Object Layer | porta/saída e respectivos destinos |
 
-- `scale`: tamanho visual. `2` significa duas vezes o tamanho original.
-- `frameWidth` / `frameHeight`: tamanho de cada quadro do spritesheet.
-- `collision.width` / `collision.height`: tamanho da colisão perto dos pés.
-- `collision.offsetX` / `collision.offsetY`: posição dessa colisão dentro do frame.
-- `walkSpeed`: velocidade em pixels por segundo.
-- `fps`: velocidade da animação.
-- `frames`: quais quadros formam cada direção.
+O sistema dinâmico respeita a layer do equivalente real: água em `Ground`,
+terra e areia em `GroundDetails`, e tapete em `GroundDetailsTop`. Os TMJ atuais
+não possuem Terrain Set nem Wang Set. Por isso o autotile aprende as máscaras
+e frames observando os padrões já pintados na layer correspondente, usando
+somente variantes que existem no mapa.
 
-O `walk.png` real mede 192×192 e tem 6 colunas por 6 linhas de frames 32×32. A versão atual usa:
+Objetos dinâmicos usam os mesmos tilesets, dimensões exibidas, collision
+objects e `sortOffsetY` dos objetos Tiled equivalentes. Sprite e colisão são
+independentes: a copa de uma árvore pode ser grande enquanto apenas o tronco
+bloqueia o jogador.
 
-- frente/baixo: frames 0 a 5 (linha 0);
-- costas/cima: frames 12 a 17 (linha 2);
-- perfil/direita: frames 24 a 29 (linha 4);
-- perfil/esquerda: os mesmos frames da direita, espelhados com `flipX`.
+## Catálogo atual
 
-As linhas 1, 3 e 5 são variações diagonais e ficaram disponíveis para uma expansão futura.
+O menu possui as categorias Plantas, Decorações, Móveis, Caminhos, Natureza e
+Terreno. Só foram incluídas referências comprovadamente usadas nos TMJ atuais:
 
-O `actions.png` mede 96×576: 3 colunas por 18 linhas de 32×32. A coluna central funciona como espaçamento em muitos grupos. A inspeção visual encontrou grupos direcionais de picareta, pá/enxada, machado e regador. O registro está em `ACTION_SHEET_LAYOUT`; eles ainda não são executados porque ferramentas/agricultura não fazem parte desta primeira versão.
+- plantas: flores/arbusto de `plants-v2` e planta interna de `house-plants`;
+- decorações: gaveteiro e barril de `props-1`, fogueira de pedra de `pit`;
+- móveis: mesa, cama, cadeiras, sofá e estante dos tilesets internos;
+- caminhos: cerca de `fences` e tapete de `carpet-1`;
+- natureza: árvores de `trees_v2`, pedra de `rocks` e arbusto de `bushes`;
+- terreno: terra de `tilled-dirt`, areia de `ground-2`, água de `water` e a
+  ferramenta para restaurar o terreno original.
 
-## Câmera e controles mobile
+Assets soltos e itens sem um equivalente configurado no mapa não entram no
+catálogo. Em particular, a cerca antiga recortada por código não é usada.
 
-Abra `frontend/world/config/worldConfig.ts`.
+## Como adicionar uma decoração
 
-- `camera.zoom`: aproximação da câmera;
-- `camera.lerpX` / `lerpY`: suavidade do acompanhamento;
-- `camera.deadzoneWidth` / `deadzoneHeight`: área em que o personagem anda antes de a câmera acompanhar;
-- `networkHz`: frequência máxima de envio de posição;
-- `mobile`: parâmetros preparados para os controles touch.
+### Objeto comum
 
-O layout e o tamanho visual dos botões touch ficam em `frontend/app/mundo/World.module.css`.
+1. Use no Tiled um frame real do tileset e confirme tamanho, layer, colisão e
+   `sortOffsetY`.
+2. Garanta que o tileset exista em `tilesetConfig.ts`.
+3. Adicione uma definição `kind: "object"` em `decorationCatalog.ts` com:
+   `id`, nome, categoria, mapas permitidos, `source`, `footprint`, `collisions`,
+   `depth` e rotações permitidas.
+4. Adicione a regra mínima de servidor, com o mesmo ID/mapas/footprint, em
+   `backend/src/world/decorationCatalog.ts`. Essa pequena duplicação impede que
+   um cliente adulterado grave itens ou áreas inválidas.
 
-## Abrindo e editando no Tiled
+Não é necessário alterar `WorldScene`, UI, tipos de save, sockets ou renderer.
+O botão aparece automaticamente na categoria.
 
-1. Instale o Tiled Map Editor.
-2. Abra `frontend/public/world/maps/main-world.tmj` para o exterior.
-3. Abra `frontend/public/world/maps/house-interior.tmj` para a casa.
-4. Mantenha os arquivos dentro de `frontend/public/world/`; os tilesets estão incorporados ao mapa com caminhos de imagem relativos e funcionam em outro computador e em produção.
-5. Salve no formato JSON do Tiled (`.tmj`).
+`footprint` é a área ocupada no grid e não precisa ter o tamanho do sprite.
+Copie `collisions` do collision object do tile no TMJ; não crie uma colisão do
+tamanho total da imagem. Use `depth.behavior: "y-sort"` para objetos pelos quais
+o jogador passa à frente/atrás, ou `"above-player"` apenas quando o equivalente
+real estiver na layer `AbovePlayer`.
 
-Layers usadas:
+### Objeto conectável
 
-- `Ground`: tiles pintáveis de piso;
-- `GroundDetails`: retângulos com a propriedade `kind` (`water`, `path` ou `farm`);
-- `Objects`: árvores, casa, animais e móveis fixos;
-- `AbovePlayer`: objetos altos que participam da profundidade;
-- `Collisions`: retângulos sólidos editáveis;
-- `Interactions`: porta/saída com a propriedade `target`.
+Use `kind: "connected-object"`, um `connectionGroup`, passo/origem do grid,
+mapa `variants` (máscara N=1, E=2, S=4, W=8) e `variantCollisions`. Cadastre
+somente combinações que possuam frame real. Ao colocar ou remover um segmento,
+somente ele e os vizinhos cardinais são reavaliados.
 
-Para mover uma árvore ou a casa, selecione o objeto na layer `Objects` e arraste. Para mudar lago, caminho ou plantio, redimensione o retângulo correspondente em `GroundDetails`. Para mudar uma parede ou bloqueio, edite o retângulo em `Collisions`.
+### Terreno ou caminho
 
-Ao adicionar um objeto fixo novo, copie um objeto semelhante e preserve a propriedade personalizada `asset`. Esse valor aponta para `WORLD_OBJECT_ASSETS` em `frontend/world/config/worldConfig.ts`.
+Use `kind: "terrain"` ou `"path"`, escolha `terrainLayer` pelo equivalente no
+TMJ e informe os frames reais em `autotile.baseFrames`. `collision: true` cria
+o bloqueio Arcade Physics por célula; atualmente isso é usado pela água.
+Variantes visuais não são persistidas: cada cliente calcula o mesmo resultado
+a partir das células sincronizadas.
 
-## Trocando ou adicionando arte
+Nunca escolha uma layer por aparência aproximada. Confira onde o tile já está
+pintado no mapa. Se não houver Terrain/Wang Set nem padrões suficientes no TMJ,
+deixe o item fora do catálogo até existir uma referência confiável.
 
-Não acople regra ao nome do PNG. O registro contém:
+### Checklist de teste para item novo
 
-- `texture`: nome interno;
-- `url`: caminho público do PNG;
-- `crop`: trecho usado dentro do atlas;
-- `scale`: escala visual;
-- `origin`: ponto de ancoragem;
-- `collision`: colisão separada da imagem.
+1. Execute typecheck/build e testes de frontend e backend.
+2. Teste preview válido e inválido no exterior/interior permitido.
+3. Confirme footprint, colisão, depth e remoção.
+4. Abra dois clientes, coloque/remova em ambos e reconecte.
+5. No mobile, confirme que `pointerdown` só inicia o preview, arrastar move e
+   apenas `pointerup` válido confirma; `pointercancel` e soltura sobre UI cancelam.
+6. Para conectáveis/terreno, teste todas as variantes existentes e a remoção de
+   uma célula central.
 
-Para trocar arte mantendo a lógica, substitua apenas `url` e `crop` no registro. Se o novo arquivo usar dimensões diferentes, ajuste o `crop`; não aumente a colisão para cobrir a copa de uma árvore.
+## Persistência e multiplayer
 
-## Adicionando uma decoração
+O save v2 armazena objetos como `itemId`, mapa, coordenadas, rotação e metadados
+de autoria/tempo. Terreno armazena apenas mapa, célula e `terrainId`. Frames de
+autotile e cerca são derivados, não salvos. Saves v1 com o antigo campo `type`
+são migrados ao carregar e objetos legados permanecem preservados.
 
-Uma decoração precisa existir em dois registros:
+O servidor valida catálogo, mapa, área, footprint, sobreposição e água antes de
+persistir. Os eventos enviam a coleção autoritativa aos dois clientes. O efeito
+`decoration-place-effect.png` é executado localmente na confirmação e enviado
+somente ao outro socket; terreno nunca dispara esse efeito.
 
-1. `DECORATION_ASSETS`, em `frontend/world/config/worldConfig.ts`, define imagem, recorte e aparência.
-2. `WORLD_DECORATION_RULES`, em `backend/src/world/worldConfig.ts`, define quantos quadrados ela ocupa e permite que o servidor valide conflitos.
+## Personagens e controles
 
-Também adicione o novo nome ao tipo `WorldDecorationType` em `frontend/world/types.ts` e a `WORLD_DECORATION_TYPES` em `backend/src/world/types.ts`. Depois inclua o botão na interface de `/mundo`.
+`characterConfig.ts` centraliza escala, colisão, velocidade e animações. O
+`walk.png` usa frames 32×32. O `actions.png` real mede 96×864 e é uma grade de
+2×18 frames de 48×48.
 
-Objetos colocados por André ou Flávia não alteram o mapa Tiled. Eles recebem um ID único, são validados pelo servidor e ficam em `backend/data/persistent-world.json`. Colocar, mover e remover sempre gera uma atualização para os dois jogadores conectados.
-
-## Multiplayer e mapas separados
-
-O mundo usa o Socket.IO já existente. Apenas um socket validado na sala persistente com `accountId` e `playerId` iguais a `andre` ou `flavia` aceita os eventos `world:*`. Visitantes e códigos temporários não entram.
-
-Cada jogador guarda sua própria `scene`. Quem está fora vê somente jogadores no exterior; quem entra na casa vê somente jogadores no interior. A posição remota é interpolada no cliente para não tremer, mas o servidor limita posições, velocidade e operações de decoração.
-
-## Música e efeitos
-
-`frontend/world/audio/WorldAudioManager.ts` guarda dois volumes independentes:
-
-- `musicVolume` para músicas;
-- `sfxVolume` para efeitos.
-
-Os valores ficam no `localStorage` e sobrevivem ao reload. Esta versão não inventa arquivos de som: não havia música/SFX em `frontend/public/world/`. Quando adicionar um arquivo, use `setMusicTrack` para música e `playSfx` para efeitos, mantendo as categorias separadas.
-
-## Controles
-
-PC:
-
-- WASD ou setas: mover;
-- E: entrar/sair pela porta;
-- Esc: cancelar decoração ou abrir configurações;
-- F3: FPS, posição, mapa, grid e hitboxes.
-
-Celular em paisagem:
-
-- direcional do lado esquerdo: mover;
-- botão E do lado direito: interagir;
-- Configurações e Modo Decorar ficam no topo.
-
-Em retrato o jogo pede para girar o aparelho.
+No desktop: WASD/setas movem, E interage, Esc cancela e F3 mostra debug. No
+mobile: direcional move e o botão E interage. A câmera, zoom, fullscreen e
+controles não fazem parte do catálogo e não devem ser alterados ao cadastrar
+itens.

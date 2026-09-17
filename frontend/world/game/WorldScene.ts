@@ -1,9 +1,10 @@
 import * as Phaser from "phaser";
 import { AccountId } from "@/lib/accountSession";
 import { CHARACTER_CONFIGS } from "@/world/config/characterConfig";
-import { DECORATION_ASSETS, WORLD_CONFIG, WORLD_OBJECT_ASSETS, WorldVisualAsset } from "@/world/config/worldConfig";
+import { ConnectedCatalogItem, DECORATION_CATALOG, DecorationCatalogItem, getDecorationDefinition, isTerrainDefinition, ObjectCatalogItem, TerrainCatalogItem } from "@/world/config/decorationCatalog";
+import { WORLD_CONFIG, WORLD_OBJECT_ASSETS, WorldVisualAsset } from "@/world/config/worldConfig";
 import { getWorldTilesetAsset, WORLD_TILESET_ASSETS, WorldTilesetAsset } from "@/world/config/tilesetConfig";
-import { DecorationTool, WorldDecoration, WorldDirection, WorldPlayerActionEvent, WorldPlayerState, WorldSceneId, WorldSnapshot } from "@/world/types";
+import { DecorationTool, WorldDecoration, WorldDecorationEffectEvent, WorldDirection, WorldPlayerActionEvent, WorldPlayerState, WorldSceneId, WorldSnapshot, WorldTerrainCell } from "@/world/types";
 import { clampWorldCameraLevel, getWorldCameraLayout, WORLD_CAMERA_LEVEL_MAX, WORLD_CAMERA_LEVEL_MIN } from "./WorldCameraLayout";
 import { WorldCameraZoomInfo, WorldGameCallbacks } from "./WorldGameApi";
 
@@ -31,6 +32,17 @@ const TAP_INTERACTION_DISTANCE = 48;
 const TAP_INTERACTION_HIT_PADDING = 18;
 const TAP_STUCK_TIMEOUT_MS = 900;
 const CAMERA_ZOOM_TRANSITION_MS = 240;
+const TILE_SIZE = WORLD_CONFIG.tileSize;
+const NEIGHBOR_OFFSETS = [
+  { bit: 1, dx: 0, dy: -1 },
+  { bit: 2, dx: 1, dy: -1 },
+  { bit: 4, dx: 1, dy: 0 },
+  { bit: 8, dx: 1, dy: 1 },
+  { bit: 16, dx: 0, dy: 1 },
+  { bit: 32, dx: -1, dy: 1 },
+  { bit: 64, dx: -1, dy: 0 },
+  { bit: 128, dx: -1, dy: -1 },
+] as const;
 
 function property(object: TiledObject, name: string): unknown {
   return object.properties?.find((item: { name: string; value: unknown }) => item.name === name)?.value;
@@ -41,6 +53,8 @@ export class WorldScene extends Phaser.Scene {
   private readonly callbacks: WorldGameCallbacks;
   private players: WorldPlayerState[];
   private decorations: WorldDecoration[];
+  private terrain: WorldTerrainCell[];
+  private terrainByCell = new Map<string, WorldTerrainCell>();
   private currentScene: WorldSceneId = "exterior";
   private tilemap?: Phaser.Tilemaps.Tilemap;
   private groundLayer?: Phaser.Tilemaps.TilemapLayer;
@@ -51,8 +65,14 @@ export class WorldScene extends Phaser.Scene {
   private remotePlayers = new Map<AccountId, Phaser.GameObjects.Sprite>();
   private mapVisuals: Phaser.GameObjects.GameObject[] = [];
   private fixedObstacles: Phaser.GameObjects.GameObject[] = [];
-  private decorationVisuals: Phaser.GameObjects.Image[] = [];
+  private decorationVisuals: Phaser.GameObjects.Sprite[] = [];
   private decorationObstacles: Phaser.GameObjects.GameObject[] = [];
+  private decorationEntries = new Map<string, {
+    signature: string;
+    sprite: Phaser.GameObjects.Sprite;
+    obstacles: Phaser.GameObjects.GameObject[];
+    colliders: Phaser.Physics.Arcade.Collider[];
+  }>();
   private fixedColliders: Phaser.Physics.Arcade.Collider[] = [];
   private decorationColliders: Phaser.Physics.Arcade.Collider[] = [];
   private interactions: WorldInteraction[] = [];
@@ -64,7 +84,19 @@ export class WorldScene extends Phaser.Scene {
   private remoteActions = new Map<AccountId, { action: string; direction: WorldDirection }>();
   private decorationTool: DecorationTool = null;
   private movingDecoration: WorldDecoration | null = null;
-  private preview?: Phaser.GameObjects.Image;
+  private preview?: Phaser.GameObjects.Sprite | Phaser.GameObjects.Rectangle;
+  private placementPointerId: number | null = null;
+  private placementCancelled = false;
+  private dynamicGroundLayer?: Phaser.Tilemaps.TilemapLayer;
+  private dynamicGroundDetailsLayer?: Phaser.Tilemaps.TilemapLayer;
+  private dynamicGroundDetailsTopLayer?: Phaser.Tilemaps.TilemapLayer;
+  private terrainObstacles = new Map<string, { obstacle: Phaser.GameObjects.GameObject; collider?: Phaser.Physics.Arcade.Collider }>();
+  private autotileLookups = new Map<string, Map<number, number>>();
+  private effectSprites = new Set<Phaser.GameObjects.Sprite>();
+  private readonly handleDomPointerCancel = () => this.handlePointerCancel();
+  private readonly handleInteractKey = () => this.interact();
+  private readonly handleCancelKey = () => this.cancelDecoration();
+  private readonly handleDebugKey = () => this.toggleDebug();
   private debugEnabled = false;
   private debugGrid?: Phaser.GameObjects.Graphics;
   private lastNetworkAt = 0;
@@ -89,6 +121,8 @@ export class WorldScene extends Phaser.Scene {
     this.accountId = accountId;
     this.players = snapshot.players;
     this.decorations = snapshot.decorations;
+    this.terrain = snapshot.terrain ?? [];
+    this.indexTerrain();
     this.callbacks = callbacks;
   }
 
@@ -106,13 +140,14 @@ export class WorldScene extends Phaser.Scene {
       }
     }
 
-    const assets = [...Object.values(WORLD_OBJECT_ASSETS), ...Object.values(DECORATION_ASSETS)];
+    const assets = Object.values(WORLD_OBJECT_ASSETS);
     for (const asset of assets) if (!this.load.textureManager.exists(asset.texture)) this.load.image(asset.texture, asset.url);
     for (const tileset of Object.values(WORLD_TILESET_ASSETS)) {
       if (!this.textures.exists(tileset.textureKey)) this.load.image(tileset.textureKey, tileset.url);
     }
     this.load.tilemapTiledJSON(WORLD_CONFIG.scenes.exterior.mapKey, WORLD_CONFIG.scenes.exterior.mapUrl);
     this.load.tilemapTiledJSON(WORLD_CONFIG.scenes["house-interior"].mapKey, WORLD_CONFIG.scenes["house-interior"].mapUrl);
+    this.load.spritesheet("world-decoration-place-effect", "/world/effects/decoration-place-effect.png", { frameWidth: 32, frameHeight: 32 });
   }
 
   create() {
@@ -121,12 +156,17 @@ export class WorldScene extends Phaser.Scene {
     this.createAnimations();
     this.cursors = this.input.keyboard?.createCursorKeys();
     this.keys = this.input.keyboard?.addKeys("W,A,S,D") as Record<"W" | "A" | "S" | "D", Phaser.Input.Keyboard.Key> | undefined;
-    this.input.keyboard?.on("keydown-E", () => this.interact());
-    this.input.keyboard?.on("keydown-ESC", () => this.cancelDecoration());
-    this.input.keyboard?.on(`keydown-${WORLD_CONFIG.debugKey}`, () => this.toggleDebug());
+    this.input.keyboard?.on("keydown-E", this.handleInteractKey);
+    this.input.keyboard?.on("keydown-ESC", this.handleCancelKey);
+    this.input.keyboard?.on(`keydown-${WORLD_CONFIG.debugKey}`, this.handleDebugKey);
     this.input.keyboard?.on("keydown", this.handleActionDebugKey, this);
     this.input.on("pointermove", this.handlePointerMove, this);
     this.input.on("pointerdown", this.handlePointerDown, this);
+    this.input.on("pointerup", this.handlePointerUp, this);
+    this.input.on("pointerupoutside", this.handlePointerCancel, this);
+    this.input.on("gameout", this.handlePointerCancel, this);
+    this.game.canvas.addEventListener("pointercancel", this.handleDomPointerCancel);
+    this.game.canvas.addEventListener("lostpointercapture", this.handleDomPointerCancel);
     this.cameras.main.on(Phaser.Cameras.Scene2D.Events.FOLLOW_UPDATE, this.handleCameraFollowUpdate, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.cleanup());
     const local = this.players.find((item) => item.accountId === this.accountId);
@@ -241,7 +281,46 @@ export class WorldScene extends Phaser.Scene {
     for (const [id, sprite] of this.remotePlayers) if (!players.some((item) => item.accountId === id)) { sprite.destroy(); this.remotePlayers.delete(id); }
   }
 
-  updateDecorations(decorations: WorldDecoration[]) { this.decorations = decorations; if (this.localPlayer) this.renderDecorations(); }
+  updateDecorations(decorations: WorldDecoration[]) {
+    this.decorations = decorations;
+    if (this.localPlayer) this.renderDecorations();
+  }
+
+  updateTerrain(terrain: WorldTerrainCell[]) {
+    const previous = this.terrain;
+    this.terrain = terrain;
+    this.indexTerrain();
+    if (!this.tilemap) return;
+    const dirty = new Set<string>();
+    const previousByCell = new Map(previous.filter((cell) => cell.scene === this.currentScene).map((cell) => [`${cell.gridX}:${cell.gridY}`, cell]));
+    const nextByCell = new Map(terrain.filter((cell) => cell.scene === this.currentScene).map((cell) => [`${cell.gridX}:${cell.gridY}`, cell]));
+    for (const key of new Set([...previousByCell.keys(), ...nextByCell.keys()])) {
+      if (previousByCell.get(key)?.terrainId === nextByCell.get(key)?.terrainId) continue;
+      const [gridX, gridY] = key.split(":").map(Number);
+      dirty.add(key);
+      for (const neighbor of NEIGHBOR_OFFSETS) dirty.add(`${gridX + neighbor.dx}:${gridY + neighbor.dy}`);
+    }
+    for (const key of dirty) {
+      const [x, y] = key.split(":").map(Number);
+      this.renderTerrainCell(x, y);
+    }
+    this.syncTerrainCollisions();
+  }
+
+  playDecorationEffect(event: WorldDecorationEffectEvent) {
+    if (event.scene !== this.currentScene) return;
+    const definition = getDecorationDefinition(event.itemId);
+    if (!definition || isTerrainDefinition(definition) || definition.kind === "restore-terrain") return;
+    const x = (event.gridX + definition.footprint.width / 2) * TILE_SIZE;
+    const y = (event.gridY + definition.footprint.height) * TILE_SIZE - 8;
+    const effect = this.add.sprite(x, y, "world-decoration-place-effect", 0).setDepth(100000);
+    this.effectSprites.add(effect);
+    effect.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      this.effectSprites.delete(effect);
+      effect.destroy();
+    });
+    effect.play("world-decoration-place");
+  }
 
   playRemoteAction(event: WorldPlayerActionEvent) {
     if (event.accountId === this.accountId) return;
@@ -273,12 +352,16 @@ export class WorldScene extends Phaser.Scene {
     this.clearTapMoveTarget();
     this.decorationTool = tool;
     this.movingDecoration = null;
+    this.handlePointerCancel();
     this.destroyPreview();
-    if (tool?.kind === "place") this.preview = this.createAssetImage(0, 0, DECORATION_ASSETS[tool.type]).setAlpha(0.65).setDepth(99999);
-    this.callbacks.onHint(tool ? "Clique no mapa para usar a ferramenta · Esc cancela" : null);
+    if (tool?.kind === "place") {
+      const definition = getDecorationDefinition(tool.itemId);
+      if (definition) this.preview = this.createCatalogPreview(definition).setAlpha(0.65).setDepth(99999).setVisible(false);
+    }
+    this.callbacks.onHint(tool ? "Mova para pré-visualizar · solte para confirmar · Esc cancela" : null);
   }
 
-  cancelDecoration() { this.decorationTool = null; this.movingDecoration = null; this.destroyPreview(); this.callbacks.onHint(null); }
+  cancelDecoration() { this.decorationTool = null; this.movingDecoration = null; this.handlePointerCancel(); this.destroyPreview(); this.callbacks.onHint(null); }
 
   interact() {
     if (this.changingScene || !this.localPlayer) return;
@@ -308,6 +391,14 @@ export class WorldScene extends Phaser.Scene {
     this.stopCameraZoomTransition();
     this.input.off("pointermove", this.handlePointerMove, this);
     this.input.off("pointerdown", this.handlePointerDown, this);
+    this.input.off("pointerup", this.handlePointerUp, this);
+    this.input.off("pointerupoutside", this.handlePointerCancel, this);
+    this.input.off("gameout", this.handlePointerCancel, this);
+    this.game.canvas.removeEventListener("pointercancel", this.handleDomPointerCancel);
+    this.game.canvas.removeEventListener("lostpointercapture", this.handleDomPointerCancel);
+    this.input.keyboard?.off("keydown-E", this.handleInteractKey);
+    this.input.keyboard?.off("keydown-ESC", this.handleCancelKey);
+    this.input.keyboard?.off(`keydown-${WORLD_CONFIG.debugKey}`, this.handleDebugKey);
     this.input.keyboard?.off("keydown", this.handleActionDebugKey, this);
     this.cameras.main.off(Phaser.Cameras.Scene2D.Events.FOLLOW_UPDATE, this.handleCameraFollowUpdate, this);
     this.clearTapMoveTarget();
@@ -715,6 +806,15 @@ export class WorldScene extends Phaser.Scene {
         }
       }
     }
+
+    if (!this.anims.exists("world-decoration-place")) {
+      this.anims.create({
+        key: "world-decoration-place",
+        frames: this.anims.generateFrameNumbers("world-decoration-place-effect", { start: 0, end: 3 }),
+        frameRate: 14,
+        repeat: 0,
+      });
+    }
   }
 
   private playCharacterAnimation(
@@ -774,6 +874,14 @@ export class WorldScene extends Phaser.Scene {
     this.groundLayer = this.createMapTileLayer("Ground", mapTilesets, 0);
     this.groundDetailsLayer = this.createMapTileLayer("GroundDetails", mapTilesets, 0.1);
     this.groundDetailsTopLayer = this.createMapTileLayer("GroundDetailsTop", mapTilesets, 0.2);
+    this.dynamicGroundLayer = this.tilemap.createBlankLayer("DynamicGround", mapTilesets, 0, 0, this.tilemap.width, this.tilemap.height, TILE_SIZE, TILE_SIZE) ?? undefined;
+    this.dynamicGroundDetailsLayer = this.tilemap.createBlankLayer("DynamicGroundDetails", mapTilesets, 0, 0, this.tilemap.width, this.tilemap.height, TILE_SIZE, TILE_SIZE) ?? undefined;
+    this.dynamicGroundDetailsTopLayer = this.tilemap.createBlankLayer("DynamicGroundDetailsTop", mapTilesets, 0, 0, this.tilemap.width, this.tilemap.height, TILE_SIZE, TILE_SIZE) ?? undefined;
+    this.dynamicGroundLayer?.setDepth(0.05);
+    this.dynamicGroundDetailsLayer?.setDepth(0.15);
+    this.dynamicGroundDetailsTopLayer?.setDepth(0.25);
+    this.buildAutotileLookups();
+    this.renderAllTerrain();
 
     const legacyGroundDetails = this.tilemap.getObjectLayer("GroundDetailsLegacy")
       ?? this.tilemap.getObjectLayer("GroundDetails");
@@ -803,6 +911,7 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(state.y);
     this.direction = state.direction;
     for (const obstacle of this.fixedObstacles) this.fixedColliders.push(this.physics.add.collider(this.localPlayer, obstacle));
+    this.syncTerrainCollisions();
     this.physics.world.setBounds(0, 0, this.tilemap.widthInPixels, this.tilemap.heightInPixels);
     this.applyCameraZoom();
 
@@ -828,8 +937,19 @@ export class WorldScene extends Phaser.Scene {
     this.destroyPreview();
     this.fixedColliders.forEach((collider) => collider.destroy());
     this.decorationColliders.forEach((collider) => collider.destroy());
+    for (const entry of this.terrainObstacles.values()) {
+      entry.collider?.destroy();
+      entry.obstacle.destroy();
+    }
+    this.terrainObstacles.clear();
     this.fixedColliders = [];
     this.decorationColliders = [];
+    this.dynamicGroundDetailsTopLayer?.destroy();
+    this.dynamicGroundDetailsLayer?.destroy();
+    this.dynamicGroundLayer?.destroy();
+    this.dynamicGroundDetailsTopLayer = undefined;
+    this.dynamicGroundDetailsLayer = undefined;
+    this.dynamicGroundLayer = undefined;
     this.groundDetailsTopLayer?.destroy();
     this.groundDetailsLayer?.destroy();
     this.groundLayer?.destroy();
@@ -844,11 +964,15 @@ export class WorldScene extends Phaser.Scene {
     for (const sprite of this.remotePlayers.values()) sprite.destroy();
     this.remotePlayers.clear();
     this.remoteActions.clear();
+    for (const effect of this.effectSprites) effect.destroy();
+    this.effectSprites.clear();
+    this.autotileLookups.clear();
     [...this.mapVisuals, ...this.fixedObstacles, ...this.decorationVisuals, ...this.decorationObstacles].forEach((item) => item.destroy());
     this.mapVisuals = [];
     this.fixedObstacles = [];
     this.decorationVisuals = [];
     this.decorationObstacles = [];
+    this.decorationEntries.clear();
     this.interactions = [];
     this.debugGrid?.destroy();
     this.debugGrid = undefined;
@@ -1209,26 +1333,292 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  private renderDecorations() {
-    this.decorationColliders.forEach((collider) => collider.destroy());
-    this.decorationColliders = [];
-    [...this.decorationVisuals, ...this.decorationObstacles].forEach((item) => item.destroy());
-    this.decorationVisuals = [];
-    this.decorationObstacles = [];
+  private baseLayer(name: TerrainCatalogItem["terrainLayer"]) {
+    if (name === "Ground") return this.groundLayer;
+    if (name === "GroundDetails") return this.groundDetailsLayer;
+    return this.groundDetailsTopLayer;
+  }
 
-    for (const decoration of this.decorations.filter((item) => item.scene === this.currentScene)) {
-      const asset = DECORATION_ASSETS[decoration.type];
-      const footprint = asset.footprint;
-      const x = (decoration.gridX + footprint.width / 2) * WORLD_CONFIG.tileSize;
-      const y = (decoration.gridY + footprint.height) * WORLD_CONFIG.tileSize;
-      const image = this.createAssetImage(x, y, asset).setDepth(y).setData("decorationId", decoration.id);
-      this.decorationVisuals.push(image);
-      if (asset.collision) {
-        const obstacle = this.createObstacle(x + asset.collision.offsetX, y + asset.collision.offsetY / 2, asset.collision.width, asset.collision.height);
-        this.decorationObstacles.push(obstacle);
-        if (this.localPlayer) this.decorationColliders.push(this.physics.add.collider(this.localPlayer, obstacle));
+  private dynamicLayer(name: TerrainCatalogItem["terrainLayer"]) {
+    if (name === "Ground") return this.dynamicGroundLayer;
+    if (name === "GroundDetails") return this.dynamicGroundDetailsLayer;
+    return this.dynamicGroundDetailsTopLayer;
+  }
+
+  private terrainCellAt(gridX: number, gridY: number) {
+    return this.terrainByCell.get(`${this.currentScene}:${gridX}:${gridY}`);
+  }
+
+  private indexTerrain() {
+    this.terrainByCell = new Map(this.terrain.map((cell) => [`${cell.scene}:${cell.gridX}:${cell.gridY}`, cell]));
+  }
+
+  private localFrameAt(layer: Phaser.Tilemaps.TilemapLayer | undefined, tilesetName: string, gridX: number, gridY: number) {
+    const tile = layer?.getTileAt(gridX, gridY, true);
+    if (!tile || tile.index < 0 || !this.tilemap) return null;
+    const tileset = this.tilemap.tilesets.find((item) => item.name === tilesetName && item.containsTileIndex(tile.index));
+    return tileset ? tile.index - tileset.firstgid : null;
+  }
+
+  private baseMatchesTerrain(definition: TerrainCatalogItem, gridX: number, gridY: number) {
+    const frame = this.localFrameAt(this.baseLayer(definition.terrainLayer), definition.source.tileset, gridX, gridY);
+    if (frame === null) return false;
+    return definition.autotile.baseFrames === "all-used-frames" || definition.autotile.baseFrames.includes(frame);
+  }
+
+  private terrainMatches(definition: TerrainCatalogItem, gridX: number, gridY: number) {
+    const override = this.terrainCellAt(gridX, gridY);
+    if (override && getDecorationDefinition(override.terrainId)) return override.terrainId === definition.id;
+    return this.baseMatchesTerrain(definition, gridX, gridY);
+  }
+
+  private neighborMask(matches: (x: number, y: number) => boolean, gridX: number, gridY: number) {
+    let mask = 0;
+    for (const neighbor of NEIGHBOR_OFFSETS) if (matches(gridX + neighbor.dx, gridY + neighbor.dy)) mask |= neighbor.bit;
+    return mask;
+  }
+
+  private buildAutotileLookups() {
+    this.autotileLookups.clear();
+    if (!this.tilemap) return;
+    for (const definition of Object.values(DECORATION_CATALOG)) {
+      if (!isTerrainDefinition(definition) || !definition.scenes.includes(this.currentScene as never)) continue;
+      const layer = this.baseLayer(definition.terrainLayer);
+      if (!layer || !this.tilemap.tilesets.some((item) => item.name === definition.source.tileset)) continue;
+      const counts = new Map<number, Map<number, number>>();
+      const record = (mask: number, frame: number) => {
+        const frames = counts.get(mask) ?? new Map<number, number>();
+        frames.set(frame, (frames.get(frame) ?? 0) + 1);
+        counts.set(mask, frames);
+      };
+
+      if (definition.autotile.mode === "water-shore") {
+        const shoreTileset = definition.autotile.shoreTileset;
+        if (!shoreTileset) continue;
+        for (let y = 0; y < this.tilemap.height; y++) for (let x = 0; x < this.tilemap.width; x++) {
+          const shoreFrame = this.localFrameAt(this.groundLayer, shoreTileset, x, y);
+          if (shoreFrame === null) continue;
+          const mask = this.neighborMask((nx, ny) => this.baseMatchesTerrain(definition, nx, ny), x, y);
+          if (mask !== 0) record(mask, shoreFrame);
+        }
+        this.autotileLookups.set(`${definition.id}:shore`, this.pickMostUsedFrames(counts));
+      } else {
+        for (let y = 0; y < this.tilemap.height; y++) for (let x = 0; x < this.tilemap.width; x++) {
+          if (!this.baseMatchesTerrain(definition, x, y)) continue;
+          const frame = this.localFrameAt(layer, definition.source.tileset, x, y);
+          if (frame === null) continue;
+          const mask = this.neighborMask((nx, ny) => this.baseMatchesTerrain(definition, nx, ny), x, y);
+          record(mask, frame);
+        }
+        this.autotileLookups.set(`${definition.id}:terrain`, this.pickMostUsedFrames(counts));
       }
     }
+  }
+
+  private pickMostUsedFrames(counts: Map<number, Map<number, number>>) {
+    const lookup = new Map<number, number>();
+    for (const [mask, frames] of counts) {
+      const best = [...frames].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0];
+      if (best) lookup.set(mask, best[0]);
+    }
+    return lookup;
+  }
+
+  private resolveAutotileFrame(definition: TerrainCatalogItem, mask: number, shore = false) {
+    const lookup = this.autotileLookups.get(`${definition.id}:${shore ? "shore" : "terrain"}`);
+    const exact = lookup?.get(mask);
+    if (exact !== undefined) return exact;
+    if (!lookup || lookup.size === 0) return definition.autotile.fallbackFrame;
+    let bestFrame = definition.autotile.fallbackFrame;
+    let bestScore = -Infinity;
+    for (const [candidateMask, frame] of lookup) {
+      const shared = this.countBits(candidateMask & mask);
+      const different = this.countBits(candidateMask ^ mask);
+      const score = shared * 3 - different;
+      if (score > bestScore) { bestScore = score; bestFrame = frame; }
+    }
+    return bestFrame;
+  }
+
+  private countBits(value: number) {
+    let count = 0;
+    for (let current = value >>> 0; current; current &= current - 1) count++;
+    return count;
+  }
+
+  private putTerrainTile(layer: Phaser.Tilemaps.TilemapLayer | undefined, tilesetName: string, frame: number, gridX: number, gridY: number) {
+    if (!layer || !this.tilemap) return;
+    const tileset = this.tilemap.tilesets.find((item) => item.name === tilesetName);
+    if (!tileset || frame < 0 || frame >= tileset.total) return;
+    layer.putTileAt(tileset.firstgid + frame, gridX, gridY, false);
+  }
+
+  private renderTerrainCell(gridX: number, gridY: number) {
+    if (!this.tilemap || gridX < 0 || gridY < 0 || gridX >= this.tilemap.width || gridY >= this.tilemap.height) return;
+    this.dynamicGroundLayer?.removeTileAt(gridX, gridY, false, false);
+    this.dynamicGroundDetailsLayer?.removeTileAt(gridX, gridY, false, false);
+    this.dynamicGroundDetailsTopLayer?.removeTileAt(gridX, gridY, false, false);
+
+    const cell = this.terrainCellAt(gridX, gridY);
+    const definition = cell ? getDecorationDefinition(cell.terrainId) : undefined;
+    if (definition && isTerrainDefinition(definition)) {
+      const mask = this.neighborMask((x, y) => this.terrainMatches(definition, x, y), gridX, gridY);
+      const frame = definition.autotile.mode === "same-terrain"
+        ? this.resolveAutotileFrame(definition, mask)
+        : definition.source.frame;
+      this.putTerrainTile(this.dynamicLayer(definition.terrainLayer), definition.source.tileset, frame, gridX, gridY);
+    }
+
+    const water = getDecorationDefinition("water");
+    const isWaterHere = water && isTerrainDefinition(water) && this.terrainMatches(water, gridX, gridY);
+    if (water && isTerrainDefinition(water) && !isWaterHere && this.tilemap.tilesets.some((item) => item.name === water.autotile.shoreTileset)) {
+      const waterMask = this.neighborMask((x, y) => this.terrainMatches(water, x, y), gridX, gridY);
+      if (waterMask !== 0 && this.localFrameAt(this.groundLayer, water.autotile.shoreTileset ?? "grass", gridX, gridY) !== null) {
+        const shoreFrame = this.resolveAutotileFrame(water, waterMask, true);
+        this.putTerrainTile(this.dynamicGroundLayer, water.autotile.shoreTileset ?? "grass", shoreFrame, gridX, gridY);
+      }
+    }
+  }
+
+  private renderAllTerrain() {
+    const dirty = new Set<string>();
+    for (const cell of this.terrain) {
+      if (cell.scene !== this.currentScene) continue;
+      dirty.add(`${cell.gridX}:${cell.gridY}`);
+      for (const neighbor of NEIGHBOR_OFFSETS) dirty.add(`${cell.gridX + neighbor.dx}:${cell.gridY + neighbor.dy}`);
+    }
+    for (const key of dirty) {
+      const [x, y] = key.split(":").map(Number);
+      this.renderTerrainCell(x, y);
+    }
+  }
+
+  private syncTerrainCollisions() {
+    const wanted = new Set(this.terrain.filter((cell) => cell.scene === this.currentScene && cell.terrainId === "water").map((cell) => `${cell.gridX}:${cell.gridY}`));
+    for (const [key, entry] of this.terrainObstacles) {
+      if (wanted.has(key)) continue;
+      entry.collider?.destroy();
+      entry.obstacle.destroy();
+      this.terrainObstacles.delete(key);
+    }
+    for (const key of wanted) {
+      if (this.terrainObstacles.has(key)) continue;
+      const [gridX, gridY] = key.split(":").map(Number);
+      const obstacle = this.createObstacle((gridX + 0.5) * TILE_SIZE, (gridY + 0.5) * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+      const collider = this.localPlayer ? this.physics.add.collider(this.localPlayer, obstacle) : undefined;
+      this.terrainObstacles.set(key, { obstacle, collider });
+    }
+  }
+
+  private renderDecorations() {
+    const visible = this.decorations.filter((item) => item.scene === this.currentScene);
+    const wantedIds = new Set(visible.map((item) => item.id));
+    for (const [id, entry] of this.decorationEntries) {
+      if (wantedIds.has(id)) continue;
+      this.destroyDecorationEntry(entry);
+      this.decorationEntries.delete(id);
+    }
+
+    for (const decoration of visible) {
+      const definition = getDecorationDefinition(decoration.itemId);
+      if (!definition || (definition.kind !== "object" && definition.kind !== "connected-object")) continue;
+      const frame = definition.kind === "connected-object" ? this.connectedFrame(decoration, definition) : definition.source.frame;
+      const signature = `${decoration.itemId}:${decoration.gridX}:${decoration.gridY}:${decoration.rotation}:${frame}`;
+      const current = this.decorationEntries.get(decoration.id);
+      if (current?.signature === signature) continue;
+      if (current) this.destroyDecorationEntry(current);
+      const image = this.createCatalogSprite(decoration.gridX, decoration.gridY, definition, frame, decoration.rotation);
+      if (!image) continue;
+      image.setData("decorationId", decoration.id);
+
+      const collisions = definition.kind === "connected-object"
+        ? definition.variantCollisions[frame] ?? []
+        : definition.collisions;
+      const created = this.createCatalogCollisions(decoration, definition, collisions);
+      this.decorationEntries.set(decoration.id, { signature, sprite: image, ...created });
+    }
+
+    this.decorationVisuals = [...this.decorationEntries.values()].map((entry) => entry.sprite);
+    this.decorationObstacles = [...this.decorationEntries.values()].flatMap((entry) => entry.obstacles);
+    this.decorationColliders = [...this.decorationEntries.values()].flatMap((entry) => entry.colliders);
+  }
+
+  private destroyDecorationEntry(entry: { sprite: Phaser.GameObjects.Sprite; obstacles: Phaser.GameObjects.GameObject[]; colliders: Phaser.Physics.Arcade.Collider[] }) {
+    entry.colliders.forEach((collider) => collider.destroy());
+    entry.obstacles.forEach((obstacle) => obstacle.destroy());
+    entry.sprite.destroy();
+  }
+
+  private connectedFrame(decoration: WorldDecoration, definition: ConnectedCatalogItem) {
+    let mask = 0;
+    const neighbors = [
+      { bit: 1, dx: 0, dy: -definition.connectionStep.y },
+      { bit: 2, dx: definition.connectionStep.x, dy: 0 },
+      { bit: 4, dx: 0, dy: definition.connectionStep.y },
+      { bit: 8, dx: -definition.connectionStep.x, dy: 0 },
+    ];
+    for (const neighbor of neighbors) {
+      const connected = this.decorations.some((item) => item.scene === decoration.scene
+        && item.id !== decoration.id
+        && item.gridX === decoration.gridX + neighbor.dx
+        && item.gridY === decoration.gridY + neighbor.dy
+        && getDecorationDefinition(item.itemId)?.kind === "connected-object"
+        && (getDecorationDefinition(item.itemId) as ConnectedCatalogItem).connectionGroup === definition.connectionGroup);
+      if (connected) mask |= neighbor.bit;
+    }
+    return definition.variants[mask] ?? definition.source.frame;
+  }
+
+  private createCatalogSprite(gridX: number, gridY: number, definition: ObjectCatalogItem | ConnectedCatalogItem, frame = definition.source.frame, rotation = 0) {
+    const asset = getWorldTilesetAsset(definition.source.tileset);
+    if (!asset) return null;
+    const frameName = this.ensureTilesetFrame(asset, frame);
+    if (!frameName) return null;
+    const x = (gridX + definition.footprint.width / 2) * TILE_SIZE + (definition.source.offsetX ?? 0);
+    const y = (gridY + definition.footprint.height) * TILE_SIZE + (definition.source.offsetY ?? 0);
+    const sprite = this.add.sprite(x, y, asset.textureKey, frameName)
+      .setOrigin(0.5, 1)
+      .setDisplaySize(definition.source.displayWidth, definition.source.displayHeight)
+      .setFlipX(Boolean(definition.source.flipX))
+      .setAngle(rotation);
+    const depthOffset = definition.depth.sortOffsetY + (definition.depth.behavior === "above-player" ? 2 : 0);
+    sprite.setDepth(y + depthOffset);
+    return sprite;
+  }
+
+  private createCatalogCollisions(
+    decoration: WorldDecoration,
+    definition: ObjectCatalogItem | ConnectedCatalogItem,
+    collisions: readonly { x: number; y: number; width: number; height: number }[],
+  ) {
+    const obstacles: Phaser.GameObjects.GameObject[] = [];
+    const colliders: Phaser.Physics.Arcade.Collider[] = [];
+    if (collisions.length === 0) return { obstacles, colliders };
+    const asset = getWorldTilesetAsset(definition.source.tileset);
+    if (!asset) return { obstacles, colliders };
+    const centerX = (decoration.gridX + definition.footprint.width / 2) * TILE_SIZE + (definition.source.offsetX ?? 0);
+    const bottomY = (decoration.gridY + definition.footprint.height) * TILE_SIZE + (definition.source.offsetY ?? 0);
+    const left = centerX - definition.source.displayWidth / 2;
+    const top = bottomY - definition.source.displayHeight;
+    const scaleX = definition.source.displayWidth / asset.tileWidth;
+    const scaleY = definition.source.displayHeight / asset.tileHeight;
+    const angle = Phaser.Math.DegToRad(decoration.rotation);
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+    for (const shape of collisions) {
+      const width = shape.width * scaleX;
+      const height = shape.height * scaleY;
+      const localX = left + shape.x * scaleX + width / 2 - centerX;
+      const localY = top + shape.y * scaleY + height / 2 - bottomY;
+      const rotatedX = localX * cosine - localY * sine;
+      const rotatedY = localX * sine + localY * cosine;
+      const rotatedWidth = Math.abs(width * cosine) + Math.abs(height * sine);
+      const rotatedHeight = Math.abs(width * sine) + Math.abs(height * cosine);
+      const obstacle = this.createObstacle(centerX + rotatedX, bottomY + rotatedY, rotatedWidth, rotatedHeight);
+      obstacles.push(obstacle);
+      if (this.localPlayer) colliders.push(this.physics.add.collider(this.localPlayer, obstacle));
+    }
+    return { obstacles, colliders };
   }
 
   private createAssetImage(x: number, y: number, asset: WorldVisualAsset) {
@@ -1263,13 +1653,8 @@ export class WorldScene extends Phaser.Scene {
 
   private handlePointerMove(pointer: Phaser.Input.Pointer) {
     if (!this.decorationTool || !this.preview) return;
-    const decorationType = this.decorationTool.kind === "place" ? this.decorationTool.type : this.movingDecoration?.type;
-    if (!decorationType) return;
-    const asset = DECORATION_ASSETS[decorationType];
-    const gridX = Math.floor(pointer.worldX / WORLD_CONFIG.tileSize);
-    const gridY = Math.floor(pointer.worldY / WORLD_CONFIG.tileSize);
-    this.preview.setPosition((gridX + asset.footprint.width / 2) * WORLD_CONFIG.tileSize, (gridY + asset.footprint.height) * WORLD_CONFIG.tileSize);
-    this.preview.setTint(this.isGridAvailable(decorationType, gridX, gridY, this.movingDecoration?.id) ? 0xffffff : 0xff7777);
+    if (this.placementPointerId !== null && pointer.id !== this.placementPointerId) return;
+    this.updatePreview(pointer);
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
@@ -1284,43 +1669,135 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    this.placementPointerId = pointer.id;
+    this.placementCancelled = false;
+    this.updatePreview(pointer);
+  }
+
+  private handlePointerUp(pointer: Phaser.Input.Pointer) {
+    if (!this.decorationTool || this.placementPointerId !== pointer.id) return;
+    const shouldCommit = !this.placementCancelled && !this.pointerEndsOverUi(pointer);
+    this.placementPointerId = null;
+    this.placementCancelled = false;
+    if (shouldCommit) void this.commitDecorationTool(pointer);
+  }
+
+  private pointerEndsOverUi(pointer: Phaser.Input.Pointer) {
+    const event = pointer.event as PointerEvent | undefined;
+    if (!event || typeof document === "undefined" || !Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) return false;
+    const element = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null;
+    return Boolean(element?.closest(".world-decoration-panel, .world-topbar, .world-actions, .world-mobile-controls, .world-modal-backdrop"));
+  }
+
+  private handlePointerCancel() {
+    this.placementCancelled = true;
+    this.placementPointerId = null;
+  }
+
+  private activePlacementDefinition() {
+    const itemId = this.decorationTool?.kind === "place" ? this.decorationTool.itemId : this.movingDecoration?.itemId;
+    return itemId ? getDecorationDefinition(itemId) : undefined;
+  }
+
+  private pointerGrid(pointer: Phaser.Input.Pointer, definition?: DecorationCatalogItem) {
+    let gridX = Math.floor(pointer.worldX / TILE_SIZE);
+    let gridY = Math.floor(pointer.worldY / TILE_SIZE);
+    if (definition?.kind === "connected-object") {
+      gridX = Math.round((gridX - definition.connectionOrigin.x) / definition.connectionStep.x) * definition.connectionStep.x + definition.connectionOrigin.x;
+      gridY = Math.round((gridY - definition.connectionOrigin.y) / definition.connectionStep.y) * definition.connectionStep.y + definition.connectionOrigin.y;
+    }
+    return { gridX, gridY };
+  }
+
+  private updatePreview(pointer: Phaser.Input.Pointer) {
+    const definition = this.activePlacementDefinition();
+    if (!definition || !this.preview) return;
+    const { gridX, gridY } = this.pointerGrid(pointer, definition);
+    this.preview.setVisible(true);
+    const x = (gridX + definition.footprint.width / 2) * TILE_SIZE;
+    const y = definition.kind === "terrain" || definition.kind === "path" || definition.kind === "restore-terrain"
+      ? (gridY + 0.5) * TILE_SIZE
+      : (gridY + definition.footprint.height) * TILE_SIZE;
+    this.preview.setPosition(x, y);
+    const valid = isTerrainDefinition(definition)
+      ? this.isTerrainCellAvailable(definition, gridX, gridY)
+      : definition.kind === "restore-terrain"
+        ? Boolean(this.terrainCellAt(gridX, gridY))
+        : this.isGridAvailable(definition, gridX, gridY, this.movingDecoration?.id);
+    if (this.preview instanceof Phaser.GameObjects.Rectangle) this.preview.setFillStyle(valid ? 0x9ee66f : 0xff7777, 0.45);
+    else this.preview.setTint(valid ? 0xffffff : 0xff7777);
+  }
+
+  private async commitDecorationTool(pointer: Phaser.Input.Pointer) {
+    if (!this.decorationTool) return;
     const hit = this.decorationAt(pointer.worldX, pointer.worldY);
+    const rawGridX = Math.floor(pointer.worldX / TILE_SIZE);
+    const rawGridY = Math.floor(pointer.worldY / TILE_SIZE);
+
     if (this.decorationTool.kind === "remove") {
-      if (!hit) { this.callbacks.onNotice("Clique em uma decoração para remover."); return; }
-      void this.callbacks.onRemoveDecoration(hit.id).then((result) => { if (!result.ok) this.callbacks.onNotice(result.error ?? "Não foi possível remover."); });
+      if (hit) {
+        const result = await this.callbacks.onRemoveDecoration(hit.id);
+        if (!result.ok) this.callbacks.onNotice(result.error ?? "Não foi possível remover.");
+        return;
+      }
+      if (this.terrainCellAt(rawGridX, rawGridY)) {
+        const result = await this.callbacks.onRemoveTerrain(this.currentScene, rawGridX, rawGridY);
+        if (!result.ok) this.callbacks.onNotice(result.error ?? "Não foi possível restaurar o terreno.");
+        return;
+      }
+      this.callbacks.onNotice("Toque em uma decoração ou terreno alterado para remover.");
       return;
     }
 
     if (this.decorationTool.kind === "move" && !this.movingDecoration) {
-      if (!hit) { this.callbacks.onNotice("Clique primeiro na decoração que deseja mover."); return; }
+      if (!hit) { this.callbacks.onNotice("Toque primeiro na decoração que deseja mover."); return; }
       this.movingDecoration = hit;
-      const asset = DECORATION_ASSETS[hit.type];
-      this.preview = this.createAssetImage(pointer.worldX, pointer.worldY, asset).setAlpha(0.65).setDepth(99999);
-      this.callbacks.onNotice("Agora clique no novo lugar.");
+      const definition = getDecorationDefinition(hit.itemId);
+      if (!definition) return;
+      this.preview = this.createCatalogPreview(definition).setAlpha(0.65).setDepth(99999);
+      this.updatePreview(pointer);
+      this.callbacks.onNotice("Agora arraste e solte no novo lugar.");
       return;
     }
 
-    const type = this.decorationTool.kind === "place" ? this.decorationTool.type : this.movingDecoration?.type;
-    if (!type) return;
-    const gridX = Math.floor(pointer.worldX / WORLD_CONFIG.tileSize);
-    const gridY = Math.floor(pointer.worldY / WORLD_CONFIG.tileSize);
-    if (!this.isGridAvailable(type, gridX, gridY, this.movingDecoration?.id)) {
+    const definition = this.activePlacementDefinition();
+    if (!definition) return;
+    const { gridX, gridY } = this.pointerGrid(pointer, definition);
+
+    if (definition.kind === "restore-terrain") {
+      const result = await this.callbacks.onRemoveTerrain(this.currentScene, gridX, gridY);
+      if (!result.ok) this.callbacks.onNotice(result.error ?? "Não foi possível restaurar o terreno.");
+      return;
+    }
+
+    if (isTerrainDefinition(definition)) {
+      if (!this.isTerrainCellAvailable(definition, gridX, gridY)) {
+        this.callbacks.onNotice("Essa célula não pode receber terreno.");
+        return;
+      }
+      const result = await this.callbacks.onPaintTerrain(definition.id, this.currentScene, gridX, gridY);
+      if (!result.ok) this.callbacks.onNotice(result.error ?? "Não foi possível alterar o terreno.");
+      return;
+    }
+
+    if (!this.isGridAvailable(definition, gridX, gridY, this.movingDecoration?.id)) {
       this.callbacks.onNotice("Esse espaço está ocupado ou fora da área decorável.");
       return;
     }
 
-    const promise = this.movingDecoration
-      ? this.callbacks.onMoveDecoration(this.movingDecoration.id, this.currentScene, gridX, gridY)
-      : this.callbacks.onPlaceDecoration(type, this.currentScene, gridX, gridY);
-
-    void promise.then((result) => {
-      if (!result.ok) {
-        this.callbacks.onNotice(result.error ?? "Não foi possível salvar a decoração.");
-        return;
-      }
-      this.startLocalAction("placing");
-      if (this.movingDecoration) this.cancelDecoration();
-    });
+    const wasMoving = Boolean(this.movingDecoration);
+    const result = this.movingDecoration
+      ? await this.callbacks.onMoveDecoration(this.movingDecoration.id, this.currentScene, gridX, gridY)
+      : await this.callbacks.onPlaceDecoration(definition.id, this.currentScene, gridX, gridY, 0);
+    if (!result.ok) {
+      this.callbacks.onNotice(result.error ?? "Não foi possível salvar a decoração.");
+      return;
+    }
+    this.startLocalAction("placing");
+    if (!wasMoving && result.decoration) {
+      this.playDecorationEffect({ decorationId: result.decoration.id, itemId: result.decoration.itemId, scene: result.decoration.scene, gridX: result.decoration.gridX, gridY: result.decoration.gridY, sentAt: Date.now() });
+    }
+    if (wasMoving) this.cancelDecoration();
   }
 
   private decorationAt(x: number, y: number) {
@@ -1329,17 +1806,49 @@ export class WorldScene extends Phaser.Scene {
     return id ? this.decorations.find((item) => item.id === id) ?? null : null;
   }
 
-  private isGridAvailable(type: WorldDecoration["type"], gridX: number, gridY: number, ignoredId?: string) {
-    const footprint = DECORATION_ASSETS[type].footprint;
+  private isGridAvailable(definition: ObjectCatalogItem | ConnectedCatalogItem, gridX: number, gridY: number, ignoredId?: string) {
+    if (!definition.scenes.includes(this.currentScene as never)) return false;
+    const footprint = definition.footprint;
     const map = WORLD_CONFIG.scenes[this.currentScene];
-    if (gridX < 1 || gridY < 2 || gridX + footprint.width >= map.width - 1 || gridY + footprint.height >= map.height - 1) return false;
-    const candidate = new Phaser.Geom.Rectangle(gridX * 16, gridY * 16, footprint.width * 16, footprint.height * 16);
+    const area = map.decorationArea;
+    if (gridX < area.x || gridY < area.y || gridX + footprint.width > area.x + area.width || gridY + footprint.height > area.y + area.height) return false;
+    const candidate = new Phaser.Geom.Rectangle(gridX * TILE_SIZE, gridY * TILE_SIZE, footprint.width * TILE_SIZE, footprint.height * TILE_SIZE);
+    if (map.blockedDecorationRects.some((rect) => Phaser.Geom.Intersects.RectangleToRectangle(candidate, new Phaser.Geom.Rectangle(rect.x * TILE_SIZE, rect.y * TILE_SIZE, rect.width * TILE_SIZE, rect.height * TILE_SIZE)))) return false;
     if (this.fixedObstacles.some((item) => Phaser.Geom.Intersects.RectangleToRectangle(candidate, (item as Phaser.GameObjects.Rectangle).getBounds()))) return false;
+    if (this.terrain.some((cell) => cell.scene === this.currentScene && cell.terrainId === "water" && candidate.contains((cell.gridX + 0.5) * TILE_SIZE, (cell.gridY + 0.5) * TILE_SIZE))) return false;
     return !this.decorations.some((item) => {
       if (item.id === ignoredId || item.scene !== this.currentScene) return false;
-      const occupied = DECORATION_ASSETS[item.type].footprint;
-      return Phaser.Geom.Intersects.RectangleToRectangle(candidate, new Phaser.Geom.Rectangle(item.gridX * 16, item.gridY * 16, occupied.width * 16, occupied.height * 16));
+      const occupied = getDecorationDefinition(item.itemId)?.footprint ?? { width: 1, height: 1 };
+      return Phaser.Geom.Intersects.RectangleToRectangle(candidate, new Phaser.Geom.Rectangle(item.gridX * TILE_SIZE, item.gridY * TILE_SIZE, occupied.width * TILE_SIZE, occupied.height * TILE_SIZE));
     });
+  }
+
+  private isTerrainCellAvailable(definition: TerrainCatalogItem, gridX: number, gridY: number) {
+    if (!definition.scenes.includes(this.currentScene as never)) return false;
+    const map = WORLD_CONFIG.scenes[this.currentScene];
+    const area = map.decorationArea;
+    if (gridX < area.x || gridY < area.y || gridX + 1 > area.x + area.width || gridY + 1 > area.y + area.height) return false;
+    const cell = new Phaser.Geom.Rectangle(gridX * TILE_SIZE, gridY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    if (map.blockedDecorationRects.some((rect) => Phaser.Geom.Intersects.RectangleToRectangle(cell, new Phaser.Geom.Rectangle(rect.x * TILE_SIZE, rect.y * TILE_SIZE, rect.width * TILE_SIZE, rect.height * TILE_SIZE)))) return false;
+    if (this.fixedObstacles.some((item) => Phaser.Geom.Intersects.RectangleToRectangle(cell, (item as Phaser.GameObjects.Rectangle).getBounds()))) return false;
+    if (this.localPlayer && cell.contains(this.localPlayer.x, this.localPlayer.y)) return false;
+    if (this.players.some((player) => player.scene === this.currentScene && cell.contains(player.x, player.y))) return false;
+    return !this.decorations.some((item) => {
+      if (item.scene !== this.currentScene) return false;
+      const occupied = getDecorationDefinition(item.itemId)?.footprint ?? { width: 1, height: 1 };
+      return Phaser.Geom.Intersects.RectangleToRectangle(cell, new Phaser.Geom.Rectangle(item.gridX * TILE_SIZE, item.gridY * TILE_SIZE, occupied.width * TILE_SIZE, occupied.height * TILE_SIZE));
+    });
+  }
+
+  private createCatalogPreview(definition: DecorationCatalogItem) {
+    if (definition.kind === "restore-terrain") return this.add.rectangle(0, 0, TILE_SIZE, TILE_SIZE, 0x9ee66f, 0.45);
+    if (isTerrainDefinition(definition)) {
+      const asset = getWorldTilesetAsset(definition.source.tileset);
+      const frameName = asset ? this.ensureTilesetFrame(asset, definition.source.frame) : null;
+      if (asset && frameName) return this.add.sprite(0, 0, asset.textureKey, frameName).setOrigin(0.5).setDisplaySize(TILE_SIZE, TILE_SIZE);
+      return this.add.rectangle(0, 0, TILE_SIZE, TILE_SIZE, 0xff7777, 0.45);
+    }
+    return this.createCatalogSprite(0, 0, definition) ?? this.add.rectangle(0, 0, definition.footprint.width * TILE_SIZE, definition.footprint.height * TILE_SIZE, 0xff7777, 0.45);
   }
 
   private destroyPreview() { this.preview?.destroy(); this.preview = undefined; }

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { getActiveAccount, AccountId } from "@/lib/accountSession";
 import { useRoomSession } from "@/hooks/useRoomSession";
 import { PERSISTENT_DUO_ROOM_CODE } from "@/lib/persistentDuo";
-import { DECORATION_ASSETS } from "@/world/config/worldConfig";
+import { DecorationCategory, DECORATION_CATEGORIES, getCatalogItems } from "@/world/config/decorationCatalog";
 import { getWorldAudioSettings, setWorldAudioSettings, WorldAudioSettings } from "@/world/audio/WorldAudioManager";
 import WorldCanvas from "@/world/components/WorldCanvas";
 import WorldSettings from "@/world/components/WorldSettings";
@@ -13,7 +13,7 @@ import MobileControls from "@/world/components/MobileControls";
 import { WorldCameraZoomInfo, WorldGameApi, WorldGameCallbacks } from "@/world/game/WorldGameApi";
 import { useWorldSession } from "@/world/multiplayer/useWorldSession";
 import { DEFAULT_WORLD_INPUT_SETTINGS, getWorldInputSettings, setWorldInputSettings, WorldInputSettings, WorldMobileControlMode } from "@/world/settings/WorldInputSettings";
-import { DecorationTool, WorldDebugInfo, WorldDecorationType } from "@/world/types";
+import { DecorationTool, WorldDebugInfo } from "@/world/types";
 import styles from "./World.module.css";
 
 async function requestWorldFullscreen() {
@@ -42,6 +42,15 @@ const DEFAULT_CAMERA_INFO: WorldCameraZoomInfo = {
   max: 4,
 };
 
+const CATEGORY_LABELS: Record<DecorationCategory, string> = {
+  plants: "Plantas",
+  decorations: "Decorações",
+  furniture: "Móveis",
+  paths: "Caminhos",
+  nature: "Natureza",
+  terrain: "Terreno",
+};
+
 export default function WorldPage() {
   const router = useRouter();
   const [accountId, setAccountId] = useState<AccountId | null>(null);
@@ -52,6 +61,7 @@ export default function WorldPage() {
   const [ready, setReady] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [decorateOpen, setDecorateOpen] = useState(false);
+  const [decorationCategory, setDecorationCategory] = useState<DecorationCategory>("plants");
   const [tool, setTool] = useState<DecorationTool>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -127,13 +137,15 @@ export default function WorldPage() {
     onPlaceDecoration: world.placeDecoration,
     onMoveDecoration: world.moveDecoration,
     onRemoveDecoration: world.removeDecoration,
+    onPaintTerrain: world.paintTerrain,
+    onRemoveTerrain: world.removeTerrain,
     onHint: setHint,
     onNotice: showNotice,
     onDebug: setDebug,
     onCameraZoomChange: setCameraInfo,
     onReady: () => setReady(true),
     onError: setFatalError,
-  }), [showNotice, world.changeScene, world.moveDecoration, world.placeDecoration, world.removeDecoration, world.sendAction, world.sendMovement]);
+  }), [showNotice, world.changeScene, world.moveDecoration, world.paintTerrain, world.placeDecoration, world.removeDecoration, world.removeTerrain, world.sendAction, world.sendMovement]);
 
   const chooseTool = (next: DecorationTool) => {
     setTool(next);
@@ -165,6 +177,9 @@ export default function WorldPage() {
     router.push(`/sala/${PERSISTENT_DUO_ROOM_CODE}`);
   };
 
+  const currentScene = world.snapshot?.players.find((player) => player.accountId === accountId)?.scene ?? "exterior";
+  const visibleCatalogItems = getCatalogItems(decorationCategory, currentScene);
+
   if (!checkedAccount || !accountId || !roomSession.room || !world.snapshot) {
     return (
       <main className={styles.root}>
@@ -175,7 +190,7 @@ export default function WorldPage() {
 
   return (
     <main className={styles.root}>
-      <WorldCanvas accountId={accountId} snapshot={world.snapshot} actionEvent={world.remoteAction} callbacks={callbacks} onApiReady={onApiReady} />
+      <WorldCanvas accountId={accountId} snapshot={world.snapshot} actionEvent={world.remoteAction} decorationEffect={world.decorationEffect} callbacks={callbacks} onApiReady={onApiReady} />
 
       <header className="world-topbar">
         <button onClick={() => void returnToLobby()}>← Lobby</button>
@@ -188,15 +203,27 @@ export default function WorldPage() {
       </div>
 
       {decorateOpen && (
-        <section className="world-decoration-bar" aria-label="Ferramentas de decoração">
-          {(Object.keys(DECORATION_ASSETS) as WorldDecorationType[]).map((type) => (
-            <button key={type} className={tool?.kind === "place" && tool.type === type ? "selected" : ""} onClick={() => chooseTool({ kind: "place", type })}>
-              <span>{type === "chair" ? "🪑" : type === "table" ? "▦" : type === "plant" ? "🪴" : type === "chest" ? "▰" : "╫"}</span>{DECORATION_ASSETS[type].label}
-            </button>
-          ))}
-          <button className={tool?.kind === "move" ? "selected" : ""} onClick={() => chooseTool({ kind: "move" })}><span>✥</span>Mover</button>
-          <button className={tool?.kind === "remove" ? "selected danger" : "danger"} onClick={() => chooseTool({ kind: "remove" })}><span>✕</span>Remover</button>
-          <button onClick={() => { chooseTool(null); setDecorateOpen(false); }}><span>↩</span>Sair</button>
+        <section className="world-decoration-panel" aria-label="Ferramentas de decoração" onPointerDown={(event) => event.stopPropagation()}>
+          <nav className="world-decoration-tabs" aria-label="Categorias de decoração">
+            {DECORATION_CATEGORIES.map((category) => (
+              <button key={category} className={decorationCategory === category ? "active" : ""} onClick={() => { setDecorationCategory(category); chooseTool(null); }}>
+                {CATEGORY_LABELS[category]}
+              </button>
+            ))}
+          </nav>
+          <div className="world-decoration-items">
+            {visibleCatalogItems.map((item) => (
+              <button key={item.id} className={tool?.kind === "place" && tool.itemId === item.id ? "selected" : ""} onClick={() => chooseTool({ kind: "place", itemId: item.id })}>
+                <span>{item.icon}</span>{item.name}
+              </button>
+            ))}
+            {visibleCatalogItems.length === 0 && <p>Nenhum item confirmado para esta área.</p>}
+          </div>
+          <div className="world-decoration-tools">
+            <button className={tool?.kind === "move" ? "selected" : ""} onClick={() => chooseTool({ kind: "move" })}><span>✥</span>Mover</button>
+            <button className={tool?.kind === "remove" ? "selected danger" : "danger"} onClick={() => chooseTool({ kind: "remove" })}><span>✕</span>Remover</button>
+            <button onClick={() => { chooseTool(null); setDecorateOpen(false); }}><span>↩</span>Sair</button>
+          </div>
         </section>
       )}
 

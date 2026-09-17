@@ -2,7 +2,6 @@ import { AccountId } from "@/lib/accountSession";
 
 export type WorldSceneId = "exterior" | "house-interior";
 export type WorldDirection = "down" | "up" | "left" | "right";
-export type WorldDecorationType = "chair" | "table" | "plant" | "chest" | "fence";
 
 export interface WorldPlayerState {
   accountId: AccountId;
@@ -29,22 +28,42 @@ export interface WorldPlayerActionEvent {
 
 export interface WorldDecoration {
   id: string;
-  type: WorldDecorationType;
+  itemId: string;
   scene: WorldSceneId;
   gridX: number;
   gridY: number;
+  rotation: number;
   placedBy: AccountId;
   updatedAt: number;
+}
+
+export interface WorldTerrainCell {
+  scene: WorldSceneId;
+  gridX: number;
+  gridY: number;
+  terrainId: string;
+  placedBy: AccountId;
+  updatedAt: number;
+}
+
+export interface WorldDecorationEffectEvent {
+  decorationId: string;
+  itemId: string;
+  scene: WorldSceneId;
+  gridX: number;
+  gridY: number;
+  sentAt: number;
 }
 
 export interface WorldSnapshot {
   worldId: string;
   players: WorldPlayerState[];
   decorations: WorldDecoration[];
+  terrain: WorldTerrainCell[];
 }
 
 export type DecorationTool =
-  | { kind: "place"; type: WorldDecorationType }
+  | { kind: "place"; itemId: string }
   | { kind: "move" }
   | { kind: "remove" }
   | null;
@@ -61,4 +80,5 @@ export interface WorldAck {
   error?: string;
   player?: WorldPlayerState;
   decoration?: WorldDecoration;
+  terrain?: WorldTerrainCell;
 }

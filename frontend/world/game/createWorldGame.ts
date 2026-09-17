@@ -67,7 +67,9 @@ export function createWorldGame(parent: HTMLElement, accountId: AccountId, snaps
     cancelDecoration: () => scene.cancelDecoration(),
     updatePlayers: (players) => scene.updatePlayers(players),
     updateDecorations: (decorations) => scene.updateDecorations(decorations),
+    updateTerrain: (terrain) => scene.updateTerrain(terrain),
     playRemoteAction: (event) => scene.playRemoteAction(event),
+    playDecorationEffect: (event) => scene.playDecorationEffect(event),
     resize: (width, height, topInset = 0) => {
       if (width <= 0 || height <= 0) return;
       // Em FIT não chamamos game.scale.resize(). A documentação do Phaser

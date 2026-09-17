@@ -2,17 +2,20 @@
 
 import { useEffect, useRef } from "react";
 import { AccountId } from "@/lib/accountSession";
-import { WorldPlayerActionEvent, WorldSnapshot } from "@/world/types";
+import { WorldDecorationEffectEvent, WorldPlayerActionEvent, WorldSnapshot } from "@/world/types";
 import { WorldGameApi, WorldGameCallbacks } from "@/world/game/WorldGameApi";
 
-export default function WorldCanvas({ accountId, snapshot, actionEvent, callbacks, onApiReady }: { accountId: AccountId; snapshot: WorldSnapshot; actionEvent: WorldPlayerActionEvent | null; callbacks: WorldGameCallbacks; onApiReady: (api: WorldGameApi | null) => void }) {
+export default function WorldCanvas({ accountId, snapshot, actionEvent, decorationEffect, callbacks, onApiReady }: { accountId: AccountId; snapshot: WorldSnapshot; actionEvent: WorldPlayerActionEvent | null; decorationEffect: WorldDecorationEffectEvent | null; callbacks: WorldGameCallbacks; onApiReady: (api: WorldGameApi | null) => void }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<WorldGameApi | null>(null);
-  const initialRef = useRef(snapshot);
+  const snapshotRef = useRef(snapshot);
   const callbacksRef = useRef(callbacks);
   const actionRef = useRef(actionEvent);
+  const decorationEffectRef = useRef(decorationEffect);
+  snapshotRef.current = snapshot;
   callbacksRef.current = callbacks;
   actionRef.current = actionEvent;
+  decorationEffectRef.current = decorationEffect;
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +68,8 @@ export default function WorldCanvas({ accountId, snapshot, actionEvent, callback
         onPlaceDecoration: (...args) => callbacksRef.current.onPlaceDecoration(...args),
         onMoveDecoration: (...args) => callbacksRef.current.onMoveDecoration(...args),
         onRemoveDecoration: (...args) => callbacksRef.current.onRemoveDecoration(...args),
+        onPaintTerrain: (...args) => callbacksRef.current.onPaintTerrain(...args),
+        onRemoveTerrain: (...args) => callbacksRef.current.onRemoveTerrain(...args),
         onHint: (...args) => callbacksRef.current.onHint(...args),
         onNotice: (...args) => callbacksRef.current.onNotice(...args),
         onDebug: (...args) => callbacksRef.current.onDebug(...args),
@@ -73,9 +78,13 @@ export default function WorldCanvas({ accountId, snapshot, actionEvent, callback
         onError: (...args) => callbacksRef.current.onError(...args),
       };
 
-      apiRef.current = createWorldGame(hostRef.current, accountId, initialRef.current, forwardingCallbacks);
+      apiRef.current = createWorldGame(hostRef.current, accountId, snapshotRef.current, forwardingCallbacks);
       onApiReady(apiRef.current);
+      apiRef.current.updatePlayers(snapshotRef.current.players);
+      apiRef.current.updateDecorations(snapshotRef.current.decorations);
+      apiRef.current.updateTerrain(snapshotRef.current.terrain);
       if (actionRef.current) apiRef.current.playRemoteAction(actionRef.current);
+      if (decorationEffectRef.current) apiRef.current.playDecorationEffect(decorationEffectRef.current);
 
       resizeObserver = new ResizeObserver(scheduleResize);
       resizeObserver.observe(hostRef.current);
@@ -108,7 +117,9 @@ export default function WorldCanvas({ accountId, snapshot, actionEvent, callback
 
   useEffect(() => { apiRef.current?.updatePlayers(snapshot.players); }, [snapshot.players]);
   useEffect(() => { apiRef.current?.updateDecorations(snapshot.decorations); }, [snapshot.decorations]);
+  useEffect(() => { apiRef.current?.updateTerrain(snapshot.terrain); }, [snapshot.terrain]);
   useEffect(() => { if (actionEvent) apiRef.current?.playRemoteAction(actionEvent); }, [actionEvent]);
+  useEffect(() => { if (decorationEffect) apiRef.current?.playDecorationEffect(decorationEffect); }, [decorationEffect]);
 
   // NÃO force h-full/w-full no canvas. Em Phaser.Scale.FIT o ScaleManager é
   // quem deve controlar o tamanho CSS do canvas; sobrescrever isso recria

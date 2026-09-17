@@ -2,7 +2,8 @@ import { Server, Socket } from "socket.io";
 import { AccountId } from "../accounts/types";
 import { RoomManager } from "../rooms/RoomManager";
 import { PERSISTENT_DUO_ROOM_CODE } from "../rooms/persistentDuo";
-import { clampWorldPosition, isWorldDecorationType, isWorldDirection, isWorldScene, WORLD_MAX_SPEED_PX_PER_SECOND, WORLD_SCENE_RULES, WORLD_TILE_SIZE } from "./worldConfig";
+import { isObjectItem, isTerrainItem, isValidItemRotation, isWorldItemId } from "./decorationCatalog";
+import { clampWorldPosition, isWorldDirection, isWorldScene, WORLD_MAX_SPEED_PX_PER_SECOND, WORLD_SCENE_RULES, WORLD_TILE_SIZE } from "./worldConfig";
 import { WORLD_ID, WorldPlayerState } from "./types";
 import { worldStore } from "./WorldStore";
 
@@ -88,7 +89,7 @@ export function registerWorldSocketHandlers(io: Server, socket: WorldSocket, roo
 
     callback?.({
       ok: true,
-      snapshot: { worldId: WORLD_ID, players: playersSnapshot(), decorations: worldStore.getDecorations() },
+      snapshot: { worldId: WORLD_ID, players: playersSnapshot(), decorations: worldStore.getDecorations(), terrain: worldStore.getTerrain() },
     });
     io.to(WORLD_LIVE_ROOM).emit("world:players", playersSnapshot());
   });
@@ -155,14 +156,25 @@ export function registerWorldSocketHandlers(io: Server, socket: WorldSocket, roo
       return;
     }
     const input = payload as Record<string, unknown>;
-    if (!isWorldDecorationType(input.type) || !isWorldScene(input.scene) || !Number.isInteger(input.gridX) || !Number.isInteger(input.gridY)) {
+    const itemId = typeof input.itemId === "string" ? input.itemId : input.type;
+    const rotation = input.rotation === undefined ? 0 : Number(input.rotation);
+    const player = livePlayers.get(socket.data.accountId) ?? worldStore.getPlayer(socket.data.accountId);
+    if (!isWorldItemId(itemId) || !isObjectItem(itemId) || !isValidItemRotation(itemId, rotation) || !isWorldScene(input.scene) || input.scene !== player.scene || !Number.isInteger(input.gridX) || !Number.isInteger(input.gridY)) {
       callback?.({ ok: false, error: "Decoração inválida." });
       return;
     }
-    const decoration = worldStore.placeDecoration(socket.data.accountId, { type: input.type, scene: input.scene, gridX: Number(input.gridX), gridY: Number(input.gridY) });
+    const decoration = worldStore.placeDecoration(socket.data.accountId, { itemId, scene: input.scene, gridX: Number(input.gridX), gridY: Number(input.gridY), rotation });
     if (!decoration) { callback?.({ ok: false, error: "Esse espaço não está livre para decorar." }); return; }
     callback?.({ ok: true, decoration });
     io.to(WORLD_LIVE_ROOM).emit("world:decorations", worldStore.getDecorations());
+    socket.to(WORLD_LIVE_ROOM).emit("world:decorationEffect", {
+      decorationId: decoration.id,
+      itemId: decoration.itemId,
+      scene: decoration.scene,
+      gridX: decoration.gridX,
+      gridY: decoration.gridY,
+      sentAt: Date.now(),
+    });
   });
 
   socket.on("world:decorationMove", (payload: unknown, callback?: Ack) => {
@@ -171,7 +183,8 @@ export function registerWorldSocketHandlers(io: Server, socket: WorldSocket, roo
       return;
     }
     const input = payload as Record<string, unknown>;
-    if (typeof input.id !== "string" || !isWorldScene(input.scene) || !Number.isInteger(input.gridX) || !Number.isInteger(input.gridY)) {
+    const player = livePlayers.get(socket.data.accountId) ?? worldStore.getPlayer(socket.data.accountId);
+    if (typeof input.id !== "string" || !isWorldScene(input.scene) || input.scene !== player.scene || !Number.isInteger(input.gridX) || !Number.isInteger(input.gridY)) {
       callback?.({ ok: false, error: "Movimento inválido." });
       return;
     }
@@ -186,10 +199,44 @@ export function registerWorldSocketHandlers(io: Server, socket: WorldSocket, roo
       callback?.({ ok: false, error: "Remoção inválida." });
       return;
     }
-    const removed = worldStore.removeDecoration((payload as { id: string }).id);
+    const player = livePlayers.get(socket.data.accountId) ?? worldStore.getPlayer(socket.data.accountId);
+    const removed = worldStore.removeDecoration((payload as { id: string }).id, player.scene);
     if (!removed) { callback?.({ ok: false, error: "Esse objeto já não existe." }); return; }
     callback?.({ ok: true });
     io.to(WORLD_LIVE_ROOM).emit("world:decorations", worldStore.getDecorations());
+  });
+
+  socket.on("world:terrainPaint", (payload: unknown, callback?: Ack) => {
+    if (!validMember(socket) || !liveSockets.get(socket.data.accountId)?.has(socket.id) || !payload || typeof payload !== "object") {
+      callback?.({ ok: false, error: "Sessão do mundo inválida." });
+      return;
+    }
+    const input = payload as Record<string, unknown>;
+    const player = livePlayers.get(socket.data.accountId) ?? worldStore.getPlayer(socket.data.accountId);
+    if (!isWorldScene(input.scene) || input.scene !== player.scene || !isWorldItemId(input.terrainId) || !isTerrainItem(input.terrainId) || !Number.isInteger(input.gridX) || !Number.isInteger(input.gridY)) {
+      callback?.({ ok: false, error: "Terreno inválido." });
+      return;
+    }
+    const terrain = worldStore.paintTerrain(socket.data.accountId, input.scene, Number(input.gridX), Number(input.gridY), input.terrainId);
+    if (!terrain) { callback?.({ ok: false, error: "Essa célula não pode ser alterada." }); return; }
+    callback?.({ ok: true, terrain });
+    io.to(WORLD_LIVE_ROOM).emit("world:terrain", worldStore.getTerrain());
+  });
+
+  socket.on("world:terrainRemove", (payload: unknown, callback?: Ack) => {
+    if (!validMember(socket) || !liveSockets.get(socket.data.accountId)?.has(socket.id) || !payload || typeof payload !== "object") {
+      callback?.({ ok: false, error: "Sessão do mundo inválida." });
+      return;
+    }
+    const input = payload as Record<string, unknown>;
+    const player = livePlayers.get(socket.data.accountId) ?? worldStore.getPlayer(socket.data.accountId);
+    if (!isWorldScene(input.scene) || input.scene !== player.scene || !Number.isInteger(input.gridX) || !Number.isInteger(input.gridY)) {
+      callback?.({ ok: false, error: "Remoção de terreno inválida." });
+      return;
+    }
+    const removed = worldStore.removeTerrain(input.scene, Number(input.gridX), Number(input.gridY));
+    callback?.({ ok: true, removed });
+    if (removed) io.to(WORLD_LIVE_ROOM).emit("world:terrain", worldStore.getTerrain());
   });
 
   socket.on("world:leave", () => removeLiveSocket(io, socket, roomManager, true));

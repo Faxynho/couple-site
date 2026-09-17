@@ -30,14 +30,20 @@
 .root :global(.world-actions) { position: absolute; z-index: 20; right: 14px; top: 84px; }
 .root :global(.world-actions button) { padding: 0 13px; }
 .root :global(.world-actions .active) { color: #efffc1; outline: 2px solid #a8cf64; }
-.root :global(.world-decoration-bar) { position: absolute; z-index: 25; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; max-width: calc(100vw - 28px); gap: 5px; overflow-x: auto; padding: 7px; border: 3px solid #573622; border-radius: 8px; background: #b96f3ef2; box-shadow: inset 0 2px #eda763, 0 4px #3b291b; }
-.root :global(.world-decoration-bar button) { min-width: 62px; min-height: 54px; padding: 4px 8px; border: 2px solid #633d25; border-radius: 5px; background: #f2cf83; color: #50321f; font-size: 10px; font-weight: 800; box-shadow: inset 0 2px #fff0b6, 0 2px #674025; }
-.root :global(.world-decoration-bar button span) { display: block; font-size: 19px; line-height: 22px; }
-.root :global(.world-decoration-bar .selected) { background: #a8d36d; outline: 2px solid #efffbf; }
-.root :global(.world-decoration-bar .danger) { background: #e99b76; }
+.root :global(.world-decoration-panel) { position: absolute; z-index: 25; left: 50%; bottom: 14px; width: min(720px, calc(100vw - 28px)); transform: translateX(-50%); padding: 7px; border: 3px solid #573622; border-radius: 8px; background: #b96f3ef2; box-shadow: inset 0 2px #eda763, 0 4px #3b291b; }
+.root :global(.world-decoration-tabs) { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+.root :global(.world-decoration-tabs button) { flex: 0 0 auto; min-height: 28px; padding: 3px 9px; border: 2px solid #633d25; border-radius: 5px; background: #d99b58; color: #50321f; font-size: 10px; font-weight: 800; }
+.root :global(.world-decoration-tabs button.active) { background: #a8d36d; box-shadow: inset 0 1px #efffbf; }
+.root :global(.world-decoration-items) { display: flex; min-height: 58px; gap: 5px; overflow-x: auto; padding: 1px 1px 4px; scrollbar-width: thin; }
+.root :global(.world-decoration-items p) { margin: auto; color: #fff0bd; font-size: 11px; font-weight: 800; }
+.root :global(.world-decoration-items button), .root :global(.world-decoration-tools button) { flex: 0 0 auto; min-width: 68px; min-height: 54px; padding: 4px 8px; border: 2px solid #633d25; border-radius: 5px; background: #f2cf83; color: #50321f; font-size: 10px; font-weight: 800; box-shadow: inset 0 2px #fff0b6, 0 2px #674025; }
+.root :global(.world-decoration-items button span), .root :global(.world-decoration-tools button span) { display: block; font-size: 19px; line-height: 22px; }
+.root :global(.world-decoration-tools) { display: flex; justify-content: center; gap: 5px; padding-top: 5px; border-top: 2px solid #75432880; }
+.root :global(.world-decoration-panel .selected) { background: #a8d36d; outline: 2px solid #efffbf; }
+.root :global(.world-decoration-panel .danger) { background: #e99b76; }
 .root :global(.world-hint), .root :global(.world-notice) { position: absolute; z-index: 24; left: 50%; transform: translateX(-50%); padding: 8px 14px; border: 2px solid #5d3924; border-radius: 6px; color: #4b301e; background: #ffe7a6; box-shadow: 0 3px #563824; font-weight: 800; font-size: 12px; white-space: nowrap; }
 .root :global(.world-hint) { bottom: 24px; }
-.root :global(.world-decoration-bar) ~ :global(.world-hint) { bottom: 92px; }
+.root :global(.world-decoration-panel) ~ :global(.world-hint) { bottom: 158px; }
 .root :global(.world-notice) { top: 86px; background: #fff2bd; }
 .root :global(.world-debug) { position: absolute; z-index: 30; left: 10px; top: 82px; padding: 7px 9px; border: 1px solid #fff8; color: #efffda; background: #102416cc; font: 11px/1.45 monospace; pointer-events: none; }
 .root :global(.world-curtain), .root :global(.world-error), .root :global(.world-loading) { position: absolute; z-index: 50; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: radial-gradient(circle, #6e9b55, #2f5135); text-align: center; }
@@ -149,7 +155,13 @@
   .root :global(.world-joystick-knob) { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border: 3px solid #4f321f; border-radius: 50%; background: #96613c; box-shadow: inset 0 3px #c88a55, 0 3px #342216; pointer-events: none; will-change: transform; }
 
   .root :global(.world-interact-button) { position: absolute; right: 25px; bottom: 28px; width: 62px; height: 62px; border-radius: 50%; pointer-events: auto; font-size: 23px; }
-  .root :global(.world-decoration-bar) { bottom: 8px; max-width: 58vw; }
+  .root :global(.world-decoration-panel) { bottom: 8px; width: min(660px, 62vw); max-height: 43vh; padding: 5px; }
+  .root :global(.world-decoration-tabs) { padding-bottom: 4px; }
+  .root :global(.world-decoration-tabs button) { min-height: 24px; padding: 2px 7px; }
+  .root :global(.world-decoration-items) { min-height: 50px; }
+  .root :global(.world-decoration-items button), .root :global(.world-decoration-tools button) { min-width: 58px; min-height: 45px; padding: 2px 6px; }
+  .root :global(.world-decoration-items button span), .root :global(.world-decoration-tools button span) { font-size: 16px; line-height: 18px; }
+  .root :global(.world-decoration-tools) { padding-top: 3px; }
   .root :global(.world-hint) { bottom: 18px; }
   .root :global(.world-actions) { top: 76px; right: 10px; }
   .root :global(.world-settings) { width: min(520px, 92vw); max-height: 86vh; padding: 13px; }

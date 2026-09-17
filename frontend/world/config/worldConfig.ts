@@ -1,4 +1,4 @@
-import { WorldDecorationType, WorldSceneId } from "@/world/types";
+import { WorldSceneId } from "@/world/types";
 
 export const WORLD_CONFIG = {
   id: "andre-flavia-world-v1",
@@ -9,9 +9,24 @@ export const WORLD_CONFIG = {
   mobile: { joystickRadius: 48, joystickDeadzone: 0.18 },
   audio: { defaultMusicVolume: 0.45, defaultSfxVolume: 0.65 },
   scenes: {
-    exterior: { mapKey: "world-map-exterior", mapUrl: "/world/maps/main-world.tmj", width: 80, height: 50 },
-    "house-interior": { mapKey: "world-map-house", mapUrl: "/world/maps/house-interior.tmj", width: 24, height: 18 },
-  } satisfies Record<WorldSceneId, { mapKey: string; mapUrl: string; width: number; height: number }>,
+    exterior: {
+      mapKey: "world-map-exterior", mapUrl: "/world/maps/main-world.tmj", width: 80, height: 50,
+      decorationArea: { x: 3, y: 3, width: 74, height: 44 },
+      blockedDecorationRects: [{ x: 59, y: 5, width: 16, height: 13 }, { x: 42, y: 5, width: 8, height: 9 }, { x: 0, y: 0, width: 80, height: 2 }, { x: 0, y: 48, width: 80, height: 2 }],
+    },
+    "house-interior": {
+      mapKey: "world-map-house", mapUrl: "/world/maps/house-interior.tmj", width: 24, height: 18,
+      decorationArea: { x: 2, y: 3, width: 20, height: 12 },
+      blockedDecorationRects: [{ x: 0, y: 0, width: 24, height: 3 }, { x: 0, y: 0, width: 2, height: 18 }, { x: 22, y: 0, width: 2, height: 18 }, { x: 0, y: 16, width: 10, height: 2 }, { x: 14, y: 16, width: 10, height: 2 }],
+    },
+  } satisfies Record<WorldSceneId, {
+    mapKey: string;
+    mapUrl: string;
+    width: number;
+    height: number;
+    decorationArea: { x: number; y: number; width: number; height: number };
+    blockedDecorationRects: Array<{ x: number; y: number; width: number; height: number }>;
+  }>,
 } as const;
 
 export interface WorldVisualAsset {
@@ -40,17 +55,4 @@ export const WORLD_OBJECT_ASSETS: Record<string, WorldVisualAsset> = {
   cow: { texture: "cow-atlas", url: "/world/animals/cow.png", crop: { x: 0, y: 0, width: 32, height: 32 }, scale: 2, originX: 0.5, originY: 1 },
   bed: { texture: "furniture-atlas", url: "/world/furniture/basic-furniture.png", crop: { x: 0, y: 16, width: 16, height: 32 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 26, height: 16, offsetX: -13, offsetY: -16 } },
   rug: { texture: "furniture-atlas", url: "/world/furniture/basic-furniture.png", crop: { x: 0, y: 80, width: 48, height: 16 }, scale: 2, originX: 0.5, originY: 0.5 },
-  "chair-fixed": { texture: "furniture-atlas", url: "/world/furniture/basic-furniture.png", crop: { x: 64, y: 32, width: 16, height: 32 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 18, height: 10, offsetX: -9, offsetY: -10 } },
-  "table-fixed": { texture: "furniture-atlas", url: "/world/furniture/basic-furniture.png", crop: { x: 48, y: 16, width: 32, height: 32 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 50, height: 20, offsetX: -25, offsetY: -20 } },
-  "plant-fixed": { texture: "plants-atlas", url: "/world/plants/basic-plants.png", crop: { x: 48, y: 0, width: 16, height: 32 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 16, height: 8, offsetX: -8, offsetY: -8 } },
-  "chest-fixed": { texture: "chest-atlas", url: "/world/furniture/chest.png", crop: { x: 16, y: 0, width: 16, height: 32 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 22, height: 10, offsetX: -11, offsetY: -10 } },
-  "fence-fixed": { texture: "fence-atlas", url: "/world/buildings/fences.png", crop: { x: 0, y: 0, width: 16, height: 16 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 28, height: 8, offsetX: -14, offsetY: -8 } },
-};
-
-export const DECORATION_ASSETS: Record<WorldDecorationType, WorldVisualAsset & { label: string; footprint: { width: number; height: number } }> = {
-  chair: { label: "Cadeira", texture: "furniture-atlas", url: "/world/furniture/basic-furniture.png", crop: { x: 64, y: 32, width: 16, height: 32 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 18, height: 10, offsetX: -9, offsetY: -10 }, footprint: { width: 1, height: 1 } },
-  table: { label: "Mesa", texture: "furniture-atlas", url: "/world/furniture/basic-furniture.png", crop: { x: 48, y: 16, width: 32, height: 32 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 50, height: 20, offsetX: -25, offsetY: -20 }, footprint: { width: 2, height: 2 } },
-  plant: { label: "Planta", texture: "plants-atlas", url: "/world/plants/basic-plants.png", crop: { x: 48, y: 0, width: 16, height: 32 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 16, height: 8, offsetX: -8, offsetY: -8 }, footprint: { width: 1, height: 1 } },
-  chest: { label: "Baú", texture: "chest-atlas", url: "/world/furniture/chest.png", crop: { x: 16, y: 0, width: 16, height: 32 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 22, height: 10, offsetX: -11, offsetY: -10 }, footprint: { width: 1, height: 1 } },
-  fence: { label: "Cerca", texture: "fence-atlas", url: "/world/buildings/fences.png", crop: { x: 0, y: 0, width: 16, height: 16 }, scale: 2, originX: 0.5, originY: 1, collision: { width: 28, height: 8, offsetX: -14, offsetY: -8 }, footprint: { width: 1, height: 1 } },
 };
