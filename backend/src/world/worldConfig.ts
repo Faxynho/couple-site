@@ -74,6 +74,31 @@ function overlaps(a: { x: number; y: number; width: number; height: number }, b:
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
+function placementRects(itemId: string, gridX: number, gridY: number) {
+  const rule = getWorldItemRule(itemId);
+  if (!rule) return [{ x: gridX, y: gridY, width: 1, height: 1 }];
+  if (rule.placementRects?.length) {
+    return rule.placementRects.map((rect) => ({ ...rect, x: gridX + rect.x, y: gridY + rect.y }));
+  }
+  return [{
+    x: gridX + rule.footprint.width / 2 - 0.5,
+    y: gridY + rule.footprint.height - 1,
+    width: 1,
+    height: 1,
+  }];
+}
+
+function directlyConnected(itemId: string, gridX: number, gridY: number, other: WorldDecoration) {
+  const candidate = getWorldItemRule(itemId);
+  const occupied = getWorldItemRule(other.itemId);
+  if (candidate?.kind !== "connected-object" || occupied?.kind !== "connected-object") return false;
+  const step = candidate.connectionStep;
+  if (!step || candidate.connectionOrigin?.x !== occupied.connectionOrigin?.x || candidate.connectionOrigin?.y !== occupied.connectionOrigin?.y) return false;
+  const dx = Math.abs(gridX - other.gridX);
+  const dy = Math.abs(gridY - other.gridY);
+  return (dx === step.x && dy === 0) || (dy === step.y && dx === 0);
+}
+
 export function canPlaceDecoration(
   scene: WorldSceneId,
   itemId: string,
@@ -97,12 +122,14 @@ export function canPlaceDecoration(
   const candidate = { x: gridX, y: gridY, width: footprint.width, height: footprint.height };
   const area = rules.decorationArea;
   if (candidate.x < area.x || candidate.y < area.y || candidate.x + candidate.width > area.x + area.width || candidate.y + candidate.height > area.y + area.height) return false;
-  if (rules.blockedDecorationRects.some((rect) => overlaps(candidate, rect))) return false;
-  if (terrain.some((cell) => cell.scene === scene && cell.terrainId === "water" && overlaps(candidate, { x: cell.gridX, y: cell.gridY, width: 1, height: 1 }))) return false;
+  const candidateRects = placementRects(itemId, gridX, gridY);
+  if (rules.blockedDecorationRects.some((rect) => candidateRects.some((shape) => overlaps(shape, rect)))) return false;
+  if (terrain.some((cell) => cell.scene === scene && cell.terrainId === "water" && candidateRects.some((shape) => overlaps(shape, { x: cell.gridX, y: cell.gridY, width: 1, height: 1 })))) return false;
   return !decorations.some((decoration) => {
     if (decoration.id === ignoredId || decoration.scene !== scene) return false;
-    const occupied = getWorldItemRule(decoration.itemId)?.footprint ?? { width: 1, height: 1 };
-    return overlaps(candidate, { x: decoration.gridX, y: decoration.gridY, width: occupied.width, height: occupied.height });
+    if (directlyConnected(itemId, gridX, gridY, decoration)) return false;
+    return candidateRects.some((candidateRect) => placementRects(decoration.itemId, decoration.gridX, decoration.gridY)
+      .some((occupiedRect) => overlaps(candidateRect, occupiedRect)));
   });
 }
 
@@ -123,8 +150,7 @@ export function canPaintTerrain(
   if (rules.blockedDecorationRects.some((rect) => overlaps(cell, rect))) return false;
   return !decorations.some((decoration) => {
     if (decoration.scene !== scene) return false;
-    const occupied = getWorldItemRule(decoration.itemId)?.footprint ?? { width: 1, height: 1 };
-    return overlaps(cell, { x: decoration.gridX, y: decoration.gridY, width: occupied.width, height: occupied.height });
+    return placementRects(decoration.itemId, decoration.gridX, decoration.gridY).some((occupied) => overlaps(cell, occupied));
   });
 }
 

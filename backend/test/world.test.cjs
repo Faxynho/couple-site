@@ -36,6 +36,20 @@ test("mover ignora somente o próprio id e detecta outro objeto removido/ocupado
   assert.equal(canPlaceDecoration("house-interior", "chair", 8, 7, existing, "a"), false);
 });
 
+test("placement usa colisão Tiled do sofá em vez do retângulo visual inteiro", () => {
+  const couch = { id: "sofa-a", itemId: "couch", scene: "house-interior", gridX: 5, gridY: 5, rotation: 0, placedBy: "andre", updatedAt: 1 };
+  assert.equal(canPlaceDecoration("house-interior", "couch", 7, 5, [couch]), true, "sofás lado a lado não têm colisões sobrepostas");
+  assert.equal(canPlaceDecoration("house-interior", "couch", 5, 8, [couch]), true, "sofás alinhados acima/abaixo não ganham margem invisível");
+  assert.equal(canPlaceDecoration("house-interior", "couch", 6, 5, [couch]), false, "colisão física real ainda bloqueia sobreposição");
+});
+
+test("segmentos de cerca aceitam vizinhos cardinais e continuam alinhados ao grid 2x2", () => {
+  const fence = { id: "fence-a", itemId: "fence", scene: "exterior", gridX: 21, gridY: 22, rotation: 0, placedBy: "andre", updatedAt: 1 };
+  assert.equal(canPlaceDecoration("exterior", "fence", 23, 22, [fence]), true);
+  assert.equal(canPlaceDecoration("exterior", "fence", 21, 24, [fence]), true);
+  assert.equal(canPlaceDecoration("exterior", "fence", 22, 22, [fence]), false);
+});
+
 test("save legado migra type para itemId e terreno inválido não entra", () => {
   assert.deepEqual(sanitizeDecoration({ id: "old-chair", type: "chair", scene: "exterior", gridX: 8, gridY: 9, placedBy: "andre", updatedAt: 10 }), {
     id: "old-chair", itemId: "chair", scene: "exterior", gridX: 8, gridY: 9, rotation: 0, placedBy: "andre", updatedAt: 10,

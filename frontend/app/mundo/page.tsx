@@ -61,6 +61,7 @@ export default function WorldPage() {
   const [ready, setReady] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [decorateOpen, setDecorateOpen] = useState(false);
+  const [decorationCollapsed, setDecorationCollapsed] = useState(false);
   const [decorationCategory, setDecorationCategory] = useState<DecorationCategory>("plants");
   const [tool, setTool] = useState<DecorationTool>(null);
   const [hint, setHint] = useState<string | null>(null);
@@ -155,9 +156,11 @@ export default function WorldPage() {
   const toggleDecorationMode = () => {
     if (decorateOpen) {
       chooseTool(null);
+      setDecorationCollapsed(false);
       setDecorateOpen(false);
       return;
     }
+    setDecorationCollapsed(false);
     setDecorateOpen(true);
   };
 
@@ -221,30 +224,42 @@ export default function WorldPage() {
       </div>
 
       {decorateOpen && (
-        <section className="world-decoration-panel" aria-label="Ferramentas de decoração" onPointerDown={(event) => event.stopPropagation()}>
-          <nav className="world-decoration-tabs" aria-label="Categorias de decoração">
-            {DECORATION_CATEGORIES.map((category) => (
-              <button type="button" key={category} className={decorationCategory === category ? "active" : ""} onClick={() => { setDecorationCategory(category); chooseTool(null); }}>
-                {CATEGORY_LABELS[category]}
-              </button>
-            ))}
-          </nav>
-          <div className="world-decoration-content">
-            <div className="world-decoration-items">
-              {visibleCatalogItems.map((item) => (
-                <button type="button" key={item.id} className={tool?.kind === "place" && tool.itemId === item.id ? "selected" : ""} onClick={() => chooseTool({ kind: "place", itemId: item.id })}>
-                  <span>{item.icon}</span>{item.name}
+        <section className={`world-decoration-panel${decorationCollapsed ? " collapsed" : ""}`} aria-label="Ferramentas de decoração" onPointerDown={(event) => event.stopPropagation()}>
+          <button
+            type="button"
+            className="world-decoration-collapse"
+            onClick={() => setDecorationCollapsed((collapsed) => !collapsed)}
+            aria-label={decorationCollapsed ? "Mostrar painel de decoração" : "Recolher painel de decoração"}
+            aria-expanded={!decorationCollapsed}
+            title={decorationCollapsed ? "Mostrar painel" : "Recolher painel"}
+          >
+            <span aria-hidden="true">{decorationCollapsed ? "▲" : "▼"}</span>
+          </button>
+          <div className="world-decoration-panel-body">
+            <nav className="world-decoration-tabs" aria-label="Categorias de decoração">
+              {DECORATION_CATEGORIES.map((category) => (
+                <button type="button" key={category} className={decorationCategory === category ? "active" : ""} onClick={() => { setDecorationCategory(category); chooseTool(null); }}>
+                  {CATEGORY_LABELS[category]}
                 </button>
               ))}
-              {visibleCatalogItems.length === 0 && <p>Nenhum item confirmado para esta área.</p>}
-            </div>
-            <div className="world-decoration-tools" aria-label="Ações de decoração">
-              <button type="button" className={tool?.kind === "move" ? "selected" : ""} onClick={() => chooseTool({ kind: "move" })} aria-label="Mover decoração" title="Mover decoração">
-                <span aria-hidden="true">✥</span>
-              </button>
-              <button type="button" className={tool?.kind === "remove" ? "selected danger" : "danger"} onClick={() => chooseTool({ kind: "remove" })} aria-label="Remover decoração" title="Remover decoração">
-                <span aria-hidden="true">✕</span>
-              </button>
+            </nav>
+            <div className="world-decoration-content">
+              <div className="world-decoration-items">
+                {visibleCatalogItems.map((item) => (
+                  <button type="button" key={item.id} className={tool?.kind === "place" && tool.itemId === item.id ? "selected" : ""} onClick={() => chooseTool({ kind: "place", itemId: item.id })}>
+                    <span>{item.icon}</span>{item.name}
+                  </button>
+                ))}
+                {visibleCatalogItems.length === 0 && <p>Nenhum item confirmado para esta área.</p>}
+              </div>
+              <div className="world-decoration-tools" aria-label="Ações de decoração">
+                <button type="button" className={tool?.kind === "move" ? "selected" : ""} onClick={() => chooseTool({ kind: "move" })} aria-label="Mover decoração" title="Mover decoração">
+                  <span aria-hidden="true">✥</span>
+                </button>
+                <button type="button" className={tool?.kind === "remove" ? "selected danger" : "danger"} onClick={() => chooseTool({ kind: "remove" })} aria-label="Remover decoração" title="Remover decoração">
+                  <span aria-hidden="true">✕</span>
+                </button>
+              </div>
             </div>
           </div>
         </section>

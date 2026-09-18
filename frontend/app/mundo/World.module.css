@@ -32,7 +32,12 @@
 .root :global(.world-actions) { position: absolute; z-index: 20; right: 14px; top: 84px; }
 .root :global(.world-actions button) { width: 42px; padding: 0; font-size: 20px; }
 .root :global(.world-actions .active) { color: #efffc1; outline: 2px solid #a8cf64; }
-.root :global(.world-decoration-panel) { position: absolute; z-index: 25; left: 50%; bottom: 14px; width: min(720px, calc(100vw - 28px)); transform: translateX(-50%); padding: 7px; border: 3px solid #573622; border-radius: 8px; background: #b96f3ef2; box-shadow: inset 0 2px #eda763, 0 4px #3b291b; }
+.root :global(.world-decoration-panel) { --decoration-panel-bottom: 14px; position: absolute; z-index: 25; left: 50%; bottom: var(--decoration-panel-bottom); width: min(720px, calc(100vw - 28px)); transform: translateX(-50%); padding: 7px; border: 3px solid #573622; border-radius: 8px; background: #b96f3ef2; box-shadow: inset 0 2px #eda763, 0 4px #3b291b; transition: transform 180ms ease-out; will-change: transform; }
+.root :global(.world-decoration-panel.collapsed) { transform: translate(-50%, calc(100% + var(--decoration-panel-bottom))); }
+.root :global(.world-decoration-panel-body) { min-width: 0; transition: opacity 120ms ease-out; }
+.root :global(.world-decoration-panel.collapsed .world-decoration-panel-body) { opacity: 0; pointer-events: none; }
+.root :global(.world-decoration-collapse) { position: absolute; left: 9px; top: -25px; display: grid; place-items: center; width: 42px; height: 24px; padding: 0; border: 3px solid #573622; border-bottom: 0; border-radius: 7px 7px 0 0; color: #fff0bd; background: #b96f3e; box-shadow: inset 0 2px #eda763; font-size: 13px; line-height: 1; touch-action: manipulation; }
+.root :global(.world-decoration-collapse:active) { padding-top: 2px; }
 .root :global(.world-decoration-tabs) { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
 .root :global(.world-decoration-tabs button) { flex: 0 0 auto; min-height: 28px; padding: 3px 9px; border: 2px solid #633d25; border-radius: 5px; background: #d99b58; color: #50321f; font-size: 10px; font-weight: 800; }
 .root :global(.world-decoration-tabs button.active) { background: #a8d36d; box-shadow: inset 0 1px #efffbf; }
@@ -49,7 +54,7 @@
 .root :global(.world-decoration-panel .danger) { background: #e99b76; }
 .root :global(.world-hint), .root :global(.world-notice) { position: absolute; z-index: 24; left: 50%; transform: translateX(-50%); padding: 8px 14px; border: 2px solid #5d3924; border-radius: 6px; color: #4b301e; background: #ffe7a6; box-shadow: 0 3px #563824; font-weight: 800; font-size: 12px; white-space: nowrap; }
 .root :global(.world-hint) { bottom: 24px; }
-.root :global(.world-decoration-panel) ~ :global(.world-hint) { bottom: 118px; }
+.root :global(.world-decoration-panel:not(.collapsed)) ~ :global(.world-hint) { bottom: 118px; }
 .root :global(.world-notice) { top: 86px; background: #fff2bd; }
 .root :global(.world-debug) { position: absolute; z-index: 30; left: 10px; top: 82px; padding: 7px 9px; border: 1px solid #fff8; color: #efffda; background: #102416cc; font: 11px/1.45 monospace; pointer-events: none; }
 .root :global(.world-curtain), .root :global(.world-error), .root :global(.world-loading) { position: absolute; z-index: 50; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: radial-gradient(circle, #6e9b55, #2f5135); text-align: center; }
@@ -161,7 +166,7 @@
   .root :global(.world-joystick-knob) { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border: 3px solid #4f321f; border-radius: 50%; background: #96613c; box-shadow: inset 0 3px #c88a55, 0 3px #342216; pointer-events: none; will-change: transform; }
 
   .root :global(.world-interact-button) { position: absolute; right: 25px; bottom: 28px; width: 62px; height: 62px; border-radius: 50%; pointer-events: auto; font-size: 23px; }
-  .root :global(.world-decoration-panel) { bottom: 8px; width: min(660px, 62vw); max-height: 36vh; padding: 5px; }
+  .root :global(.world-decoration-panel) { --decoration-panel-bottom: 8px; width: min(660px, 62vw); max-height: 36vh; padding: 5px; }
   .root :global(.world-decoration-tabs) { padding-bottom: 4px; }
   .root :global(.world-decoration-tabs button) { min-height: 24px; padding: 2px 7px; }
   .root :global(.world-decoration-items) { min-height: 50px; }
@@ -171,11 +176,15 @@
   .root :global(.world-decoration-tools) { min-height: 50px; gap: 3px; padding-left: 4px; }
   .root :global(.world-decoration-tools button) { width: 28px; min-width: 28px; min-height: 21px; }
   .root :global(.world-decoration-tools button span) { font-size: 15px; }
-  .root :global(.world-decoration-panel) ~ :global(.world-hint) { bottom: 102px; }
+  .root :global(.world-decoration-panel:not(.collapsed)) ~ :global(.world-hint) { bottom: 102px; }
   .root :global(.world-hint) { bottom: 18px; }
   .root :global(.world-actions) { top: 76px; right: 10px; }
   .root :global(.world-settings) { width: min(520px, 92vw); max-height: 86vh; padding: 13px; }
   .root :global(.world-skin-card) { margin-top: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root :global(.world-decoration-panel), .root :global(.world-decoration-panel-body) { transition: none; }
 }
 
 @media (pointer: coarse) and (orientation: portrait) {

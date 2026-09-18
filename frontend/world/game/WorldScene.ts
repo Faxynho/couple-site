@@ -1,12 +1,14 @@
 import * as Phaser from "phaser";
 import { AccountId } from "@/lib/accountSession";
 import { CHARACTER_CONFIGS } from "@/world/config/characterConfig";
-import { ConnectedCatalogItem, DECORATION_CATALOG, DecorationCatalogItem, getDecorationDefinition, isTerrainDefinition, ObjectCatalogItem, TerrainCatalogItem } from "@/world/config/decorationCatalog";
+import { ConnectedCatalogItem, DecorationCatalogItem, getDecorationDefinition, isTerrainDefinition, ObjectCatalogItem, TerrainCatalogItem } from "@/world/config/decorationCatalog";
+import { decorationCollisionRects, decorationPlacementRects, decorationRectsOverlap, DecorationRect } from "@/world/config/decorationGeometry";
 import { WORLD_CONFIG, WORLD_OBJECT_ASSETS, WorldVisualAsset } from "@/world/config/worldConfig";
 import { getWorldTilesetAsset, WORLD_TILESET_ASSETS, WorldTilesetAsset } from "@/world/config/tilesetConfig";
 import { DecorationTool, WorldDecoration, WorldDecorationEffectEvent, WorldDirection, WorldPlayerActionEvent, WorldPlayerState, WorldSceneId, WorldSnapshot, WorldTerrainCell } from "@/world/types";
 import { clampWorldCameraLevel, getWorldCameraLayout, WORLD_CAMERA_LEVEL_MAX, WORLD_CAMERA_LEVEL_MIN } from "./WorldCameraLayout";
 import { DecorationPlacementInput } from "./DecorationPlacementInput";
+import { resolveNineSliceFrame } from "./Autotile";
 import { WorldCameraZoomInfo, WorldGameCallbacks } from "./WorldGameApi";
 
 type TiledObject = Phaser.Types.Tilemaps.TiledObject & { properties?: Array<{ name: string; value: unknown }> };
@@ -98,7 +100,6 @@ export class WorldScene extends Phaser.Scene {
   private dynamicGroundDetailsLayer?: Phaser.Tilemaps.TilemapLayer;
   private dynamicGroundDetailsTopLayer?: Phaser.Tilemaps.TilemapLayer;
   private terrainObstacles = new Map<string, { obstacle: Phaser.GameObjects.GameObject; collider?: Phaser.Physics.Arcade.Collider }>();
-  private autotileLookups = new Map<string, Map<number, number>>();
   private effectSprites = new Set<Phaser.GameObjects.Sprite>();
   private readonly handleDomPointerDown = (event: PointerEvent) => this.beginDomTouchPlacement(event);
   private readonly handleDomPointerMove = (event: PointerEvent) => this.moveDomTouchPlacement(event);
@@ -372,7 +373,7 @@ export class WorldScene extends Phaser.Scene {
       const definition = getDecorationDefinition(tool.itemId);
       if (definition) this.preview = this.createCatalogPreview(definition).setAlpha(0.65).setDepth(99999).setVisible(false);
     }
-    this.callbacks.onHint(tool ? "Mova para pré-visualizar · solte para confirmar · Esc cancela" : null);
+    this.callbacks.onHint(null);
   }
 
   cancelDecoration() { this.decorationTool = null; this.movingDecoration = null; this.resetPlacementInput(); this.destroyPreview(); this.callbacks.onHint(null); }
@@ -898,7 +899,6 @@ export class WorldScene extends Phaser.Scene {
     this.dynamicGroundLayer?.setDepth(0.05);
     this.dynamicGroundDetailsLayer?.setDepth(0.15);
     this.dynamicGroundDetailsTopLayer?.setDepth(0.25);
-    this.buildAutotileLookups();
     this.renderAllTerrain();
 
     const legacyGroundDetails = this.tilemap.getObjectLayer("GroundDetailsLegacy")
@@ -984,7 +984,6 @@ export class WorldScene extends Phaser.Scene {
     this.remoteActions.clear();
     for (const effect of this.effectSprites) effect.destroy();
     this.effectSprites.clear();
-    this.autotileLookups.clear();
     [...this.mapVisuals, ...this.fixedObstacles, ...this.decorationVisuals, ...this.decorationObstacles].forEach((item) => item.destroy());
     this.mapVisuals = [];
     this.fixedObstacles = [];
@@ -1396,74 +1395,6 @@ export class WorldScene extends Phaser.Scene {
     return mask;
   }
 
-  private buildAutotileLookups() {
-    this.autotileLookups.clear();
-    if (!this.tilemap) return;
-    for (const definition of Object.values(DECORATION_CATALOG)) {
-      if (!isTerrainDefinition(definition) || !definition.scenes.includes(this.currentScene as never)) continue;
-      const layer = this.baseLayer(definition.terrainLayer);
-      if (!layer || !this.tilemap.tilesets.some((item) => item.name === definition.source.tileset)) continue;
-      const counts = new Map<number, Map<number, number>>();
-      const record = (mask: number, frame: number) => {
-        const frames = counts.get(mask) ?? new Map<number, number>();
-        frames.set(frame, (frames.get(frame) ?? 0) + 1);
-        counts.set(mask, frames);
-      };
-
-      if (definition.autotile.mode === "water-shore") {
-        const shoreTileset = definition.autotile.shoreTileset;
-        if (!shoreTileset) continue;
-        for (let y = 0; y < this.tilemap.height; y++) for (let x = 0; x < this.tilemap.width; x++) {
-          const shoreFrame = this.localFrameAt(this.groundLayer, shoreTileset, x, y);
-          if (shoreFrame === null) continue;
-          const mask = this.neighborMask((nx, ny) => this.baseMatchesTerrain(definition, nx, ny), x, y);
-          if (mask !== 0) record(mask, shoreFrame);
-        }
-        this.autotileLookups.set(`${definition.id}:shore`, this.pickMostUsedFrames(counts));
-      } else {
-        for (let y = 0; y < this.tilemap.height; y++) for (let x = 0; x < this.tilemap.width; x++) {
-          if (!this.baseMatchesTerrain(definition, x, y)) continue;
-          const frame = this.localFrameAt(layer, definition.source.tileset, x, y);
-          if (frame === null) continue;
-          const mask = this.neighborMask((nx, ny) => this.baseMatchesTerrain(definition, nx, ny), x, y);
-          record(mask, frame);
-        }
-        this.autotileLookups.set(`${definition.id}:terrain`, this.pickMostUsedFrames(counts));
-      }
-    }
-  }
-
-  private pickMostUsedFrames(counts: Map<number, Map<number, number>>) {
-    const lookup = new Map<number, number>();
-    for (const [mask, frames] of counts) {
-      const best = [...frames].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0];
-      if (best) lookup.set(mask, best[0]);
-    }
-    return lookup;
-  }
-
-  private resolveAutotileFrame(definition: TerrainCatalogItem, mask: number, shore = false) {
-    const lookup = this.autotileLookups.get(`${definition.id}:${shore ? "shore" : "terrain"}`);
-    const exact = lookup?.get(mask);
-    if (exact !== undefined) return exact;
-    if (!lookup || lookup.size === 0) return definition.autotile.fallbackFrame;
-    let bestFrame = definition.autotile.fallbackFrame;
-    let bestScore = -Infinity;
-    for (const [candidateMask, frame] of lookup) {
-      const shared = this.countBits(candidateMask & mask);
-      const different = this.countBits(candidateMask ^ mask);
-      const score = shared * 3 - different;
-      if (score > bestScore) { bestScore = score; bestFrame = frame; }
-    }
-    return bestFrame;
-  }
-
-  private countBits(value: number) {
-    let count = 0;
-    for (let current = value >>> 0; current; current &= current - 1) count++;
-    return count;
-  }
-
   private putTerrainTile(layer: Phaser.Tilemaps.TilemapLayer | undefined, tilesetName: string, frame: number, gridX: number, gridY: number) {
     if (!layer || !this.tilemap) return;
     const tileset = this.tilemap.tilesets.find((item) => item.name === tilesetName);
@@ -1481,20 +1412,10 @@ export class WorldScene extends Phaser.Scene {
     const definition = cell ? getDecorationDefinition(cell.terrainId) : undefined;
     if (definition && isTerrainDefinition(definition)) {
       const mask = this.neighborMask((x, y) => this.terrainMatches(definition, x, y), gridX, gridY);
-      const frame = definition.autotile.mode === "same-terrain"
-        ? this.resolveAutotileFrame(definition, mask)
-        : definition.source.frame;
+      const frame = definition.autotile.mode === "nine-slice" && definition.autotile.frames
+        ? resolveNineSliceFrame(mask, definition.autotile.frames)
+        : definition.autotile.fallbackFrame;
       this.putTerrainTile(this.dynamicLayer(definition.terrainLayer), definition.source.tileset, frame, gridX, gridY);
-    }
-
-    const water = getDecorationDefinition("water");
-    const isWaterHere = water && isTerrainDefinition(water) && this.terrainMatches(water, gridX, gridY);
-    if (water && isTerrainDefinition(water) && !isWaterHere && this.tilemap.tilesets.some((item) => item.name === water.autotile.shoreTileset)) {
-      const waterMask = this.neighborMask((x, y) => this.terrainMatches(water, x, y), gridX, gridY);
-      if (waterMask !== 0 && this.localFrameAt(this.groundLayer, water.autotile.shoreTileset ?? "grass", gridX, gridY) !== null) {
-        const shoreFrame = this.resolveAutotileFrame(water, waterMask, true);
-        this.putTerrainTile(this.dynamicGroundLayer, water.autotile.shoreTileset ?? "grass", shoreFrame, gridX, gridY);
-      }
     }
   }
 
@@ -1587,6 +1508,36 @@ export class WorldScene extends Phaser.Scene {
     return definition.variants[mask] ?? definition.source.frame;
   }
 
+  private placementRectsFor(
+    definition: ObjectCatalogItem | ConnectedCatalogItem,
+    gridX: number,
+    gridY: number,
+    rotation: number,
+    id = "__placement-candidate__",
+  ) {
+    const frame = definition.kind === "connected-object"
+      ? this.connectedFrame({ id, itemId: definition.id, scene: this.currentScene, gridX, gridY, rotation, placedBy: this.accountId, updatedAt: 0 }, definition)
+      : definition.source.frame;
+    const collisions = definition.kind === "connected-object"
+      ? definition.variantCollisions[frame] ?? []
+      : definition.collisions;
+    return decorationPlacementRects(definition, gridX, gridY, rotation, collisions);
+  }
+
+  private directlyConnects(
+    candidate: ConnectedCatalogItem,
+    gridX: number,
+    gridY: number,
+    other: WorldDecoration,
+    otherDefinition: ConnectedCatalogItem,
+  ) {
+    if (candidate.connectionGroup !== otherDefinition.connectionGroup) return false;
+    const dx = Math.abs(gridX - other.gridX);
+    const dy = Math.abs(gridY - other.gridY);
+    return (dx === candidate.connectionStep.x && dy === 0)
+      || (dy === candidate.connectionStep.y && dx === 0);
+  }
+
   private createCatalogSprite(gridX: number, gridY: number, definition: ObjectCatalogItem | ConnectedCatalogItem, frame = definition.source.frame, rotation = 0) {
     const asset = getWorldTilesetAsset(definition.source.tileset);
     if (!asset) return null;
@@ -1611,28 +1562,8 @@ export class WorldScene extends Phaser.Scene {
   ) {
     const obstacles: Phaser.GameObjects.GameObject[] = [];
     const colliders: Phaser.Physics.Arcade.Collider[] = [];
-    if (collisions.length === 0) return { obstacles, colliders };
-    const asset = getWorldTilesetAsset(definition.source.tileset);
-    if (!asset) return { obstacles, colliders };
-    const centerX = (decoration.gridX + definition.footprint.width / 2) * TILE_SIZE + (definition.source.offsetX ?? 0);
-    const bottomY = (decoration.gridY + definition.footprint.height) * TILE_SIZE + (definition.source.offsetY ?? 0);
-    const left = centerX - definition.source.displayWidth / 2;
-    const top = bottomY - definition.source.displayHeight;
-    const scaleX = definition.source.displayWidth / asset.tileWidth;
-    const scaleY = definition.source.displayHeight / asset.tileHeight;
-    const angle = Phaser.Math.DegToRad(decoration.rotation);
-    const cosine = Math.cos(angle);
-    const sine = Math.sin(angle);
-    for (const shape of collisions) {
-      const width = shape.width * scaleX;
-      const height = shape.height * scaleY;
-      const localX = left + shape.x * scaleX + width / 2 - centerX;
-      const localY = top + shape.y * scaleY + height / 2 - bottomY;
-      const rotatedX = localX * cosine - localY * sine;
-      const rotatedY = localX * sine + localY * cosine;
-      const rotatedWidth = Math.abs(width * cosine) + Math.abs(height * sine);
-      const rotatedHeight = Math.abs(width * sine) + Math.abs(height * cosine);
-      const obstacle = this.createObstacle(centerX + rotatedX, bottomY + rotatedY, rotatedWidth, rotatedHeight);
+    for (const shape of decorationCollisionRects(definition, decoration.gridX, decoration.gridY, decoration.rotation, collisions)) {
+      const obstacle = this.createObstacle(shape.x + shape.width / 2, shape.y + shape.height / 2, shape.width, shape.height);
       obstacles.push(obstacle);
       if (this.localPlayer) colliders.push(this.physics.add.collider(this.localPlayer, obstacle));
     }
@@ -1858,18 +1789,16 @@ export class WorldScene extends Phaser.Scene {
         if (!result.ok) this.callbacks.onNotice(result.error ?? "Não foi possível restaurar o terreno.");
         return;
       }
-      this.callbacks.onNotice("Toque em uma decoração ou terreno alterado para remover.");
       return;
     }
 
     if (this.decorationTool.kind === "move" && !this.movingDecoration) {
-      if (!hit) { this.callbacks.onNotice("Toque primeiro na decoração que deseja mover."); return; }
+      if (!hit) return;
       this.movingDecoration = hit;
       const definition = getDecorationDefinition(hit.itemId);
       if (!definition) return;
       this.preview = this.createCatalogPreview(definition).setAlpha(0.65).setDepth(99999);
       this.updatePreview(pointer);
-      this.callbacks.onNotice("Agora arraste e solte no novo lugar.");
       return;
     }
 
@@ -1925,14 +1854,24 @@ export class WorldScene extends Phaser.Scene {
     const map = WORLD_CONFIG.scenes[this.currentScene];
     const area = map.decorationArea;
     if (gridX < area.x || gridY < area.y || gridX + footprint.width > area.x + area.width || gridY + footprint.height > area.y + area.height) return false;
-    const candidate = new Phaser.Geom.Rectangle(gridX * TILE_SIZE, gridY * TILE_SIZE, footprint.width * TILE_SIZE, footprint.height * TILE_SIZE);
-    if (map.blockedDecorationRects.some((rect) => Phaser.Geom.Intersects.RectangleToRectangle(candidate, new Phaser.Geom.Rectangle(rect.x * TILE_SIZE, rect.y * TILE_SIZE, rect.width * TILE_SIZE, rect.height * TILE_SIZE)))) return false;
-    if (this.fixedObstacles.some((item) => Phaser.Geom.Intersects.RectangleToRectangle(candidate, (item as Phaser.GameObjects.Rectangle).getBounds()))) return false;
-    if (this.terrain.some((cell) => cell.scene === this.currentScene && cell.terrainId === "water" && candidate.contains((cell.gridX + 0.5) * TILE_SIZE, (cell.gridY + 0.5) * TILE_SIZE))) return false;
+    const candidateRects = this.placementRectsFor(definition, gridX, gridY, 0, ignoredId);
+    if (candidateRects.length === 0) return false;
+    const blockedRects = map.blockedDecorationRects.map((rect) => ({ x: rect.x * TILE_SIZE, y: rect.y * TILE_SIZE, width: rect.width * TILE_SIZE, height: rect.height * TILE_SIZE }));
+    if (candidateRects.some((candidate) => blockedRects.some((blocked) => decorationRectsOverlap(candidate, blocked)))) return false;
+    if (candidateRects.some((candidate) => this.fixedObstacles.some((item) => decorationRectsOverlap(candidate, (item as Phaser.GameObjects.Rectangle).getBounds())))) return false;
+    if (candidateRects.some((candidate) => this.terrain.some((cell) => cell.scene === this.currentScene
+      && cell.terrainId === "water"
+      && decorationRectsOverlap(candidate, { x: cell.gridX * TILE_SIZE, y: cell.gridY * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE })))) return false;
     return !this.decorations.some((item) => {
       if (item.id === ignoredId || item.scene !== this.currentScene) return false;
-      const occupied = getDecorationDefinition(item.itemId)?.footprint ?? { width: 1, height: 1 };
-      return Phaser.Geom.Intersects.RectangleToRectangle(candidate, new Phaser.Geom.Rectangle(item.gridX * TILE_SIZE, item.gridY * TILE_SIZE, occupied.width * TILE_SIZE, occupied.height * TILE_SIZE));
+      const occupiedDefinition = getDecorationDefinition(item.itemId);
+      if (!occupiedDefinition || (occupiedDefinition.kind !== "object" && occupiedDefinition.kind !== "connected-object")) {
+        return candidateRects.some((candidate) => decorationRectsOverlap(candidate, { x: item.gridX * TILE_SIZE, y: item.gridY * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE }));
+      }
+      if (definition.kind === "connected-object" && occupiedDefinition.kind === "connected-object"
+        && this.directlyConnects(definition, gridX, gridY, item, occupiedDefinition)) return false;
+      const occupiedRects = this.placementRectsFor(occupiedDefinition, item.gridX, item.gridY, item.rotation, item.id);
+      return candidateRects.some((candidate) => occupiedRects.some((occupied) => decorationRectsOverlap(candidate, occupied)));
     });
   }
 
@@ -1946,10 +1885,15 @@ export class WorldScene extends Phaser.Scene {
     if (this.fixedObstacles.some((item) => Phaser.Geom.Intersects.RectangleToRectangle(cell, (item as Phaser.GameObjects.Rectangle).getBounds()))) return false;
     if (this.localPlayer && cell.contains(this.localPlayer.x, this.localPlayer.y)) return false;
     if (this.players.some((player) => player.scene === this.currentScene && cell.contains(player.x, player.y))) return false;
+    const cellRect: DecorationRect = { x: gridX * TILE_SIZE, y: gridY * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
     return !this.decorations.some((item) => {
       if (item.scene !== this.currentScene) return false;
-      const occupied = getDecorationDefinition(item.itemId)?.footprint ?? { width: 1, height: 1 };
-      return Phaser.Geom.Intersects.RectangleToRectangle(cell, new Phaser.Geom.Rectangle(item.gridX * TILE_SIZE, item.gridY * TILE_SIZE, occupied.width * TILE_SIZE, occupied.height * TILE_SIZE));
+      const occupiedDefinition = getDecorationDefinition(item.itemId);
+      if (!occupiedDefinition || (occupiedDefinition.kind !== "object" && occupiedDefinition.kind !== "connected-object")) {
+        return decorationRectsOverlap(cellRect, { x: item.gridX * TILE_SIZE, y: item.gridY * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE });
+      }
+      return this.placementRectsFor(occupiedDefinition, item.gridX, item.gridY, item.rotation, item.id)
+        .some((occupied) => decorationRectsOverlap(cellRect, occupied));
     });
   }
 
