@@ -152,6 +152,15 @@ export default function WorldPage() {
     api?.setDecorationTool(next);
   };
 
+  const toggleDecorationMode = () => {
+    if (decorateOpen) {
+      chooseTool(null);
+      setDecorateOpen(false);
+      return;
+    }
+    setDecorateOpen(true);
+  };
+
   const changeAudio = (next: WorldAudioSettings) => {
     setAudioSettingsState(next);
     setWorldAudioSettings(next);
@@ -199,30 +208,44 @@ export default function WorldPage() {
       </header>
 
       <div className="world-actions">
-        <button className={decorateOpen ? "active" : ""} onClick={() => { const open = !decorateOpen; setDecorateOpen(open); if (!open) chooseTool(null); }}>🔨 <span>Modo Decorar</span></button>
+        <button
+          type="button"
+          className={decorateOpen ? "active" : ""}
+          onClick={toggleDecorationMode}
+          aria-label="Modo decoração"
+          aria-pressed={decorateOpen}
+          title="Modo decoração"
+        >
+          🔨
+        </button>
       </div>
 
       {decorateOpen && (
         <section className="world-decoration-panel" aria-label="Ferramentas de decoração" onPointerDown={(event) => event.stopPropagation()}>
           <nav className="world-decoration-tabs" aria-label="Categorias de decoração">
             {DECORATION_CATEGORIES.map((category) => (
-              <button key={category} className={decorationCategory === category ? "active" : ""} onClick={() => { setDecorationCategory(category); chooseTool(null); }}>
+              <button type="button" key={category} className={decorationCategory === category ? "active" : ""} onClick={() => { setDecorationCategory(category); chooseTool(null); }}>
                 {CATEGORY_LABELS[category]}
               </button>
             ))}
           </nav>
-          <div className="world-decoration-items">
-            {visibleCatalogItems.map((item) => (
-              <button key={item.id} className={tool?.kind === "place" && tool.itemId === item.id ? "selected" : ""} onClick={() => chooseTool({ kind: "place", itemId: item.id })}>
-                <span>{item.icon}</span>{item.name}
+          <div className="world-decoration-content">
+            <div className="world-decoration-items">
+              {visibleCatalogItems.map((item) => (
+                <button type="button" key={item.id} className={tool?.kind === "place" && tool.itemId === item.id ? "selected" : ""} onClick={() => chooseTool({ kind: "place", itemId: item.id })}>
+                  <span>{item.icon}</span>{item.name}
+                </button>
+              ))}
+              {visibleCatalogItems.length === 0 && <p>Nenhum item confirmado para esta área.</p>}
+            </div>
+            <div className="world-decoration-tools" aria-label="Ações de decoração">
+              <button type="button" className={tool?.kind === "move" ? "selected" : ""} onClick={() => chooseTool({ kind: "move" })} aria-label="Mover decoração" title="Mover decoração">
+                <span aria-hidden="true">✥</span>
               </button>
-            ))}
-            {visibleCatalogItems.length === 0 && <p>Nenhum item confirmado para esta área.</p>}
-          </div>
-          <div className="world-decoration-tools">
-            <button className={tool?.kind === "move" ? "selected" : ""} onClick={() => chooseTool({ kind: "move" })}><span>✥</span>Mover</button>
-            <button className={tool?.kind === "remove" ? "selected danger" : "danger"} onClick={() => chooseTool({ kind: "remove" })}><span>✕</span>Remover</button>
-            <button onClick={() => { chooseTool(null); setDecorateOpen(false); }}><span>↩</span>Sair</button>
+              <button type="button" className={tool?.kind === "remove" ? "selected danger" : "danger"} onClick={() => chooseTool({ kind: "remove" })} aria-label="Remover decoração" title="Remover decoração">
+                <span aria-hidden="true">✕</span>
+              </button>
+            </div>
           </div>
         </section>
       )}

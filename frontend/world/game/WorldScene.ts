@@ -6,6 +6,7 @@ import { WORLD_CONFIG, WORLD_OBJECT_ASSETS, WorldVisualAsset } from "@/world/con
 import { getWorldTilesetAsset, WORLD_TILESET_ASSETS, WorldTilesetAsset } from "@/world/config/tilesetConfig";
 import { DecorationTool, WorldDecoration, WorldDecorationEffectEvent, WorldDirection, WorldPlayerActionEvent, WorldPlayerState, WorldSceneId, WorldSnapshot, WorldTerrainCell } from "@/world/types";
 import { clampWorldCameraLevel, getWorldCameraLayout, WORLD_CAMERA_LEVEL_MAX, WORLD_CAMERA_LEVEL_MIN } from "./WorldCameraLayout";
+import { DecorationPlacementInput } from "./DecorationPlacementInput";
 import { WorldCameraZoomInfo, WorldGameCallbacks } from "./WorldGameApi";
 
 type TiledObject = Phaser.Types.Tilemaps.TiledObject & { properties?: Array<{ name: string; value: unknown }> };
@@ -25,6 +26,13 @@ type TapMoveTarget = {
   x: number;
   y: number;
   interaction?: WorldInteraction;
+};
+
+type DecorationPointerPosition = {
+  worldX: number;
+  worldY: number;
+  clientX?: number;
+  clientY?: number;
 };
 
 const TAP_STOP_DISTANCE = 6;
@@ -85,15 +93,18 @@ export class WorldScene extends Phaser.Scene {
   private decorationTool: DecorationTool = null;
   private movingDecoration: WorldDecoration | null = null;
   private preview?: Phaser.GameObjects.Sprite | Phaser.GameObjects.Rectangle;
-  private placementPointerId: number | null = null;
-  private placementCancelled = false;
+  private readonly placementInput = new DecorationPlacementInput();
   private dynamicGroundLayer?: Phaser.Tilemaps.TilemapLayer;
   private dynamicGroundDetailsLayer?: Phaser.Tilemaps.TilemapLayer;
   private dynamicGroundDetailsTopLayer?: Phaser.Tilemaps.TilemapLayer;
   private terrainObstacles = new Map<string, { obstacle: Phaser.GameObjects.GameObject; collider?: Phaser.Physics.Arcade.Collider }>();
   private autotileLookups = new Map<string, Map<number, number>>();
   private effectSprites = new Set<Phaser.GameObjects.Sprite>();
-  private readonly handleDomPointerCancel = () => this.handlePointerCancel();
+  private readonly handleDomPointerDown = (event: PointerEvent) => this.beginDomTouchPlacement(event);
+  private readonly handleDomPointerMove = (event: PointerEvent) => this.moveDomTouchPlacement(event);
+  private readonly handleDomPointerUp = (event: PointerEvent) => this.finishDomTouchPlacement(event);
+  private readonly handleDomPointerCancel = (event: PointerEvent) => this.cancelDomTouchPlacement(event);
+  private readonly handleDomLostPointerCapture = (event: PointerEvent) => this.cancelDomTouchPlacement(event);
   private readonly handleInteractKey = () => this.interact();
   private readonly handleCancelKey = () => this.cancelDecoration();
   private readonly handleDebugKey = () => this.toggleDebug();
@@ -163,10 +174,13 @@ export class WorldScene extends Phaser.Scene {
     this.input.on("pointermove", this.handlePointerMove, this);
     this.input.on("pointerdown", this.handlePointerDown, this);
     this.input.on("pointerup", this.handlePointerUp, this);
-    this.input.on("pointerupoutside", this.handlePointerCancel, this);
-    this.input.on("gameout", this.handlePointerCancel, this);
-    this.game.canvas.addEventListener("pointercancel", this.handleDomPointerCancel);
-    this.game.canvas.addEventListener("lostpointercapture", this.handleDomPointerCancel);
+    this.input.on("pointerupoutside", this.handlePointerUpOutside, this);
+    this.input.on("gameout", this.handleGameOut, this);
+    this.game.canvas.addEventListener("pointerdown", this.handleDomPointerDown);
+    window.addEventListener("pointermove", this.handleDomPointerMove);
+    window.addEventListener("pointerup", this.handleDomPointerUp);
+    window.addEventListener("pointercancel", this.handleDomPointerCancel);
+    this.game.canvas.addEventListener("lostpointercapture", this.handleDomLostPointerCapture);
     this.cameras.main.on(Phaser.Cameras.Scene2D.Events.FOLLOW_UPDATE, this.handleCameraFollowUpdate, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.cleanup());
     const local = this.players.find((item) => item.accountId === this.accountId);
@@ -352,7 +366,7 @@ export class WorldScene extends Phaser.Scene {
     this.clearTapMoveTarget();
     this.decorationTool = tool;
     this.movingDecoration = null;
-    this.handlePointerCancel();
+    this.resetPlacementInput();
     this.destroyPreview();
     if (tool?.kind === "place") {
       const definition = getDecorationDefinition(tool.itemId);
@@ -361,7 +375,7 @@ export class WorldScene extends Phaser.Scene {
     this.callbacks.onHint(tool ? "Mova para pré-visualizar · solte para confirmar · Esc cancela" : null);
   }
 
-  cancelDecoration() { this.decorationTool = null; this.movingDecoration = null; this.handlePointerCancel(); this.destroyPreview(); this.callbacks.onHint(null); }
+  cancelDecoration() { this.decorationTool = null; this.movingDecoration = null; this.resetPlacementInput(); this.destroyPreview(); this.callbacks.onHint(null); }
 
   interact() {
     if (this.changingScene || !this.localPlayer) return;
@@ -392,10 +406,14 @@ export class WorldScene extends Phaser.Scene {
     this.input.off("pointermove", this.handlePointerMove, this);
     this.input.off("pointerdown", this.handlePointerDown, this);
     this.input.off("pointerup", this.handlePointerUp, this);
-    this.input.off("pointerupoutside", this.handlePointerCancel, this);
-    this.input.off("gameout", this.handlePointerCancel, this);
-    this.game.canvas.removeEventListener("pointercancel", this.handleDomPointerCancel);
-    this.game.canvas.removeEventListener("lostpointercapture", this.handleDomPointerCancel);
+    this.input.off("pointerupoutside", this.handlePointerUpOutside, this);
+    this.input.off("gameout", this.handleGameOut, this);
+    this.game.canvas.removeEventListener("pointerdown", this.handleDomPointerDown);
+    window.removeEventListener("pointermove", this.handleDomPointerMove);
+    window.removeEventListener("pointerup", this.handleDomPointerUp);
+    window.removeEventListener("pointercancel", this.handleDomPointerCancel);
+    this.game.canvas.removeEventListener("lostpointercapture", this.handleDomLostPointerCapture);
+    this.resetPlacementInput();
     this.input.keyboard?.off("keydown-E", this.handleInteractKey);
     this.input.keyboard?.off("keydown-ESC", this.handleCancelKey);
     this.input.keyboard?.off(`keydown-${WORLD_CONFIG.debugKey}`, this.handleDebugKey);
@@ -1653,11 +1671,15 @@ export class WorldScene extends Phaser.Scene {
 
   private handlePointerMove(pointer: Phaser.Input.Pointer) {
     if (!this.decorationTool || !this.preview) return;
-    if (this.placementPointerId !== null && pointer.id !== this.placementPointerId) return;
+    const active = this.placementInput.active;
+    if (active?.source === "dom-touch") return;
+    if (active && !this.placementInput.owns("phaser", pointer.id)) return;
     this.updatePreview(pointer);
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
+    if (this.pointerStartedOverUi(pointer)) return;
+
     if (pointer.rightButtonDown()) {
       if (this.decorationTool) this.cancelDecoration();
       else this.clearTapMoveTarget();
@@ -1669,29 +1691,120 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    this.placementPointerId = pointer.id;
-    this.placementCancelled = false;
+    if (!this.placementInput.start("phaser", pointer.id)) return;
     this.updatePreview(pointer);
   }
 
   private handlePointerUp(pointer: Phaser.Input.Pointer) {
-    if (!this.decorationTool || this.placementPointerId !== pointer.id) return;
-    const shouldCommit = !this.placementCancelled && !this.pointerEndsOverUi(pointer);
-    this.placementPointerId = null;
-    this.placementCancelled = false;
+    if (!this.decorationTool) return;
+    const shouldCommit = this.placementInput.finish("phaser", pointer.id, this.pointerEndsOverUi(pointer));
     if (shouldCommit) void this.commitDecorationTool(pointer);
   }
 
-  private pointerEndsOverUi(pointer: Phaser.Input.Pointer) {
-    const event = pointer.event as PointerEvent | undefined;
-    if (!event || typeof document === "undefined" || !Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) return false;
-    const element = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null;
-    return Boolean(element?.closest(".world-decoration-panel, .world-topbar, .world-actions, .world-mobile-controls, .world-modal-backdrop"));
+  private handlePointerUpOutside(pointer: Phaser.Input.Pointer) {
+    this.placementInput.cancel("phaser", pointer.id);
   }
 
-  private handlePointerCancel() {
-    this.placementCancelled = true;
-    this.placementPointerId = null;
+  private handleGameOut() {
+    if (this.placementInput.active?.source === "phaser") this.placementInput.cancel();
+  }
+
+  private beginDomTouchPlacement(event: PointerEvent) {
+    if (event.pointerType === "mouse" || !event.isPrimary || event.button !== 0 || !this.decorationTool) return;
+    if (!this.placementInput.start("dom-touch", event.pointerId)) return;
+    try {
+      this.game.canvas.setPointerCapture(event.pointerId);
+    } catch {
+      // O listener de window ainda garante pointerup/cancel fora do canvas.
+    }
+    const point = this.domPointerPosition(event);
+    if (point) this.updatePreview(point);
+  }
+
+  private moveDomTouchPlacement(event: PointerEvent) {
+    if (!this.placementInput.owns("dom-touch", event.pointerId)) return;
+    if (!this.clientPointInsideCanvas(event.clientX, event.clientY)) {
+      this.placementInput.cancel("dom-touch", event.pointerId);
+      return;
+    }
+    if (event.cancelable) event.preventDefault();
+    const point = this.domPointerPosition(event);
+    if (point) this.updatePreview(point);
+  }
+
+  private finishDomTouchPlacement(event: PointerEvent) {
+    if (!this.decorationTool || !this.placementInput.owns("dom-touch", event.pointerId)) return;
+    const point = this.domPointerPosition(event);
+    const blocked = !point
+      || !this.clientPointInsideCanvas(event.clientX, event.clientY)
+      || this.clientPointOverUi(event.clientX, event.clientY);
+    const shouldCommit = this.placementInput.finish("dom-touch", event.pointerId, blocked);
+    if (event.cancelable) event.preventDefault();
+    if (!shouldCommit || !point) return;
+    this.updatePreview(point);
+    void this.commitDecorationTool(point);
+  }
+
+  private cancelDomTouchPlacement(event: PointerEvent) {
+    this.placementInput.cancel("dom-touch", event.pointerId);
+  }
+
+  private resetPlacementInput() {
+    const active = this.placementInput.reset();
+    if (active?.source !== "dom-touch") return;
+    try {
+      if (this.game.canvas.hasPointerCapture(active.id)) this.game.canvas.releasePointerCapture(active.id);
+    } catch {
+      // O ponteiro pode já ter sido liberado pelo navegador.
+    }
+  }
+
+  private domPointerPosition(event: PointerEvent): DecorationPointerPosition | null {
+    const rect = this.game.canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    const screenX = (event.clientX - rect.left) * this.scale.width / rect.width;
+    const screenY = (event.clientY - rect.top) * this.scale.height / rect.height;
+    const world = this.cameras.main.getWorldPoint(screenX, screenY);
+    return { worldX: world.x, worldY: world.y, clientX: event.clientX, clientY: event.clientY };
+  }
+
+  private clientPointInsideCanvas(clientX: number, clientY: number) {
+    const rect = this.game.canvas.getBoundingClientRect();
+    return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+  }
+
+  private pointerStartedOverUi(pointer: Phaser.Input.Pointer) {
+    const target = pointer.event?.target;
+    if (target instanceof Element && this.isWorldUiElement(target)) return true;
+    return this.pointerEndsOverUi(pointer);
+  }
+
+  private pointerEndsOverUi(pointer: Phaser.Input.Pointer) {
+    const point = this.phaserPointerClientPosition(pointer);
+    return point ? this.clientPointOverUi(point.clientX, point.clientY) : false;
+  }
+
+  private phaserPointerClientPosition(pointer: Phaser.Input.Pointer) {
+    const event = pointer.event as MouseEvent | TouchEvent | undefined;
+    if (!event) return null;
+    if ("changedTouches" in event) {
+      const touches = Array.from(event.changedTouches);
+      const touch = touches.find((item) => item.identifier === pointer.identifier) ?? touches[0];
+      return touch ? { clientX: touch.clientX, clientY: touch.clientY } : null;
+    }
+    return Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
+      ? { clientX: event.clientX, clientY: event.clientY }
+      : null;
+  }
+
+  private clientPointOverUi(clientX: number, clientY: number) {
+    if (typeof document === "undefined") return false;
+    const element = document.elementFromPoint(clientX, clientY);
+    return element ? this.isWorldUiElement(element) : false;
+  }
+
+  private isWorldUiElement(element: Element) {
+    return Boolean(element.closest(".world-decoration-panel, .world-topbar, .world-actions, .world-mobile-controls, .world-modal-backdrop"));
   }
 
   private activePlacementDefinition() {
@@ -1699,7 +1812,7 @@ export class WorldScene extends Phaser.Scene {
     return itemId ? getDecorationDefinition(itemId) : undefined;
   }
 
-  private pointerGrid(pointer: Phaser.Input.Pointer, definition?: DecorationCatalogItem) {
+  private pointerGrid(pointer: DecorationPointerPosition, definition?: DecorationCatalogItem) {
     let gridX = Math.floor(pointer.worldX / TILE_SIZE);
     let gridY = Math.floor(pointer.worldY / TILE_SIZE);
     if (definition?.kind === "connected-object") {
@@ -1709,7 +1822,7 @@ export class WorldScene extends Phaser.Scene {
     return { gridX, gridY };
   }
 
-  private updatePreview(pointer: Phaser.Input.Pointer) {
+  private updatePreview(pointer: DecorationPointerPosition) {
     const definition = this.activePlacementDefinition();
     if (!definition || !this.preview) return;
     const { gridX, gridY } = this.pointerGrid(pointer, definition);
@@ -1728,7 +1841,7 @@ export class WorldScene extends Phaser.Scene {
     else this.preview.setTint(valid ? 0xffffff : 0xff7777);
   }
 
-  private async commitDecorationTool(pointer: Phaser.Input.Pointer) {
+  private async commitDecorationTool(pointer: DecorationPointerPosition) {
     if (!this.decorationTool) return;
     const hit = this.decorationAt(pointer.worldX, pointer.worldY);
     const rawGridX = Math.floor(pointer.worldX / TILE_SIZE);
