@@ -91,10 +91,12 @@ export class WorldAudioManager {
     return { trackIndex: this.trackIndex, track, currentTime, duration, isPlaying: !this.music.paused && !this.music.ended };
   }
 
-  subscribePlayback(listener: PlaybackListener) {
+  subscribePlayback(listener: PlaybackListener): () => void {
     this.listeners.add(listener);
     listener(this.getPlaybackState());
-    return () => this.listeners.delete(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   /** Tenta iniciar trilha + ambience. Em navegadores que bloqueiam autoplay,
