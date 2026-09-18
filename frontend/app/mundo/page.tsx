@@ -6,9 +6,10 @@ import { getActiveAccount, AccountId } from "@/lib/accountSession";
 import { useRoomSession } from "@/hooks/useRoomSession";
 import { PERSISTENT_DUO_ROOM_CODE } from "@/lib/persistentDuo";
 import { DecorationCategory, DECORATION_CATEGORIES, getCatalogItems } from "@/world/config/decorationCatalog";
-import { getWorldAudioSettings, setWorldAudioSettings, WorldAudioSettings } from "@/world/audio/WorldAudioManager";
+import { getWorldAudioSettings, setWorldAudioSettings, WorldAudioManager, WorldAudioSettings } from "@/world/audio/WorldAudioManager";
 import WorldCanvas from "@/world/components/WorldCanvas";
 import WorldSettings from "@/world/components/WorldSettings";
+import WorldMusicPlayer from "@/world/components/WorldMusicPlayer";
 import MobileControls from "@/world/components/MobileControls";
 import { WorldCameraZoomInfo, WorldGameApi, WorldGameCallbacks } from "@/world/game/WorldGameApi";
 import { useWorldSession } from "@/world/multiplayer/useWorldSession";
@@ -60,6 +61,7 @@ export default function WorldPage() {
   const [api, setApi] = useState<WorldGameApi | null>(null);
   const [ready, setReady] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [musicOpen, setMusicOpen] = useState(false);
   const [decorateOpen, setDecorateOpen] = useState(false);
   const [decorationCollapsed, setDecorationCollapsed] = useState(false);
   const [decorationCategory, setDecorationCategory] = useState<DecorationCategory>("plants");
@@ -69,6 +71,7 @@ export default function WorldPage() {
   const [fatalError, setFatalError] = useState<string | null>(null);
   const [debug, setDebug] = useState<WorldDebugInfo | null>(null);
   const [audioSettings, setAudioSettingsState] = useState<WorldAudioSettings>(() => getWorldAudioSettings());
+  const [audioManager, setAudioManager] = useState<WorldAudioManager | null>(null);
   const [inputSettings, setInputSettingsState] = useState<WorldInputSettings>(DEFAULT_WORLD_INPUT_SETTINGS);
   const [cameraInfo, setCameraInfo] = useState<WorldCameraZoomInfo>(DEFAULT_CAMERA_INFO);
   const [coarsePointer, setCoarsePointer] = useState(false);
@@ -92,6 +95,24 @@ export default function WorldPage() {
   }, []);
 
   useEffect(() => {
+    const storedSettings = getWorldAudioSettings();
+    setAudioSettingsState(storedSettings);
+
+    const manager = new WorldAudioManager();
+    manager.apply(storedSettings);
+    setAudioManager(manager);
+    void manager.start();
+
+    const unlockAudio = () => manager.resumeFromGesture();
+    document.addEventListener("pointerdown", unlockAudio, { once: true, capture: true });
+
+    return () => {
+      document.removeEventListener("pointerdown", unlockAudio, true);
+      manager.destroy();
+    };
+  }, []);
+
+  useEffect(() => {
     void requestWorldFullscreen();
 
     const retryFullscreen = () => {
@@ -108,12 +129,13 @@ export default function WorldPage() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (musicOpen) { setMusicOpen(false); return; }
       if (tool) { setTool(null); setDecorateOpen(false); api?.cancelDecoration(); }
       else setSettingsOpen((open) => !open);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [api, tool]);
+  }, [api, musicOpen, tool]);
 
   useEffect(() => () => { if (noticeTimer.current) clearTimeout(noticeTimer.current); }, []);
 
@@ -167,6 +189,7 @@ export default function WorldPage() {
   const changeAudio = (next: WorldAudioSettings) => {
     setAudioSettingsState(next);
     setWorldAudioSettings(next);
+    audioManager?.apply(next);
   };
 
   const saveInputSettings = (next: WorldInputSettings) => {
@@ -207,8 +230,22 @@ export default function WorldPage() {
       <header className="world-topbar">
         <button onClick={() => void returnToLobby()}>← Lobby</button>
         <div><strong>Nosso Mundo</strong><small>{debug?.scene === "house-interior" ? "Nossa casa" : "Vale das Duas Árvores"}</small></div>
-        <button onClick={() => setSettingsOpen(true)} aria-label="Abrir configurações">⚙</button>
+        <div className="world-topbar-controls">
+          <button
+            type="button"
+            className={musicOpen ? "active" : ""}
+            onClick={() => { setMusicOpen((open) => !open); setSettingsOpen(false); }}
+            aria-label="Abrir player de música"
+            aria-pressed={musicOpen}
+            title="Música"
+          >
+            ♫
+          </button>
+          <button type="button" onClick={() => { setMusicOpen(false); setSettingsOpen(true); }} aria-label="Abrir configurações" title="Configurações">⚙</button>
+        </div>
       </header>
+
+      {musicOpen && audioManager && <WorldMusicPlayer manager={audioManager} />}
 
       <div className="world-actions">
         <button

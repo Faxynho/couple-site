@@ -5,6 +5,7 @@ import { ACTION_SHEET_LAYOUT, CHARACTER_CONFIGS } from "@/world/config/character
 import { DECORATION_CATALOG, validateDecorationCatalog } from "@/world/config/decorationCatalog";
 import { getWorldTilesetAsset } from "@/world/config/tilesetConfig";
 import { WORLD_CONFIG } from "@/world/config/worldConfig";
+import { WORLD_AMBIENCE_TRACK, WORLD_MUSIC_TRACKS } from "@/world/audio/worldMusic";
 
 describe("Nosso Mundo", () => {
   it("mapeia o spritesheet real de seis por seis sem duplicar configuração", () => {
@@ -33,6 +34,21 @@ describe("Nosso Mundo", () => {
     expect(DECORATION_CATALOG.fence.variants[15]).toBe(6);
     expect(DECORATION_CATALOG.fence.variantCollisions[6]).toHaveLength(2);
     expect(validateDecorationCatalog()).toEqual([]);
+  });
+
+  it("mantém a playlist e ambience apontando para arquivos reais", () => {
+    expect(WORLD_MUSIC_TRACKS.map((track) => track.id)).toEqual([
+      "ocarina-title-theme",
+      "lake-hylia",
+      "ocarina-of-time",
+      "midnas-lament",
+      "zeldas-lullaby-rain",
+    ]);
+    expect(new Set(WORLD_MUSIC_TRACKS.map((track) => track.url)).size).toBe(WORLD_MUSIC_TRACKS.length);
+    for (const track of WORLD_MUSIC_TRACKS) {
+      expect(existsSync(resolve(process.cwd(), `public${track.url}`)), track.url).toBe(true);
+    }
+    expect(existsSync(resolve(process.cwd(), `public${WORLD_AMBIENCE_TRACK.url}`))).toBe(true);
   });
 
   it("falha cedo e com mensagem clara quando o catálogo é inválido", () => {
