@@ -42,6 +42,20 @@ describe("autotile determinístico", () => {
     southWest: 155, south: 156, southEast: 157,
   };
 
+  const offsets = [
+    { bit: 1, dx: 0, dy: -1 }, { bit: 2, dx: 1, dy: -1 },
+    { bit: 4, dx: 1, dy: 0 }, { bit: 8, dx: 1, dy: 1 },
+    { bit: 16, dx: 0, dy: 1 }, { bit: 32, dx: -1, dy: 1 },
+    { bit: 64, dx: -1, dy: 0 }, { bit: 128, dx: -1, dy: -1 },
+  ];
+  const resolveShape = (points: Array<[number, number]>) => {
+    const cells = new Set(points.map(([x, y]) => `${x}:${y}`));
+    return points.map(([x, y]) => {
+      const mask = offsets.reduce((value, neighbor) => cells.has(`${x + neighbor.dx}:${y + neighbor.dy}`) ? value | neighbor.bit : value, 0);
+      return resolveNineSliceFrame(mask, frames);
+    });
+  };
+
   it("resolve corretamente todas as posições de um bloco 3x3", () => {
     expect([28, 124, 112, 31, 255, 241, 7, 199, 193].map((mask) => resolveNineSliceFrame(mask, frames)))
       .toEqual([123, 124, 125, 139, 140, 141, 155, 156, 157]);
@@ -58,6 +72,30 @@ describe("autotile determinístico", () => {
     expect(resolveNineSliceFrame(1 | 16 | 64, frames)).toBe(141);
     expect(resolveNineSliceFrame(4 | 16 | 64, frames)).toBe(124);
     expect(resolveNineSliceFrame(1 | 4 | 16, frames)).toBe(139);
+  });
+
+  it("permanece determinístico nas formas isolada, linhas, retângulos, L, T, cruz e buraco", () => {
+    const rectangle = (width: number, height: number) => Array.from({ length: width * height }, (_, index) => [index % width, Math.floor(index / width)] as [number, number]);
+    const shapes: Array<Array<[number, number]>> = [
+      [[0, 0]], [[0, 0], [1, 0]], [[0, 0], [0, 1]],
+      rectangle(5, 1), rectangle(1, 5), rectangle(2, 2), rectangle(3, 3), rectangle(5, 3),
+      [[0, 0], [0, 1], [0, 2], [1, 2], [2, 2]],
+      [[0, 0], [1, 0], [2, 0], [1, 1], [1, 2]],
+      [[1, 0], [0, 1], [1, 1], [2, 1], [1, 2]],
+      [[0, 0], [1, 0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 2]],
+      [[0, 0], [1, 0], [2, 0], [2, 1], [3, 1], [1, 2], [2, 2]],
+    ];
+    const validFrames = new Set(Object.values(frames));
+    for (const shape of shapes) {
+      const result = resolveShape(shape);
+      expect(result).toEqual(resolveShape(shape));
+      expect(result.every((frame) => validFrames.has(frame))).toBe(true);
+    }
+    expect(resolveShape(rectangle(5, 3))).toEqual([
+      123, 124, 124, 124, 125,
+      139, 140, 140, 140, 141,
+      155, 156, 156, 156, 157,
+    ]);
   });
 });
 
