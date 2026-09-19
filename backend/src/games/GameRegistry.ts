@@ -13,6 +13,7 @@ import { AirHockeyGame } from "./airhockey/AirHockeyGame";
 import { ChessGame } from "./chess/ChessGame";
 import { BoardRaceGame } from "./boardrace/BoardRaceGame";
 import { CasinoGame } from "./casino/CasinoGame";
+import { DrawGuessGame } from "./drawguess/DrawGuessGame";
 
 /**
  * Ponto único de registro dos jogos disponíveis na plataforma.
@@ -36,6 +37,7 @@ export const GameRegistry: Record<GameId, GameEngine<unknown, unknown>> = {
   chess: new ChessGame() as unknown as GameEngine<unknown, unknown>,
   boardrace: new BoardRaceGame() as unknown as GameEngine<unknown, unknown>,
   casino: new CasinoGame() as unknown as GameEngine<unknown, unknown>,
+  drawguess: new DrawGuessGame() as unknown as GameEngine<unknown, unknown>,
 };
 
 export function getGameEngine(gameId: GameId): GameEngine<unknown, unknown> {
@@ -43,3 +45,4 @@ export function getGameEngine(gameId: GameId): GameEngine<unknown, unknown> {
   if (!engine) throw new Error(`Jogo não registrado: ${gameId}`);
   return engine;
 }
+

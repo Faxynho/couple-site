@@ -15,6 +15,7 @@ function shuffle<T>(items: T[]): T[] {
   return arr;
 }
 
+
 export class Room {
   readonly code: string;
   readonly roomMode: RoomMode;
@@ -229,7 +230,7 @@ export class Room {
       // A Corrida de Tabuleiro pode ficar pausada naturalmente aguardando a
       // identidade persistente reconectar. Seu estado autoritativo permanece
       // jogável e o room:sync recoloca o mesmo jogador na partida.
-      if ((this.status === "playing" && this.gameId !== "boardrace" && this.gameId !== "whoami" && this.gameId !== "casino") || this.status === "ready") {
+      if ((this.status === "playing" && this.gameId !== "boardrace" && this.gameId !== "whoami" && this.gameId !== "casino" && this.gameId !== "drawguess") || this.status === "ready") {
         this.status = "waiting";
       }
     }
@@ -302,7 +303,7 @@ export class Room {
     this.pendingImageId = null;
     this.pendingImageWidth = null;
     this.pendingImageHeight = null;
-    this.pendingDifficulty = gameId === "termo" ? "one" : gameId === "whoami" ? "easy" : gameId === "casino" ? "normal" : DEFAULT_PENDING_DIFFICULTY;
+    this.pendingDifficulty = gameId === "termo" ? "one" : gameId === "whoami" ? "easy" : gameId === "casino" ? "normal" : gameId === "drawguess" ? "6" : DEFAULT_PENDING_DIFFICULTY;
     this.pendingColorMode = "competitive";
     this.pendingSeerId = null;
     this.pendingMatchMode = this.defaultMatchModeFor(gameId);

@@ -1,0 +1,95 @@
+.shell {
+  width: min(100%, 1080px);
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0 auto;
+  padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow: hidden;
+  overscroll-behavior: none;
+  user-select: none;
+  color: rgb(var(--color-ink));
+}
+
+.header { display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 8px; flex: 0 0 auto; }
+.iconButton { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 999px; background: rgb(var(--color-surface) / .62); border: 1px solid rgb(var(--color-surface) / .8); color: rgb(var(--color-ink-soft)); }
+.iconButton:disabled { opacity: .35; }
+.roundPill { justify-self: center; padding: 6px 11px; border-radius: 999px; background: rgb(var(--color-surface) / .57); border: 1px solid rgb(var(--color-surface) / .75); font-size: 11px; color: rgb(var(--color-ink-soft)); backdrop-filter: blur(10px); }
+.timer { display: flex; align-items: center; gap: 5px; min-width: 65px; justify-content: center; padding: 7px 9px; border-radius: 999px; color: #7c3aed; background: rgb(var(--color-surface) / .72); border: 1px solid rgb(var(--color-surface) / .82); font-size: 12px; }
+.timerDanger { color: #e11d48; animation: pulse .8s ease-in-out infinite alternate; }
+
+.scoreboard { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; flex: 0 0 auto; }
+.playerCard { min-width: 0; display: flex; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 17px; background: rgb(var(--color-surface) / .52); border: 1px solid rgb(var(--color-surface) / .75); backdrop-filter: blur(12px); }
+.playerDrawing { border-color: rgb(var(--color-rose) / .68); box-shadow: 0 5px 20px rgb(var(--color-rose) / .14); }
+.playerInfo { min-width: 0; display: flex; flex-direction: column; line-height: 1.1; }
+.playerInfo strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.playerInfo span { margin-top: 3px; font-size: 9px; color: rgb(var(--color-ink-soft)); }
+.playerCard > b { margin-left: auto; font-size: 17px; color: rgb(var(--color-rose-deep)); }
+
+.wordBar { flex: 0 0 auto; min-height: 42px; display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 16px; background: linear-gradient(110deg, rgb(var(--color-rose) / .19), rgb(139 92 246 / .13), rgb(var(--color-surface) / .58)); border: 1px solid rgb(var(--color-surface) / .75); }
+.wordBar > span { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 8px; background: rgb(var(--color-surface) / .72); color: rgb(var(--color-rose-deep)); }
+.wordBar p { min-width: 0; font-size: 11px; color: rgb(var(--color-ink-soft)); }
+.wordBar strong { margin-left: 3px; font-size: clamp(14px, 4vw, 19px); letter-spacing: .04em; color: rgb(var(--color-ink)); text-transform: uppercase; }
+.wordBar small { max-width: 105px; text-align: right; font-size: 9px; color: rgb(var(--color-ink-soft)); }
+
+.playArea { min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; }
+.chatPanel { flex: 0 0 auto; min-height: 73px; padding: 6px; border-radius: 16px; background: rgb(var(--color-surface) / .54); border: 1px solid rgb(var(--color-surface) / .74); backdrop-filter: blur(12px); }
+.attempts { min-height: 21px; display: flex; align-items: center; gap: 5px; overflow: hidden; white-space: nowrap; }
+.attempts > span { max-width: 32%; overflow: hidden; text-overflow: ellipsis; padding: 3px 7px; border-radius: 999px; background: rgb(var(--color-surface) / .58); font-size: 9px; color: rgb(var(--color-ink-soft)); }
+.attempts .emptyAttempts { max-width: 100%; background: transparent; }
+.attempts .correctAttempt { color: #166534; background: #dcfce7; }
+.guessForm { margin-top: 5px; display: grid; grid-template-columns: 1fr auto; gap: 5px; }
+.guessForm input { min-width: 0; height: 35px; padding: 0 11px; border-radius: 11px; background: rgb(var(--color-surface) / .85); border: 1px solid rgb(var(--color-rose) / .3); color: rgb(var(--color-ink)); font-size: 13px; outline: none; user-select: text; }
+.guessForm input:focus { border-color: rgb(var(--color-rose)); box-shadow: 0 0 0 2px rgb(var(--color-rose) / .15); }
+.guessForm button { height: 35px; display: flex; align-items: center; gap: 5px; padding: 0 11px; border-radius: 11px; color: white; background: linear-gradient(135deg, #ec4899, #8b5cf6); font-size: 11px; font-weight: 700; }
+.guessForm button:disabled { opacity: .45; }
+.typingMirror { margin-top: 5px; height: 35px; display: flex; align-items: center; overflow: hidden; padding: 0 11px; border-radius: 11px; background: rgb(var(--color-surface) / .7); color: rgb(var(--color-ink-soft)); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
+.typingMirror b { margin-right: 4px; color: rgb(var(--color-rose-deep)); }
+.error { position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 80; transform: translateX(-50%); max-width: 90vw; padding: 7px 11px; border-radius: 999px; background: #881337; color: white; font-size: 10px; }
+
+.roundOverlay, .finalOverlay, .pauseOverlay { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 18px; background: rgba(30, 18, 38, .38); backdrop-filter: blur(5px); }
+.roundCard, .pauseCard { width: min(92vw, 380px); padding: 21px; border-radius: 26px; text-align: center; background: rgb(var(--color-surface) / .94); border: 1px solid rgb(var(--color-surface)); box-shadow: 0 24px 70px rgba(50, 20, 70, .22); }
+.resultEmoji, .pauseCard > span { display: block; font-size: 32px; }
+.roundCard > strong, .pauseCard > strong { display: block; margin-top: 6px; font-size: 20px; }
+.roundCard > p, .pauseCard > p { margin-top: 5px; color: rgb(var(--color-ink-soft)); font-size: 13px; }
+.roundCard > div { margin-top: 13px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.roundCard > div span { padding: 8px; border-radius: 12px; background: rgb(var(--color-rose) / .12); color: rgb(var(--color-rose-deep)); font-size: 11px; font-weight: 700; }
+.roundCard > small { display: block; margin-top: 12px; color: rgb(var(--color-ink-soft)); font-size: 10px; }
+
+.finalCard { width: min(94vw, 520px); max-height: 92dvh; overflow: auto; padding: 24px; border-radius: 30px; text-align: center; background: rgb(var(--color-surface) / .96); border: 1px solid rgb(var(--color-surface)); box-shadow: 0 28px 90px rgba(50, 20, 70, .3); }
+.finalCard > svg { margin: 0 auto; color: #f59e0b; }
+.finalCard > small { display: block; margin-top: 6px; color: rgb(var(--color-ink-soft)); font-size: 10px; text-transform: uppercase; letter-spacing: .12em; }
+.finalCard h1 { margin-top: 4px; font-size: 26px; font-weight: 800; }
+.finalScores { margin-top: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.finalScores > div { display: flex; flex-direction: column; gap: 3px; padding: 12px 8px; border-radius: 17px; background: rgb(var(--color-rose) / .1); }
+.finalScores strong { font-size: 12px; }
+.finalScores b { color: rgb(var(--color-rose-deep)); font-size: 20px; }
+.finalScores span { color: rgb(var(--color-ink-soft)); font-size: 10px; }
+.tiebreakNote { margin-top: 10px; font-size: 10px; color: rgb(var(--color-ink-soft)); }
+.finalActions { margin-top: 16px; display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+.finalActions > button:not(:first-child) { padding: 8px 12px; border-radius: 999px; background: rgb(var(--color-surface) / .7); color: rgb(var(--color-ink-soft)); border: 1px solid rgb(var(--color-ink) / .08); font-size: 11px; }
+.finalActions p { color: rgb(var(--color-ink-soft)); font-size: 11px; }
+
+@keyframes pulse { to { transform: scale(1.05); } }
+
+@media (min-width: 720px) {
+  .shell { padding-inline: 18px; gap: 9px; }
+  .scoreboard { width: min(100%, 680px); margin: 0 auto; }
+  .wordBar { width: min(100%, 820px); margin: 0 auto; }
+  .playArea { width: min(100%, 920px); margin: 0 auto; }
+  .playerInfo strong { font-size: 13px; }
+  .playerInfo span, .wordBar small { font-size: 10px; }
+  .chatPanel { min-height: 78px; }
+}
+
+@media (max-height: 650px) {
+  .shell { gap: 4px; padding-top: max(4px, env(safe-area-inset-top)); }
+  .header { grid-template-columns: 31px 1fr auto; }
+  .iconButton { width: 31px; height: 31px; }
+  .playerCard { padding-block: 4px; }
+  .wordBar { min-height: 35px; padding-block: 4px; }
+  .chatPanel { min-height: 65px; padding: 4px; }
+  .guessForm input, .guessForm button, .typingMirror { height: 31px; }
+}

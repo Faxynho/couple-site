@@ -14,6 +14,7 @@ import { MEMORY_DIFFICULTIES, MEMORY_MODES, MemoryDifficulty, MemoryMode } from 
 import { TERMO_VARIANTS, TermoVariant } from "@/lib/termoTypes";
 import { WHOAMI_CATEGORIES, WHOAMI_DIFFICULTIES, WHOAMI_MODES, WhoAmICategory, WhoAmIDifficulty, WhoAmIMode } from "@/lib/whoAmITypes";
 import { CASINO_LENGTHS, CasinoLength } from "@/lib/casinoTypes";
+import { DRAW_GUESS_ROUNDS } from "@/lib/drawGuessTypes";
 import { RoomSnapshot } from "@/lib/types";
 import { useAccountPhotos } from "@/hooks/useAccountPhotos";
 import AccountAvatar from "@/components/account/AccountAvatar";
@@ -36,6 +37,7 @@ interface GameConfigPanelProps {
   }) => void;
   setBoardRacePawnColor: (color: "blue" | "pink") => void;
 }
+
 
 function OptionGrid<K extends string>({
   entries,
@@ -88,6 +90,25 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig, setBo
   const { images, loading: imagesLoading } = usePuzzleImages();
   const connectedPlayers = room.players.filter((p) => p.connected);
   const bothConnected = connectedPlayers.length === room.maxPlayers;
+
+  if (room.gameId === "drawguess") {
+    const selectedRounds = (["4", "6", "8"].includes(room.pendingDifficulty) ? room.pendingDifficulty : "6") as keyof typeof DRAW_GUESS_ROUNDS;
+    return (
+      <div className="text-left">
+        <SectionLabel>{isHost ? "Duração da partida" : "Duração escolhida"}</SectionLabel>
+        <OptionGrid
+          entries={Object.entries(DRAW_GUESS_ROUNDS) as [keyof typeof DRAW_GUESS_ROUNDS, (typeof DRAW_GUESS_ROUNDS)[keyof typeof DRAW_GUESS_ROUNDS]][]}
+          selected={selectedRounds}
+          isHost={isHost}
+          onSelect={(key) => setConfig({ difficulty: key })}
+        />
+        <div className="mt-4 rounded-xl2 border border-surface/70 bg-surface/50 p-4 text-center">
+          <p className="text-sm font-medium text-ink">🖌️ Um desenha, o outro adivinha</p>
+          <p className="mt-1 text-xs text-ink-soft">Os papéis alternam a cada rodada. Quanto mais rápido o acerto, mais pontos os dois recebem.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (room.gameId === "puzzle") {
     const selectedImage = images.find((img) => img.file === room.pendingImageId) ?? null;
