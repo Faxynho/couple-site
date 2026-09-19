@@ -1,8 +1,8 @@
-export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "whoami" | "rpg" | "airhockey" | "chess" | "boardrace" | "casino";
+export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "whoami" | "rpg" | "airhockey" | "chess" | "boardrace" | "casino" | "drawguess";
 
 /** Mesma ordem do catálogo (`GAMES`, em games.ts) — usada para sortear a
  *  sugestão de sequência de jogos da sala Duo. */
-export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "whoami", "rpg", "airhockey", "chess", "boardrace", "casino"];
+export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "whoami", "rpg", "airhockey", "chess", "boardrace", "casino", "drawguess"];
 
 /** "solo": sessão de um único jogador — sem convite, sem convidado, sem sala
  *  persistente. "duo": sala pensada para dois jogadores, criada ANTES de
@@ -14,6 +14,7 @@ export type PersistentDuoPresence = "offline" | "lobby" | "world" | "minigame";
 export interface PersistentDuoLobby {
   displayName: string;
 }
+
 
 export interface Player {
   id: string;

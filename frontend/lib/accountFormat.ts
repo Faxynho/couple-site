@@ -11,6 +11,7 @@ import { TERMO_VARIANTS } from "@/lib/termoTypes";
 import { AIR_HOCKEY_DIFFICULTIES } from "@/lib/airHockeyTypes";
 import { CHESS_DIFFICULTIES } from "@/lib/chessTypes";
 import { CASINO_LENGTHS } from "@/lib/casinoTypes";
+import { DRAW_GUESS_ROUNDS } from "@/lib/drawGuessTypes";
 import { NO_RANK } from "@/lib/accountTypes";
 import type { AccountId, AccountsOverview } from "@/lib/accountTypes";
 
@@ -31,6 +32,7 @@ const RANK_MAPS: Partial<Record<GameId, Record<string, RankInfo>>> = {
   airhockey: AIR_HOCKEY_DIFFICULTIES,
   chess: CHESS_DIFFICULTIES,
   casino: CASINO_LENGTHS,
+  drawguess: DRAW_GUESS_ROUNDS,
 };
 
 /** Ordem de exibição dos ranks de cada jogo nas abas de Estatísticas/Recordes. */
@@ -49,6 +51,7 @@ export const GAME_RANKS: Record<GameId, string[]> = {
   chess: ["easy", "medium", "hard"],
   boardrace: [NO_RANK],
   casino: ["quick", "normal", "long"],
+  drawguess: ["4", "6", "8"],
 };
 
 /** O Quebra-cabeça é o único jogo sem nenhum modo de Duelo — usado pela aba
@@ -59,6 +62,7 @@ export function rankLabel(gameId: GameId, rank: string): string {
   if (rank === NO_RANK) return "Geral";
   return RANK_MAPS[gameId]?.[rank]?.label ?? rank;
 }
+
 
 const GENERIC_RANK_LABELS: Record<string, string> = {
   easy: "Fácil",

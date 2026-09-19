@@ -109,8 +109,12 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   const bothConnected = isPersistentDuo
     ? persistentAvailabilityMessage === null
     : room.players.filter((p) => p.connected).length === room.maxPlayers;
-  const requiresPair = room.gameId === "whoami" || room.gameId === "casino";
-  const pairRequirementMessage = room.gameId === "casino" ? "O Cassino precisa dos dois jogadores conectados." : "O Quem Sou Eu? precisa dos dois jogadores conectados.";
+  const requiresPair = room.gameId === "whoami" || room.gameId === "casino" || room.gameId === "drawguess";
+  const pairRequirementMessage = room.gameId === "casino"
+    ? "O Cassino precisa dos dois jogadores conectados."
+    : room.gameId === "drawguess"
+      ? "O Desenhe & Adivinhe precisa dos dois jogadores conectados."
+      : "O Quem Sou Eu? precisa dos dois jogadores conectados.";
   const game = GAMES.find((g) => g.id === room.gameId);
 
   const handleStart = async () => {
@@ -456,3 +460,4 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
     </main>
   );
 }
+

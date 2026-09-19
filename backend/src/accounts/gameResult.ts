@@ -27,6 +27,7 @@ interface PlayerOutcome {
   goals?: { scored: number; conceded: number };
 }
 
+
 interface MatchOutcome {
   rank: string;
   durationMs: number;
@@ -238,6 +239,31 @@ interface ChessStateShape {
   finishedAt: number | null;
   humanPlayerIds: string[];
   result: { winnerId: string | null } | null;
+}
+
+interface DrawGuessStateShape {
+  configuredRounds: number;
+  startedAt: number;
+  finishedAt: number | null;
+  winnerId: string | null;
+  expectedPlayers: string[];
+  scores: Record<string, number>;
+}
+
+function extractDrawGuess(state: DrawGuessStateShape, accountByPlayerId: Map<string, AccountId | undefined>): MatchOutcome {
+  const durationMs = Math.max(0, (state.finishedAt ?? Date.now()) - state.startedAt);
+  const players: PlayerOutcome[] = [];
+  for (const playerId of state.expectedPlayers) {
+    const accountId = accountFor(playerId, accountByPlayerId);
+    if (!accountId) continue;
+    players.push({
+      accountId,
+      metricValue: state.scores[playerId] ?? 0,
+      scoreType: "points",
+      result: state.winnerId === null ? "draw" : state.winnerId === playerId ? "win" : "loss",
+    });
+  }
+  return { rank: String(state.configuredRounds), durationMs, bucket: "duel", players };
 }
 
 function extractChess(state: ChessStateShape, accountByPlayerId: Map<string, AccountId | undefined>): MatchOutcome {
@@ -540,6 +566,8 @@ function extractGameOutcome(
       return extractBoardRace(gameState as BoardRaceStateShape, accountByPlayerId);
     case "casino":
       return extractCasino(gameState as CasinoStateShape, accountByPlayerId);
+    case "drawguess":
+      return extractDrawGuess(gameState as DrawGuessStateShape, accountByPlayerId);
     default:
       return null;
   }

@@ -26,6 +26,13 @@ import { getWhoAmIStateForPlayer, isValidWhoAmICategory, isValidWhoAmIMode, WhoA
 import { getBoardRaceStateForPlayer, isValidBoardRaceMode } from "../games/boardrace/BoardRaceGame";
 import { CasinoState, getCasinoStateForPlayer, isValidCasinoLength } from "../games/casino/CasinoGame";
 import {
+  DrawGuessCanvasAction,
+  DrawGuessState,
+  getDrawGuessStateForPlayer,
+  isValidDrawGuessCanvasAction,
+  isValidDrawGuessRounds,
+} from "../games/drawguess/DrawGuessGame";
+import {
   PERSISTENT_DUO_ROOM_CODE,
   isPersistentDuoAccountId,
   isPersistentDuoPresence,
@@ -41,6 +48,7 @@ interface SocketData {
   playerId?: string;
   accountId?: "andre" | "flavia";
 }
+
 
 type AckCallback = (response: Record<string, unknown>) => void;
 
@@ -164,6 +172,10 @@ function broadcastGameState(io: Server, roomCode: string, roomManager: RoomManag
     for (const player of room.players.values()) {
       emitToPlayer(io, room, player.id, "game:state", getCasinoStateForPlayer(room.gameState as CasinoState, player.id));
     }
+  } else if (room.gameId === "drawguess") {
+    for (const player of room.players.values()) {
+      emitToPlayer(io, room, player.id, "game:state", getDrawGuessStateForPlayer(room.gameState as DrawGuessState, player.id));
+    }
   } else {
     io.to(roomCode).emit("game:state", room.gameState);
   }
@@ -200,6 +212,7 @@ function getMaskedStateForPlayer(room: { gameId: GameId | null; gameState: unkno
   if (room.gameId === "whoami") return getWhoAmIStateForPlayer(room.gameState as WhoAmIState, playerId);
   if (room.gameId === "boardrace") return getBoardRaceStateForPlayer(room.gameState as BoardRaceState, playerId);
   if (room.gameId === "casino") return getCasinoStateForPlayer(room.gameState as CasinoState, playerId);
+  if (room.gameId === "drawguess") return getDrawGuessStateForPlayer(room.gameState as DrawGuessState, playerId);
   return room.gameState;
 }
 
@@ -874,6 +887,11 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         socket.data.roomCode = room.code;
         socket.data.playerId = playerId;
         socket.join(room.code);
+        const drawGuessState = room.gameState as DrawGuessState | null;
+        const drawGuessWasPaused = room.gameId === "drawguess"
+          && room.bothConnected()
+          && Boolean(drawGuessState && drawGuessState.pausedAt !== null);
+        if (drawGuessWasPaused) room.applyAction({ type: "resume", now: Date.now() }, "system");
         const gameState = getMaskedStateForPlayer(room, playerId);
         callback?.({ ok: true, room: room.toSnapshot(), gameState });
         if (room.roomKind === "persistent-duo" || wasDisconnected) {
@@ -882,6 +900,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         if (room.roomKind === "persistent-duo" && gameState != null) {
           socket.emit("game:state", gameState);
         }
+        if (drawGuessWasPaused) broadcastGameState(io, room.code, roomManager);
       }
     );
 
@@ -1067,6 +1086,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         if (payload?.difficulty && isValidTermoVariant(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         if (payload?.difficulty && isValidAirHockeyDifficulty(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         if (payload?.difficulty && isValidChessDifficulty(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
+        if (room.gameId === "drawguess" && payload?.difficulty && isValidDrawGuessRounds(payload.difficulty)) baseOptions.difficulty = String(payload.difficulty);
         if (room.gameId === "casino" && payload?.difficulty && isValidCasinoLength(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         // A escolha de cores só existe no Duo e só pode ser feita antes de
         // iniciar. O servidor valida a associação inteira, não o cliente.
@@ -1215,8 +1235,8 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         callback?.({ ok: false, error: "O Quem Sou Eu? precisa dos dois jogadores conectados." });
         return;
       }
-      if ((room.gameId === "termo" || room.gameId === "airhockey" || room.gameId === "chess" || room.gameId === "boardrace" || room.gameId === "casino") && room.roomMode === "duo" && !room.bothConnected()) {
-        callback?.({ ok: false, error: room.gameId === "termo" ? "O Duelo de Termo precisa dos dois jogadores conectados." : room.gameId === "airhockey" ? "O Duelo de Air Hockey precisa dos dois jogadores conectados." : room.gameId === "chess" ? "O Duelo de Xadrez precisa dos dois jogadores conectados." : room.gameId === "casino" ? "O Cassino precisa dos dois jogadores conectados." : "A corrida precisa dos dois jogadores conectados." });
+      if ((room.gameId === "termo" || room.gameId === "airhockey" || room.gameId === "chess" || room.gameId === "boardrace" || room.gameId === "casino" || room.gameId === "drawguess") && room.roomMode === "duo" && !room.bothConnected()) {
+        callback?.({ ok: false, error: room.gameId === "termo" ? "O Duelo de Termo precisa dos dois jogadores conectados." : room.gameId === "airhockey" ? "O Duelo de Air Hockey precisa dos dois jogadores conectados." : room.gameId === "chess" ? "O Duelo de Xadrez precisa dos dois jogadores conectados." : room.gameId === "casino" ? "O Cassino precisa dos dois jogadores conectados." : room.gameId === "drawguess" ? "O Desenhe & Adivinhe precisa dos dois jogadores conectados." : "A corrida precisa dos dois jogadores conectados." });
         return;
       }
       // Sem exigência de "os dois conectados": o host pode jogar sozinho —
@@ -1868,6 +1888,122 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       broadcastGameState(io, code!, roomManager);
     });
 
+    // ---- Eventos exclusivos do Desenhe & Adivinhe ----
+    // A palavra e o relógio vivem no motor do servidor. O cliente envia só
+    // intenções pequenas; cada estado público é mascarado por jogador.
+    socket.on("drawguess:guess", (payload: { id?: unknown; guess?: unknown }, callback?: AckCallback) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const playerId = socket.data.playerId;
+      if (!room || room.gameId !== "drawguess" || room.status !== "playing" || !playerId) {
+        callback?.({ ok: false, error: "Partida indisponível." });
+        return;
+      }
+      if (typeof payload?.id !== "string" || typeof payload?.guess !== "string" || payload.guess.length > 80) {
+        callback?.({ ok: false, error: "Tentativa inválida." });
+        return;
+      }
+      const before = room.gameState as DrawGuessState;
+      room.applyAction({ type: "submitGuess", id: payload.id, guess: payload.guess, now: Date.now() }, playerId);
+      const changed = room.gameState !== before;
+      callback?.({ ok: changed, error: changed ? undefined : "Você não pode responder agora." });
+      if (!changed) return;
+      broadcastGameState(io, code!, roomManager);
+      if ((room.gameState as DrawGuessState).phase !== "playing") {
+        emitToPlayer(io, room, before.drawerId, "drawguess:typing", { playerId: before.guesserId, text: "" });
+      }
+      if ((room.status as string) === "finished") broadcastRoom(io, code!, roomManager);
+    });
+
+    // O texto espelhado é transitório: o servidor valida o papel atual e
+    // encaminha somente ao desenhista, sem poluir o histórico autoritativo.
+    socket.on("drawguess:typing", (payload: { text?: unknown }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const playerId = socket.data.playerId;
+      const state = room?.gameState as DrawGuessState | null;
+      if (!room || room.gameId !== "drawguess" || room.status !== "playing" || !state || !playerId) return;
+      if (state.phase !== "playing" || state.pausedAt !== null || state.guesserId !== playerId || typeof payload?.text !== "string") return;
+      const text = payload.text.slice(0, 80).replace(/[\r\n\t]/g, " ");
+      emitToPlayer(io, room, state.drawerId, "drawguess:typing", { playerId, text });
+    });
+
+    // Prévia em lotes curtos deixa o traço aparecer durante o gesto. Ela não
+    // é persistida; no pointerup chega a ação completa, validada e salva.
+    socket.on("drawguess:preview", (payload: { strokeId?: unknown; sequence?: unknown; tool?: unknown; color?: unknown; size?: unknown; points?: unknown }) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const playerId = socket.data.playerId;
+      const state = room?.gameState as DrawGuessState | null;
+      if (!room || room.gameId !== "drawguess" || room.status !== "playing" || !state || !playerId) return;
+      if (state.phase !== "playing" || state.pausedAt !== null || state.drawerId !== playerId) return;
+      if (typeof payload?.strokeId !== "string" || !/^[a-zA-Z0-9:_-]{1,80}$/.test(payload.strokeId)) return;
+      if (!Number.isInteger(payload.sequence) || (payload.sequence as number) < 0 || (payload.sequence as number) > 10_000) return;
+      if (payload.tool !== "brush" && payload.tool !== "eraser") return;
+      if (typeof payload.color !== "string" || !/^#[0-9a-fA-F]{6}$/.test(payload.color)) return;
+      if (typeof payload.size !== "number" || !Number.isFinite(payload.size) || payload.size < 0.001 || payload.size > 0.08) return;
+      if (!Array.isArray(payload.points) || payload.points.length < 2 || payload.points.length > 32) return;
+      const validPoints = payload.points.every((point) => {
+        if (!point || typeof point !== "object") return false;
+        const p = point as { x?: unknown; y?: unknown };
+        return typeof p.x === "number" && typeof p.y === "number" && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1;
+      });
+      if (!validPoints || Buffer.byteLength(JSON.stringify(payload), "utf8") > 8_192) return;
+      socket.to(code!).emit("drawguess:preview", payload);
+    });
+
+    socket.on("drawguess:canvasAction", (payload: { action?: unknown }, callback?: AckCallback) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const playerId = socket.data.playerId;
+      if (!room || room.gameId !== "drawguess" || room.status !== "playing" || !playerId || !isValidDrawGuessCanvasAction(payload?.action)) {
+        callback?.({ ok: false, error: "Ação de desenho inválida." });
+        return;
+      }
+      const before = room.gameState as DrawGuessState;
+      room.applyAction({ type: "draw", action: payload.action as DrawGuessCanvasAction }, playerId);
+      const after = room.gameState as DrawGuessState;
+      const changed = after.canvasRevision !== before.canvasRevision;
+      callback?.({ ok: changed, error: changed ? undefined : "Você não pode desenhar agora." });
+      if (changed) broadcastGameState(io, code!, roomManager);
+    });
+
+    socket.on("drawguess:history", (payload: { action?: unknown; id?: unknown }, callback?: AckCallback) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const playerId = socket.data.playerId;
+      if (!room || room.gameId !== "drawguess" || room.status !== "playing" || !playerId) {
+        callback?.({ ok: false, error: "Partida indisponível." });
+        return;
+      }
+      const before = room.gameState as DrawGuessState;
+      if (payload?.action === "undo") room.applyAction({ type: "undo" }, playerId);
+      else if (payload?.action === "redo") room.applyAction({ type: "redo" }, playerId);
+      else if (payload?.action === "clear" && typeof payload.id === "string") room.applyAction({ type: "clear", id: payload.id }, playerId);
+      else {
+        callback?.({ ok: false, error: "Ação inválida." });
+        return;
+      }
+      const after = room.gameState as DrawGuessState;
+      const changed = after.canvasRevision !== before.canvasRevision;
+      callback?.({ ok: changed, error: changed ? undefined : "Nada para alterar." });
+      if (changed) broadcastGameState(io, code!, roomManager);
+    });
+
+    socket.on("drawguess:newGame", (callback?: AckCallback) => {
+      const code = socket.data.roomCode;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const playerId = socket.data.playerId;
+      if (!room || room.gameId !== "drawguess" || room.status !== "finished" || !playerId || !room.canManage(playerId) || !room.bothConnected()) {
+        callback?.({ ok: false, error: "A dupla precisa estar conectada para jogar novamente." });
+        return;
+      }
+      room.resetGame();
+      callback?.({ ok: true });
+      broadcastRoom(io, code!, roomManager);
+      broadcastGameState(io, code!, roomManager);
+    });
+
     // Só marca o jogador como desconectado se essa conexão que caiu ainda for
     // a "atual" dele — se ele já tiver reconectado mais rápido (novo socket.id
     // já registrado via room:sync) antes desse evento chegar, não sobrescreve
@@ -1880,9 +2016,31 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       if (room && room.getSocketIds(playerId).includes(socket.id)) {
         room.markDisconnected(playerId, socket.id);
         broadcastRoom(io, code, roomManager);
+        if (room.gameId === "drawguess" && room.gameState) broadcastGameState(io, code, roomManager);
       }
     });
   });
+
+  // ---- Relógio autoritativo do Desenhe & Adivinhe ----
+  // Fecha a rodada aos 60 s e avança após a animação breve. A pausa causada
+  // por desconexão é resolvida no room:sync e desloca os prazos inteiros.
+  setInterval(() => {
+    const now = Date.now();
+    for (const room of roomManager.getAllRooms()) {
+      if (room.gameId !== "drawguess" || room.status !== "playing" || !room.gameState) continue;
+      const state = room.gameState as DrawGuessState;
+      if (state.pausedAt !== null || state.phase === "finished") continue;
+      if (state.phase === "playing" && now >= state.roundDeadlineAt) {
+        room.applyAction({ type: "timeUp", now }, "system");
+      } else if (state.phase === "roundResult" && state.autoAdvanceAt !== null && now >= state.autoAdvanceAt) {
+        room.applyAction({ type: "advanceRound", now }, "system");
+      } else {
+        continue;
+      }
+      broadcastGameState(io, room.code, roomManager);
+      if ((room.status as string) === "finished") broadcastRoom(io, room.code, roomManager);
+    }
+  }, 200);
 
   // ---- Relógio do servidor do Jogo da Memória ----
   // Prévia, erro temporariamente revelado e tempo limite são controlados aqui

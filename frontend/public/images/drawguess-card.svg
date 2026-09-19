@@ -1,0 +1,28 @@
+<svg width="1200" height="675" viewBox="0 0 1200 675" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="90" y1="40" x2="1110" y2="635" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FCE7F3"/>
+      <stop offset="0.5" stop-color="#EDE9FE"/>
+      <stop offset="1" stop-color="#DBEAFE"/>
+    </linearGradient>
+    <filter id="shadow" x="190" y="55" width="820" height="590" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#7C3AED" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" rx="48" fill="url(#bg)"/>
+  <circle cx="104" cy="112" r="42" fill="#FB7185" fill-opacity="0.22"/>
+  <circle cx="1090" cy="560" r="62" fill="#60A5FA" fill-opacity="0.2"/>
+  <path d="M1005 95C1025 58 1080 63 1088 105C1096 147 1048 174 1006 205C965 171 923 142 936 101C949 60 988 65 1005 95Z" fill="#EC4899" fill-opacity="0.18"/>
+  <g filter="url(#shadow)">
+    <rect x="236" y="94" width="728" height="487" rx="38" fill="white"/>
+    <rect x="258" y="116" width="684" height="443" rx="26" stroke="#F0ABFC" stroke-width="6" stroke-dasharray="14 12"/>
+  </g>
+  <path d="M405 403C434 326 489 279 550 295C598 307 607 363 641 377C676 391 701 344 747 350C794 356 823 402 835 448" stroke="#8B5CF6" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="492" cy="252" r="54" fill="#FCD34D" stroke="#F59E0B" stroke-width="12"/>
+  <path d="M492 168V135M492 369V336M408 252H375M609 252H576M433 193L410 170M574 334L551 311M551 193L574 170M410 334L433 311" stroke="#F59E0B" stroke-width="12" stroke-linecap="round"/>
+  <path d="M369 475L452 392" stroke="#EC4899" stroke-width="28" stroke-linecap="round"/>
+  <path d="M347 497L374 470" stroke="#7C3AED" stroke-width="42" stroke-linecap="round"/>
+  <path d="M446 398L477 367L493 415L462 446L446 398Z" fill="#F9A8D4" stroke="#DB2777" stroke-width="7"/>
+  <rect x="744" y="158" width="134" height="82" rx="28" fill="#FDF2F8" stroke="#F9A8D4" stroke-width="6"/>
+  <text x="811" y="215" text-anchor="middle" fill="#BE185D" font-size="54" font-family="Arial, sans-serif" font-weight="700">?</text>
+</svg>

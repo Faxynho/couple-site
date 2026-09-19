@@ -120,6 +120,15 @@ export const GAMES: GameDefinition[] = [
     available: true,
     soloAvailable: true,
   },
+  {
+    id: "drawguess",
+    name: "Desenhe & Adivinhe",
+    description: "Um desenha, o outro adivinha — papéis alternados, traços ao vivo e pontos pela rapidez.",
+    emoji: "🖌️",
+    image: "/images/drawguess-card.svg",
+    available: true,
+    soloAvailable: false,
+  },
 ];
 
 /**
@@ -134,3 +143,4 @@ export const DIFFICULTIES = {
 } as const;
 
 export type Difficulty = keyof typeof DIFFICULTIES;
+

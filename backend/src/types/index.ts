@@ -5,11 +5,11 @@
  * cooperativo for adicionado à plataforma (Jogo da Velha, Forca, Sudoku...).
  */
 
-export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "whoami" | "rpg" | "airhockey" | "chess" | "boardrace" | "casino"; // adicione novos ids aqui
+export type GameId = "puzzle" | "sudoku" | "colors" | "memory" | "termo" | "crossword" | "wordsearch" | "quiz" | "whoami" | "rpg" | "airhockey" | "chess" | "boardrace" | "casino" | "drawguess"; // adicione novos ids aqui
 
 /** Lista de todos os ids de jogo, na mesma ordem do catálogo — usada para
  *  sortear a sugestão de sequência de jogos da sala Duo. */
-export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "whoami", "rpg", "airhockey", "chess", "boardrace", "casino"];
+export const ALL_GAME_IDS: GameId[] = ["puzzle", "sudoku", "colors", "memory", "termo", "crossword", "wordsearch", "quiz", "whoami", "rpg", "airhockey", "chess", "boardrace", "casino", "drawguess"];
 
 /** "solo": sessão de um único jogador, sem convite nem convidado — a sala
  *  existe só para reaproveitar a mesma infraestrutura de motor de jogo.
@@ -22,6 +22,7 @@ export type PersistentDuoPresence = "offline" | "lobby" | "world" | "minigame";
 export interface PersistentDuoLobby {
   displayName: string;
 }
+
 
 export interface Player {
   // Identidade PERSISTENTE do jogador (gerada uma vez pelo cliente e salva no
