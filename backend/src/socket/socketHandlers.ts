@@ -1147,9 +1147,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       const room = code ? roomManager.getRoom(code) : undefined;
       if (!room || !socket.data.playerId || !room.canManage(socket.data.playerId)) return;
       if (!payload?.gameId || !ALL_GAME_IDS.includes(payload.gameId)) return;
-      if (room.roomKind === "persistent-duo") {
-        if (room.status !== "lobby" || !room.arePersistentDuoPlayersInLobby()) return;
-      }
+      if (room.roomKind === "persistent-duo" && room.status !== "lobby") return;
       room.selectGame(payload.gameId);
       broadcastRoom(io, code!, roomManager);
     });

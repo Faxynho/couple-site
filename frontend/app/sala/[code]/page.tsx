@@ -21,6 +21,7 @@ import { fetchAccounts } from "@/lib/accountApi";
 import PersistentDuoStatus from "@/components/duo/PersistentDuoStatus";
 import SharedDrawingBoard from "@/components/duo/SharedDrawingBoard";
 import PersistentDuoLobbyScene from "@/components/duo/PersistentDuoLobbyScene";
+import PersistentDuoMinigamesScene from "@/components/duo/PersistentDuoMinigamesScene";
 import {
   getPersistentDuoAvailabilityMessage,
   normalizePersistentDuoDisplayName,
@@ -49,6 +50,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   const [search, setSearch] = useState("");
   const [suggestionOpen, setSuggestionOpen] = useState(false);
   const [showMinigames, setShowMinigames] = useState(false);
+  const [minigamesLayout, setMinigamesLayout] = useState<"visual" | "classic">("visual");
   const [lobbyNotice, setLobbyNotice] = useState<string | null>(null);
   const [editingLobbyName, setEditingLobbyName] = useState(false);
   const [lobbyNameDraft, setLobbyNameDraft] = useState("");
@@ -173,7 +175,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
           : "room-shell app-shell mx-auto flex min-h-screen max-w-md flex-col items-center px-5 py-14"
       }
     >
-      {isPersistentDuo && (
+      {isPersistentDuo && !showMinigames && (
         <div
           className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: 'url("/images/Lobby_background.png")', backgroundPosition: "center top" }}
@@ -182,6 +184,22 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/25" />
         </div>
       )}
+      {isPersistentDuo && room.status === "lobby" && showMinigames && (
+        <button
+          type="button"
+          onClick={() => {
+            setLobbyNotice(null);
+            setShowMinigames(false);
+          }}
+          aria-label="Voltar ao lobby"
+          title="Voltar ao lobby"
+          className="fixed left-4 top-[5.25rem] z-50 inline-flex h-10 items-center gap-1.5 rounded-full border border-[#ff86b8]/45 bg-[#211228]/75 px-3 font-display text-xs font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.35),0_0_16px_rgba(255,94,160,0.16)] backdrop-blur-md transition-transform active:scale-95"
+        >
+          <ArrowLeft size={15} />
+          Lobby
+        </button>
+      )}
+
       {!isPersistentDuo && (
         <div className="flex w-full items-center justify-between">
           <Logo size={40} />
@@ -227,10 +245,6 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                       router.push("/mundo");
                     }}
                     onMinigamesClick={() => {
-                      if (persistentAvailabilityMessage) {
-                        setLobbyNotice(persistentAvailabilityMessage);
-                        return;
-                      }
                       setLobbyNotice(null);
                       setShowMinigames(true);
                     }}
@@ -339,48 +353,75 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                 </div>
               </div>
             ) : isHost ? (
-              <div className={isPersistentDuo ? "mx-auto w-full max-w-md px-4 pb-12 pt-28 sm:max-w-3xl" : "w-full"}>
-                {isPersistentDuo && (
-                  <button
-                    type="button"
-                    onClick={() => setShowMinigames(false)}
-                    className="mb-4 flex items-center gap-1.5 text-xs font-medium text-ink-soft transition-colors hover:text-ink"
-                  >
-                    <ArrowLeft size={14} /> Voltar ao lobby
-                  </button>
-                )}
-                <GameSearch value={search} onChange={setSearch} />
-                <GameCatalogActions onRandom={handleRandomGame} onToggleSuggestion={() => setSuggestionOpen((open) => !open)} suggestionOpen={suggestionOpen} />
-                <AnimatePresence initial={false}>
-                  {suggestionOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0, y: -6 }}
-                      animate={{ opacity: 1, height: "auto", y: 0 }}
-                      exit={{ opacity: 0, height: 0, y: -6 }}
-                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <GameSequenceSuggestion
-                        sequence={room.sequence}
-                        sequenceProgress={room.sequenceProgress}
-                        isHost={isHost}
-                        onShuffle={shuffleSequence}
-                        onPickGame={selectGame}
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                {filteredGames.length > 0 ? (
-                  <div className="mt-5 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
-                    {filteredGames.map((g, i) => (
-                      <GameCard key={g.id} game={g} index={i} ctaLabel="Escolher" onPlay={(gd: GameDefinition) => selectGame(gd.id)} />
-                    ))}
-                  </div>
+              <div
+                className={
+                  isPersistentDuo && minigamesLayout === "visual"
+                    ? "w-full"
+                    : isPersistentDuo
+                      ? "mx-auto w-full max-w-md px-4 pb-12 pt-28 sm:max-w-3xl"
+                      : "w-full"
+                }
+              >
+                {isPersistentDuo && minigamesLayout === "visual" ? (
+                  <PersistentDuoMinigamesScene
+                    presence={persistentPresence}
+                    onSelectGame={selectGame}
+                    onRandomGame={handleRandomGame}
+                    onShowClassic={() => setMinigamesLayout("classic")}
+                  />
                 ) : (
-                  <div className="mt-8 rounded-xl3 border border-surface/70 bg-surface/45 px-5 py-10 text-center">
-                    <p className="font-display text-base font-semibold text-ink">Nenhum jogo encontrado</p>
-                    <p className="mt-1 text-sm text-ink-soft">Tente pesquisar outro nome.</p>
-                  </div>
+                  <>
+                    <GameSearch value={search} onChange={setSearch} />
+                    <GameCatalogActions
+                      onRandom={handleRandomGame}
+                      onToggleSuggestion={() => setSuggestionOpen((open) => !open)}
+                      suggestionOpen={suggestionOpen}
+                    />
+                    <AnimatePresence initial={false}>
+                      {suggestionOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0, y: -6 }}
+                          animate={{ opacity: 1, height: "auto", y: 0 }}
+                          exit={{ opacity: 0, height: 0, y: -6 }}
+                          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                          className="overflow-hidden"
+                        >
+                          <GameSequenceSuggestion
+                            sequence={room.sequence}
+                            sequenceProgress={room.sequenceProgress}
+                            isHost={isHost}
+                            onShuffle={shuffleSequence}
+                            onPickGame={selectGame}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    {filteredGames.length > 0 ? (
+                      <div className="mt-5 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
+                        {filteredGames.map((g, i) => (
+                          <GameCard key={g.id} game={g} index={i} ctaLabel="Escolher" onPlay={(gd: GameDefinition) => selectGame(gd.id)} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-8 rounded-xl3 border border-surface/70 bg-surface/45 px-5 py-10 text-center">
+                        <p className="font-display text-base font-semibold text-ink">Nenhum jogo encontrado</p>
+                        <p className="mt-1 text-sm text-ink-soft">Tente pesquisar outro nome.</p>
+                      </div>
+                    )}
+
+                    {isPersistentDuo && (
+                      <div className="mt-8 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setMinigamesLayout("visual")}
+                          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-rose/35 bg-surface/75 px-5 font-display text-sm font-semibold text-ink shadow-soft backdrop-blur-md transition-transform active:scale-95"
+                        >
+                          <Heart size={16} className="text-rose-deep" fill="currentColor" />
+                          Ver sala ilustrada
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ) : (
