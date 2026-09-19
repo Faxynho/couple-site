@@ -20,25 +20,25 @@ export interface MinigameHotspot {
  * independentemente da largura do celular.
  */
 export const MINIGAME_HOTSPOTS: readonly MinigameHotspot[] = [
-  { gameId: "puzzle", label: "Quebra-cabeça", left: 8.5, top: 18.8, width: 19.8, height: 9.4 },
-  { gameId: "sudoku", label: "Sudoku", left: 29.2, top: 18.8, width: 17.8, height: 9.4 },
-  { gameId: "memory", label: "Jogo da Memória", left: 48.0, top: 18.8, width: 20.4, height: 9.5 },
-  { gameId: "colors", label: "Memória de Cores", left: 70.5, top: 18.8, width: 20.0, height: 9.5 },
+  { gameId: "puzzle", label: "Quebra-cabeça", left: 8.8, top: 20.1, width: 18.8, height: 8.2 },
+  { gameId: "sudoku", label: "Sudoku", left: 29.7, top: 20.0, width: 16.8, height: 8.3 },
+  { gameId: "memory", label: "Jogo da Memória", left: 48.6, top: 20.0, width: 19.2, height: 8.3 },
+  { gameId: "colors", label: "Memória de Cores", left: 71.1, top: 20.0, width: 18.6, height: 8.3 },
 
-  { gameId: "crossword", label: "Palavras Cruzadas", left: 6.5, top: 28.0, width: 21.5, height: 9.8 },
-  { gameId: "wordsearch", label: "Caça-Palavras", left: 27.5, top: 28.0, width: 20.5, height: 9.8 },
-  { gameId: "quiz", label: "Quiz", left: 47.5, top: 28.0, width: 22.5, height: 9.7 },
-  { gameId: "rpg", label: "Mini RPG", left: 69.0, top: 28.0, width: 23.0, height: 10.4 },
+  { gameId: "crossword", label: "Palavras Cruzadas", left: 7.2, top: 29.5, width: 20.2, height: 8.6 },
+  { gameId: "wordsearch", label: "Caça-Palavras", left: 28.2, top: 29.5, width: 19.3, height: 8.6 },
+  { gameId: "quiz", label: "Quiz", left: 48.5, top: 29.4, width: 21.2, height: 8.7 },
+  { gameId: "rpg", label: "Mini RPG", left: 70.2, top: 29.4, width: 21.4, height: 9.1 },
 
-  { gameId: "termo", label: "Termo", left: 1.0, top: 37.4, width: 21.5, height: 11.7 },
-  { gameId: "airhockey", label: "Air Hockey", left: 21.0, top: 37.2, width: 49.5, height: 12.0 },
+  { gameId: "termo", label: "Termo", left: 2.0, top: 39.1, width: 19.8, height: 10.0 },
+  { gameId: "airhockey", label: "Air Hockey", left: 22.2, top: 39.0, width: 47.2, height: 10.7 },
 
-  { gameId: "drawguess", label: "Desenhe & Adivinhe", left: 1.5, top: 49.0, width: 28.0, height: 14.0 },
-  { gameId: "whoami", label: "Quem Sou Eu?", left: 31.0, top: 50.7, width: 30.5, height: 11.8 },
-  { gameId: "casino", label: "Cassino", left: 68.8, top: 52.0, width: 30.5, height: 12.5 },
+  { gameId: "drawguess", label: "Desenhe & Adivinhe", left: 2.6, top: 51.0, width: 26.0, height: 12.1 },
+  { gameId: "whoami", label: "Quem Sou Eu?", left: 32.3, top: 52.0, width: 28.5, height: 10.3 },
+  { gameId: "casino", label: "Cassino", left: 70.2, top: 53.2, width: 28.1, height: 10.8 },
 
-  { gameId: "boardrace", label: "Trilha da Sorte", left: 17.2, top: 62.8, width: 48.5, height: 11.3 },
-  { gameId: "chess", label: "Xadrez", left: 64.5, top: 63.0, width: 34.0, height: 11.0 },
+  { gameId: "boardrace", label: "Trilha da Sorte", left: 18.2, top: 64.5, width: 46.0, height: 9.8 },
+  { gameId: "chess", label: "Xadrez", left: 66.1, top: 64.7, width: 31.6, height: 9.7 },
 ] as const;
 
 interface PersistentDuoMinigamesSceneProps {

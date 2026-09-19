@@ -6,7 +6,7 @@ import { getRoomPlayerId } from "@/lib/playerId";
 import { getActiveAccountId } from "@/lib/accountSession";
 import { clearStoredRoomCode, setStoredRoomCode } from "@/lib/roomSession";
 import { GameId, PersistentDuoPresence, RoomSnapshot } from "@/lib/types";
-import { isPersistentDuoRoomCode } from "@/lib/persistentDuo";
+import { isPersistentDuoRoomCode, rememberPersistentDuoMinigamesReturn } from "@/lib/persistentDuo";
 import { usePathname } from "next/navigation";
 
 interface AckResult {
@@ -120,8 +120,9 @@ export function useRoomSession(code: string, persistentPresence?: Exclude<Persis
 
   /** Só o host chama isso — volta mais um passo, para a escolha de jogo. */
   const backToGameSelect = useCallback(() => {
+    rememberPersistentDuoMinigamesReturn(code);
     getSocket().emit("room:backToGameSelect");
-  }, []);
+  }, [code]);
 
   /** Só o host chama isso — atualiza a configuração pendente do jogo escolhido. */
   const setConfig = useCallback(

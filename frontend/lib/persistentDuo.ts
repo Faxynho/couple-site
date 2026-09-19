@@ -11,6 +11,29 @@ export const PERSISTENT_DUO_DEFAULT_NAMES: Record<AccountId, string> = {
 export const PERSISTENT_DUO_DEFAULT_DISPLAY_NAME = "Lobby de André e Flávia";
 export const PERSISTENT_DUO_DISPLAY_NAME_MAX_LENGTH = 40;
 
+const PERSISTENT_DUO_MINIGAMES_RETURN_KEY = "persistent-duo:return-to-minigames";
+
+export function rememberPersistentDuoMinigamesReturn(code: string): void {
+  if (typeof window === "undefined" || !isPersistentDuoRoomCode(code)) return;
+  try {
+    window.sessionStorage.setItem(PERSISTENT_DUO_MINIGAMES_RETURN_KEY, code.toUpperCase());
+  } catch {
+    // A navegação continua funcionando mesmo se o storage estiver indisponível.
+  }
+}
+
+export function consumePersistentDuoMinigamesReturn(code: string): boolean {
+  if (typeof window === "undefined" || !isPersistentDuoRoomCode(code)) return false;
+  try {
+    const storedCode = window.sessionStorage.getItem(PERSISTENT_DUO_MINIGAMES_RETURN_KEY);
+    if (storedCode !== code.toUpperCase()) return false;
+    window.sessionStorage.removeItem(PERSISTENT_DUO_MINIGAMES_RETURN_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function normalizePersistentDuoDisplayName(value: string): string {
   return Array.from(value.trim().replace(/\s+/g, " "))
     .slice(0, PERSISTENT_DUO_DISPLAY_NAME_MAX_LENGTH)

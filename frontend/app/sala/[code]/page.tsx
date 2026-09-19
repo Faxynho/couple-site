@@ -23,6 +23,7 @@ import SharedDrawingBoard from "@/components/duo/SharedDrawingBoard";
 import PersistentDuoLobbyScene from "@/components/duo/PersistentDuoLobbyScene";
 import PersistentDuoMinigamesScene from "@/components/duo/PersistentDuoMinigamesScene";
 import {
+  consumePersistentDuoMinigamesReturn,
   getPersistentDuoAvailabilityMessage,
   normalizePersistentDuoDisplayName,
   PERSISTENT_DUO_DEFAULT_DISPLAY_NAME,
@@ -72,6 +73,15 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   useEffect(() => {
     if (room?.status && room.status !== "lobby") setShowMinigames(false);
   }, [room?.status]);
+
+  useEffect(() => {
+    if (room?.roomKind !== "persistent-duo" || room.status !== "lobby") return;
+    if (!consumePersistentDuoMinigamesReturn(code)) return;
+
+    setLobbyNotice(null);
+    setMinigamesLayout("visual");
+    setShowMinigames(true);
+  }, [code, room?.roomKind, room?.status]);
 
   useEffect(() => {
     if (!editingLobbyName && room?.persistentDuoLobby?.displayName) {
@@ -371,6 +381,11 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                   />
                 ) : (
                   <>
+                    {isPersistentDuo && (
+                      <div className="mb-5 w-full">
+                        <PersistentDuoStatus presence={persistentPresence} />
+                      </div>
+                    )}
                     <GameSearch value={search} onChange={setSearch} />
                     <GameCatalogActions
                       onRandom={handleRandomGame}
