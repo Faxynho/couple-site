@@ -316,7 +316,8 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                   <SharedDrawingBoard />
                 </div>
               </div>
-            ) : isHost ? (\n              <div className={isPersistentDuo ? "mx-auto w-full max-w-md px-4 pb-12 pt-28 sm:max-w-3xl" : "w-full"}>
+            ) : isHost ? (
+              <div className={isPersistentDuo ? "mx-auto w-full max-w-md px-4 pb-12 pt-28 sm:max-w-3xl" : "w-full"}>
                 {isPersistentDuo && (
                   <button
                     type="button"

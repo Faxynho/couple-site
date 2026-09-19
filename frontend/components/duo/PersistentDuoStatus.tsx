@@ -39,7 +39,8 @@ export default function PersistentDuoStatus({
                   {profile?.name ?? PERSISTENT_DUO_DEFAULT_NAMES[accountId]}
                 </p>
                 <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-white/75">
-                  <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-white/35"}`} />\n                  {isOnline ? "Online" : "Offline"}
+                  <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-white/35"}`} />
+                  {isOnline ? "Online" : "Offline"}
                 </p>
               </div>
             </div>
