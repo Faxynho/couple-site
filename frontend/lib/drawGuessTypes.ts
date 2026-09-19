@@ -41,6 +41,7 @@ export interface DrawGuessState {
   mode: "duo";
   expectedPlayers: string[];
   configuredRounds: number;
+  roundDurationMs: number;
   totalRounds: number;
   currentRound: number;
   tiebreakPairs: number;
@@ -80,6 +81,11 @@ export const DRAW_GUESS_ROUNDS = {
   "4": { label: "Rápida", emoji: "⚡", hint: "4 rodadas" },
   "6": { label: "Clássica", emoji: "🎨", hint: "6 rodadas" },
   "8": { label: "Longa", emoji: "✨", hint: "8 rodadas" },
+} as const;
+
+export const DRAW_GUESS_DURATIONS = {
+  "60": { label: "1 minuto", emoji: "⏱️", hint: "60 segundos" },
+  "120": { label: "2 minutos", emoji: "⏳", hint: "120 segundos" },
 } as const;
 
 export const DRAW_GUESS_COLORS = [

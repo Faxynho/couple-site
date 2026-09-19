@@ -14,7 +14,7 @@ import { MEMORY_DIFFICULTIES, MEMORY_MODES, MemoryDifficulty, MemoryMode } from 
 import { TERMO_VARIANTS, TermoVariant } from "@/lib/termoTypes";
 import { WHOAMI_CATEGORIES, WHOAMI_DIFFICULTIES, WHOAMI_MODES, WhoAmICategory, WhoAmIDifficulty, WhoAmIMode } from "@/lib/whoAmITypes";
 import { CASINO_LENGTHS, CasinoLength } from "@/lib/casinoTypes";
-import { DRAW_GUESS_ROUNDS } from "@/lib/drawGuessTypes";
+import { DRAW_GUESS_DURATIONS, DRAW_GUESS_ROUNDS } from "@/lib/drawGuessTypes";
 import { RoomSnapshot } from "@/lib/types";
 import { useAccountPhotos } from "@/hooks/useAccountPhotos";
 import AccountAvatar from "@/components/account/AccountAvatar";
@@ -34,6 +34,7 @@ interface GameConfigPanelProps {
     whoamiCategory?: string;
     chessPinkPlayerId?: string | null;
     rpgAppearance?: "man" | "woman";
+    drawGuessDuration?: string;
   }) => void;
   setBoardRacePawnColor: (color: "blue" | "pink") => void;
 }
@@ -93,15 +94,26 @@ export default function GameConfigPanel({ room, isHost, selfId, setConfig, setBo
 
   if (room.gameId === "drawguess") {
     const selectedRounds = (["4", "6", "8"].includes(room.pendingDifficulty) ? room.pendingDifficulty : "6") as keyof typeof DRAW_GUESS_ROUNDS;
+    const selectedDuration = (["60", "120"].includes(room.pendingDrawGuessDuration ?? "") ? room.pendingDrawGuessDuration : "60") as keyof typeof DRAW_GUESS_DURATIONS;
     return (
       <div className="text-left">
-        <SectionLabel>{isHost ? "Duração da partida" : "Duração escolhida"}</SectionLabel>
+        <SectionLabel>{isHost ? "Quantidade de rodadas" : "Rodadas escolhidas"}</SectionLabel>
         <OptionGrid
           entries={Object.entries(DRAW_GUESS_ROUNDS) as [keyof typeof DRAW_GUESS_ROUNDS, (typeof DRAW_GUESS_ROUNDS)[keyof typeof DRAW_GUESS_ROUNDS]][]}
           selected={selectedRounds}
           isHost={isHost}
           onSelect={(key) => setConfig({ difficulty: key })}
         />
+        <div className="mt-5">
+          <SectionLabel>{isHost ? "Tempo por rodada" : "Tempo escolhido"}</SectionLabel>
+          <OptionGrid
+            cols={2}
+            entries={Object.entries(DRAW_GUESS_DURATIONS) as [keyof typeof DRAW_GUESS_DURATIONS, (typeof DRAW_GUESS_DURATIONS)[keyof typeof DRAW_GUESS_DURATIONS]][]}
+            selected={selectedDuration}
+            isHost={isHost}
+            onSelect={(key) => setConfig({ drawGuessDuration: key })}
+          />
+        </div>
         <div className="mt-4 rounded-xl2 border border-surface/70 bg-surface/50 p-4 text-center">
           <p className="text-sm font-medium text-ink">🖌️ Um desenha, o outro adivinha</p>
           <p className="mt-1 text-xs text-ink-soft">Os papéis alternam a cada rodada. Quanto mais rápido o acerto, mais pontos os dois recebem.</p>

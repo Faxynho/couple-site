@@ -128,6 +128,7 @@ export function useRoomSession(code: string, persistentPresence?: Exclude<Persis
     (payload: {
       imageId?: string;
       difficulty?: string;
+      drawGuessDuration?: string;
       imageWidth?: number;
       imageHeight?: number;
       colorMode?: string;
