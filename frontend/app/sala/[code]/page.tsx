@@ -20,6 +20,7 @@ import AccountPanel from "@/components/account/AccountPanel";
 import { fetchAccounts } from "@/lib/accountApi";
 import PersistentDuoStatus from "@/components/duo/PersistentDuoStatus";
 import SharedDrawingBoard from "@/components/duo/SharedDrawingBoard";
+import PersistentDuoLobbyScene from "@/components/duo/PersistentDuoLobbyScene";
 import {
   getPersistentDuoAvailabilityMessage,
   normalizePersistentDuoDisplayName,
@@ -161,7 +162,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   };
 
   return (
-    <main className="room-shell app-shell mx-auto flex min-h-screen max-w-md flex-col items-center px-5 py-14">
+    <main className={`room-shell app-shell mx-auto flex min-h-screen max-w-md flex-col items-center ${isPersistentDuo ? "px-3 py-7 sm:px-5 sm:py-10" : "px-5 py-14"}`}>
       <div className="flex w-full items-center justify-between">
         <Logo size={40} />
         <span className="font-display text-xs font-medium tracking-[0.15em] text-ink-soft">
@@ -179,109 +180,103 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             transition={{ duration: 0.4 }}
             className="mt-6 flex w-full flex-col items-center gap-6"
           >
-            <div className="glass-panel room-panel w-full rounded-xl3 p-5 text-center">
-              {isPersistentDuo ? (
-                <>
-                  <span className="text-3xl">💞</span>
-                  {editingLobbyName ? (
-                    <form
-                      className="mx-auto mt-3 flex w-full max-w-sm flex-col gap-2"
-                      onSubmit={(event) => {
-                        event.preventDefault();
-                        void saveLobbyName();
+            {isPersistentDuo ? (
+              <section className="w-full text-center" aria-label="Informações do lobby">
+                <span className="text-3xl" aria-hidden="true">💞</span>
+                {editingLobbyName ? (
+                  <form
+                    className="mx-auto mt-3 flex w-full max-w-sm flex-col gap-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void saveLobbyName();
+                    }}
+                  >
+                    <label htmlFor="persistent-duo-lobby-name" className="sr-only">Nome do lobby</label>
+                    <input
+                      id="persistent-duo-lobby-name"
+                      autoFocus
+                      maxLength={PERSISTENT_DUO_DISPLAY_NAME_MAX_LENGTH}
+                      value={lobbyNameDraft}
+                      onChange={(event) => setLobbyNameDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") cancelLobbyNameEdit();
                       }}
-                    >
-                      <label htmlFor="persistent-duo-lobby-name" className="sr-only">Nome do lobby</label>
-                      <input
-                        id="persistent-duo-lobby-name"
-                        autoFocus
-                        maxLength={PERSISTENT_DUO_DISPLAY_NAME_MAX_LENGTH}
-                        value={lobbyNameDraft}
-                        onChange={(event) => setLobbyNameDraft(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Escape") cancelLobbyNameEdit();
-                        }}
-                        className="w-full rounded-xl2 border border-rose/30 bg-surface/70 px-3 py-2 text-center font-display text-lg font-semibold text-ink outline-none ring-rose/30 focus:ring-2"
-                      />
-                      <div className="flex justify-center gap-2">
-                        <button type="submit" className="inline-flex min-h-9 items-center gap-1 rounded-full bg-rose px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90">
-                          <Check size={14} /> Salvar
-                        </button>
-                        <button type="button" onClick={cancelLobbyNameEdit} className="inline-flex min-h-9 items-center gap-1 rounded-full bg-surface px-3 text-xs font-semibold text-ink-soft transition-colors hover:text-ink">
-                          <X size={14} /> Cancelar
-                        </button>
-                      </div>
-                      {lobbyNameError && <p className="text-xs text-rose-deep" role="alert">{lobbyNameError}</p>}
-                    </form>
-                  ) : (
-                    <div className="mt-2 flex max-w-full items-start justify-center gap-2">
-                      <h1 className="min-w-0 break-words font-display text-xl font-semibold text-ink">{lobbyDisplayName}</h1>
-                      <button
-                        type="button"
-                        onClick={beginLobbyNameEdit}
-                        aria-label="Editar nome do lobby"
-                        className="mt-1 shrink-0 rounded-full p-1.5 text-ink-soft transition-colors hover:bg-surface hover:text-ink"
-                      >
-                        <Pencil size={15} />
+                      className="w-full rounded-xl2 border border-rose/30 bg-surface/70 px-3 py-2 text-center font-display text-lg font-semibold text-ink outline-none shadow-soft ring-rose/30 backdrop-blur-md focus:ring-2"
+                    />
+                    <div className="flex justify-center gap-2">
+                      <button type="submit" className="inline-flex min-h-9 items-center gap-1 rounded-full bg-rose px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90">
+                        <Check size={14} /> Salvar
+                      </button>
+                      <button type="button" onClick={cancelLobbyNameEdit} className="inline-flex min-h-9 items-center gap-1 rounded-full bg-surface px-3 text-xs font-semibold text-ink-soft transition-colors hover:text-ink">
+                        <X size={14} /> Cancelar
                       </button>
                     </div>
-                  )}
+                    {lobbyNameError && <p className="text-xs text-rose-deep" role="alert">{lobbyNameError}</p>}
+                  </form>
+                ) : (
+                  <div className="mt-2 flex max-w-full items-start justify-center gap-2">
+                    <h1 className="min-w-0 break-words font-display text-xl font-semibold text-ink">{lobbyDisplayName}</h1>
+                    <button
+                      type="button"
+                      onClick={beginLobbyNameEdit}
+                      aria-label="Editar nome do lobby"
+                      className="mt-1 shrink-0 rounded-full p-1.5 text-ink-soft transition-colors hover:bg-surface hover:text-ink"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                  </div>
+                )}
 
-                  <p className="mb-5 mt-1 text-xs text-ink-soft">O cantinho compartilhado de vocês, sempre no mesmo lugar.</p>
+                <div className="mt-4">
                   <PersistentDuoStatus presence={persistentPresence} />
-                </>
-              ) : (
-                <>
-                  <p className="text-xs text-ink-soft">Código da sala</p>
-                  <p className="room-code font-display text-2xl font-semibold tracking-[0.3em] text-ink">{room.code}</p>
-                  <p className="mt-1 text-xs text-ink-soft">Envie esse código para seu par entrar.</p>
-                  <ConnectionThread
-                    players={room.players}
-                    maxPlayers={room.maxPlayers}
-                    selfId={selfId}
-                    isHost={isHost}
-                    onKick={kickPlayer}
-                    onViewProfile={handleViewProfile}
-                  />
-                </>
-              )}
-              {error && <p className="mt-2 text-sm text-rose-deep">{error}</p>}
-            </div>
+                </div>
+                <p className="mx-auto mt-3 max-w-sm text-xs leading-relaxed text-ink-soft">
+                  O cantinho compartilhado de vocês, sempre no mesmo lugar.
+                </p>
+              </section>
+            ) : (
+              <div className="glass-panel room-panel w-full rounded-xl3 p-5 text-center">
+                <p className="text-xs text-ink-soft">Código da sala</p>
+                <p className="room-code font-display text-2xl font-semibold tracking-[0.3em] text-ink">{room.code}</p>
+                <p className="mt-1 text-xs text-ink-soft">Envie esse código para seu par entrar.</p>
+                <ConnectionThread
+                  players={room.players}
+                  maxPlayers={room.maxPlayers}
+                  selfId={selfId}
+                  isHost={isHost}
+                  onKick={kickPlayer}
+                  onViewProfile={handleViewProfile}
+                />
+                {error && <p className="mt-2 text-sm text-rose-deep">{error}</p>}
+              </div>
+            )}
 
             {isPersistentDuo && !showMinigames ? (
               <div className="flex w-full flex-col gap-5">
-                <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() => router.push("/mundo")}
-                    className="glass-panel relative flex min-h-40 flex-col items-center justify-center rounded-xl3 p-6 text-center transition-transform hover:-translate-y-1 hover:shadow-glow"
+                {(error || lobbyNotice) && (
+                  <p
+                    className="rounded-xl2 border border-rose/20 bg-rose/10 px-4 py-3 text-center text-sm font-medium text-rose-deep shadow-soft backdrop-blur-sm"
+                    role={error ? "alert" : "status"}
                   >
-                    <span className="text-4xl">🏡</span>
-                    <h2 className="mt-3 font-display text-lg font-semibold text-ink">Nosso Mundo</h2>
-                    <p className="mt-1 text-xs text-ink-soft">Entre sozinho ou encontre seu par no mundo compartilhado.</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (persistentAvailabilityMessage) {
-                        setLobbyNotice(persistentAvailabilityMessage);
-                        return;
-                      }
-                      setLobbyNotice(null);
-                      setShowMinigames(true);
-                    }}
-                    className="glass-panel flex min-h-40 flex-col items-center justify-center rounded-xl3 p-6 text-center transition-transform hover:-translate-y-1 hover:shadow-glow"
-                  >
-                    <span className="text-4xl">🎮</span>
-                    <h2 className="mt-3 font-display text-lg font-semibold text-ink">Minijogos</h2>
-                    <p className="mt-1 text-xs text-ink-soft">Escolham um jogo quando os dois estiverem disponíveis no lobby.</p>
-                  </button>
-                  {lobbyNotice && (
-                    <p className="rounded-xl2 bg-rose/10 px-4 py-3 text-center text-sm text-rose-deep sm:col-span-2" role="status">
-                      {lobbyNotice}
-                    </p>
-                  )}
-                </div>
+                    {error ?? lobbyNotice}
+                  </p>
+                )}
+
+                <PersistentDuoLobbyScene
+                  onWorldClick={() => {
+                    setLobbyNotice(null);
+                    router.push("/mundo");
+                  }}
+                  onMinigamesClick={() => {
+                    if (persistentAvailabilityMessage) {
+                      setLobbyNotice(persistentAvailabilityMessage);
+                      return;
+                    }
+                    setLobbyNotice(null);
+                    setShowMinigames(true);
+                  }}
+                />
+
                 <SharedDrawingBoard />
               </div>
             ) : isHost ? (

@@ -33,13 +33,13 @@ export default function PersistentDuoStatus({
         const profile = profiles.find((item) => item.id === accountId);
         const state = PRESENCE_LABELS[presence[accountId]];
         return (
-          <div key={accountId} className="rounded-xl2 border border-surface/70 bg-surface/55 p-3 text-left shadow-soft">
+          <div key={accountId} className="rounded-[22px] border border-rose/20 bg-surface/65 px-3 py-2.5 text-left shadow-soft backdrop-blur-md">
             <div className="flex items-center gap-2.5">
               <AccountAvatar
                 name={profile?.name ?? PERSISTENT_DUO_DEFAULT_NAMES[accountId]}
                 photo={profile?.photo}
                 accountId={accountId}
-                size={38}
+                size={42}
               />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-ink">
