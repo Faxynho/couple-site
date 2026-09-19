@@ -162,13 +162,30 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   };
 
   return (
-    <main className={`room-shell app-shell mx-auto flex min-h-screen max-w-md flex-col items-center ${isPersistentDuo ? "px-3 py-7 sm:px-5 sm:py-10" : "px-5 py-14"}`}>
-      <div className="flex w-full items-center justify-between">
-        <Logo size={40} />
-        <span className="font-display text-xs font-medium tracking-[0.15em] text-ink-soft">
-          {isPersistentDuo ? "NOSSO LOBBY" : `Sala ${room.code}`}
-        </span>
-      </div>
+    <main
+      className={
+        isPersistentDuo
+          ? "persistent-duo-lobby-shell relative isolate flex min-h-[100dvh] w-full flex-col items-center overflow-x-hidden bg-transparent"
+          : "room-shell app-shell mx-auto flex min-h-screen max-w-md flex-col items-center px-5 py-14"
+      }
+    >
+      {isPersistentDuo && (
+        <div
+          className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url("/images/Lobby_background.png")', backgroundPosition: "center top" }}
+          aria-hidden="true"
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/25" />
+        </div>
+      )}
+      {!isPersistentDuo && (
+        <div className="flex w-full items-center justify-between">
+          <Logo size={40} />
+          <span className="font-display text-xs font-medium tracking-[0.15em] text-ink-soft">
+            Sala {room.code}
+          </span>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {room.status === "lobby" ? (
@@ -178,63 +195,9 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.4 }}
-            className="mt-6 flex w-full flex-col items-center gap-6"
+            className={isPersistentDuo ? "relative z-10 flex w-full flex-col items-center" : "mt-6 flex w-full flex-col items-center gap-6"}
           >
-            {isPersistentDuo ? (
-              <section className="w-full text-center" aria-label="Informações do lobby">
-                <span className="text-3xl" aria-hidden="true">💞</span>
-                {editingLobbyName ? (
-                  <form
-                    className="mx-auto mt-3 flex w-full max-w-sm flex-col gap-2"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      void saveLobbyName();
-                    }}
-                  >
-                    <label htmlFor="persistent-duo-lobby-name" className="sr-only">Nome do lobby</label>
-                    <input
-                      id="persistent-duo-lobby-name"
-                      autoFocus
-                      maxLength={PERSISTENT_DUO_DISPLAY_NAME_MAX_LENGTH}
-                      value={lobbyNameDraft}
-                      onChange={(event) => setLobbyNameDraft(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Escape") cancelLobbyNameEdit();
-                      }}
-                      className="w-full rounded-xl2 border border-rose/30 bg-surface/70 px-3 py-2 text-center font-display text-lg font-semibold text-ink outline-none shadow-soft ring-rose/30 backdrop-blur-md focus:ring-2"
-                    />
-                    <div className="flex justify-center gap-2">
-                      <button type="submit" className="inline-flex min-h-9 items-center gap-1 rounded-full bg-rose px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90">
-                        <Check size={14} /> Salvar
-                      </button>
-                      <button type="button" onClick={cancelLobbyNameEdit} className="inline-flex min-h-9 items-center gap-1 rounded-full bg-surface px-3 text-xs font-semibold text-ink-soft transition-colors hover:text-ink">
-                        <X size={14} /> Cancelar
-                      </button>
-                    </div>
-                    {lobbyNameError && <p className="text-xs text-rose-deep" role="alert">{lobbyNameError}</p>}
-                  </form>
-                ) : (
-                  <div className="mt-2 flex max-w-full items-start justify-center gap-2">
-                    <h1 className="min-w-0 break-words font-display text-xl font-semibold text-ink">{lobbyDisplayName}</h1>
-                    <button
-                      type="button"
-                      onClick={beginLobbyNameEdit}
-                      aria-label="Editar nome do lobby"
-                      className="mt-1 shrink-0 rounded-full p-1.5 text-ink-soft transition-colors hover:bg-surface hover:text-ink"
-                    >
-                      <Pencil size={15} />
-                    </button>
-                  </div>
-                )}
-
-                <div className="mt-4">
-                  <PersistentDuoStatus presence={persistentPresence} />
-                </div>
-                <p className="mx-auto mt-3 max-w-sm text-xs leading-relaxed text-ink-soft">
-                  O cantinho compartilhado de vocês, sempre no mesmo lugar.
-                </p>
-              </section>
-            ) : (
+            {!isPersistentDuo && (
               <div className="glass-panel room-panel w-full rounded-xl3 p-5 text-center">
                 <p className="text-xs text-ink-soft">Código da sala</p>
                 <p className="room-code font-display text-2xl font-semibold tracking-[0.3em] text-ink">{room.code}</p>
@@ -252,35 +215,108 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             )}
 
             {isPersistentDuo && !showMinigames ? (
-              <div className="flex w-full flex-col gap-5">
-                {(error || lobbyNotice) && (
-                  <p
-                    className="rounded-xl2 border border-rose/20 bg-rose/10 px-4 py-3 text-center text-sm font-medium text-rose-deep shadow-soft backdrop-blur-sm"
-                    role={error ? "alert" : "status"}
-                  >
-                    {error ?? lobbyNotice}
-                  </p>
-                )}
-
-                <PersistentDuoLobbyScene
-                  onWorldClick={() => {
-                    setLobbyNotice(null);
-                    router.push("/mundo");
-                  }}
-                  onMinigamesClick={() => {
-                    if (persistentAvailabilityMessage) {
-                      setLobbyNotice(persistentAvailabilityMessage);
-                      return;
-                    }
-                    setLobbyNotice(null);
-                    setShowMinigames(true);
-                  }}
-                />
-
-                <SharedDrawingBoard />
-              </div>
-            ) : isHost ? (
               <div className="w-full">
+                <div className="relative h-[100dvh] w-full overflow-hidden">
+                  <PersistentDuoLobbyScene
+                    onWorldClick={() => {
+                      setLobbyNotice(null);
+                      router.push("/mundo");
+                    }}
+                    onMinigamesClick={() => {
+                      if (persistentAvailabilityMessage) {
+                        setLobbyNotice(persistentAvailabilityMessage);
+                        return;
+                      }
+                      setLobbyNotice(null);
+                      setShowMinigames(true);
+                    }}
+                  />
+
+                  <section
+                    className="pointer-events-none absolute inset-x-0 top-[5.5rem] z-30 px-4 text-center"
+                    aria-label="Informações do lobby"
+                  >
+                    <div className="pointer-events-auto mx-auto w-full max-w-sm">
+                      {editingLobbyName ? (
+                        <form
+                          className="mx-auto flex w-full flex-col gap-2"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void saveLobbyName();
+                          }}
+                        >
+                          <label htmlFor="persistent-duo-lobby-name" className="sr-only">Nome do lobby</label>
+                          <input
+                            id="persistent-duo-lobby-name"
+                            autoFocus
+                            maxLength={PERSISTENT_DUO_DISPLAY_NAME_MAX_LENGTH}
+                            value={lobbyNameDraft}
+                            onChange={(event) => setLobbyNameDraft(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Escape") cancelLobbyNameEdit();
+                            }}
+                            className="w-full rounded-full border border-white/25 bg-black/35 px-4 py-2 text-center font-display text-lg font-semibold text-white shadow-soft outline-none backdrop-blur-md ring-rose/40 placeholder:text-white/60 focus:ring-2"
+                          />
+                          <div className="flex justify-center gap-2">
+                            <button type="submit" className="inline-flex min-h-9 items-center gap-1 rounded-full bg-rose px-3 text-xs font-semibold text-white shadow-soft transition-opacity hover:opacity-90">
+                              <Check size={14} /> Salvar
+                            </button>
+                            <button type="button" onClick={cancelLobbyNameEdit} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-white/15 bg-black/30 px-3 text-xs font-semibold text-white/90 backdrop-blur-md">
+                              <X size={14} /> Cancelar
+                            </button>
+                          </div>
+                          {lobbyNameError && (
+                            <p className="rounded-full bg-black/45 px-3 py-1.5 text-xs font-medium text-rose-200 backdrop-blur-md" role="alert">
+                              {lobbyNameError}
+                            </p>
+                          )}
+                        </form>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-center gap-2">
+                            <h1 className="min-w-0 break-words font-display text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
+                              {lobbyDisplayName}
+                            </h1>
+                            <button
+                              type="button"
+                              onClick={beginLobbyNameEdit}
+                              aria-label="Editar nome do lobby"
+                              className="mt-0.5 shrink-0 rounded-full bg-black/20 p-1.5 text-white/85 backdrop-blur-sm transition-colors hover:bg-black/35 hover:text-white"
+                            >
+                              <Pencil size={15} />
+                            </button>
+                          </div>
+                          <p className="mx-auto mt-1 max-w-xs text-[11px] font-medium leading-relaxed text-white/80 drop-shadow-[0_1px_5px_rgba(0,0,0,0.8)]">
+                            O cantinho compartilhado de vocês, sempre no mesmo lugar.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </section>
+
+                  {(error || lobbyNotice) && (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-[7.4rem] z-30 px-4">
+                      <p
+                        className="pointer-events-auto mx-auto max-w-sm rounded-xl2 border border-white/15 bg-black/45 px-4 py-3 text-center text-sm font-semibold text-white shadow-soft backdrop-blur-md"
+                        role={error ? "alert" : "status"}
+                      >
+                        {error ?? lobbyNotice}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="pointer-events-none absolute inset-x-0 bottom-5 z-30 px-3">
+                    <div className="pointer-events-auto mx-auto w-full max-w-md">
+                      <PersistentDuoStatus presence={persistentPresence} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative z-20 mx-auto w-full max-w-md px-4 pb-12 pt-8 sm:max-w-2xl">
+                  <SharedDrawingBoard />
+                </div>
+              </div>
+            ) : isHost ? (\n              <div className={isPersistentDuo ? "mx-auto w-full max-w-md px-4 pb-12 pt-28 sm:max-w-3xl" : "w-full"}>
                 {isPersistentDuo && (
                   <button
                     type="button"
@@ -335,7 +371,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="glass-panel room-panel mt-6 w-full rounded-xl3 p-6 text-center"
+            className={`glass-panel room-panel w-full rounded-xl3 p-6 text-center ${isPersistentDuo ? "mx-auto mt-28 max-w-md" : "mt-6"}`}
           >
             <div className="flex items-center justify-between">
               <button
