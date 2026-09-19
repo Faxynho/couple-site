@@ -24,6 +24,7 @@ export default function DrawGuessGamePage({ params }: { params: { code: string }
   const photos = useAccountPhotos();
   const [guess, setGuess] = useState("");
   const [clockNow, setClockNow] = useState(Date.now());
+  const guessInputRef = useRef<HTMLInputElement | null>(null);
   const serverOffsetRef = useRef(0);
   const lastResultRoundRef = useRef(0);
   const victoryPlayedRef = useRef(false);
@@ -96,6 +97,7 @@ export default function DrawGuessGamePage({ params }: { params: { code: string }
     game.submitGuess(value);
     setGuess("");
     game.emitTyping("");
+    requestAnimationFrame(() => guessInputRef.current?.focus({ preventScroll: true }));
   };
 
   const goToConfig = () => {
@@ -159,6 +161,7 @@ export default function DrawGuessGamePage({ params }: { params: { code: string }
             <form onSubmit={submit} className={styles.guessForm}>
               <input
                 value={guess}
+                ref={guessInputRef}
                 onChange={(event) => { setGuess(event.target.value); game.emitTyping(event.target.value); }}
                 disabled={state.phase !== "playing" || state.pausedAt !== null}
                 maxLength={80}
@@ -167,7 +170,7 @@ export default function DrawGuessGamePage({ params }: { params: { code: string }
                 placeholder="Digite seu palpite..."
                 aria-label="Seu palpite"
               />
-              <button type="submit" disabled={!guess.trim() || state.phase !== "playing"}><Send size={16} /><span>Enviar</span></button>
+              <button type="submit" onPointerDown={(event) => event.preventDefault()} disabled={!guess.trim() || state.phase !== "playing"}><Send size={16} /><span>Enviar</span></button>
             </form>
           ) : (
             <div className={styles.typingMirror}>{game.typingText ? <><b>{playerName(state.guesserId)} está digitando:</b> {game.typingText}</> : <span>Esperando o palpite de {playerName(state.guesserId)}...</span>}</div>

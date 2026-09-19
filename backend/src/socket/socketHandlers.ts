@@ -30,6 +30,7 @@ import {
   DrawGuessState,
   getDrawGuessStateForPlayer,
   isValidDrawGuessCanvasAction,
+  isValidDrawGuessDuration,
   isValidDrawGuessRounds,
 } from "../games/drawguess/DrawGuessGame";
 import {
@@ -57,6 +58,7 @@ interface StartPayload {
   difficulty?: string;
   imageWidth?: number;
   imageHeight?: number;
+  drawGuessDuration?: string;
 }
 
 /** Extrai só os campos válidos de um payload de início/troca de imagem. */
@@ -1060,7 +1062,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         if (!room || !socket.data.playerId || !room.canManage(socket.data.playerId)) return;
         if (room.roomKind === "persistent-duo" && room.status !== "waiting" && room.status !== "ready") return;
 
-        const options: { colorMode?: string; seerId?: string | null; matchMode?: string; whoamiCategory?: string; chessPinkPlayerId?: string; rpgAppearance?: "man" | "woman"; boardRacePawnColor?: "blue" | "pink" } = {};
+        const options: { colorMode?: string; seerId?: string | null; matchMode?: string; whoamiCategory?: string; chessPinkPlayerId?: string; rpgAppearance?: "man" | "woman"; boardRacePawnColor?: "blue" | "pink"; drawGuessDuration?: string } = {};
         if (payload?.colorMode && isValidColorMode(payload.colorMode)) options.colorMode = payload.colorMode;
         if (payload?.seerId === null || (payload?.seerId && room.players.has(payload.seerId))) {
           options.seerId = payload.seerId;
@@ -1087,6 +1089,7 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         if (payload?.difficulty && isValidAirHockeyDifficulty(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         if (payload?.difficulty && isValidChessDifficulty(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         if (room.gameId === "drawguess" && payload?.difficulty && isValidDrawGuessRounds(payload.difficulty)) baseOptions.difficulty = String(payload.difficulty);
+        if (room.gameId === "drawguess" && payload?.drawGuessDuration && isValidDrawGuessDuration(payload.drawGuessDuration)) options.drawGuessDuration = String(payload.drawGuessDuration);
         if (room.gameId === "casino" && payload?.difficulty && isValidCasinoLength(payload.difficulty)) baseOptions.difficulty = payload.difficulty;
         // A escolha de cores só existe no Duo e só pode ser feita antes de
         // iniciar. O servidor valida a associação inteira, não o cliente.

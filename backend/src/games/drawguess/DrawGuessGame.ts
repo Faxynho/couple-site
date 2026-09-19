@@ -7,6 +7,7 @@ export const DRAW_GUESS_MAX_POINTS = 320;
 export const DRAW_GUESS_MAX_ACTION_BYTES = 48_000;
 export const DRAW_GUESS_MAX_CANVAS_ACTIONS = 240;
 export const DRAW_GUESS_ROUND_OPTIONS = [4, 6, 8] as const;
+export const DRAW_GUESS_DURATION_OPTIONS = [60, 120] as const;
 
 export type DrawGuessShape = "line" | "rectangle" | "ellipse" | "triangle";
 export interface DrawGuessPoint { x: number; y: number }
@@ -49,6 +50,7 @@ export interface DrawGuessState {
   mode: "duo";
   expectedPlayers: string[];
   configuredRounds: number;
+  roundDurationMs: number;
   totalRounds: number;
   currentRound: number;
   tiebreakPairs: number;
@@ -99,6 +101,11 @@ export function isValidDrawGuessRounds(value: unknown): value is 4 | 6 | 8 {
   return DRAW_GUESS_ROUND_OPTIONS.includes(parsed as 4 | 6 | 8);
 }
 
+export function isValidDrawGuessDuration(value: unknown): value is 60 | 120 {
+  const parsed = typeof value === "string" ? Number(value) : value;
+  return DRAW_GUESS_DURATION_OPTIONS.includes(parsed as 60 | 120);
+}
+
 export function normalizeDrawGuessAnswer(value: string): string {
   return value
     .normalize("NFD")
@@ -110,11 +117,12 @@ export function normalizeDrawGuessAnswer(value: string): string {
     .trim();
 }
 
-export function scoreDrawGuessRound(remainingMs: number) {
+export function scoreDrawGuessRound(remainingMs: number, roundDurationMs = DRAW_GUESS_ROUND_MS) {
   const remaining = Math.max(0, remainingMs);
-  if (remaining >= 50_000) return { guesser: 100, drawer: 50 };
-  if (remaining >= 35_000) return { guesser: 80, drawer: 40 };
-  if (remaining >= 20_000) return { guesser: 60, drawer: 30 };
+  const duration = Math.max(DRAW_GUESS_ROUND_MS, roundDurationMs);
+  if (remaining >= duration * (5 / 6)) return { guesser: 100, drawer: 50 };
+  if (remaining >= duration * (7 / 12)) return { guesser: 80, drawer: 40 };
+  if (remaining >= duration * (1 / 3)) return { guesser: 60, drawer: 30 };
   if (remaining > 0) return { guesser: 40, drawer: 20 };
   return { guesser: 0, drawer: 0 };
 }
@@ -191,7 +199,7 @@ function beginRound(state: DrawGuessState, round: number, now: number): DrawGues
     wordCategory: word.category,
     usedWordIds: [...state.usedWordIds, word.id],
     roundStartedAt: now,
-    roundDeadlineAt: now + DRAW_GUESS_ROUND_MS,
+    roundDeadlineAt: now + state.roundDurationMs,
     pausedAt: null,
     autoAdvanceAt: null,
     attempts: [],
@@ -206,7 +214,7 @@ function beginRound(state: DrawGuessState, round: number, now: number): DrawGues
 function closeRound(state: DrawGuessState, reason: DrawGuessRoundResult["reason"], now: number, attemptId: string | null): DrawGuessState {
   if (state.phase !== "playing") return state;
   const remainingMs = reason === "correct" ? Math.max(0, state.roundDeadlineAt - now) : 0;
-  const points = reason === "correct" ? scoreDrawGuessRound(remainingMs) : { guesser: 0, drawer: 0 };
+  const points = reason === "correct" ? scoreDrawGuessRound(remainingMs, state.roundDurationMs) : { guesser: 0, drawer: 0 };
   const guessTimeMs = reason === "correct" ? Math.max(0, now - state.roundStartedAt) : null;
   const next = structuredClone(state);
   next.phase = "roundResult";
@@ -274,6 +282,9 @@ export class DrawGuessGame implements GameEngine<DrawGuessState, DrawGuessAction
       ? (options!.playerIds as unknown[]).filter((id): id is string => typeof id === "string").slice(0, 2)
       : [];
     const configuredRounds = isValidDrawGuessRounds(options?.difficulty) ? Number(options!.difficulty) : 6;
+    const roundDurationMs = isValidDrawGuessDuration(options?.roundDurationSeconds)
+      ? Number(options!.roundDurationSeconds) * 1_000
+      : DRAW_GUESS_ROUND_MS;
     const now = typeof options?.now === "number" ? options.now : Date.now();
     const roles = chooseRoles(players, 1);
     const word = pickDrawGuessWord([]);
@@ -281,6 +292,7 @@ export class DrawGuessGame implements GameEngine<DrawGuessState, DrawGuessAction
       mode: "duo",
       expectedPlayers: players,
       configuredRounds,
+      roundDurationMs,
       totalRounds: configuredRounds,
       currentRound: 1,
       tiebreakPairs: 0,
@@ -292,7 +304,7 @@ export class DrawGuessGame implements GameEngine<DrawGuessState, DrawGuessAction
       wordCategory: word.category,
       usedWordIds: [word.id],
       roundStartedAt: now,
-      roundDeadlineAt: now + DRAW_GUESS_ROUND_MS,
+      roundDeadlineAt: now + roundDurationMs,
       pausedAt: null,
       autoAdvanceAt: null,
       startedAt: now,
@@ -384,7 +396,11 @@ export class DrawGuessGame implements GameEngine<DrawGuessState, DrawGuessAction
   }
 
   reset(state: DrawGuessState): DrawGuessState {
-    return this.createInitialState({ playerIds: [...state.expectedPlayers].reverse(), difficulty: state.configuredRounds });
+    return this.createInitialState({
+      playerIds: [...state.expectedPlayers].reverse(),
+      difficulty: state.configuredRounds,
+      roundDurationSeconds: state.roundDurationMs / 1_000,
+    });
   }
 
   releasePlayer(state: DrawGuessState): DrawGuessState {

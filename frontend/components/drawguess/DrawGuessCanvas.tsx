@@ -304,8 +304,8 @@ export default function DrawGuessCanvas({ actions, revision, preview, canDraw, c
           ref={canvasRef}
           width={DRAW_GUESS_LOGICAL_WIDTH}
           height={DRAW_GUESS_LOGICAL_HEIGHT}
-          className={`block max-h-full max-w-full select-none rounded-[1.05rem] bg-white ${canDraw ? "cursor-crosshair" : "cursor-default"}`}
-          style={{ aspectRatio: `${DRAW_GUESS_LOGICAL_WIDTH} / ${DRAW_GUESS_LOGICAL_HEIGHT}`, width: "auto", height: "auto", touchAction: canDraw ? "none" : "auto", WebkitUserSelect: "none", userSelect: "none" }}
+          className={`block h-full w-full select-none rounded-[1.05rem] bg-white ${canDraw ? "cursor-crosshair" : "cursor-default"}`}
+          style={{ width: "100%", height: "100%", touchAction: canDraw ? "none" : "auto", WebkitUserSelect: "none", userSelect: "none" }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={finishPointer}

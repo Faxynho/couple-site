@@ -36,6 +36,16 @@ test("pontua corretamente nas quatro faixas de tempo", () => {
   assert.deepEqual(scoreDrawGuessRound(25_000), { guesser: 60, drawer: 30 });
   assert.deepEqual(scoreDrawGuessRound(9_000), { guesser: 40, drawer: 20 });
   assert.deepEqual(scoreDrawGuessRound(0), { guesser: 0, drawer: 0 });
+  assert.deepEqual(scoreDrawGuessRound(100_000, 120_000), { guesser: 100, drawer: 50 });
+  assert.deepEqual(scoreDrawGuessRound(70_000, 120_000), { guesser: 80, drawer: 40 });
+});
+
+test("aceita rodadas de dois minutos e preserva a duração ao reiniciar", () => {
+  const game = new DrawGuessGame();
+  const initial = game.createInitialState({ playerIds: ["p1", "p2"], difficulty: "6", roundDurationSeconds: "120", now: 1_000 });
+  assert.equal(initial.roundDurationMs, 120_000);
+  assert.equal(initial.roundDeadlineAt, 121_000);
+  assert.equal(game.reset(initial).roundDurationMs, 120_000);
 });
 
 test("alterna desenhista e adivinhador a cada rodada", () => {

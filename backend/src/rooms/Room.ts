@@ -51,6 +51,8 @@ export class Room {
   pendingImageWidth: number | null = null;
   pendingImageHeight: number | null = null;
   pendingDifficulty = DEFAULT_PENDING_DIFFICULTY;
+  /** Específico do Desenhe & Adivinhe: segundos por rodada. */
+  pendingDrawGuessDuration = "60";
   /** Específico da Memória de Cores. */
   pendingColorMode = "competitive";
   pendingSeerId: string | null = null;
@@ -304,6 +306,7 @@ export class Room {
     this.pendingImageWidth = null;
     this.pendingImageHeight = null;
     this.pendingDifficulty = gameId === "termo" ? "one" : gameId === "whoami" ? "easy" : gameId === "casino" ? "normal" : gameId === "drawguess" ? "6" : DEFAULT_PENDING_DIFFICULTY;
+    this.pendingDrawGuessDuration = "60";
     this.pendingColorMode = "competitive";
     this.pendingSeerId = null;
     this.pendingMatchMode = this.defaultMatchModeFor(gameId);
@@ -359,6 +362,7 @@ export class Room {
     imageWidth?: number;
     imageHeight?: number;
     difficulty?: string;
+    drawGuessDuration?: string;
     colorMode?: string;
     seerId?: string | null;
     matchMode?: string;
@@ -371,6 +375,7 @@ export class Room {
     if (config.imageWidth !== undefined) this.pendingImageWidth = config.imageWidth;
     if (config.imageHeight !== undefined) this.pendingImageHeight = config.imageHeight;
     if (config.difficulty !== undefined) this.pendingDifficulty = config.difficulty;
+    if (config.drawGuessDuration !== undefined) this.pendingDrawGuessDuration = config.drawGuessDuration;
     if (config.colorMode !== undefined) this.pendingColorMode = config.colorMode;
     if (config.seerId !== undefined) this.pendingSeerId = config.seerId;
     if (config.matchMode !== undefined) this.pendingMatchMode = config.matchMode;
@@ -437,6 +442,7 @@ export class Room {
       imageWidth: this.pendingImageWidth ?? undefined,
       imageHeight: this.pendingImageHeight ?? undefined,
       difficulty: this.pendingDifficulty,
+      roundDurationSeconds: this.gameId === "drawguess" ? Number(this.pendingDrawGuessDuration) : undefined,
       // Cassino Solo sempre nasce contra o BOT. Não depende de um setConfig
       // chegar antes do start: o próprio tipo da sala define o modo seguro.
       mode: this.gameId === "casino"
@@ -537,6 +543,7 @@ export class Room {
       pendingImageWidth: this.pendingImageWidth,
       pendingImageHeight: this.pendingImageHeight,
       pendingDifficulty: this.pendingDifficulty,
+      pendingDrawGuessDuration: this.pendingDrawGuessDuration,
       pendingColorMode: this.pendingColorMode,
       pendingSeerId: this.pendingSeerId,
       pendingMatchMode: this.pendingMatchMode,

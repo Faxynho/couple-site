@@ -47,6 +47,8 @@ export interface RoomSnapshot {
   pendingImageWidth: number | null;
   pendingImageHeight: number | null;
   pendingDifficulty: string;
+  /** Segundos por rodada no Desenhe & Adivinhe. */
+  pendingDrawGuessDuration?: string;
   pendingColorMode: string;
   pendingSeerId: string | null;
   pendingMatchMode: string;
