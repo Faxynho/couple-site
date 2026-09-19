@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, Pencil, X } from "lucide-react";
+import { ArrowLeft, Check, Heart, Pencil, X } from "lucide-react";
 import Logo from "@/components/Logo";
 import Button from "@/components/Button";
 import ConnectionThread from "@/components/ConnectionThread";
@@ -216,7 +216,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
 
             {isPersistentDuo && !showMinigames ? (
               <div className="w-full">
-                <div className="relative h-[100dvh] w-full overflow-hidden">
+                <div className="relative w-full overflow-hidden" style={{ height: "clamp(34rem, 82dvh, 46rem)" }}>
                   <PersistentDuoLobbyScene
                     onWorldClick={() => {
                       setLobbyNotice(null);
@@ -255,7 +255,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                             onKeyDown={(event) => {
                               if (event.key === "Escape") cancelLobbyNameEdit();
                             }}
-                            className="w-full rounded-full border border-white/25 bg-black/35 px-4 py-2 text-center font-display text-lg font-semibold text-white shadow-soft outline-none backdrop-blur-md ring-rose/40 placeholder:text-white/60 focus:ring-2"
+                            className="w-full rounded-full border border-[#ff86b8]/55 bg-black/35 px-4 py-2.5 text-center font-display text-xl font-bold text-white shadow-[0_0_18px_rgba(255,91,160,0.28)] outline-none backdrop-blur-md ring-[#ff6da8]/45 placeholder:text-white/60 focus:ring-2"
                           />
                           <div className="flex justify-center gap-2">
                             <button type="submit" className="inline-flex min-h-9 items-center gap-1 rounded-full bg-rose px-3 text-xs font-semibold text-white shadow-soft transition-opacity hover:opacity-90">
@@ -273,20 +273,38 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                         </form>
                       ) : (
                         <>
-                          <div className="flex items-start justify-center gap-2">
-                            <h1 className="min-w-0 break-words font-display text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
+                          <div className="flex items-center justify-center gap-2.5">
+                            <Heart
+                              size={18}
+                              className="shrink-0 text-[#ff5fa2] drop-shadow-[0_0_8px_rgba(255,95,162,0.95)]"
+                              fill="currentColor"
+                              aria-hidden="true"
+                            />
+                            <h1 className="min-w-0 break-words font-display text-[1.7rem] font-extrabold leading-none tracking-[-0.025em] text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.8)] sm:text-3xl">
                               {lobbyDisplayName}
                             </h1>
+                            <Heart
+                              size={18}
+                              className="shrink-0 text-[#ff5fa2] drop-shadow-[0_0_8px_rgba(255,95,162,0.95)]"
+                              fill="currentColor"
+                              aria-hidden="true"
+                            />
                             <button
                               type="button"
                               onClick={beginLobbyNameEdit}
                               aria-label="Editar nome do lobby"
-                              className="mt-0.5 shrink-0 rounded-full bg-black/20 p-1.5 text-white/85 backdrop-blur-sm transition-colors hover:bg-black/35 hover:text-white"
+                              className="ml-0.5 shrink-0 rounded-full bg-black/20 p-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/35 hover:text-white"
                             >
                               <Pencil size={15} />
                             </button>
                           </div>
-                          <p className="mx-auto mt-1 max-w-xs text-[11px] font-medium leading-relaxed text-white/80 drop-shadow-[0_1px_5px_rgba(0,0,0,0.8)]">
+                          <p
+                            className="mx-auto mt-2 max-w-sm text-[1.15rem] font-semibold leading-tight tracking-[0.01em] text-[#ff9ac7]"
+                            style={{
+                              fontFamily: "var(--font-handwriting), cursive",
+                              textShadow: "0 0 10px rgba(255, 91, 160, 0.85), 0 2px 4px rgba(0, 0, 0, 0.82)",
+                            }}
+                          >
                             O cantinho compartilhado de vocês, sempre no mesmo lugar.
                           </p>
                         </>
@@ -295,7 +313,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                   </section>
 
                   {(error || lobbyNotice) && (
-                    <div className="pointer-events-none absolute inset-x-0 bottom-[7.4rem] z-30 px-4">
+                    <div className="pointer-events-none absolute inset-x-0 bottom-[7rem] z-30 px-4">
                       <p
                         className="pointer-events-auto mx-auto max-w-sm rounded-xl2 border border-white/15 bg-black/45 px-4 py-3 text-center text-sm font-semibold text-white shadow-soft backdrop-blur-md"
                         role={error ? "alert" : "status"}
@@ -305,14 +323,14 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                     </div>
                   )}
 
-                  <div className="pointer-events-none absolute inset-x-0 bottom-5 z-30 px-3">
+                  <div className="pointer-events-none absolute inset-x-0 bottom-4 z-30 px-3">
                     <div className="pointer-events-auto mx-auto w-full max-w-md">
                       <PersistentDuoStatus presence={persistentPresence} />
                     </div>
                   </div>
                 </div>
 
-                <div className="relative z-20 mx-auto w-full max-w-md px-4 pb-12 pt-8 sm:max-w-2xl">
+                <div className="relative z-20 mx-auto w-full max-w-md px-4 pb-12 pt-3 sm:max-w-2xl">
                   <SharedDrawingBoard />
                 </div>
               </div>
