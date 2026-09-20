@@ -19,6 +19,7 @@ import GameCatalogActions from "@/components/GameCatalogActions";
 import AccountPanel from "@/components/account/AccountPanel";
 import { fetchAccounts } from "@/lib/accountApi";
 import PersistentDuoStatus from "@/components/duo/PersistentDuoStatus";
+import DuoTogetherTimeBadge from "@/components/duo/DuoTogetherTimeBadge";
 import SharedDrawingBoard from "@/components/duo/SharedDrawingBoard";
 import PersistentDuoLobbyScene from "@/components/duo/PersistentDuoLobbyScene";
 import PersistentDuoMinigamesScene from "@/components/duo/PersistentDuoMinigamesScene";
@@ -341,7 +342,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                   </section>
 
                   {(error || lobbyNotice) && (
-                    <div className="pointer-events-none absolute inset-x-0 bottom-[7rem] z-30 px-4">
+                    <div className="pointer-events-none absolute inset-x-0 bottom-[10.8rem] z-30 px-4">
                       <p
                         className="pointer-events-auto mx-auto max-w-sm rounded-xl2 border border-white/15 bg-black/45 px-4 py-3 text-center text-sm font-semibold text-white shadow-soft backdrop-blur-md"
                         role={error ? "alert" : "status"}
@@ -350,6 +351,10 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                       </p>
                     </div>
                   )}
+
+                  <div className="pointer-events-none absolute inset-x-0 bottom-[6.6rem] z-30 px-4">
+                    <DuoTogetherTimeBadge />
+                  </div>
 
                   <div className="pointer-events-none absolute inset-x-0 bottom-4 z-30 px-3">
                     <div className="pointer-events-auto mx-auto w-full max-w-md">
