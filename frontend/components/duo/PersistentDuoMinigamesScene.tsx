@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { Dices, LayoutGrid } from "lucide-react";
 import PersistentDuoStatus from "@/components/duo/PersistentDuoStatus";
 import { GameId, PersistentDuoPresence } from "@/lib/types";
@@ -86,8 +87,9 @@ export default function PersistentDuoMinigamesScene({
       </div>
 
       {MINIGAME_HOTSPOTS.map((hotspot) => (
-        <button
+        <motion.button
           key={hotspot.gameId}
+          layoutId={"minigame-config-" + hotspot.gameId}
           type="button"
           onClick={() => onSelectGame(hotspot.gameId)}
           aria-label={"Abrir " + hotspot.label}
@@ -101,7 +103,7 @@ export default function PersistentDuoMinigamesScene({
           }}
         >
           <span className="sr-only">Abrir {hotspot.label}</span>
-        </button>
+        </motion.button>
       ))}
 
       <div className="absolute inset-x-0 bottom-[1.4%] z-30 flex justify-center px-4">

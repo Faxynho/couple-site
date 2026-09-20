@@ -71,7 +71,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   }, [room, router]);
 
   useEffect(() => {
-    if (room?.status && room.status !== "lobby") setShowMinigames(false);
+    if (room?.status === "playing" || room?.status === "finished") setShowMinigames(false);
   }, [room?.status]);
 
   useEffect(() => {
@@ -219,7 +219,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
         </div>
       )}
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode={isPersistentDuo ? "sync" : "wait"}>
         {room.status === "lobby" ? (
           <motion.div
             key="lobby"
@@ -444,13 +444,104 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             )}
 
           </motion.div>
+        ) : isPersistentDuo ? (
+          <motion.div
+            key="persistent-config"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 1 }}
+            className="relative z-10 w-full"
+          >
+            {showMinigames && minigamesLayout === "visual" ? (
+              <div className="pointer-events-none w-full" aria-hidden="true">
+                <PersistentDuoMinigamesScene
+                  presence={persistentPresence}
+                  onSelectGame={() => {}}
+                  onRandomGame={() => {}}
+                  onShowClassic={() => {}}
+                />
+              </div>
+            ) : (
+              <div
+                className="pointer-events-none min-h-[100dvh] w-full bg-cover bg-center"
+                style={{ backgroundImage: 'url("/images/lobby-background-minigames.jpg")' }}
+                aria-hidden="true"
+              />
+            )}
+
+            <motion.div
+              className="fixed inset-0 z-40 bg-[#100813]/60 backdrop-blur-[2px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              aria-hidden="true"
+            />
+
+            <motion.section
+              layoutId={game ? "minigame-config-" + game.id : undefined}
+              transition={{ type: "spring", stiffness: 260, damping: 30, mass: 0.82 }}
+              className="glass-panel fixed bottom-3 left-3 right-3 top-20 z-[45] mx-auto max-w-[640px] overflow-hidden rounded-[30px] border border-rose/35 bg-surface/95 text-center shadow-[0_28px_90px_rgba(0,0,0,0.48),0_0_34px_rgba(255,91,160,0.16)] backdrop-blur-xl"
+              aria-label={game ? `Configuração de ${game.name}` : "Configuração do jogo"}
+            >
+              <motion.div
+                className="h-full overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-7"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ delay: 0.12, duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => isHost && backToGameSelect()}
+                    disabled={!isHost}
+                    className="flex min-h-10 items-center gap-1.5 rounded-full px-2 text-xs font-semibold text-ink-soft transition-colors hover:bg-surface hover:text-ink disabled:opacity-40"
+                  >
+                    <ArrowLeft size={15} /> Trocar jogo
+                  </button>
+                  <span className="text-3xl drop-shadow-sm">{game?.emoji}</span>
+                </div>
+
+                <h1 className="mt-2 font-display text-2xl font-bold text-ink">{game?.name}</h1>
+                <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-ink-soft">
+                  Os dois podem ajustar as opções e iniciar a partida.
+                </p>
+
+                <div className="mt-5">
+                  <PersistentDuoStatus presence={persistentPresence} />
+                </div>
+
+                <div className="mt-3">
+                  <GameConfigPanel
+                    room={room}
+                    isHost={isHost}
+                    selfId={selfId}
+                    setConfig={setConfig}
+                    setBoardRacePawnColor={setBoardRacePawnColor}
+                  />
+                </div>
+
+                <Button onClick={handleStart} disabled={!bothConnected} className="mt-6 w-full">
+                  {bothConnected ? "Iniciar partida" : "Aguardando seu par"}
+                </Button>
+
+                {!bothConnected && (
+                  <p className="mt-2 text-xs text-ink-soft">
+                    {persistentAvailabilityMessage}
+                  </p>
+                )}
+
+                {error && <p className="mt-4 text-sm text-rose-deep">{error}</p>}
+              </motion.div>
+            </motion.section>
+          </motion.div>
         ) : (
           <motion.div
             key="config"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className={`glass-panel room-panel w-full rounded-xl3 p-6 text-center ${isPersistentDuo ? "mx-auto mt-28 max-w-md" : "mt-6"}`}
+            className="glass-panel room-panel mt-6 w-full rounded-xl3 p-6 text-center"
           >
             <div className="flex items-center justify-between">
               <button
@@ -465,21 +556,17 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
 
             <h1 className="mt-2 font-display text-xl font-semibold text-ink">{game?.name}</h1>
             <p className="mt-1 text-xs text-ink-soft">
-              {isPersistentDuo ? "Os dois podem ajustar as opções e iniciar a partida." : `Envie o código ${room.code} para seu par entrar — ou jogue sozinho.`}
+              {`Envie o código ${room.code} para seu par entrar — ou jogue sozinho.`}
             </p>
 
-            {isPersistentDuo ? (
-              <div className="mt-5"><PersistentDuoStatus presence={persistentPresence} /></div>
-            ) : (
-              <ConnectionThread
-                players={room.players}
-                maxPlayers={room.maxPlayers}
-                selfId={selfId}
-                isHost={isHost}
-                onKick={kickPlayer}
-                onViewProfile={handleViewProfile}
-              />
-            )}
+            <ConnectionThread
+              players={room.players}
+              maxPlayers={room.maxPlayers}
+              selfId={selfId}
+              isHost={isHost}
+              onKick={kickPlayer}
+              onViewProfile={handleViewProfile}
+            />
 
             <div className="mt-2">
               <GameConfigPanel room={room} isHost={isHost} selfId={selfId} setConfig={setConfig} setBoardRacePawnColor={setBoardRacePawnColor} />
@@ -487,12 +574,12 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
 
             {isHost ? (
               <>
-                <Button onClick={handleStart} disabled={(isPersistentDuo || requiresPair) && !bothConnected} className="mt-6 w-full">
-                  {bothConnected ? "Iniciar partida" : isPersistentDuo || requiresPair ? "Aguardando seu par" : "Jogar sozinho"}
+                <Button onClick={handleStart} disabled={requiresPair && !bothConnected} className="mt-6 w-full">
+                  {bothConnected ? "Iniciar partida" : requiresPair ? "Aguardando seu par" : "Jogar sozinho"}
                 </Button>
                 {!bothConnected && (
                   <p className="mt-2 text-xs text-ink-soft">
-                    {isPersistentDuo ? persistentAvailabilityMessage : requiresPair ? pairRequirementMessage : "Ainda esperando seu par entrar — ou comece agora e jogue sozinho."}
+                    {requiresPair ? pairRequirementMessage : "Ainda esperando seu par entrar — ou comece agora e jogue sozinho."}
                   </p>
                 )}
               </>
