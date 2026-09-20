@@ -225,8 +225,8 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             key="lobby"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.4 }}
+            exit={isPersistentDuo ? { opacity: 0.995, y: 0 } : { opacity: 0, y: -12 }}
+            transition={{ duration: isPersistentDuo ? 0.22 : 0.4 }}
             className={isPersistentDuo ? "relative z-10 flex w-full flex-col items-center" : "mt-6 flex w-full flex-col items-center gap-6"}
           >
             {!isPersistentDuo && (
@@ -452,36 +452,25 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             exit={{ opacity: 1 }}
             className="relative z-10 w-full"
           >
-            {showMinigames && minigamesLayout === "visual" ? (
-              <div className="pointer-events-none w-full" aria-hidden="true">
-                <PersistentDuoMinigamesScene
-                  presence={persistentPresence}
-                  onSelectGame={() => {}}
-                  onRandomGame={() => {}}
-                  onShowClassic={() => {}}
-                />
-              </div>
-            ) : (
-              <div
-                className="pointer-events-none min-h-[100dvh] w-full bg-cover bg-center"
-                style={{ backgroundImage: 'url("/images/lobby-background-minigames.jpg")' }}
-                aria-hidden="true"
-              />
-            )}
+            <div
+              className="pointer-events-none min-h-[100dvh] w-full bg-[#150c1b] bg-cover bg-top bg-no-repeat"
+              style={{ backgroundImage: 'url("/images/lobby-background-minigames.jpg")' }}
+              aria-hidden="true"
+            />
 
             <motion.div
-              className="fixed inset-0 z-40 bg-[#100813]/60 backdrop-blur-[2px]"
+              className="fixed inset-0 z-40 bg-[#100813]/62"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
               aria-hidden="true"
             />
 
             <motion.section
               layoutId={game ? "minigame-config-" + game.id : undefined}
-              transition={{ type: "spring", stiffness: 260, damping: 30, mass: 0.82 }}
-              className="glass-panel fixed bottom-3 left-3 right-3 top-20 z-[45] mx-auto max-w-[640px] overflow-hidden rounded-[30px] border border-rose/35 bg-surface/95 text-center shadow-[0_28px_90px_rgba(0,0,0,0.48),0_0_34px_rgba(255,91,160,0.16)] backdrop-blur-xl"
+              transition={{ type: "spring", stiffness: 340, damping: 36, mass: 0.72 }}
+              className="fixed bottom-3 left-3 right-3 top-20 z-[45] mx-auto max-w-[640px] overflow-hidden rounded-[30px] border border-rose/30 bg-surface text-center shadow-[0_18px_46px_rgba(0,0,0,0.38)] transform-gpu will-change-transform [contain:layout_paint]"
               aria-label={game ? `Configuração de ${game.name}` : "Configuração do jogo"}
             >
               <motion.div
@@ -489,7 +478,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                transition={{ delay: 0.12, duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: 0.06, duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div className="flex items-center justify-between">
                   <button
