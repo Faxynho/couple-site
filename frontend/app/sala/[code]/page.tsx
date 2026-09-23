@@ -23,6 +23,7 @@ import DuoTogetherTimeBadge from "@/components/duo/DuoTogetherTimeBadge";
 import SharedDrawingBoard from "@/components/duo/SharedDrawingBoard";
 import PersistentDuoLobbyScene from "@/components/duo/PersistentDuoLobbyScene";
 import PersistentDuoMinigamesScene from "@/components/duo/PersistentDuoMinigamesScene";
+import PetLobbyArea from "@/pets/components/PetLobbyArea";
 import {
   consumePersistentDuoMinigamesReturn,
   getPersistentDuoAvailabilityMessage,
@@ -249,7 +250,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
 
             {isPersistentDuo && !showMinigames ? (
               <div className="w-full">
-                <div className="relative w-full overflow-hidden" style={{ height: "clamp(34rem, 82dvh, 46rem)" }}>
+                <div className="relative h-[clamp(30rem,62dvh,38rem)] w-full overflow-hidden md:h-[clamp(34rem,82dvh,46rem)]">
                   <PersistentDuoLobbyScene
                     onWorldClick={() => {
                       setLobbyNotice(null);
@@ -352,14 +353,14 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                     </div>
                   )}
 
-                  <div className="pointer-events-none absolute inset-x-0 bottom-[6.6rem] z-30 px-4">
-                    <DuoTogetherTimeBadge />
-                  </div>
+                </div>
 
-                  <div className="pointer-events-none absolute inset-x-0 bottom-4 z-30 px-3">
-                    <div className="pointer-events-auto mx-auto w-full max-w-md">
-                      <PersistentDuoStatus presence={persistentPresence} />
-                    </div>
+                <PetLobbyArea roomCode={room.code} />
+
+                <div className="relative z-20 mx-auto w-full max-w-md px-4 pt-2 sm:max-w-2xl">
+                  <DuoTogetherTimeBadge />
+                  <div className="mt-3">
+                    <PersistentDuoStatus presence={persistentPresence} />
                   </div>
                 </div>
 
@@ -597,4 +598,3 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
     </main>
   );
 }
-
