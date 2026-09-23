@@ -40,11 +40,11 @@ export const PETS: readonly PetDefinition[] = [
     portraitHeight: 1536,
     animations: {
       idle: {
-        src: "/pets/max/idle.webp",
-        frames: 8,
+        src: "/pets/max/idle-breathing.webp",
+        frames: 16,
         frameWidth: 384,
-        frameHeight: 576,
-        duration: 2.2,
+        frameHeight: 384,
+        duration: 2.4,
       },
     },
   },

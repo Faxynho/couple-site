@@ -24,6 +24,7 @@ export default function PetSprite({ pet, animation = "idle", className = "" }: P
     <span
       className={`${styles.petSprite} ${className}`}
       style={style}
+      data-pet={pet.id}
       role="img"
       aria-label={pet.name}
     >
