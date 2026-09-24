@@ -245,144 +245,16 @@
 .petsAccessIcon { width: 38px; height: 38px; color: #f6d9e4; background: #9a526f; }
 .petsAccessArrow { margin-left: 4px; color: #8b4f68; }
 
-.roomInner { width: min(100%, 920px); padding-top: 10px; }
-.roomHeader { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 46px; }
-.roomHeaderBadge {
-  display: inline-flex; align-items: center; gap: 6px;
-  color: #f5d6df; font-family: var(--font-display), sans-serif;
-  font-size: 15px; font-weight: 600;
-}
-.roomLayout { width: 100%; margin: 8px auto 0; }
-.roomScene {
-  position: relative;
-  height: clamp(300px, 50dvh, 500px);
-  overflow: hidden;
-  border: 1px solid rgba(255, 220, 223, .3);
-  border-radius: 31px 31px 18px 18px;
-  background:
-    radial-gradient(ellipse at 49% 35%, #a88491 0, #846877 42%, transparent 77%),
-    repeating-linear-gradient(90deg, transparent 0 96px, rgba(255, 223, 230, .06) 97px 98px),
-    #785766;
-  box-shadow: 0 20px 40px rgba(7, 4, 11, .29), inset 0 3px rgba(255, 243, 232, .15);
-}
-.roomWallLine { position: absolute; inset: 67% 0 auto; height: 8px; background: #e2b4b3; box-shadow: 0 3px #6a4a56; }
-.roomFloor {
-  position: absolute; inset: calc(67% + 8px) 0 0;
-  background: repeating-linear-gradient(90deg, #977881 0 98px, #755864 99px 101px, #a3838a 102px 198px);
-}
-.roomFloor::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(rgba(42, 21, 33, .13), transparent 42%);
-}
-.roomRug {
-  position: absolute; left: 25%; right: 25%; bottom: -26px;
-  height: 90px; border: 4px solid #dda9b0; border-radius: 50%;
-  background: #bd8697; box-shadow: 0 10px 12px rgba(63, 33, 44, .3);
-}
-.roomWindow {
-  position: absolute; top: 11%; right: 10%;
-  width: clamp(65px, 14%, 100px); aspect-ratio: 1;
-  border: 7px solid #f0c5bd; border-radius: 42% 42% 7px 7px;
-  background: linear-gradient(#302a4a, #987891 77%, #e3a5ad);
-  box-shadow: 0 5px 8px rgba(40, 21, 35, .18), inset 0 0 0 2px #ad777e;
-}
-.roomWindow span { position: absolute; inset: 0 46% 0 auto; width: 6px; background: #efc5bd; }
-.roomWindow::after { content: "✦"; position: absolute; top: 9%; left: 20%; color: #f6e0d8; font-size: 12px; }
-.roomShelf {
-  position: absolute; left: 9%; top: 30%; width: 13%; height: 5px;
-  border-radius: 3px; background: #e3b6a9; box-shadow: 0 5px 5px rgba(36, 20, 32, .2);
-}
-.roomShelf span:first-child { position: absolute; bottom: 4px; left: 10%; width: 20px; height: 24px; border-radius: 10px 10px 3px 3px; background: #c9909d; }
-.roomShelf span:last-child { position: absolute; bottom: 4px; right: 15%; width: 19px; height: 19px; border-radius: 50%; background: #e6b7b4; }
-.roomBed {
-  position: absolute; bottom: 13%; left: 8%; width: 24%; height: 15%;
-  border: 8px solid #704858; border-top-width: 4px; border-radius: 48% 48% 38% 38%;
-  background: #e3b4b3; box-shadow: 0 7px 5px rgba(33, 16, 30, .22);
-}
-.roomBowl {
-  position: absolute; right: 12%; bottom: 10%; width: 11%; height: 7%;
-  border: 5px solid #e7bdad; border-radius: 16% 16% 45% 45%;
-  background: #9b6078; box-shadow: 0 5px 4px rgba(33, 16, 30, .25);
-}
-.roomBall {
-  position: absolute; right: 25%; bottom: 13%; width: 28px; height: 28px;
-  border: 4px solid #f1d6ba; border-radius: 50%; background: #aa7187;
-  box-shadow: inset -4px -4px #75465c, 0 4px 3px rgba(33, 16, 30, .22);
-}
-.roomPet {
-  position: absolute; z-index: 2; bottom: 10%; left: 50%; transform: translateX(-50%);
-  width: min(43%, 245px); max-height: 82%;
-  filter: drop-shadow(0 10px 6px rgba(34, 16, 28, .3));
-}
-.roomPet[data-pet="max"] { width: min(68%, 280px); }
-.roomName {
-  position: absolute; z-index: 3; left: 50%; bottom: 3%; transform: translateX(-50%);
-  padding: 3px 20px 4px; border: 1px solid #fce0dc;
-  border-radius: 30px; color: #5b3043; background: #f9d9d8;
-  box-shadow: 0 4px 7px rgba(50, 20, 40, .22);
-  font-family: var(--font-display), sans-serif; font-size: 16px; font-weight: 700;
-}
-.roomControls {
-  position: relative; z-index: 3;
-  margin: -2px auto 0; padding: 12px 12px 13px;
-  border: 1px solid rgba(255, 223, 226, .22); border-radius: 0 0 28px 28px;
-  background: #392734; box-shadow: 0 12px 25px rgba(12, 5, 17, .2);
-}
-.tabPanel {
-  display: flex; align-items: center; gap: 12px; min-height: 78px;
-  padding: 8px 14px; border-radius: 18px;
-  background: #513747; animation: panelIn .2s ease-out;
-}
-@keyframes panelIn { from { opacity: .5; transform: translateY(4px); } }
-.panelMark { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 13px; color: #f9d3d9; background: #80536a; }
-.panelCopy { min-width: 0; }
-.panelCopy h2 { font-family: var(--font-display), sans-serif; font-size: 16px; font-weight: 700; line-height: 1.1; }
-.panelCopy p { margin-top: 2px; color: #ebcbd4; font-size: 11px; line-height: 1.2; }
-.panelOptions { display: flex; flex-wrap: wrap; justify-content: end; gap: 5px; margin-left: auto; }
-.panelOptions span { padding: 4px 7px; border: 1px solid rgba(255, 214, 226, .32); border-radius: 13px; color: #f8d7df; font-size: 10px; }
-.tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 10px; }
-.tab {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  min-width: 0; min-height: 58px; border-radius: 15px;
-  color: #e1bccb; font-size: 10px; font-weight: 800;
-  transition: background .2s, color .2s, transform .2s;
-}
-.tab:hover { color: #fff4f1; background: rgba(255, 225, 233, .08); }
-.tab:active { transform: scale(.94); }
-.tabActive { color: #4b293b; background: #f4cbd4; box-shadow: 0 4px 8px rgba(25, 9, 19, .2); }
-.tabActive:hover { color: #4b293b; background: #ffe1e3; }
-
 @media (max-width: 500px) {
   .inner { padding-inline: 16px; }
-  .roomInner { padding: 58px 10px max(24px, env(safe-area-inset-bottom)); }
-  .roomHeader { padding-inline: 6px; }
-  .roomHeaderBadge { font-size: 12px; }
   .selectorHeading { margin-top: 18px; }
   .cardArt { height: clamp(185px, 52vw, 245px); }
   .cardFooter { padding: 12px; }
   .cardFooter strong { font-size: 22px; }
   .cardArrow { width: 32px; height: 32px; }
-  .roomScene { height: clamp(295px, 48dvh, 420px); }
-  .roomPet { width: min(51%, 215px); }
-  .roomPet[data-pet="max"] { width: min(68%, 280px); }
-  .roomBed { left: 4%; }
-  .roomBowl { right: 7%; }
-  .roomControls { padding-inline: 7px; }
-  .tabPanel { padding-inline: 10px; gap: 8px; }
-  .panelMark { width: 31px; height: 31px; }
-  .panelOptions { max-width: 43%; }
-  .panelOptions span { font-size: 9px; padding: 3px 5px; }
-  .tab { font-size: 9px; }
-}
-
-@media (max-height: 700px) and (max-width: 600px) {
-  .roomScene { height: 42dvh; min-height: 245px; }
-  .roomPet { max-height: 85%; width: min(43%, 165px); }
-  .roomPet[data-pet="max"] { width: min(66%, 230px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .petStrip { animation: none; will-change: auto; }
-  .tabPanel { animation: none; }
-  .petCard, .backLink, .petsAccess, .tab { transition: none; }
+  .petCard, .petsAccess { transition: none; }
 }

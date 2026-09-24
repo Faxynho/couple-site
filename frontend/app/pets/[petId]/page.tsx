@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, PawPrint } from "lucide-react";
 import { getPet, petRoomQuery } from "@/pets/config";
 import PetRoom from "@/pets/components/PetRoom";
-import styles from "@/pets/pets.module.css";
+import styles from "@/pets/PetRoom.module.css";
 
 export default function PetRoomPage({
   params,
@@ -19,8 +19,8 @@ export default function PetRoomPage({
     <main className={styles.shell}>
       <div className={styles.roomInner}>
         <header className={styles.roomHeader}>
-          <Link href={`/pets${petRoomQuery(searchParams.sala)}`} className={styles.backLink}><ArrowLeft size={17} /> Nossos Pets</Link>
-          <span className={styles.roomHeaderBadge}><PawPrint size={14} /> Quartinho de {pet.name}</span>
+          <Link href={`/pets${petRoomQuery(searchParams.sala)}`} className={styles.backLink} aria-label="Voltar para Nossos Pets"><ArrowLeft size={19} /><span className={styles.backText}>Nossos Pets</span></Link>
+          <span className={styles.roomHeaderBadge}><PawPrint size={13} /> {pet.name}</span>
         </header>
         <PetRoom pet={pet} />
       </div>
