@@ -28,23 +28,54 @@
   background-size: 100% 100%;
   pointer-events: none;
 }
+.rigHeadGroup {
+  position: absolute;
+  inset: 0;
+  animation: maxHead var(--rig-duration) ease-in-out infinite;
+  will-change: transform;
+  pointer-events: none;
+}
 .rigBreath {
-  transform-origin: 50% 84%;
   animation: maxBreath var(--rig-duration) ease-in-out infinite;
   will-change: transform;
 }
-.rigHead {
-  transform-origin: 50% 90%;
-  animation: maxHead var(--rig-duration) ease-in-out infinite;
+.rigEarLeft {
+  animation: maxEarLeft var(--rig-duration) ease-in-out infinite;
+  will-change: transform;
+}
+.rigEarRight {
+  animation: maxEarRight var(--rig-duration) ease-in-out infinite;
+  will-change: transform;
+}
+.rigTail {
+  animation: maxTail var(--rig-duration) ease-in-out infinite;
   will-change: transform;
 }
 @keyframes maxBreath {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.014, 1.004); }
+  50% { transform: scale(1.03, 1.015); }
 }
 @keyframes maxHead {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-.7%); }
+  50% { transform: translateY(calc(-1 * clamp(3.2px, .97vw, 4px))); }
+}
+@keyframes maxEarLeft {
+  0%, 18%, 100% { transform: rotate(0); }
+  57% { transform: rotate(-1.2deg); }
+  80% { transform: rotate(.15deg); }
+}
+@keyframes maxEarRight {
+  0%, 22%, 100% { transform: rotate(0); }
+  54% { transform: rotate(1.1deg); }
+  78% { transform: rotate(-.15deg); }
+}
+@keyframes maxTail {
+  0%, 26%, 100% { transform: rotate(0); }
+  62% { transform: rotate(1.3deg); }
+}
+@keyframes maxBreathReduced {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.009, 1.004); }
 }
 
 .shell {
@@ -283,6 +314,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .petStrip { animation: none; will-change: auto; }
-  .rigBreath, .rigHead { animation: none; will-change: auto; }
+  /* The global reduced-motion rule forces every animation to 0.01ms once.
+     Override that only for Max's gentler breathing cycle. */
+  .rigRoot .rigBreath {
+    animation-name: maxBreathReduced;
+    animation-duration: 5.6s !important;
+    animation-iteration-count: infinite !important;
+    will-change: auto;
+  }
+  .rigHeadGroup, .rigEarLeft, .rigEarRight, .rigTail { animation: none; will-change: auto; }
   .petCard, .petsAccess { transition: none; }
 }
