@@ -469,8 +469,184 @@
 .carePanel h2 { font-family: var(--font-display), sans-serif; font-size: 19px; font-weight: 700; }
 .carePanel p { margin-top: 3px; color: #9d7880; font-size: 12px; }
 
+
+/* Tema escuro do quartinho: mantém exatamente o mesmo layout e troca apenas
+   a atmosfera, materiais e contraste quando o tema global está em dark. */
+:global(html.dark) .shell {
+  color: #f4e7ee;
+  background:
+    radial-gradient(ellipse at 50% 8%, rgba(112, 65, 101, .32), transparent 58%),
+    #160f19;
+}
+
+:global(html.dark) .roomInner {
+  background: #211721;
+  box-shadow: 0 0 54px rgba(0, 0, 0, .5);
+}
+
+:global(html.dark) .backLink {
+  border-color: rgba(236, 181, 207, .18);
+  color: #f0d8e5;
+  background: rgba(43, 28, 43, .88);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .2);
+}
+:global(html.dark) .backLink:hover { background: #392638; }
+
+:global(html.dark) .roomHeaderBadge {
+  color: #f3d8e5;
+  background: rgba(49, 31, 47, .84);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .22);
+}
+
+:global(html.dark) .scene {
+  background:
+    radial-gradient(ellipse at 50% 23%, rgba(108, 76, 103, .48), transparent 58%),
+    linear-gradient(180deg, #4b3748 0%, #392a3a 59%, #30222f 100%);
+}
+:global(html.dark) .scene::after {
+  background: #725261;
+  box-shadow: 0 3px 0 #4b3542;
+}
+:global(html.dark) .wallDetail {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 82px, rgba(244, 208, 226, .035) 83px 84px),
+    linear-gradient(90deg, rgba(122, 78, 105, .2), transparent 35%, transparent 65%, rgba(122, 78, 105, .2));
+}
+
+:global(html.dark) .window {
+  border-color: #c9a6b7;
+  background: #343554;
+  box-shadow: 0 7px 0 #6c4b5d, 0 12px 24px rgba(0, 0, 0, .28), inset 0 0 0 2px #80697d;
+}
+:global(html.dark) .windowSky {
+  background:
+    radial-gradient(circle at 74% 27%, #f1d9bc 0 6%, rgba(241, 217, 188, .18) 7% 11%, transparent 12%),
+    radial-gradient(circle at 25% 23%, rgba(255,255,255,.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 55% 38%, rgba(255,255,255,.58) 0 1px, transparent 2px),
+    linear-gradient(#252846 10%, #424260 66%, #445048 66%);
+}
+:global(html.dark) .windowSky::after { background: #4d5e52; }
+:global(html.dark) .windowCross,
+:global(html.dark) .windowCross::after {
+  background: #c5a4b2;
+  box-shadow: 0 2px 1px rgba(25, 13, 25, .28);
+}
+:global(html.dark) .curtainLeft,
+:global(html.dark) .curtainRight {
+  background: #81586f;
+  box-shadow: inset -6px 0 rgba(33, 18, 32, .16);
+}
+
+:global(html.dark) .wallFrame {
+  border-color: #7f5a66;
+  color: #d497ae;
+  background: #493442;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, .25);
+}
+:global(html.dark) .wallShelf {
+  background: #775667;
+  box-shadow: 0 5px 7px rgba(0, 0, 0, .22);
+}
+:global(html.dark) .wallShelf span:first-child { background: #925d72; }
+:global(html.dark) .wallShelf span:last-child { background: #a98872; }
+
+:global(html.dark) .floor {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 104px, rgba(17, 10, 18, .2) 105px 107px),
+    repeating-linear-gradient(0deg, transparent 0 72px, rgba(17, 10, 18, .16) 73px 75px),
+    #654959;
+}
+:global(html.dark) .floor::after {
+  background: linear-gradient(rgba(15, 8, 16, .22), transparent 28%);
+}
+:global(html.dark) .rug {
+  border-color: #8f6579;
+  background: #8a6477;
+  box-shadow: 0 9px 0 rgba(18, 9, 17, .2), inset 0 0 0 5px rgba(222, 184, 200, .12);
+}
+:global(html.dark) .petShadow { background: rgba(16, 8, 14, .3); }
+:global(html.dark) .scene .pet { filter: drop-shadow(0 8px 4px rgba(12, 6, 12, .3)); }
+
+:global(html.dark) .plant {
+  background: #76505d;
+  box-shadow: inset 0 7px #9a6974, 0 5px 7px rgba(0, 0, 0, .22);
+}
+:global(html.dark) .plant span { background: #566e5d; }
+:global(html.dark) .petBed {
+  border-color: #795160;
+  background: #9b6b76;
+  box-shadow: 0 8px 0 rgba(15, 8, 14, .24), inset 0 5px #b9878e;
+}
+:global(html.dark) .petBowl {
+  border-color: #aa8d78;
+  background: #734b5e;
+  box-shadow: 0 5px 3px rgba(0, 0, 0, .24);
+}
+:global(html.dark) .petBall {
+  border-color: #bca08c;
+  background: #76586f;
+  box-shadow: inset -5px -5px #554052, 0 4px 3px rgba(0, 0, 0, .22);
+}
+
+:global(html.dark) .drawer {
+  border-top-color: #715160;
+  background: #241923;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, .28);
+}
+:global(html.dark) .drawer::before { background: #8d6576; }
+:global(html.dark) .tabs {
+  border-bottom-color: #4c3745;
+  background: #342532;
+}
+:global(html.dark) .tab { color: #c4a5b4; }
+:global(html.dark) .tab:hover { color: #f3dce7; }
+:global(html.dark) .tabActive {
+  color: #f1dbe6;
+  background: #241923;
+  box-shadow: 0 -3px 0 #a36983 inset;
+}
+:global(html.dark) .drawerHint { color: #c59eaf; }
+:global(html.dark) .drawerScroll { scrollbar-color: #765467 transparent; }
+
+:global(html.dark) .itemSlot {
+  border-color: rgba(230, 190, 210, .1);
+  color: #e3cbd6;
+  background: #33252f;
+}
+:global(html.dark) .tonepeach { background: #3b2a2d; }
+:global(html.dark) .tonerose { background: #3b2833; }
+:global(html.dark) .tonesage { background: #30352f; }
+:global(html.dark) .tonelilac { background: #342b39; }
+:global(html.dark) .emptySlot {
+  color: #866d7a;
+  background: #2b2029;
+}
+:global(html.dark) .itemIllustration { color: #c98da5; }
+:global(html.dark) .tonesage .itemIllustration { color: #90a893; }
+:global(html.dark) .tonepeach .itemIllustration { color: #bd9178; }
+:global(html.dark) .tonelilac .itemIllustration { color: #aa91b0; }
+
+:global(html.dark) .filterStrip { border-bottom-color: #44313e; }
+:global(html.dark) .filter {
+  border-color: #59404e;
+  color: #c6a9b6;
+  background: #2e222c;
+}
+:global(html.dark) .filterActive {
+  border-color: #a36b84;
+  color: #f0d4e1;
+  background: #503447;
+}
+:global(html.dark) .careIllustration {
+  border-color: #715064;
+  color: #d494ae;
+  background: #342631;
+}
+:global(html.dark) .careIllustration svg:last-child { color: #b6997d; }
+:global(html.dark) .carePanel p { color: #b996a6; }
+
 @media (max-width: 600px) {
-  .roomHeader { top: max(64px, calc(env(safe-area-inset-top) + 64px)); left: 12px; right: 12px; }
+  .roomHeader { top: max(15px, env(safe-area-inset-top)); left: 12px; right: 12px; }
   .backLink { justify-content: center; width: 42px; height: 42px; padding: 0; }
   .backText { display: none; }
   .roomHeaderBadge { font-size: 15px; }
