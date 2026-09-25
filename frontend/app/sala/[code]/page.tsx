@@ -60,9 +60,6 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   const [lobbyNameError, setLobbyNameError] = useState<string | null>(null);
   const [viewedProfile, setViewedProfile] = useState<Awaited<ReturnType<typeof fetchAccounts>>[number] | null>(null);
   const profileRequestRef = useRef(0);
-  const lobbyForwardVideoRef = useRef<HTMLVideoElement | null>(null);
-  const lobbyReverseVideoRef = useRef<HTMLVideoElement | null>(null);
-  const [lobbyVideoDirection, setLobbyVideoDirection] = useState<"forward" | "reverse">("forward");
   const filteredGames = useMemo(() => {
     const query = normalizeGameSearch(search);
     if (!query) return GAMES;
@@ -168,21 +165,6 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
     if (gameToPlay) selectGame(gameToPlay.id);
   };
 
-  const playLobbyVideo = (direction: "forward" | "reverse") => {
-    const nextVideo = direction === "forward" ? lobbyForwardVideoRef.current : lobbyReverseVideoRef.current;
-    const previousVideo = direction === "forward" ? lobbyReverseVideoRef.current : lobbyForwardVideoRef.current;
-    if (!nextVideo) return;
-
-    nextVideo.currentTime = 0;
-    void nextVideo.play().then(() => {
-      setLobbyVideoDirection(direction);
-      if (previousVideo) {
-        previousVideo.pause();
-        previousVideo.currentTime = 0;
-      }
-    }).catch(() => undefined);
-  };
-
   const handleViewProfile = async (player: Player) => {
     // Visitantes sem uma conta fixa não têm um perfil persistente para abrir.
     if (!player.accountId || player.id === selfId) return;
@@ -208,25 +190,14 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
       {isPersistentDuo && !showMinigames && (
         <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
           <video
-            ref={lobbyForwardVideoRef}
-            className={`absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-75 ${lobbyVideoDirection === "forward" ? "opacity-100" : "opacity-0"}`}
+            className="absolute inset-0 h-full w-full object-cover object-top"
             autoPlay
+            loop
             muted
             playsInline
             preload="auto"
-            onEnded={() => playLobbyVideo("reverse")}
           >
             <source src="/vídeos/lobby-background-video.mp4" type="video/mp4" />
-          </video>
-          <video
-            ref={lobbyReverseVideoRef}
-            className={`absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-75 ${lobbyVideoDirection === "reverse" ? "opacity-100" : "opacity-0"}`}
-            muted
-            playsInline
-            preload="auto"
-            onEnded={() => playLobbyVideo("forward")}
-          >
-            <source src="/vídeos/lobby-background-video-reverse.mp4" type="video/mp4" />
           </video>
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/25" />
         </div>
