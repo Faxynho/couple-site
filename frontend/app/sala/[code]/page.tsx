@@ -188,11 +188,17 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
       }
     >
       {isPersistentDuo && !showMinigames && (
-        <div
-          className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url("/images/Lobby_background.png")', backgroundPosition: "center top" }}
-          aria-hidden="true"
-        >
+        <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+          <video
+            className="absolute inset-0 h-full w-full object-cover object-top"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+          >
+            <source src="/vídeos/lobby-background-video.mp4" type="video/mp4" />
+          </video>
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/25" />
         </div>
       )}
