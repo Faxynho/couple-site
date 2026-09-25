@@ -45,6 +45,12 @@
   backface-visibility: hidden;
 }
 
+.rigHeadLife {
+  /* Full-canvas group pivoted at Max's neck so rotation describes a small arc
+     instead of translating the head sideways. */
+  transform-origin: 54.5% 42%;
+}
+
 /* Normal Max idle motion is driven by the Web Animations API in PetRig so
    every breath, ear flick, head sway and tail movement can vary naturally.
    These classes only reserve compositor layers; no React render happens per frame. */

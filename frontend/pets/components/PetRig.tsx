@@ -114,8 +114,6 @@ export default function PetRig({
       const scaleY = randomBetween(1.028, 1.043);
       const chestLift = randomBetween(0.8, 1.45);
       const headLift = randomBetween(4.5, 6.2);
-      const breathTilt = randomSign() * randomBetween(0.05, 0.16);
-
       const chestAnimation = play(
         chest,
         [
@@ -135,12 +133,12 @@ export default function PetRig({
       play(
         headBreath,
         [
-          { offset: 0, transform: "translateY(0) rotate(0deg)" },
+          { offset: 0, transform: "translateY(0)" },
           {
             offset: peak,
-            transform: `translateY(-${headLift.toFixed(2)}px) rotate(${breathTilt.toFixed(3)}deg)`,
+            transform: `translateY(-${headLift.toFixed(2)}px)`,
           },
-          { offset: 1, transform: "translateY(0) rotate(0deg)" },
+          { offset: 1, transform: "translateY(0)" },
         ],
         {
           duration: targetDuration,
@@ -158,35 +156,25 @@ export default function PetRig({
       }
     };
 
+    // Slow neck-pivot arc: rotation only, no horizontal translation. The head
+    // follows a smooth left/center/right/center path while breathing happens on
+    // the parent layer, so the two motions compose without a sideways twitch.
     const swayHead = () => {
-      const direction = randomSign();
-      const rotation = randomBetween(0.45, 0.85) * direction;
-      const travel = randomBetween(1.1, 2.3) * direction;
-      const durationMs = randomBetween(1050, 1850);
-
-      const headAnimation = play(
+      play(
         headLife,
         [
-          { offset: 0, transform: "translateX(0) rotate(0deg)" },
-          {
-            offset: 0.42,
-            transform: `translateX(${travel.toFixed(2)}px) rotate(${rotation.toFixed(3)}deg)`,
-          },
-          {
-            offset: 0.72,
-            transform: `translateX(${(travel * -0.18).toFixed(2)}px) rotate(${(rotation * -0.16).toFixed(3)}deg)`,
-          },
-          { offset: 1, transform: "translateX(0) rotate(0deg)" },
+          { offset: 0, transform: "rotate(0deg)" },
+          { offset: 0.25, transform: "rotate(-1.2deg)" },
+          { offset: 0.5, transform: "rotate(0deg)" },
+          { offset: 0.75, transform: "rotate(1.2deg)" },
+          { offset: 1, transform: "rotate(0deg)" },
         ],
-        { duration: durationMs, easing: "ease-in-out" },
+        {
+          duration: 8200,
+          iterations: Infinity,
+          easing: "ease-in-out",
+        },
       );
-
-      if (headAnimation) {
-        headAnimation.onfinish = () => {
-          runningAnimations.delete(headAnimation);
-          later(swayHead, randomBetween(1900, 4700));
-        };
-      }
     };
 
     const flickEar = (ear: HTMLElement | null, side: "left" | "right", strength = 1) => {
@@ -229,51 +217,55 @@ export default function PetRig({
       later(moveEars, randomBetween(850, 2600));
     };
 
+    let tailAngle = 0;
+    let tailDirection = randomSign();
+
+    // The tail never stops. Each completed half-swing becomes the exact start
+    // of the next one; only the next amplitude changes, which keeps movement
+    // continuous while still feeling less mechanical.
     const wagTail = () => {
-      const direction = randomSign();
-      const strength = Math.random();
+      if (!tail || !active) return;
+
+      const strengthRoll = Math.random();
       const amplitude =
-        strength < 0.3
-          ? randomBetween(2.4, 3.6)
-          : strength < 0.82
-            ? randomBetween(3.8, 5.8)
-            : randomBetween(6.0, 7.4);
-      const signedAmplitude = amplitude * direction;
-      const durationMs = randomBetween(850, 1650);
-      const enthusiastic = strength > 0.78;
+        strengthRoll < 0.24
+          ? randomBetween(3.4, 4.4)
+          : strengthRoll < 0.78
+            ? randomBetween(4.7, 6.2)
+            : randomBetween(6.5, 8.0);
+      const targetAngle = amplitude * tailDirection;
+      const angularDistance = Math.abs(targetAngle - tailAngle);
+      const durationMs = Math.max(560, Math.min(980, 470 + angularDistance * 34));
 
-      const keyframes: Keyframe[] = enthusiastic
-        ? [
-            { offset: 0, transform: "rotate(0deg)" },
-            { offset: 0.25, transform: `rotate(${signedAmplitude.toFixed(2)}deg)` },
-            { offset: 0.5, transform: `rotate(${(-signedAmplitude * 0.7).toFixed(2)}deg)` },
-            { offset: 0.72, transform: `rotate(${(signedAmplitude * 0.5).toFixed(2)}deg)` },
-            { offset: 1, transform: "rotate(0deg)" },
-          ]
-        : [
-            { offset: 0, transform: "rotate(0deg)" },
-            { offset: 0.42, transform: `rotate(${signedAmplitude.toFixed(2)}deg)` },
-            { offset: 0.72, transform: `rotate(${(-signedAmplitude * 0.28).toFixed(2)}deg)` },
-            { offset: 1, transform: "rotate(0deg)" },
-          ];
-
-      const tailAnimation = play(tail, keyframes, {
-        duration: durationMs,
-        easing: "ease-in-out",
-      });
+      const tailAnimation = play(
+        tail,
+        [
+          { transform: `rotate(${tailAngle.toFixed(2)}deg)` },
+          { transform: `rotate(${targetAngle.toFixed(2)}deg)` },
+        ],
+        {
+          duration: durationMs,
+          easing: "cubic-bezier(.45,.03,.55,.97)",
+          fill: "forwards",
+        },
+      );
 
       if (tailAnimation) {
         tailAnimation.onfinish = () => {
           runningAnimations.delete(tailAnimation);
-          later(wagTail, randomBetween(1250, 4300));
+          tailAngle = targetAngle;
+          tail.style.transform = `rotate(${tailAngle.toFixed(2)}deg)`;
+          tailAnimation.cancel();
+          tailDirection *= -1;
+          if (active) wagTail();
         };
       }
     };
 
     breathe();
-    later(swayHead, randomBetween(900, 2200));
+    swayHead();
     later(moveEars, randomBetween(450, 1300));
-    later(wagTail, randomBetween(800, 2300));
+    wagTail();
 
     return () => {
       active = false;
