@@ -3,10 +3,11 @@
 import { useState } from "react";
 import {
   Armchair, BedDouble, Bone, CircleDot, Crown, Grid3X3, HandHeart,
-  Heart, Lamp, Paintbrush, PawPrint, Shirt, Sparkles, Square, ToyBrick,
+  Heart, Paintbrush, PawPrint, Shirt, Square, ToyBrick,
   Utensils, Cookie, type LucideIcon,
 } from "lucide-react";
 import type { PetDefinition } from "../config";
+import { PET_ROOM_DECORATIONS, type Decoration, type PetRoomSlots } from "../petRoomDecorations";
 import PetItemGrid, { type PetItemPreview } from "./PetItemGrid";
 import styles from "../PetRoom.module.css";
 
@@ -26,12 +27,9 @@ const STYLE_FILTERS: readonly { label: string; icon: LucideIcon }[] = [
 ];
 const ROOM_FILTERS: readonly { label: string; icon: LucideIcon }[] = [
   { label: "Todos", icon: Grid3X3 },
-  { label: "Camas", icon: BedDouble },
-  { label: "Tapetes", icon: Square },
   { label: "Parede", icon: Paintbrush },
-  { label: "Janelas", icon: Square },
+  { label: "Chão", icon: Square },
   { label: "Móveis", icon: Armchair },
-  { label: "Decoração", icon: Sparkles },
 ];
 
 const FOOD: readonly PetItemPreview[] = [
@@ -49,15 +47,6 @@ const STYLE: readonly PetItemPreview[] = [
   { label: "Acessório", icon: Crown, tone: "peach", category: "Cabeça" },
   { label: "Coleira", icon: CircleDot, tone: "sage", category: "Coleiras" },
 ];
-const FURNITURE: readonly PetItemPreview[] = [
-  { label: "Caminha", icon: BedDouble, tone: "rose", category: "Camas" },
-  { label: "Tapete", icon: Square, tone: "peach", category: "Tapetes" },
-  { label: "Parede", icon: Paintbrush, tone: "lilac", category: "Parede" },
-  { label: "Janela", icon: Square, tone: "sage", category: "Janelas" },
-  { label: "Móvel", icon: Armchair, tone: "peach", category: "Móveis" },
-  { label: "Enfeite", icon: Lamp, tone: "rose", category: "Decoração" },
-];
-
 function FilterStrip({
   label,
   options,
@@ -87,7 +76,13 @@ function FilterStrip({
   );
 }
 
-export default function PetRoomDrawer({ pet }: { pet: PetDefinition }) {
+export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
+  pet: PetDefinition;
+  slots: PetRoomSlots;
+  ready: boolean;
+  error: string;
+  onToggle: (decoration: Decoration) => void;
+}) {
   const [activeTab, setActiveTab] = useState<TabId>("food");
   const [styleFilter, setStyleFilter] = useState("Roupas");
   const [roomFilter, setRoomFilter] = useState("Todos");
@@ -96,7 +91,7 @@ export default function PetRoomDrawer({ pet }: { pet: PetDefinition }) {
   const items = activeTab === "food" ? FOOD
     : activeTab === "play" ? TOYS
       : activeTab === "style" ? STYLE.filter((item) => item.category === styleFilter)
-        : activeTab === "room" ? FURNITURE.filter((item) => roomFilter === "Todos" || item.category === roomFilter)
+        : activeTab === "room" ? []
           : [];
 
   return (
@@ -140,14 +135,34 @@ export default function PetRoomDrawer({ pet }: { pet: PetDefinition }) {
               <FilterStrip label="Categorias de visual" options={STYLE_FILTERS} selected={styleFilter} onSelect={setStyleFilter} />
             )}
             {activeTab === "room" && (
-              <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter} />
+              <>
+                <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter} />
+                <p className={styles.drawerHint}>Toque para colocar ou tirar. Cada enfeite tem seu cantinho.</p>
+              </>
             )}
             {(activeTab === "food" || activeTab === "play") && (
               <p className={styles.drawerHint}>{activeTab === "food" ? "Para o cantinho das refeições" : "Para os momentos de brincadeira"}</p>
             )}
             <div className={styles.drawerScroll} key={activeTab === "style" ? styleFilter : activeTab === "room" ? roomFilter : activeTab}>
-              <PetItemGrid items={items} />
+              {activeTab === "room" ? (
+                <div className={styles.decorGrid}>
+                  {PET_ROOM_DECORATIONS.filter((item) => roomFilter === "Todos" || item.category === roomFilter).map((item) => {
+                    const selected = slots[item.slot] === item.id;
+                    return (
+                      <button key={item.id} type="button" className={`${styles.decorCard} ${selected ? styles.decorCardActive : ""}`}
+                        aria-pressed={selected} aria-label={`${selected ? "Remover" : "Colocar"} ${item.name}`}
+                        disabled={!ready} onClick={() => onToggle(item)}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={item.asset} alt="" loading="lazy" className={styles.decorPreview} />
+                        <span className={styles.decorLabel}>{item.name}</span>
+                        <span className={styles.decorIndicator}>{selected ? "Colocado" : "Colocar"}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : <PetItemGrid items={items} />}
             </div>
+            {activeTab === "room" && (error || !ready) && <p className={styles.decorStatus} role="status">{error || "Carregando decorações..."}</p>}
           </>
         )}
       </section>

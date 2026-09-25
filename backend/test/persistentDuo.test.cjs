@@ -50,6 +50,22 @@ test("apenas andre e flavia ocupam os dois slots lógicos e ambos podem gerencia
   assert.equal(room.canManage("flavia"), true);
 });
 
+test("decoração alterna no mesmo slot e mantém quartos independentes", () => {
+  const store = new PersistentDuoStore(false);
+  const first = store.togglePetDecoration("nix", "heart-frame");
+  assert.equal(first.slots["wall-left"], "heart-frame");
+  assert.equal(first.revision, 1);
+  assert.deepEqual(store.getPetRoom("max").slots, {});
+
+  store.togglePetDecoration("nix", "paw-poster");
+  assert.deepEqual(store.getPetRoom("nix").slots, { "wall-left": "paw-poster" });
+  store.togglePetDecoration("nix", "paw-poster");
+  assert.deepEqual(store.getPetRoom("nix").slots, {});
+  assert.equal(store.getPetRoom("nix").revision, 3);
+  assert.equal(store.togglePetDecoration("max", "unknown"), null);
+  assert.equal(store.getPetRoom("max").revision, 0);
+});
+
 test("presença agrega múltiplas abas sem duplicar a conta nem criar slot fantasma", () => {
   const room = new RoomManager().getOrCreatePersistentDuoRoom();
   room.addPlayer("andre", "André", "andre");

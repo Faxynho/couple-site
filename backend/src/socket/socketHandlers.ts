@@ -35,6 +35,7 @@ import {
 } from "../games/drawguess/DrawGuessGame";
 import {
   PERSISTENT_DUO_ROOM_CODE,
+  isPetRoomId,
   isPersistentDuoAccountId,
   isPersistentDuoPresence,
   persistentDuoStore,
@@ -947,6 +948,39 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       }
       callback?.({ ok: true, room: room.toSnapshot() });
       broadcastRoom(io, room.code, roomManager);
+    });
+
+    const canDecoratePetRoom = () => {
+      const code = socket.data.roomCode;
+      const playerId = socket.data.playerId;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      return room?.roomKind === "persistent-duo"
+        && code === PERSISTENT_DUO_ROOM_CODE
+        && Boolean(playerId)
+        && socket.data.accountId === playerId
+        && room.canManage(playerId!);
+    };
+
+    socket.on("petRoom:sync", (payload: { petId?: unknown } | undefined, callback?: AckCallback) => {
+      if (!canDecoratePetRoom() || !isPetRoomId(payload?.petId)) {
+        callback?.({ ok: false, error: "Quarto indisponível para esta conta." });
+        return;
+      }
+      callback?.({ ok: true, room: persistentDuoStore.getPetRoom(payload.petId) });
+    });
+
+    socket.on("petRoom:toggle", (payload: { petId?: unknown; decorationId?: unknown } | undefined, callback?: AckCallback) => {
+      if (!canDecoratePetRoom() || !isPetRoomId(payload?.petId)) {
+        callback?.({ ok: false, error: "Você não pode decorar este quarto." });
+        return;
+      }
+      const snapshot = persistentDuoStore.togglePetDecoration(payload.petId, payload.decorationId);
+      if (!snapshot) {
+        callback?.({ ok: false, error: "Decoração inválida." });
+        return;
+      }
+      callback?.({ ok: true, room: snapshot });
+      io.to(PERSISTENT_DUO_ROOM_CODE).emit("petRoom:changed", snapshot);
     });
 
     /** O quadro é carregado separadamente do snapshot da sala para não enviar

@@ -55,6 +55,41 @@ export interface SharedDrawingBoardSnapshot {
 
 interface PersistentDuoStoredData extends PersistentDuoLobbyData {
   drawing: SharedDrawingBoard;
+  petRooms: Record<PetRoomId, PetRoomState>;
+}
+
+export type PetRoomId = "nix" | "max";
+export interface PetRoomState {
+  revision: number;
+  slots: Record<string, string>;
+}
+export interface PetRoomSnapshot extends PetRoomState {
+  petId: PetRoomId;
+}
+
+// These IDs mirror the visual catalog. Reject unknown IDs and never trust a client slot.
+const PET_DECORATION_SLOTS: Record<string, string> = {
+  "heart-frame": "wall-left", "paw-poster": "wall-left", clock: "wall-left",
+  polaroids: "wall-right", garland: "wall-high", "heart-mobile": "wall-high",
+  pillow: "floor-left", "toy-basket": "floor-left", plush: "floor-left",
+  "rope-toy": "floor-right", ball: "floor-right", flowers: "floor-corner",
+  "storage-box": "furniture-right", "side-table": "furniture-right",
+  "star-lamp": "furniture-top", blanket: "bed-top",
+};
+
+export function isPetRoomId(value: unknown): value is PetRoomId {
+  return value === "nix" || value === "max";
+}
+
+function sanitizePetRoomState(value: unknown): PetRoomState {
+  const input = value && typeof value === "object" ? value as Partial<PetRoomState> : {};
+  const slots: Record<string, string> = {};
+  if (input.slots && typeof input.slots === "object" && !Array.isArray(input.slots)) {
+    for (const [slot, id] of Object.entries(input.slots)) {
+      if (typeof id === "string" && PET_DECORATION_SLOTS[id] === slot) slots[slot] = id;
+    }
+  }
+  return { revision: Number.isSafeInteger(input.revision) && Number(input.revision) >= 0 ? Number(input.revision) : 0, slots };
 }
 
 export const SHARED_DRAWING_COLORS = [
@@ -191,6 +226,7 @@ export class PersistentDuoStore {
   private data: PersistentDuoStoredData = {
     displayName: PERSISTENT_DUO_DEFAULT_DISPLAY_NAME,
     drawing: emptyDrawingBoard(),
+    petRooms: { nix: { revision: 0, slots: {} }, max: { revision: 0, slots: {} } },
   };
   private loadPromise: Promise<void> | null = null;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -210,6 +246,23 @@ export class PersistentDuoStore {
 
   getDrawingBoard(): SharedDrawingBoardSnapshot {
     return cloneDrawingBoard(this.data.drawing);
+  }
+
+  getPetRoom(petId: PetRoomId): PetRoomSnapshot {
+    const state = this.data.petRooms[petId];
+    return { petId, revision: state.revision, slots: { ...state.slots } };
+  }
+
+  togglePetDecoration(petId: PetRoomId, decorationId: unknown): PetRoomSnapshot | null {
+    if (typeof decorationId !== "string") return null;
+    const slot = PET_DECORATION_SLOTS[decorationId];
+    if (!slot) return null;
+    const state = this.data.petRooms[petId];
+    if (state.slots[slot] === decorationId) delete state.slots[slot];
+    else state.slots[slot] = decorationId;
+    state.revision++;
+    this.scheduleSave();
+    return this.getPetRoom(petId);
   }
 
   setDisplayName(value: unknown): string | null {
@@ -278,6 +331,10 @@ export class PersistentDuoStore {
       const displayName = normalizePersistentDuoDisplayName(parsed.displayName);
       if (displayName) this.data.displayName = displayName;
       this.data.drawing = sanitizeDrawingBoard(parsed.drawing);
+      this.data.petRooms = {
+        nix: sanitizePetRoomState(parsed.petRooms?.nix),
+        max: sanitizePetRoomState(parsed.petRooms?.max),
+      };
     } catch {
       // Primeira execução ou arquivo inválido: usa o nome padrão.
     }

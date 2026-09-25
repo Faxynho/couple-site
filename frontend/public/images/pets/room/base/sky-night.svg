@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 170" fill="none" aria-hidden="true"><defs>
+<linearGradient id="wood" x2="0" y2="1"><stop stop-color="#eac2a2"/><stop offset="1" stop-color="#b97968"/></linearGradient>
+<linearGradient id="rose" x2="0" y2="1"><stop stop-color="#f7cdd0"/><stop offset="1" stop-color="#cc839b"/></linearGradient>
+<linearGradient id="lilac" x2="0" y2="1"><stop stop-color="#e5d3e8"/><stop offset="1" stop-color="#a37caa"/></linearGradient>
+<linearGradient id="cream" x2="0" y2="1"><stop stop-color="#fffaf0"/><stop offset="1" stop-color="#ecd3bd"/></linearGradient>
+<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#a9d6e7"/><stop offset="1" stop-color="#fff0ce"/></linearGradient>
+<linearGradient id="night" x2="0" y2="1"><stop stop-color="#262b50"/><stop offset="1" stop-color="#665b84"/></linearGradient>
+<linearGradient id="floor" x2="0" y2="1"><stop stop-color="#d7a38d"/><stop offset="1" stop-color="#b88074"/></linearGradient>
+</defs><g stroke-linejoin="round" stroke-linecap="round"><rect width="200" height="170" fill="url(#night)"/><circle cx="150" cy="46" r="19" fill="#f5dfbb"/><circle cx="158" cy="40" r="17" fill="#343854"/><path d="M-8 140q50-60 98-17 59-49 118-5v52H-8Z" fill="#3a5360"/><path d="M-8 155q40-38 96-17 68-32 120-13v45H-8Z" fill="#334a54"/><g fill="#f7d7cf"><circle cx="29" cy="36" r="2"/><circle cx="74" cy="66" r="2"/><circle cx="109" cy="24" r="1.5"/><circle cx="184" cy="83" r="2"/></g></g></svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 204" fill="none" aria-hidden="true"><defs>
+<linearGradient id="wood" x2="0" y2="1"><stop stop-color="#eac2a2"/><stop offset="1" stop-color="#b97968"/></linearGradient>
+<linearGradient id="rose" x2="0" y2="1"><stop stop-color="#f7cdd0"/><stop offset="1" stop-color="#cc839b"/></linearGradient>
+<linearGradient id="lilac" x2="0" y2="1"><stop stop-color="#e5d3e8"/><stop offset="1" stop-color="#a37caa"/></linearGradient>
+<linearGradient id="cream" x2="0" y2="1"><stop stop-color="#fffaf0"/><stop offset="1" stop-color="#ecd3bd"/></linearGradient>
+<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#a9d6e7"/><stop offset="1" stop-color="#fff0ce"/></linearGradient>
+<linearGradient id="night" x2="0" y2="1"><stop stop-color="#262b50"/><stop offset="1" stop-color="#665b84"/></linearGradient>
+<linearGradient id="floor" x2="0" y2="1"><stop stop-color="#d7a38d"/><stop offset="1" stop-color="#b88074"/></linearGradient>
+</defs><g stroke-linejoin="round" stroke-linecap="round"><path d="M18 189V78C18 39 53 14 120 14S222 39 222 78v111Z M29 174V78c0-33 30-53 91-53s91 20 91 53v96Z" fill="url(#wood)" fill-rule="evenodd" stroke="#865d65" stroke-width="6"/><path d="M29 174V78c0-33 30-53 91-53s91 20 91 53v96Z M36 168V80c0-29 26-47 84-47s84 18 84 47v88Z" fill="#f9e9d8" fill-rule="evenodd"/><path d="M36 168V80c0-29 26-47 84-47s84 18 84 47v88Z" fill="none" stroke="#9e7b81" stroke-width="4"/>
+<path d="M117 27v147M31 112h178" stroke="#fff1de" stroke-width="13"/><path d="M117 27v147M31 112h178" stroke="#ab8588" stroke-opacity=".55" stroke-width="2"/><path d="M5 184h230l-12 15H17Z" fill="url(#cream)" stroke="#9c6b71" stroke-width="5"/><path d="M23 185h194" stroke="white" stroke-opacity=".7" stroke-width="3"/></g></svg>
