@@ -36,6 +36,8 @@ interface RigPet extends PetBase {
     canvasSize: number;
     duration: number;
     parts: readonly RigPart[];
+    // Optional anatomical adjustments; absent values keep Max's established motion.
+    motion?: { breathWidth?: number; breathHeight?: number; ear?: number };
     blink?: {
       half: string;
       closed: string;
@@ -53,18 +55,29 @@ export const PETS: readonly PetDefinition[] = [
   {
     id: "nix",
     name: "Nix",
-    renderer: "sheet",
+    renderer: "rig",
     portrait: "/pets/nix/portrait.webp",
     portraitWidth: 1229,
     portraitHeight: 1536,
-    animations: {
-      idle: {
-        src: "/pets/nix/idle.webp",
-        frames: 8,
-        frameWidth: 384,
-        frameHeight: 480,
-        duration: 2.2,
+    rig: {
+      canvasSize: 1536,
+      duration: 3.6,
+      motion: { breathWidth: 0.36, breathHeight: 0.7, ear: 0.42 },
+      blink: {
+        half: "/pets/nix/blink-half.webp",
+        closed: "/pets/nix/blink-closed.webp",
+        x: 588, y: 302, width: 405, height: 173,
       },
+      // The supplied 1229px artwork is centered inside the rig's 1536px square.
+      // Four feet stay in the fixed body; all other layers overlap their joints.
+      parts: [
+        { src: "/pets/nix/tail.webp", x: 183, y: 1040, width: 390, height: 390, motion: "tail", pivot: { x: 82, y: 36 } },
+        { src: "/pets/nix/body.webp", x: 308, y: 580, width: 960, height: 950, motion: "fixed" },
+        { src: "/pets/nix/chest.webp", x: 498, y: 655, width: 570, height: 410, motion: "breath", pivot: { x: 50, y: 84 } },
+        { src: "/pets/nix/head.webp", x: 383, y: 180, width: 790, height: 645, motion: "head" },
+        { src: "/pets/nix/ear-left.webp", x: 403, y: 0, width: 290, height: 450, motion: "earLeft", pivot: { x: 62, y: 82 } },
+        { src: "/pets/nix/ear-right.webp", x: 883, y: 5, width: 310, height: 450, motion: "earRight", pivot: { x: 39, y: 83 } },
+      ],
     },
   },
   {

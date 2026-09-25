@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 import type { PetAnimation, PetDefinition } from "../config";
-import MaxBlink from "./MaxBlink";
+import PetBlink from "./PetBlink";
 import styles from "../pets.module.css";
 
 type RigPet = Extract<PetDefinition, { renderer: "rig" }>;
@@ -54,7 +54,10 @@ export default function PetRig({
   className: string;
 }) {
   const rootRef = useRef<HTMLSpanElement>(null);
-  const { canvasSize, duration, parts, blink } = pet.rig;
+  const { canvasSize, duration, parts, blink, motion } = pet.rig;
+  const breathWidth = motion?.breathWidth ?? 1;
+  const breathHeight = motion?.breathHeight ?? 1;
+  const earMotion = motion?.ear ?? 1;
   const headParts = parts.filter((part) => part.motion === "head");
   const earParts = parts.filter((part) => part.motion === "earLeft" || part.motion === "earRight");
   const groundedParts = parts.filter(
@@ -110,8 +113,8 @@ export default function PetRig({
       previousBreathDuration = targetDuration;
 
       const peak = randomBetween(0.39, 0.46);
-      const scaleX = randomBetween(1.048, 1.068);
-      const scaleY = randomBetween(1.028, 1.043);
+      const scaleX = 1 + randomBetween(0.048, 0.068) * breathWidth;
+      const scaleY = 1 + randomBetween(0.028, 0.043) * breathHeight;
       const chestLift = randomBetween(0.8, 1.45);
       const headLift = randomBetween(4.5, 6.2);
       const chestAnimation = play(
@@ -179,7 +182,7 @@ export default function PetRig({
 
     const flickEar = (ear: HTMLElement | null, side: "left" | "right", strength = 1) => {
       const outward = side === "left" ? -1 : 1;
-      const amplitude = randomBetween(2.1, 4.9) * strength * outward;
+      const amplitude = randomBetween(2.1, 4.9) * strength * outward * earMotion;
       const durationMs = randomBetween(480, 920);
 
       const earAnimation = play(
@@ -274,7 +277,7 @@ export default function PetRig({
       timers.clear();
       runningAnimations.clear();
     };
-  }, [animation, duration]);
+  }, [animation, duration, breathWidth, breathHeight, earMotion]);
 
   const rigStyle = {
     aspectRatio: "1 / 1",
@@ -295,7 +298,7 @@ export default function PetRig({
       <span className={styles.rigHeadGroup} data-rig-part="headBreath" aria-hidden="true">
         <span className={styles.rigHeadLife} data-rig-part="headLife">
           {headParts.map((part) => renderPart(part, canvasSize))}
-          {blink && <MaxBlink artwork={blink} canvasSize={canvasSize} />}
+          {blink && <PetBlink artwork={blink} canvasSize={canvasSize} />}
           {earParts.map((part) => renderPart(part, canvasSize))}
         </span>
       </span>

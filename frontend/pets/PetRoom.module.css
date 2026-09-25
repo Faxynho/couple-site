@@ -244,6 +244,7 @@
   filter: drop-shadow(0 7px 3px rgba(78, 48, 51, .18));
 }
 .scene .pet[data-pet="max"] { width: min(34%, 270px); }
+.scene .pet[data-pet="nix"][data-animation="idle"] { width: min(36%, 285px); }
 
 .plant {
   position: absolute;
@@ -484,6 +485,7 @@
   .rug { width: 68%; height: 17%; }
   .scene .pet { bottom: 9%; width: min(56vw, 245px); max-height: 64%; }
   .scene .pet[data-pet="max"] { width: min(64vw, 275px); }
+  .scene .pet[data-pet="nix"][data-animation="idle"] { width: min(68vw, 290px); }
   .petShadow { bottom: 7%; }
 }
 @media (max-height: 680px) and (max-width: 600px) {
@@ -491,6 +493,7 @@
   .window { top: 22%; height: 24%; }
   .scene .pet { max-height: 65%; width: min(52vw, 195px); }
   .scene .pet[data-pet="max"] { width: min(62vw, 230px); }
+  .scene .pet[data-pet="nix"][data-animation="idle"] { width: min(66vw, 245px); }
 }
 @media (min-width: 700px) {
   .itemGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }

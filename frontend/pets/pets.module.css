@@ -20,7 +20,7 @@
   to { transform: translateX(-100%); }
 }
 
-/* Max uses layered artwork. Let the head travel a few pixels above the
+/* Rigged pets use layered artwork. Let the head travel a few pixels above the
    master canvas instead of clipping it at the root boundary. */
 .rigRoot {
   isolation: isolate;
@@ -46,7 +46,7 @@
 }
 
 .rigHeadLife {
-  /* Full-canvas group pivoted at Max's neck so rotation describes a small arc
+  /* Full-canvas group pivoted at the pets' neck so rotation describes a small arc
      instead of translating the head sideways. */
   transform-origin: 54.5% 42%;
 }
@@ -67,7 +67,7 @@
   pointer-events: none;
 }
 
-/* Normal Max idle motion is driven by the Web Animations API in PetRig so
+/* Normal rig idle motion is driven by the Web Animations API in PetRig so
    every breath, ear flick, head sway and tail movement can vary naturally.
    These classes only reserve compositor layers; no React render happens per frame. */
 .rigHeadGroup,
@@ -280,6 +280,7 @@
 .lobbyPet { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: end; width: 35%; max-width: 166px; height: 100%; }
 .lobbySprite { width: min(100%, 150px); max-height: calc(100% - 28px); margin-bottom: 23px; filter: drop-shadow(0 6px 4px rgba(30, 12, 24, .35)); }
 .lobbySprite[data-pet="max"] { width: min(135%, 175px); }
+.lobbySprite[data-pet="nix"][data-animation="idle"] { width: min(135%, 175px); }
 .lobbyPetName {
   position: absolute; bottom: 7px; z-index: 2;
   padding: 2px 15px 3px; border-radius: 20px;
@@ -321,7 +322,7 @@
 @media (prefers-reduced-motion: reduce) {
   .petStrip { animation: none; will-change: auto; }
   /* The global reduced-motion rule forces every animation to 0.01ms once.
-     Override that only for Max's gentler breathing cycle. */
+     Override that for the rig's gentler breathing cycle. */
   .rigRoot .rigBreath {
     animation-name: maxBreathReduced;
     animation-duration: 5.6s !important;
