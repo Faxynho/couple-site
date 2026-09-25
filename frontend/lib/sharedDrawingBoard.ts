@@ -1,4 +1,14 @@
-export type SharedDrawingTool = "brush" | "eraser";
+export type SharedDrawingTool = "brush" | "eraser" | "fill" | "shape";
+
+export type SharedDrawingShape =
+  | "line"
+  | "square"
+  | "rectangle"
+  | "circle"
+  | "triangle"
+  | "star"
+  | "diamond"
+  | "arrow";
 
 export interface SharedDrawingPoint {
   x: number;
@@ -11,6 +21,7 @@ export interface SharedDrawingStroke {
   color: string;
   size: number;
   points: SharedDrawingPoint[];
+  shape?: SharedDrawingShape;
 }
 
 export interface SharedDrawingBoardSnapshot {
@@ -32,9 +43,15 @@ export const SHARED_DRAWING_COLORS = [
   { value: "#8b5cf6", label: "Roxo" },
 ] as const;
 
+export const SHARED_DRAWING_MIN_SIZE = 0.003;
+export const SHARED_DRAWING_MAX_SIZE = 0.05;
+export const SHARED_DRAWING_DEFAULT_SIZE = 0.014;
+export const SHARED_DRAWING_SIZE_STEP = 0.001;
+
+// Mantido para compatibilidade com qualquer uso antigo fora da barra principal.
 export const SHARED_DRAWING_SIZES = [
   { value: 0.006, label: "Pequeno" },
-  { value: 0.014, label: "Médio" },
+  { value: SHARED_DRAWING_DEFAULT_SIZE, label: "Médio" },
   { value: 0.026, label: "Grande" },
 ] as const;
 
@@ -45,6 +62,14 @@ export function clampDrawingPoint(point: SharedDrawingPoint): SharedDrawingPoint
     x: Math.max(0, Math.min(1, point.x)),
     y: Math.max(0, Math.min(1, point.y)),
   };
+}
+
+export function clampDrawingSize(value: number): number {
+  if (!Number.isFinite(value)) return SHARED_DRAWING_DEFAULT_SIZE;
+  return Math.max(
+    SHARED_DRAWING_MIN_SIZE,
+    Math.min(SHARED_DRAWING_MAX_SIZE, Math.round(value * 1_000) / 1_000)
+  );
 }
 
 /** Mantém o caminho inteiro e reduz só a densidade enviada ao servidor. */

@@ -12,7 +12,17 @@ export interface PersistentDuoLobbyData {
   displayName: string;
 }
 
-export type SharedDrawingTool = "brush" | "eraser";
+export type SharedDrawingTool = "brush" | "eraser" | "fill" | "shape";
+
+export type SharedDrawingShape =
+  | "line"
+  | "square"
+  | "rectangle"
+  | "circle"
+  | "triangle"
+  | "star"
+  | "diamond"
+  | "arrow";
 
 export interface SharedDrawingPoint {
   x: number;
@@ -25,6 +35,7 @@ export interface SharedDrawingStroke {
   color: string;
   size: number;
   points: SharedDrawingPoint[];
+  shape?: SharedDrawingShape;
 }
 
 export interface SharedDrawingBoard {
@@ -56,7 +67,9 @@ export const SHARED_DRAWING_COLORS = [
   "#ec4899",
   "#8b5cf6",
 ] as const;
-export const SHARED_DRAWING_SIZES = [0.006, 0.014, 0.026] as const;
+export const SHARED_DRAWING_MIN_SIZE = 0.003;
+export const SHARED_DRAWING_MAX_SIZE = 0.05;
+export const SHARED_DRAWING_DEFAULT_SIZE = 0.014;
 export const SHARED_DRAWING_MAX_STROKES = 1_000;
 export const SHARED_DRAWING_MAX_POINTS_PER_STROKE = 500;
 export const SHARED_DRAWING_MAX_TOTAL_POINTS = 100_000;
@@ -87,8 +100,22 @@ function isDrawingColor(value: unknown): value is string {
   return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
 }
 
-function isDrawingSize(value: unknown): value is (typeof SHARED_DRAWING_SIZES)[number] {
-  return typeof value === "number" && SHARED_DRAWING_SIZES.some((size) => Math.abs(size - value) < 0.000_001);
+function isDrawingSize(value: unknown): value is number {
+  return typeof value === "number"
+    && Number.isFinite(value)
+    && value >= SHARED_DRAWING_MIN_SIZE
+    && value <= SHARED_DRAWING_MAX_SIZE;
+}
+
+function isDrawingShape(value: unknown): value is SharedDrawingShape {
+  return value === "line"
+    || value === "square"
+    || value === "rectangle"
+    || value === "circle"
+    || value === "triangle"
+    || value === "star"
+    || value === "diamond"
+    || value === "arrow";
 }
 
 /** Valida e normaliza um traço vindo do navegador antes de persistir. */
@@ -96,9 +123,11 @@ export function normalizeSharedDrawingStroke(value: unknown): SharedDrawingStrok
   if (!value || typeof value !== "object") return null;
   const input = value as Partial<SharedDrawingStroke>;
   if (typeof input.id !== "string" || !/^[A-Za-z0-9_-]{8,80}$/.test(input.id)) return null;
-  if (input.tool !== "brush" && input.tool !== "eraser") return null;
+  if (input.tool !== "brush" && input.tool !== "eraser" && input.tool !== "fill" && input.tool !== "shape") return null;
   if (!isDrawingColor(input.color) || !isDrawingSize(input.size) || !Array.isArray(input.points)) return null;
   if (input.points.length < 1 || input.points.length > SHARED_DRAWING_MAX_POINTS_PER_STROKE) return null;
+  if (input.tool === "fill" && input.points.length !== 1) return null;
+  if (input.tool === "shape" && (input.points.length !== 2 || !isDrawingShape(input.shape))) return null;
 
   const points: SharedDrawingPoint[] = [];
   for (const valuePoint of input.points) {
@@ -111,13 +140,15 @@ export function normalizeSharedDrawingStroke(value: unknown): SharedDrawingStrok
     points.push({ x: Math.round(x * 100_000) / 100_000, y: Math.round(y * 100_000) / 100_000 });
   }
 
-  return {
+  const normalized: SharedDrawingStroke = {
     id: input.id,
     tool: input.tool,
     color: input.color.toLowerCase(),
-    size: input.size,
+    size: Math.round(input.size * 1_000) / 1_000,
     points,
   };
+  if (input.tool === "shape") normalized.shape = input.shape;
+  return normalized;
 }
 
 function sanitizeDrawingBoard(value: unknown): SharedDrawingBoard {

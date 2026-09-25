@@ -71,7 +71,7 @@ describe("quadro compartilhado no navegador", () => {
     expect(canvas.style.touchAction).toBe("none");
 
     fireEvent.click(screen.getByRole("button", { name: "Vermelho" }));
-    fireEvent.click(screen.getByRole("button", { name: "Grande" }));
+    fireEvent.change(screen.getByRole("slider", { name: "Tamanho do pincel" }), { target: { value: "0.05" } });
     fireEvent.pointerDown(canvas, { pointerId: 7, pointerType: "touch", clientX: 30, clientY: 40, button: 0 });
     fireEvent.pointerMove(canvas, { pointerId: 7, pointerType: "touch", clientX: 150, clientY: 100 });
     fireEvent.pointerUp(canvas, { pointerId: 7, pointerType: "touch", clientX: 150, clientY: 100 });
@@ -81,7 +81,7 @@ describe("quadro compartilhado no navegador", () => {
     expect((addEvent?.args[0] as { stroke: { tool: string; color: string; size: number; points: unknown[] } }).stroke).toMatchObject({
       tool: "brush",
       color: "#ef4444",
-      size: 0.026,
+      size: 0.05,
     });
     expect((addEvent?.args[0] as { stroke: { points: unknown[] } }).stroke.points.length).toBeGreaterThan(1);
   });
