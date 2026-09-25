@@ -51,6 +51,22 @@
   transform-origin: 54.5% 42%;
 }
 
+.blinkRegion {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+.blinkLayer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  visibility: hidden;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
 /* Normal Max idle motion is driven by the Web Animations API in PetRig so
    every breath, ear flick, head sway and tail movement can vary naturally.
    These classes only reserve compositor layers; no React render happens per frame. */

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 import type { PetAnimation, PetDefinition } from "../config";
+import MaxBlink from "./MaxBlink";
 import styles from "../pets.module.css";
 
 type RigPet = Extract<PetDefinition, { renderer: "rig" }>;
@@ -53,10 +54,9 @@ export default function PetRig({
   className: string;
 }) {
   const rootRef = useRef<HTMLSpanElement>(null);
-  const { canvasSize, duration, parts } = pet.rig;
-  const headParts = parts.filter(
-    (part) => part.motion === "head" || part.motion === "earLeft" || part.motion === "earRight",
-  );
+  const { canvasSize, duration, parts, blink } = pet.rig;
+  const headParts = parts.filter((part) => part.motion === "head");
+  const earParts = parts.filter((part) => part.motion === "earLeft" || part.motion === "earRight");
   const groundedParts = parts.filter(
     (part) => part.motion !== "head" && part.motion !== "earLeft" && part.motion !== "earRight",
   );
@@ -295,6 +295,8 @@ export default function PetRig({
       <span className={styles.rigHeadGroup} data-rig-part="headBreath" aria-hidden="true">
         <span className={styles.rigHeadLife} data-rig-part="headLife">
           {headParts.map((part) => renderPart(part, canvasSize))}
+          {blink && <MaxBlink artwork={blink} canvasSize={canvasSize} />}
+          {earParts.map((part) => renderPart(part, canvasSize))}
         </span>
       </span>
     </span>

@@ -36,6 +36,14 @@ interface RigPet extends PetBase {
     canvasSize: number;
     duration: number;
     parts: readonly RigPart[];
+    blink?: {
+      half: string;
+      closed: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
   };
 }
 
@@ -69,6 +77,14 @@ export const PETS: readonly PetDefinition[] = [
     rig: {
       canvasSize: 1536,
       duration: 3.3,
+      blink: {
+        half: "/pets/max/blink-half.webp",
+        closed: "/pets/max/blink-closed.webp",
+        x: 620,
+        y: 195,
+        width: 460,
+        height: 255,
+      },
       parts: [
         { src: "/pets/max/tail.webp", x: 180, y: 880, width: 520, height: 500, motion: "tail", pivot: { x: 82, y: 45 } },
         { src: "/pets/max/body.webp", x: 190, y: 585, width: 1110, height: 935, motion: "fixed" },
