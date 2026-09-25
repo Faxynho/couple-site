@@ -60,6 +60,9 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   const [lobbyNameError, setLobbyNameError] = useState<string | null>(null);
   const [viewedProfile, setViewedProfile] = useState<Awaited<ReturnType<typeof fetchAccounts>>[number] | null>(null);
   const profileRequestRef = useRef(0);
+  const lobbyVideoRef = useRef<HTMLVideoElement | null>(null);
+  const lobbyReverseAnimationRef = useRef<number | null>(null);
+  const lobbyReverseActiveRef = useRef(false);
   const filteredGames = useMemo(() => {
     const query = normalizeGameSearch(search);
     if (!query) return GAMES;
@@ -94,6 +97,16 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   useEffect(() => {
     if (kicked) router.push("/?aviso=expulso");
   }, [kicked, router]);
+
+  useEffect(() => {
+    return () => {
+      lobbyReverseActiveRef.current = false;
+      if (lobbyReverseAnimationRef.current !== null) {
+        cancelAnimationFrame(lobbyReverseAnimationRef.current);
+        lobbyReverseAnimationRef.current = null;
+      }
+    };
+  }, []);
 
   if (kicked) return null;
 
@@ -165,6 +178,52 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
     if (gameToPlay) selectGame(gameToPlay.id);
   };
 
+  const handleLobbyVideoEnded = () => {
+    const video = lobbyVideoRef.current;
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return;
+
+    lobbyReverseActiveRef.current = false;
+    if (lobbyReverseAnimationRef.current !== null) {
+      cancelAnimationFrame(lobbyReverseAnimationRef.current);
+      lobbyReverseAnimationRef.current = null;
+    }
+
+    video.pause();
+    lobbyReverseActiveRef.current = true;
+
+    let position = video.duration;
+    let lastFrameAt = performance.now();
+    let lastSeekAt = 0;
+
+    const reverseFrame = (now: number) => {
+      if (!lobbyReverseActiveRef.current || lobbyVideoRef.current !== video) {
+        lobbyReverseAnimationRef.current = null;
+        return;
+      }
+
+      const elapsedSeconds = Math.min((now - lastFrameAt) / 1000, 0.1);
+      lastFrameAt = now;
+      position = Math.max(0, position - elapsedSeconds);
+
+      if (now - lastSeekAt >= 1000 / 30 || position === 0) {
+        video.currentTime = position;
+        lastSeekAt = now;
+      }
+
+      if (position <= 0) {
+        lobbyReverseActiveRef.current = false;
+        lobbyReverseAnimationRef.current = null;
+        video.currentTime = 0;
+        void video.play().catch(() => undefined);
+        return;
+      }
+
+      lobbyReverseAnimationRef.current = requestAnimationFrame(reverseFrame);
+    };
+
+    lobbyReverseAnimationRef.current = requestAnimationFrame(reverseFrame);
+  };
+
   const handleViewProfile = async (player: Player) => {
     // Visitantes sem uma conta fixa não têm um perfil persistente para abrir.
     if (!player.accountId || player.id === selfId) return;
@@ -190,12 +249,13 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
       {isPersistentDuo && !showMinigames && (
         <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
           <video
+            ref={lobbyVideoRef}
             className="absolute inset-0 h-full w-full object-cover object-top"
             autoPlay
-            loop
             muted
             playsInline
             preload="auto"
+            onEnded={handleLobbyVideoEnded}
           >
             <source src="/vídeos/lobby-background-video.mp4" type="video/mp4" />
           </video>
