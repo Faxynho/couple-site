@@ -587,7 +587,7 @@ export default function SharedDrawingBoard() {
               <Shapes size={18} />
             </button>
             {shapeMenuOpen && (
-              <div className="absolute bottom-[calc(100%+0.55rem)] left-1/2 z-40 grid w-[15rem] -translate-x-1/2 grid-cols-4 gap-1.5 rounded-2xl border border-white/60 bg-surface/95 p-2 shadow-[0_14px_35px_rgba(48,20,43,0.28)] backdrop-blur-md" aria-label="Escolher forma">
+              <div className="absolute bottom-[calc(100%+0.55rem)] right-0 z-40 grid w-[min(15rem,calc(100vw-2rem))] grid-cols-4 gap-1.5 rounded-2xl border border-white/60 bg-surface/95 p-2 shadow-[0_14px_35px_rgba(48,20,43,0.28)] backdrop-blur-md sm:left-1/2 sm:right-auto sm:w-[15rem] sm:-translate-x-1/2" aria-label="Escolher forma">
                 {SHAPES.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}

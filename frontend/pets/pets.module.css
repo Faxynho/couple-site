@@ -319,6 +319,293 @@
   .cardArrow { width: 32px; height: 32px; }
 }
 
+
+/* Seleção de pets — composição mais rica sem pesar o layout. */
+.selectorBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.selectorBackdrop svg {
+  position: absolute;
+  color: rgba(238, 165, 195, .07);
+  filter: drop-shadow(0 0 18px rgba(215, 104, 154, .08));
+}
+.backdropPawOne { top: 9%; left: -1.5rem; width: 7rem; height: 7rem; transform: rotate(-24deg); }
+.backdropHeart { top: 18%; right: 4%; width: 3.3rem; height: 3.3rem; transform: rotate(12deg); }
+.backdropPawTwo { right: -2.2rem; bottom: 8%; width: 8rem; height: 8rem; transform: rotate(23deg); }
+.backdropSparkle { left: 8%; bottom: 16%; width: 3.5rem; height: 3.5rem; }
+
+.selectorInner {
+  position: relative;
+  z-index: 1;
+  padding-top: max(18px, env(safe-area-inset-top));
+}
+.selectorTopbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.selectorBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 205, 225, .16);
+  border-radius: 999px;
+  color: #f4c3d5;
+  background: rgba(77, 45, 67, .42);
+  box-shadow: inset 0 1px rgba(255,255,255,.04);
+  font-family: var(--font-display), sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .05em;
+}
+.selectorBadge svg { color: #f58fb7; }
+
+.selectorHero {
+  position: relative;
+  width: min(100%, 660px);
+  margin: 28px auto 26px;
+  padding: 24px 18px 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 211, 228, .14);
+  border-radius: 32px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(238, 142, 182, .13), transparent 46%),
+    linear-gradient(145deg, rgba(73, 44, 66, .66), rgba(41, 27, 43, .62));
+  box-shadow: 0 18px 45px rgba(8, 4, 12, .2), inset 0 1px rgba(255,255,255,.045);
+  backdrop-filter: blur(12px);
+}
+.heroGlow {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  width: 280px;
+  height: 180px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(238, 125, 176, .12);
+  filter: blur(24px);
+}
+.selectorHero .eyebrow {
+  position: relative;
+  justify-content: center;
+  color: #f0abc5;
+}
+.selectorHero h1 {
+  position: relative;
+  margin: 7px 0 0;
+  color: #fff5f8;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(2rem, 7vw, 3.1rem);
+  font-weight: 700;
+  letter-spacing: -.045em;
+  text-shadow: 0 5px 22px rgba(0,0,0,.25);
+}
+.selectorHero p {
+  position: relative;
+  max-width: 430px;
+  margin: 7px auto 0;
+  color: #d7bcc8;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.heroPaws {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 15px;
+  color: #d991ad;
+  opacity: .8;
+}
+.heroPaws span {
+  width: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(231, 156, 187, .6));
+}
+.heroPaws span:nth-of-type(2) { transform: scaleX(-1); }
+
+.selectorGrid {
+  gap: clamp(12px, 3vw, 22px);
+  width: min(100%, 760px);
+}
+.petCard {
+  position: relative;
+  border-color: rgba(255, 220, 232, .18);
+  border-radius: 30px;
+  background: rgba(59, 39, 54, .84);
+  box-shadow:
+    0 18px 42px rgba(7, 3, 10, .24),
+    inset 0 1px rgba(255,255,255,.045);
+}
+.petCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.015);
+}
+.petCard:hover, .petCard:focus-visible {
+  transform: translateY(-5px);
+  border-color: rgba(245, 157, 191, .68);
+  box-shadow: 0 22px 50px rgba(7, 3, 10, .34), 0 0 28px rgba(224, 109, 157, .10);
+}
+.petCard:nth-child(2) { background: rgba(54, 40, 67, .86); }
+
+.cardArt {
+  isolation: isolate;
+  height: clamp(200px, 42vw, 340px);
+  background:
+    radial-gradient(circle at 50% 53%, rgba(255, 214, 224, .24), transparent 34%),
+    linear-gradient(180deg, #765361 0 68%, #805c68 68% 70%, #8f6d78 70%);
+}
+.petCard:nth-child(2) .cardArt {
+  background:
+    radial-gradient(circle at 50% 53%, rgba(226, 211, 255, .19), transparent 34%),
+    linear-gradient(180deg, #655469 0 68%, #715d75 68% 70%, #806b84 70%);
+}
+.cardGlow {
+  position: absolute;
+  z-index: 0;
+  top: 18%;
+  left: 50%;
+  width: 74%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(255, 232, 237, .08);
+  filter: blur(14px);
+}
+.cardHalo {
+  z-index: 1;
+  top: 10%;
+  width: 70%;
+  border-color: rgba(255, 239, 232, .3);
+  box-shadow:
+    0 0 0 10px rgba(255, 231, 222, .025),
+    0 0 0 22px rgba(255, 231, 222, .012);
+}
+.cardPaw {
+  position: absolute;
+  z-index: 2;
+  top: 13px;
+  left: 14px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 50%;
+  color: rgba(255, 229, 237, .72);
+  background: rgba(40, 22, 37, .24);
+  backdrop-filter: blur(5px);
+}
+.cardNumber {
+  position: absolute;
+  z-index: 2;
+  top: 17px;
+  right: 16px;
+  color: rgba(255, 238, 244, .45);
+  font-family: var(--font-display), sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.portrait {
+  z-index: 2;
+  height: 96%;
+  filter: drop-shadow(0 10px 8px rgba(20, 8, 17, .32));
+  transition: transform .25s ease, filter .25s ease;
+}
+.petCard:hover .portrait, .petCard:focus-visible .portrait {
+  transform: translateY(-3px) scale(1.015);
+  filter: drop-shadow(0 13px 10px rgba(20, 8, 17, .36));
+}
+
+.cardFooter {
+  position: relative;
+  min-height: 88px;
+  padding: 14px 16px 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,.012), rgba(0,0,0,.055));
+}
+.cardCopy { min-width: 0; }
+.cardFooter small {
+  color: #dda4ba;
+  font-size: 9px;
+  letter-spacing: .15em;
+}
+.cardFooter strong {
+  margin-top: 1px;
+  color: #fff4f7;
+  font-size: clamp(1.35rem, 5vw, 1.75rem);
+}
+.cardSubtitle {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  color: #bfa5b1;
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cardArrow {
+  flex: none;
+  width: 39px;
+  height: 39px;
+  color: #4a2a39;
+  background: linear-gradient(145deg, #ffd5e2, #efa9c0);
+  box-shadow: 0 8px 18px rgba(15, 5, 13, .18), inset 0 1px #fff1f5;
+}
+
+.selectorFootprint {
+  gap: 9px;
+  margin-top: 24px;
+  color: #ba7d97;
+}
+.footprintLine {
+  width: 30px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(213, 137, 168, .55));
+}
+.footprintLine:nth-of-type(2) { transform: scaleX(-1); }
+
+@media (max-width: 500px) {
+  .selectorInner { padding-inline: 14px; }
+  .selectorTopbar .backLink {
+    width: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+  .selectorTopbar .backLink span { display: none; }
+  .selectorHero {
+    margin: 18px auto 18px;
+    padding: 20px 14px 17px;
+    border-radius: 26px;
+  }
+  .selectorHero p { max-width: 300px; font-size: 12px; }
+  .selectorGrid { gap: 10px; }
+  .petCard { border-radius: 23px; }
+  .cardArt { height: clamp(180px, 51vw, 225px); }
+  .cardPaw { top: 10px; left: 10px; width: 29px; height: 29px; }
+  .cardPaw svg { width: 16px; }
+  .cardNumber { top: 13px; right: 11px; font-size: 10px; }
+  .cardFooter { min-height: 82px; padding: 11px 10px 12px; }
+  .cardFooter strong { font-size: 21px; }
+  .cardSubtitle { font-size: 8.5px; }
+  .cardArrow { width: 31px; height: 31px; }
+  .cardArrow svg { width: 17px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .petStrip { animation: none; will-change: auto; }
   /* The global reduced-motion rule forces every animation to 0.01ms once.

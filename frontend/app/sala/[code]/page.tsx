@@ -361,14 +361,14 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
 
                 </div>
 
-                <PetLobbyArea roomCode={room.code} />
-
                 <div className="relative z-20 mx-auto w-full max-w-md px-4 pt-2 sm:max-w-2xl">
                   <DuoTogetherTimeBadge />
                   <div className="mt-3">
                     <PersistentDuoStatus presence={persistentPresence} />
                   </div>
                 </div>
+
+                <PetLobbyArea roomCode={room.code} />
 
                 <div className="relative z-20 mx-auto w-full max-w-md px-4 pb-12 pt-3 sm:max-w-2xl">
                   <SharedDrawingBoard />
