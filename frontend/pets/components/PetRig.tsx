@@ -33,8 +33,6 @@ function renderPart(part: RigPart, canvasSize: number) {
   );
 }
 
-// The head group carries both ears; only the upper torso, head, ears and tail
-// transform. The paws and the root box stay anchored throughout the loop.
 export default function PetRig({
   pet,
   animation,
@@ -45,13 +43,26 @@ export default function PetRig({
   className: string;
 }) {
   const { canvasSize, duration, parts } = pet.rig;
-  const headParts = parts.filter((part) => part.motion === "head" || part.motion === "earLeft" || part.motion === "earRight");
-  const groundedParts = parts.filter((part) => part.motion !== "head" && part.motion !== "earLeft" && part.motion !== "earRight");
+  const headParts = parts.filter(
+    (part) => part.motion === "head" || part.motion === "earLeft" || part.motion === "earRight",
+  );
+  const groundedParts = parts.filter(
+    (part) => part.motion !== "head" && part.motion !== "earLeft" && part.motion !== "earRight",
+  );
+
+  const rigStyle = {
+    aspectRatio: "1 / 1",
+    "--rig-duration": `${duration}s`,
+    "--rig-life-duration": `${(duration * 2.75).toFixed(2)}s`,
+    "--rig-ear-left-duration": `${(duration * 2.25).toFixed(2)}s`,
+    "--rig-ear-right-duration": `${(duration * 2.5).toFixed(2)}s`,
+    "--rig-tail-duration": `${(duration * 3.05).toFixed(2)}s`,
+  } as CSSProperties;
 
   return (
     <span
       className={`${styles.petSprite} ${styles.rigRoot} ${className}`}
-      style={{ aspectRatio: "1 / 1", "--rig-duration": `${duration}s` } as CSSProperties}
+      style={rigStyle}
       data-pet={pet.id}
       data-animation={animation}
       role="img"
@@ -59,7 +70,9 @@ export default function PetRig({
     >
       {groundedParts.map((part) => renderPart(part, canvasSize))}
       <span className={styles.rigHeadGroup} data-rig-part="headGroup" aria-hidden="true">
-        {headParts.map((part) => renderPart(part, canvasSize))}
+        <span className={styles.rigHeadLife}>
+          {headParts.map((part) => renderPart(part, canvasSize))}
+        </span>
       </span>
     </span>
   );

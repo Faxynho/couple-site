@@ -68,7 +68,7 @@ export const PETS: readonly PetDefinition[] = [
     portraitHeight: 1536,
     rig: {
       canvasSize: 1536,
-      duration: 3.6,
+      duration: 3.3,
       parts: [
         { src: "/pets/max/tail.webp", x: 180, y: 880, width: 520, height: 500, motion: "tail", pivot: { x: 82, y: 45 } },
         { src: "/pets/max/body.webp", x: 190, y: 585, width: 1110, height: 935, motion: "fixed" },

@@ -20,62 +20,175 @@
   to { transform: translateX(-100%); }
 }
 
-.rigRoot { isolation: isolate; }
+/* Max uses layered artwork. Let the head travel a few pixels above the
+   master canvas instead of clipping it at the root boundary. */
+.rigRoot {
+  isolation: isolate;
+  overflow: visible;
+  contain: layout;
+}
+
 .rigPart {
   position: absolute;
   display: block;
   background-repeat: no-repeat;
   background-size: 100% 100%;
   pointer-events: none;
+  backface-visibility: hidden;
 }
-.rigHeadGroup {
+
+.rigHeadGroup,
+.rigHeadLife {
   position: absolute;
   inset: 0;
-  animation: maxHead var(--rig-duration) ease-in-out infinite;
-  will-change: transform;
   pointer-events: none;
+  backface-visibility: hidden;
 }
+
+.rigHeadGroup {
+  animation: maxHeadBreath var(--rig-duration) cubic-bezier(.42, 0, .22, 1) infinite;
+  will-change: transform;
+}
+
+.rigHeadLife {
+  animation: maxHeadLife var(--rig-life-duration) ease-in-out infinite;
+  will-change: transform;
+}
+
 .rigBreath {
-  animation: maxBreath var(--rig-duration) ease-in-out infinite;
+  animation: maxBreath var(--rig-duration) cubic-bezier(.42, 0, .22, 1) infinite;
   will-change: transform;
 }
+
 .rigEarLeft {
-  animation: maxEarLeft var(--rig-duration) ease-in-out infinite;
+  animation: maxEarLeft var(--rig-ear-left-duration) ease-in-out infinite;
   will-change: transform;
 }
+
 .rigEarRight {
-  animation: maxEarRight var(--rig-duration) ease-in-out infinite;
+  animation: maxEarRight var(--rig-ear-right-duration) ease-in-out infinite;
   will-change: transform;
 }
+
 .rigTail {
-  animation: maxTail var(--rig-duration) ease-in-out infinite;
+  animation: maxTail var(--rig-tail-duration) ease-in-out infinite;
   will-change: transform;
 }
+
 @keyframes maxBreath {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03, 1.015); }
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  28% {
+    transform: translateY(calc(-1 * clamp(.7px, .25vw, 1px))) scale(1.045, 1.026);
+  }
+  36% {
+    transform: translateY(calc(-1 * clamp(1px, .35vw, 1.5px))) scale(1.06, 1.038);
+  }
+  43% {
+    transform: translateY(calc(-1 * clamp(.9px, .32vw, 1.35px))) scale(1.057, 1.035);
+  }
+  78% {
+    transform: translateY(calc(-1 * clamp(.2px, .08vw, .4px))) scale(1.012, 1.007);
+  }
 }
-@keyframes maxHead {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(calc(-1 * clamp(3.2px, .97vw, 4px))); }
+
+@keyframes maxHeadBreath {
+  0%, 100% {
+    transform: translateY(0) rotate(0);
+  }
+  28% {
+    transform: translateY(calc(-1 * clamp(3.7px, 1.2vw, 4.8px))) rotate(-.08deg);
+  }
+  36% {
+    transform: translateY(calc(-1 * clamp(4.4px, 1.45vw, 5.6px))) rotate(-.16deg);
+  }
+  43% {
+    transform: translateY(calc(-1 * clamp(4.1px, 1.35vw, 5.2px))) rotate(-.12deg);
+  }
+  78% {
+    transform: translateY(calc(-1 * clamp(.7px, .25vw, 1.1px))) rotate(.04deg);
+  }
 }
+
+/* A second, slower transform layer keeps the face from repeating the exact
+   same mechanical path every breath without moving the grounded body. */
+@keyframes maxHeadLife {
+  0%, 18%, 46%, 100% {
+    transform: translateX(0) rotate(0);
+  }
+  54% {
+    transform: translateX(clamp(.35px, .2vw, .8px)) rotate(.2deg);
+  }
+  62% {
+    transform: translateX(clamp(.15px, .1vw, .4px)) rotate(.08deg);
+  }
+  70% {
+    transform: translateX(0) rotate(0);
+  }
+}
+
+/* The ears inherit the head motion, then add their own delayed weight.
+   Each side uses a different long cycle so the idle does not read as a loop. */
 @keyframes maxEarLeft {
-  0%, 18%, 100% { transform: rotate(0); }
-  57% { transform: rotate(-1.2deg); }
-  80% { transform: rotate(.15deg); }
+  0%, 15%, 31%, 56%, 73%, 100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-2.8deg);
+  }
+  25% {
+    transform: rotate(.65deg);
+  }
+  63% {
+    transform: rotate(-1.65deg);
+  }
+  68% {
+    transform: rotate(.3deg);
+  }
 }
+
 @keyframes maxEarRight {
-  0%, 22%, 100% { transform: rotate(0); }
-  54% { transform: rotate(1.1deg); }
-  78% { transform: rotate(-.15deg); }
+  0%, 20%, 37%, 61%, 78%, 100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(2.6deg);
+  }
+  31% {
+    transform: rotate(-.55deg);
+  }
+  68% {
+    transform: rotate(1.45deg);
+  }
+  73% {
+    transform: rotate(-.25deg);
+  }
 }
+
+/* Tail movement is intentionally occasional rather than tied to every breath. */
 @keyframes maxTail {
-  0%, 26%, 100% { transform: rotate(0); }
-  62% { transform: rotate(1.3deg); }
+  0%, 53%, 92%, 100% {
+    transform: rotate(0);
+  }
+  62% {
+    transform: rotate(4deg);
+  }
+  69% {
+    transform: rotate(-1deg);
+  }
+  76% {
+    transform: rotate(2.7deg);
+  }
+  84% {
+    transform: rotate(0);
+  }
 }
+
 @keyframes maxBreathReduced {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.009, 1.004); }
+  38% { transform: scale(1.012, 1.006); }
+  80% { transform: scale(1.003, 1.002); }
 }
 
 .shell {
@@ -322,6 +435,6 @@
     animation-iteration-count: infinite !important;
     will-change: auto;
   }
-  .rigHeadGroup, .rigEarLeft, .rigEarRight, .rigTail { animation: none; will-change: auto; }
+  .rigHeadGroup, .rigHeadLife, .rigEarLeft, .rigEarRight, .rigTail { animation: none; will-change: auto; }
   .petCard, .petsAccess { transition: none; }
 }
