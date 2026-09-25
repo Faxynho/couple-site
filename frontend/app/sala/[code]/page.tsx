@@ -60,9 +60,9 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   const [lobbyNameError, setLobbyNameError] = useState<string | null>(null);
   const [viewedProfile, setViewedProfile] = useState<Awaited<ReturnType<typeof fetchAccounts>>[number] | null>(null);
   const profileRequestRef = useRef(0);
-  const lobbyVideoRef = useRef<HTMLVideoElement | null>(null);
-  const lobbyReverseAnimationRef = useRef<number | null>(null);
-  const lobbyReverseActiveRef = useRef(false);
+  const lobbyForwardVideoRef = useRef<HTMLVideoElement | null>(null);
+  const lobbyReverseVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [lobbyVideoDirection, setLobbyVideoDirection] = useState<"forward" | "reverse">("forward");
   const filteredGames = useMemo(() => {
     const query = normalizeGameSearch(search);
     if (!query) return GAMES;
@@ -97,16 +97,6 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
   useEffect(() => {
     if (kicked) router.push("/?aviso=expulso");
   }, [kicked, router]);
-
-  useEffect(() => {
-    return () => {
-      lobbyReverseActiveRef.current = false;
-      if (lobbyReverseAnimationRef.current !== null) {
-        cancelAnimationFrame(lobbyReverseAnimationRef.current);
-        lobbyReverseAnimationRef.current = null;
-      }
-    };
-  }, []);
 
   if (kicked) return null;
 
@@ -178,50 +168,19 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
     if (gameToPlay) selectGame(gameToPlay.id);
   };
 
-  const handleLobbyVideoEnded = () => {
-    const video = lobbyVideoRef.current;
-    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return;
+  const playLobbyVideo = (direction: "forward" | "reverse") => {
+    const nextVideo = direction === "forward" ? lobbyForwardVideoRef.current : lobbyReverseVideoRef.current;
+    const previousVideo = direction === "forward" ? lobbyReverseVideoRef.current : lobbyForwardVideoRef.current;
+    if (!nextVideo) return;
 
-    lobbyReverseActiveRef.current = false;
-    if (lobbyReverseAnimationRef.current !== null) {
-      cancelAnimationFrame(lobbyReverseAnimationRef.current);
-      lobbyReverseAnimationRef.current = null;
-    }
-
-    video.pause();
-    lobbyReverseActiveRef.current = true;
-
-    let position = video.duration;
-    let lastFrameAt = performance.now();
-    let lastSeekAt = 0;
-
-    const reverseFrame = (now: number) => {
-      if (!lobbyReverseActiveRef.current || lobbyVideoRef.current !== video) {
-        lobbyReverseAnimationRef.current = null;
-        return;
+    nextVideo.currentTime = 0;
+    void nextVideo.play().then(() => {
+      setLobbyVideoDirection(direction);
+      if (previousVideo) {
+        previousVideo.pause();
+        previousVideo.currentTime = 0;
       }
-
-      const elapsedSeconds = Math.min((now - lastFrameAt) / 1000, 0.1);
-      lastFrameAt = now;
-      position = Math.max(0, position - elapsedSeconds);
-
-      if (now - lastSeekAt >= 1000 / 30 || position === 0) {
-        video.currentTime = position;
-        lastSeekAt = now;
-      }
-
-      if (position <= 0) {
-        lobbyReverseActiveRef.current = false;
-        lobbyReverseAnimationRef.current = null;
-        video.currentTime = 0;
-        void video.play().catch(() => undefined);
-        return;
-      }
-
-      lobbyReverseAnimationRef.current = requestAnimationFrame(reverseFrame);
-    };
-
-    lobbyReverseAnimationRef.current = requestAnimationFrame(reverseFrame);
+    }).catch(() => undefined);
   };
 
   const handleViewProfile = async (player: Player) => {
@@ -249,15 +208,25 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
       {isPersistentDuo && !showMinigames && (
         <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
           <video
-            ref={lobbyVideoRef}
-            className="absolute inset-0 h-full w-full object-cover object-top"
+            ref={lobbyForwardVideoRef}
+            className={`absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-75 ${lobbyVideoDirection === "forward" ? "opacity-100" : "opacity-0"}`}
             autoPlay
             muted
             playsInline
             preload="auto"
-            onEnded={handleLobbyVideoEnded}
+            onEnded={() => playLobbyVideo("reverse")}
           >
             <source src="/vídeos/lobby-background-video.mp4" type="video/mp4" />
+          </video>
+          <video
+            ref={lobbyReverseVideoRef}
+            className={`absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-75 ${lobbyVideoDirection === "reverse" ? "opacity-100" : "opacity-0"}`}
+            muted
+            playsInline
+            preload="auto"
+            onEnded={() => playLobbyVideo("forward")}
+          >
+            <source src="/vídeos/lobby-background-video-reverse.mp4" type="video/mp4" />
           </video>
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/25" />
         </div>
