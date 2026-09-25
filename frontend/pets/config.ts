@@ -1,11 +1,15 @@
 export type PetAnimation = "idle";
 
-export interface PetDefinition {
+interface PetBase {
   id: "nix" | "max";
   name: string;
   portrait: string;
   portraitWidth: number;
   portraitHeight: number;
+}
+
+interface SheetPet extends PetBase {
+  renderer: "sheet";
   animations: Record<PetAnimation, {
     src: string;
     frames: number;
@@ -15,10 +19,32 @@ export interface PetDefinition {
   }>;
 }
 
+interface RigPart {
+  src: string;
+  // Coordinates in the original square master artwork, kept at one scale.
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  motion: "fixed" | "breath" | "head";
+}
+
+interface RigPet extends PetBase {
+  renderer: "rig";
+  rig: {
+    canvasSize: number;
+    duration: number;
+    parts: readonly RigPart[];
+  };
+}
+
+export type PetDefinition = SheetPet | RigPet;
+
 export const PETS: readonly PetDefinition[] = [
   {
     id: "nix",
     name: "Nix",
+    renderer: "sheet",
     portrait: "/pets/nix/portrait.webp",
     portraitWidth: 1229,
     portraitHeight: 1536,
@@ -35,17 +61,18 @@ export const PETS: readonly PetDefinition[] = [
   {
     id: "max",
     name: "Max",
+    renderer: "rig",
     portrait: "/pets/max/portrait.webp",
-    portraitWidth: 1536,
+    portraitWidth: 1125,
     portraitHeight: 1536,
-    animations: {
-      idle: {
-        src: "/pets/max/idle-breathing.webp",
-        frames: 16,
-        frameWidth: 384,
-        frameHeight: 384,
-        duration: 2.4,
-      },
+    rig: {
+      canvasSize: 1536,
+      duration: 3.4,
+      parts: [
+        { src: "/pets/max/body.webp", x: 190, y: 585, width: 1110, height: 935, motion: "fixed" },
+        { src: "/pets/max/chest.webp", x: 625, y: 640, width: 510, height: 430, motion: "breath" },
+        { src: "/pets/max/head.webp", x: 370, y: 10, width: 930, height: 740, motion: "head" },
+      ],
     },
   },
 ];

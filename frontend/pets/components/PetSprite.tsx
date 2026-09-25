@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { PetAnimation, PetDefinition } from "../config";
+import PetRig from "./PetRig";
 import styles from "../pets.module.css";
 
 interface PetSpriteProps {
@@ -8,11 +9,11 @@ interface PetSpriteProps {
   className?: string;
 }
 
-/**
- * One image contains eight equally sized frames in a horizontal strip.
- * CSS steps move the strip without timers or React updates.
- */
 export default function PetSprite({ pet, animation = "idle", className = "" }: PetSpriteProps) {
+  if (pet.renderer === "rig") {
+    return <PetRig pet={pet} animation={animation} className={className} />;
+  }
+
   const sheet = pet.animations[animation];
   const style = {
     aspectRatio: `${sheet.frameWidth} / ${sheet.frameHeight}`,

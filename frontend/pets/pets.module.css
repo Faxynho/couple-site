@@ -20,6 +20,33 @@
   to { transform: translateX(-100%); }
 }
 
+.rigRoot { isolation: isolate; }
+.rigPart {
+  position: absolute;
+  display: block;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+.rigBreath {
+  transform-origin: 50% 84%;
+  animation: maxBreath var(--rig-duration) ease-in-out infinite;
+  will-change: transform;
+}
+.rigHead {
+  transform-origin: 50% 90%;
+  animation: maxHead var(--rig-duration) ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes maxBreath {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.014, 1.004); }
+}
+@keyframes maxHead {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-.7%); }
+}
+
 .shell {
   min-height: 100dvh;
   overflow-x: clip;
@@ -256,5 +283,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .petStrip { animation: none; will-change: auto; }
+  .rigBreath, .rigHead { animation: none; will-change: auto; }
   .petCard, .petsAccess { transition: none; }
 }
