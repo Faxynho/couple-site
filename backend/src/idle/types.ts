@@ -11,6 +11,7 @@ export interface IdleModeState {
   totalEarned: number;
   totalUpgrades: number;
   visits: number;
+  totalClicks: number;
   lastSettledAt: number;
   items: Record<string, IdleOwnedItem>;
   unlockedAchievements: Record<string, number>;
@@ -32,6 +33,7 @@ export interface ObjectivePeriodState {
 }
 
 export interface IdleStoredData {
+  schemaVersion: number;
   revision: number;
   globalCoins: number;
   globalLifetimeEarned: number;
@@ -55,9 +57,11 @@ export interface IdleModeSnapshot {
   totalProduction: number;
   totalUpgrades: number;
   visits: number;
+  totalClicks: number;
   lastSettledAt: number;
   items: IdleItemSnapshot[];
   achievements: Array<AchievementDefinition & { completedAt: number | null; progress: number; target: number }>;
+  scenes: Array<{ id: 0 | 1 | 2; unlocked: boolean }>;
 }
 
 export interface RenewableObjectiveSnapshot extends RenewableObjectiveDefinition {

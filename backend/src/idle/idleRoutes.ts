@@ -55,6 +55,32 @@ idleRouter.post("/action", (req, res) => {
   res.json(result.snapshot);
 });
 
+idleRouter.post("/click", (req, res) => {
+  const body = req.body as { by?: unknown; mode?: unknown; itemId?: unknown };
+  if (!requireAccount(body.by, res)) return;
+  if (!isMode(body.mode) || typeof body.itemId !== "string") {
+    res.status(400).json({ error: "Clique inválido." });
+    return;
+  }
+  const result = idleStore.click(body.mode, body.itemId, String(body.by));
+  if (!result.ok) {
+    res.status(429).json(result);
+    return;
+  }
+  res.json(result);
+});
+
+idleRouter.post("/dev/add", (req, res) => {
+  const body = req.body as { by?: unknown; target?: unknown; amount?: unknown };
+  if (!requireAndre(body.by, res)) return;
+  const amount = Number(body.amount);
+  if ((body.target !== "global" && !isMode(body.target)) || !Number.isFinite(amount) || amount <= 0 || amount > 1e200) {
+    res.status(400).json({ error: "Informe um valor positivo válido." });
+    return;
+  }
+  res.json({ ok: true, snapshot: idleStore.addTestFunds(body.target, amount) });
+});
+
 idleRouter.delete("/reset/:target", (req, res) => {
   const body = req.body as { by?: unknown };
   if (!requireAndre(body.by, res)) return;

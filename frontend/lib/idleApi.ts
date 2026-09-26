@@ -32,6 +32,25 @@ export async function idleItemAction(accountId: AccountId, mode: IdleModeId, ite
   return parse<IdleSnapshot>(response);
 }
 
+export async function idleClick(accountId: AccountId, mode: IdleModeId, itemId: string): Promise<{ reward: number; snapshot: IdleSnapshot }> {
+  const response = await fetch(`${API_BASE}/api/idle/click`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ by: accountId, mode, itemId }),
+  });
+  return parse<{ reward: number; snapshot: IdleSnapshot }>(response);
+}
+
+export async function addIdleTestFunds(target: "global" | IdleModeId, amount: number, by: AccountId): Promise<IdleSnapshot> {
+  const response = await fetch(`${API_BASE}/api/idle/dev/add`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ by, target, amount }),
+  });
+  const body = await parse<{ ok: true; snapshot: IdleSnapshot }>(response);
+  return body.snapshot;
+}
+
 export async function resetIdle(target: "global" | IdleModeId, by: AccountId): Promise<IdleSnapshot> {
   const response = await fetch(`${API_BASE}/api/idle/reset/${target}`, {
     method: "DELETE",

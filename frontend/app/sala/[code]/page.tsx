@@ -20,6 +20,7 @@ import AccountPanel from "@/components/account/AccountPanel";
 import { fetchAccounts } from "@/lib/accountApi";
 import PersistentDuoStatus from "@/components/duo/PersistentDuoStatus";
 import DuoTogetherTimeBadge from "@/components/duo/DuoTogetherTimeBadge";
+import DuoGlobalCoinsBadge from "@/components/duo/DuoGlobalCoinsBadge";
 import SharedDrawingBoard from "@/components/duo/SharedDrawingBoard";
 import PersistentDuoLobbyScene from "@/components/duo/PersistentDuoLobbyScene";
 import PersistentDuoMinigamesScene from "@/components/duo/PersistentDuoMinigamesScene";
@@ -365,6 +366,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                 <div className="relative z-20 mx-auto w-full max-w-md px-4 pt-2 sm:max-w-2xl">
                   <IdleLobbyEntry onClick={() => router.push("/cantinho")} />
                   <DuoTogetherTimeBadge />
+                  <DuoGlobalCoinsBadge />
                   <div className="mt-3">
                     <PersistentDuoStatus presence={persistentPresence} />
                   </div>

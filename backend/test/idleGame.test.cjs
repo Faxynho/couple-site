@@ -6,28 +6,30 @@ const { join } = require("node:path");
 
 const { IdleStore } = require("../dist/idle/IdleStore.js");
 
-test("estado inicial permite a primeira melhoria nos dois modos", () => {
+test("estado inicial começa vazio e permite comprar o primeiro item nos dois modos", () => {
   let now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
   const snapshot = store.getSnapshot();
 
-  assert.equal(snapshot.modes.farm.items[0].purchased, true);
-  assert.equal(snapshot.modes.farm.items[0].level, 1);
-  assert.ok(snapshot.modes.farm.balance >= snapshot.modes.farm.items[0].nextCost);
-  assert.equal(snapshot.modes.kitty.items[0].purchased, true);
-  assert.ok(snapshot.modes.kitty.balance >= snapshot.modes.kitty.items[0].nextCost);
-  assert.equal(snapshot.globalCoins, 20, "as duas conquistas iniciais são premiadas uma vez");
+  assert.equal(snapshot.modes.farm.items[0].purchased, false);
+  assert.equal(snapshot.modes.farm.items[0].level, 0);
+  assert.equal(snapshot.modes.farm.balance, snapshot.modes.farm.items[0].nextCost);
+  assert.equal(snapshot.modes.kitty.items[0].purchased, false);
+  assert.equal(snapshot.modes.kitty.balance, snapshot.modes.kitty.items[0].nextCost);
+  assert.equal(snapshot.globalCoins, 0);
+  assert.equal(store.act("farm", "garden", "buy").ok, true);
+  assert.equal(store.act("kitty", "hello-kitty", "buy").ok, true);
 });
 
 test("produção offline é limitada a oito horas e só é liquidada uma vez", () => {
   let now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
-  store.getSnapshot();
+  store.act("farm", "garden", "buy");
   now += 10 * 60 * 60 * 1_000;
 
   const first = store.enterMode("farm");
   assert.equal(first.offlineReward.elapsedMs, 8 * 60 * 60 * 1_000);
-  assert.equal(first.offlineReward.amount, 57_600);
+  assert.equal(first.offlineReward.amount, 34_560);
   const second = store.enterMode("farm");
   assert.equal(second.offlineReward, null);
   assert.equal(second.modes.farm.balance, first.modes.farm.balance);
@@ -36,14 +38,15 @@ test("produção offline é limitada a oito horas e só é liquidada uma vez", (
 test("duas melhorias concorrentes nunca gastam mais que o saldo", () => {
   const now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
-  store.getSnapshot();
+  store.act("farm", "garden", "buy");
+  store.addTestFunds("farm", 150);
 
   const first = store.act("farm", "garden", "upgrade");
   const second = store.act("farm", "garden", "upgrade");
   assert.equal(first.ok, true);
   assert.equal(second.ok, false);
   assert.equal(second.snapshot.modes.farm.items[0].level, 2);
-  assert.equal(second.snapshot.modes.farm.balance, 10);
+  assert.equal(second.snapshot.modes.farm.balance, 70);
   assert.ok(second.snapshot.modes.farm.balance >= 0);
 });
 
@@ -60,12 +63,12 @@ test("ledger impede prêmio duplicado do mesmo encerramento de minigame", () => 
 test("objetivo diário de entrada premia uma única vez no período", () => {
   const now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
-  assert.equal(store.getSnapshot().globalCoins, 20);
+  assert.equal(store.getSnapshot().globalCoins, 0);
 
   const first = store.enterMode("farm");
   const second = store.enterMode("farm");
-  assert.equal(first.globalCoins, 25);
-  assert.equal(second.globalCoins, 25);
+  assert.equal(first.globalCoins, 5);
+  assert.equal(second.globalCoins, 5);
   assert.ok(second.objectives.daily.find((item) => item.id === "daily-farm-entry").completedAt);
 });
 
@@ -74,12 +77,9 @@ test("compras da fazendinha não usam nem alteram o saldo da Hello Kitty", () =>
   const store = new IdleStore(false, () => now);
   store.getSnapshot();
   const kittyBefore = store.getSnapshot().modes.kitty.balance;
-  now += 60_000;
-  store.enterMode("farm");
-
-  const result = store.act("farm", "chicken-coop", "buy");
+  const result = store.act("farm", "garden", "buy");
   assert.equal(result.ok, true);
-  assert.equal(result.snapshot.modes.farm.items[1].purchased, true);
+  assert.equal(result.snapshot.modes.farm.items[0].purchased, true);
   assert.equal(result.snapshot.modes.kitty.balance, kittyBefore);
 });
 
@@ -90,7 +90,8 @@ test("estado financeiro persiste e reaparece depois de recarregar o store", asyn
   try {
     const first = new IdleStore(true, () => now, file);
     await first.ready();
-    first.getSnapshot();
+    first.act("farm", "garden", "buy");
+    first.addTestFunds("farm", 100);
     assert.equal(first.act("farm", "garden", "upgrade").ok, true);
     await new Promise((resolve) => setTimeout(resolve, 650));
 
@@ -98,8 +99,8 @@ test("estado financeiro persiste e reaparece depois de recarregar o store", asyn
     await reloaded.ready();
     const snapshot = reloaded.getSnapshot();
     assert.equal(snapshot.modes.farm.items[0].level, 2);
-    assert.equal(snapshot.modes.farm.balance, 10);
-    assert.equal(snapshot.globalCoins, 20);
+    assert.equal(snapshot.modes.farm.balance, 20);
+    assert.equal(snapshot.globalCoins, 5);
   } finally {
     await rm(folder, { recursive: true, force: true });
   }
@@ -108,17 +109,17 @@ test("estado financeiro persiste e reaparece depois de recarregar o store", asyn
 test("resets são independentes e restauram somente o alvo", () => {
   let now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
-  store.getSnapshot();
-  now += 60_000;
-  store.enterMode("farm");
+  store.act("farm", "garden", "buy");
+  store.addTestFunds("farm", 100);
   store.act("farm", "garden", "upgrade");
   store.recordMinigameCompletion("puzzle", "puzzle:1:andre", false);
   const kittyBefore = store.getSnapshot().modes.kitty;
 
   store.resetMode("farm");
   const reset = store.getSnapshot();
-  assert.equal(reset.modes.farm.balance, 30);
-  assert.equal(reset.modes.farm.items[0].level, 1);
+  assert.equal(reset.modes.farm.balance, 40);
+  assert.equal(reset.modes.farm.items[0].level, 0);
+  assert.equal(reset.modes.farm.items[0].purchased, false);
   assert.equal(reset.modes.farm.totalUpgrades, 0);
   assert.deepEqual(reset.modes.kitty, kittyBefore);
   assert.ok(reset.globalCoins > 0);
@@ -126,4 +127,42 @@ test("resets são independentes e restauram somente o alvo", () => {
   store.resetGlobalCoins();
   assert.equal(store.getSnapshot().globalCoins, 0);
   assert.equal(store.getSnapshot().modes.kitty.balance, kittyBefore.balance);
+});
+
+test("cenários dois e três desbloqueiam ao comprar o primeiro item do grupo", () => {
+  const now = Date.parse("2026-09-26T12:00:00-03:00");
+  const store = new IdleStore(false, () => now);
+  let snapshot = store.getSnapshot();
+  assert.deepEqual(snapshot.modes.farm.scenes.map((scene) => scene.unlocked), [true, false, false]);
+  store.addTestFunds("farm", 2_000_000_000);
+  for (const id of ["garden", "chicken-coop", "fruit-stand", "orchard", "bakery"]) assert.equal(store.act("farm", id, "buy").ok, true);
+  snapshot = store.getSnapshot();
+  assert.equal(snapshot.modes.farm.scenes[1].unlocked, true);
+  for (const id of ["barn", "windmill", "market", "greenhouse"]) assert.equal(store.act("farm", id, "buy").ok, true);
+  assert.equal(store.getSnapshot().modes.farm.scenes[2].unlocked, true);
+});
+
+test("clicker premia item comprado e limita spam por conta", () => {
+  let now = Date.parse("2026-09-26T12:00:00-03:00");
+  const store = new IdleStore(false, () => now);
+  store.act("kitty", "hello-kitty", "buy");
+  const first = store.click("kitty", "hello-kitty", "andre");
+  assert.equal(first.ok, true);
+  assert.equal(first.reward, 1);
+  assert.equal(first.snapshot.modes.kitty.totalClicks, 1);
+  assert.equal(store.click("kitty", "hello-kitty", "andre").ok, false);
+  assert.equal(store.click("kitty", "hello-kitty", "flavia").ok, true, "cada conta tem seu próprio limite curto");
+  now += 125;
+  assert.equal(store.click("kitty", "hello-kitty", "andre").ok, true);
+});
+
+test("créditos de desenvolvedor alteram apenas o saldo escolhido", () => {
+  const now = Date.parse("2026-09-26T12:00:00-03:00");
+  const store = new IdleStore(false, () => now);
+  store.addTestFunds("farm", 1_000);
+  store.addTestFunds("global", 25);
+  const snapshot = store.getSnapshot();
+  assert.equal(snapshot.modes.farm.balance, 1_040);
+  assert.equal(snapshot.modes.kitty.balance, 60);
+  assert.equal(snapshot.globalCoins, 25);
 });

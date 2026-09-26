@@ -10,7 +10,7 @@ export interface IdleItemDefinition {
   costGrowth: number;
   productionGrowth: number;
   unlockOrder: number;
-  starter?: boolean;
+  scene: 0 | 1 | 2;
 }
 
 export interface IdleItemSnapshot {
@@ -42,9 +42,11 @@ export interface IdleModeSnapshot {
   totalProduction: number;
   totalUpgrades: number;
   visits: number;
+  totalClicks: number;
   lastSettledAt: number;
   items: IdleItemSnapshot[];
   achievements: IdleAchievementSnapshot[];
+  scenes: Array<{ id: 0 | 1 | 2; unlocked: boolean }>;
 }
 
 export interface RenewableObjectiveSnapshot {

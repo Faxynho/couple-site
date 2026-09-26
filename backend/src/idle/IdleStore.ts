@@ -9,6 +9,7 @@ import {
   MINIGAME_GLOBAL_REWARDS,
   OFFLINE_CAP_MS,
   RENEWABLE_OBJECTIVES,
+  itemClickReward,
   itemProduction,
   itemUpgradeCost,
 } from "./idleConfig";
@@ -26,7 +27,12 @@ import { GameId } from "../types";
 const DEFAULT_DATA_FILE = path.join(__dirname, "..", "..", "data", "idle-game.json");
 const SAVE_DEBOUNCE_MS = 500;
 const MAX_REWARDED_MATCHES = 500;
-const INITIAL_BALANCE: Record<IdleModeId, number> = { farm: 30, kitty: 60 };
+const CURRENT_SCHEMA_VERSION = 2;
+const INITIAL_BALANCE: Record<IdleModeId, number> = {
+  farm: IDLE_CATALOG.farm[0].baseCost,
+  kitty: IDLE_CATALOG.kitty[0].baseCost,
+};
+const CLICK_COOLDOWN_MS = 125;
 const ALL_METRICS: ObjectiveMetric[] = [
   "farmEntries", "kittyEntries", "farmUpgrades", "kittyUpgrades",
   "farmEarnings", "kittyEarnings", "minigames",
@@ -83,14 +89,14 @@ function newPeriod(key: string): ObjectivePeriodState {
 function newMode(mode: IdleModeId, now: number): IdleModeState {
   const items: Record<string, IdleOwnedItem> = {};
   for (const item of IDLE_CATALOG[mode]) {
-    const purchased = Boolean(item.starter);
-    items[item.id] = { purchased, level: purchased ? 1 : 0, purchasedAt: purchased ? now : null };
+    items[item.id] = { purchased: false, level: 0, purchasedAt: null };
   }
   return {
     balance: INITIAL_BALANCE[mode],
     totalEarned: 0,
     totalUpgrades: 0,
     visits: 0,
+    totalClicks: 0,
     lastSettledAt: now,
     items,
     unlockedAchievements: {},
@@ -99,6 +105,7 @@ function newMode(mode: IdleModeId, now: number): IdleModeState {
 
 function emptyData(now: number): IdleStoredData {
   return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     revision: 0,
     globalCoins: 0,
     globalLifetimeEarned: 0,
@@ -117,12 +124,13 @@ function sanitizeMode(mode: IdleModeId, value: unknown, now: number): IdleModeSt
   base.totalEarned = safeMoney(Number(input.totalEarned ?? 0));
   base.totalUpgrades = Math.max(0, Math.floor(Number(input.totalUpgrades ?? 0)));
   base.visits = Math.max(0, Math.floor(Number(input.visits ?? 0)));
+  base.totalClicks = Math.max(0, Math.floor(Number(input.totalClicks ?? 0)));
   const savedAt = Number(input.lastSettledAt);
   base.lastSettledAt = Number.isFinite(savedAt) ? Math.min(now, Math.max(0, savedAt)) : now;
   for (const definition of IDLE_CATALOG[mode]) {
     const saved = input.items?.[definition.id];
     if (!saved || typeof saved !== "object") continue;
-    const purchased = Boolean(saved.purchased) || Boolean(definition.starter);
+    const purchased = Boolean(saved.purchased);
     const level = purchased ? Math.max(1, Math.min(10_000, Math.floor(Number(saved.level) || 1))) : 0;
     base.items[definition.id] = {
       purchased,
@@ -165,6 +173,7 @@ export class IdleStore {
   private savingNow = false;
   private saveAgainAfter = false;
   private listeners = new Set<(snapshot: IdleSnapshot) => void>();
+  private lastClickAt = new Map<string, number>();
 
   constructor(
     private readonly shouldPersist = true,
@@ -191,23 +200,26 @@ export class IdleStore {
       const parsed = JSON.parse(await fs.readFile(this.dataFile, "utf-8")) as Partial<IdleStoredData>;
       const now = this.now();
       const base = emptyData(now);
+      const legacyBalance = Number(parsed.schemaVersion ?? 1) < CURRENT_SCHEMA_VERSION;
       this.data = {
+        schemaVersion: CURRENT_SCHEMA_VERSION,
         revision: Math.max(0, Math.floor(Number(parsed.revision) || 0)),
         globalCoins: safeMoney(Number(parsed.globalCoins ?? 0)),
         globalLifetimeEarned: safeMoney(Number(parsed.globalLifetimeEarned ?? 0)),
         modes: {
-          farm: sanitizeMode("farm", parsed.modes?.farm, now),
-          kitty: sanitizeMode("kitty", parsed.modes?.kitty, now),
+          farm: legacyBalance ? base.modes.farm : sanitizeMode("farm", parsed.modes?.farm, now),
+          kitty: legacyBalance ? base.modes.kitty : sanitizeMode("kitty", parsed.modes?.kitty, now),
         },
         objectives: {
-          daily: sanitizePeriod(parsed.objectives?.daily, base.objectives.daily),
-          weekly: sanitizePeriod(parsed.objectives?.weekly, base.objectives.weekly),
+          daily: legacyBalance ? base.objectives.daily : sanitizePeriod(parsed.objectives?.daily, base.objectives.daily),
+          weekly: legacyBalance ? base.objectives.weekly : sanitizePeriod(parsed.objectives?.weekly, base.objectives.weekly),
         },
         rewardedMatches: Array.isArray(parsed.rewardedMatches)
           ? parsed.rewardedMatches.filter((id): id is string => typeof id === "string").slice(-MAX_REWARDED_MATCHES)
           : [],
         updatedAt: Number.isFinite(parsed.updatedAt) ? Number(parsed.updatedAt) : now,
       };
+      if (legacyBalance) this.scheduleSave();
     } catch {
       this.data = emptyData(this.now());
     }
@@ -373,6 +385,7 @@ export class IdleStore {
       totalProduction: this.totalProduction(mode),
       totalUpgrades: state.totalUpgrades,
       visits: state.visits,
+      totalClicks: state.totalClicks,
       lastSettledAt: state.lastSettledAt,
       items,
       achievements: ACHIEVEMENTS.filter((item) => item.mode === mode).map((achievement) => {
@@ -384,6 +397,10 @@ export class IdleStore {
           target: status.target,
         };
       }),
+      scenes: ([0, 1, 2] as const).map((scene) => ({
+        id: scene,
+        unlocked: scene === 0 || IDLE_CATALOG[mode].some((definition) => definition.scene === scene && state.items[definition.id]?.purchased),
+      })),
     };
   }
 
@@ -470,6 +487,42 @@ export class IdleStore {
     this.evaluateAchievements(mode, now);
     this.touch(now);
     return { ok: true, snapshot: this.buildSnapshot(null) };
+  }
+
+  click(mode: IdleModeId, itemId: string, accountId: string): { ok: true; reward: number; snapshot: IdleSnapshot } | { ok: false; error: string; snapshot: IdleSnapshot } {
+    const now = this.now();
+    this.ensurePeriods(now);
+    const settled = this.settle(mode, now);
+    const fail = (error: string) => {
+      if (settled.amount > 0) this.touch(now);
+      return { ok: false as const, error, snapshot: this.buildSnapshot(null) };
+    };
+    const clickKey = `${accountId}:${mode}`;
+    if (now - (this.lastClickAt.get(clickKey) ?? -Infinity) < CLICK_COOLDOWN_MS) {
+      return fail("Toque rápido demais. Espere só um instante.");
+    }
+    const definition = IDLE_CATALOG[mode].find((item) => item.id === itemId);
+    const owned = definition ? this.data.modes[mode].items[itemId] : null;
+    if (!definition || !owned?.purchased) return fail("Compre este item antes de coletar com ele.");
+
+    this.lastClickAt.set(clickKey, now);
+    const reward = itemClickReward(definition, owned.level);
+    const state = this.data.modes[mode];
+    state.balance = safeMoney(state.balance + reward);
+    state.totalEarned = safeMoney(state.totalEarned + reward);
+    state.totalClicks += 1;
+    this.addMetric(mode === "farm" ? "farmEarnings" : "kittyEarnings", reward, now);
+    this.touch(now);
+    return { ok: true, reward, snapshot: this.buildSnapshot(null) };
+  }
+
+  addTestFunds(target: "global" | IdleModeId, amount: number): IdleSnapshot {
+    const now = this.now();
+    const safeAmount = safeMoney(amount);
+    if (target === "global") this.data.globalCoins = safeMoney(this.data.globalCoins + safeAmount);
+    else this.data.modes[target].balance = safeMoney(this.data.modes[target].balance + safeAmount);
+    this.touch(now);
+    return this.buildSnapshot(null);
   }
 
   recordMinigameCompletion(gameId: GameId, rewardId: string, decisive: boolean): number {

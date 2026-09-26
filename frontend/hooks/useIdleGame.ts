@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getActiveAccount } from "@/lib/accountSession";
-import { enterIdleMode, fetchIdleSnapshot, idleItemAction } from "@/lib/idleApi";
+import { enterIdleMode, fetchIdleSnapshot, idleClick, idleItemAction } from "@/lib/idleApi";
 import { IdleModeId, IdleSnapshot } from "@/lib/idleTypes";
 import { getSocket } from "@/lib/socket";
 
@@ -11,6 +11,7 @@ export function useIdleGame(mode?: IdleModeId) {
   const [error, setError] = useState<string | null>(null);
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const lastClickRef = useRef(0);
   const active = useMemo(() => getActiveAccount(), []);
   const accountId = active?.type === "account" ? active.id : null;
 
@@ -29,6 +30,12 @@ export function useIdleGame(mode?: IdleModeId) {
   }, [accountId, mode]);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    if (!error) return;
+    const timer = window.setTimeout(() => setError(null), 3_200);
+    return () => window.clearTimeout(timer);
+  }, [error]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -54,20 +61,38 @@ export function useIdleGame(mode?: IdleModeId) {
       + snapshot.modes[mode].totalProduction * Math.max(0, now - snapshot.modes[mode].lastSettledAt) / 1_000
     : 0;
 
-  const act = useCallback(async (itemId: string, action: "buy" | "upgrade") => {
-    if (!mode || !accountId || busyItemId) return;
+  const act = useCallback(async (itemId: string, action: "buy" | "upgrade"): Promise<boolean> => {
+    if (!mode || !accountId || busyItemId) return false;
     setBusyItemId(itemId);
     setError(null);
     try {
       setSnapshot(await idleItemAction(accountId, mode, itemId, action));
       setNow(Date.now());
+      return true;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível concluir a compra.");
-      await load();
+      return false;
     } finally {
       setBusyItemId(null);
     }
-  }, [accountId, busyItemId, load, mode]);
+  }, [accountId, busyItemId, mode]);
 
-  return { snapshot, error, loading: !snapshot && !error, accountId, displayedBalance, busyItemId, act, reload: load };
+  const clickItem = useCallback(async (itemId: string): Promise<number | null> => {
+    if (!mode || !accountId) return null;
+    const clickedAt = Date.now();
+    if (clickedAt - lastClickRef.current < 125) return null;
+    lastClickRef.current = clickedAt;
+    try {
+      const result = await idleClick(accountId, mode, itemId);
+      setSnapshot(result.snapshot);
+      setNow(Date.now());
+      return result.reward;
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : "Não foi possível coletar agora.";
+      if (!message.includes("rápido demais")) setError(message);
+      return null;
+    }
+  }, [accountId, mode]);
+
+  return { snapshot, error, loading: !snapshot && !error, accountId, displayedBalance, busyItemId, act, clickItem, reload: load };
 }

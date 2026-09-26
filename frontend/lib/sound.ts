@@ -30,7 +30,9 @@ export type SoundEffect =
   | "chessCapture"
   | "chessCheck"
   | "chessPromotion"
-  | "chessDefeat";
+  | "chessDefeat"
+  | "idlePop"
+  | "idleAchievement";
 
 const SOUND_EVENT = "couple-site:sound-change";
 const SOUND_STORAGE_KEY = "couple-site:sound-enabled";
@@ -148,6 +150,16 @@ export function playSoundEffect(effect: SoundEffect) {
       case "chessCheck": tone(context, 620, 0.09, 0, 0.045); tone(context, 790, 0.1, 0.075, 0.04); break;
       case "chessPromotion": tone(context, 523, 0.07, 0, 0.04); tone(context, 659, 0.08, 0.06, 0.045); tone(context, 784, 0.1, 0.12, 0.045); break;
       case "chessDefeat": tone(context, 260, 0.1, 0, 0.04, "triangle"); tone(context, 196, 0.16, 0.09, 0.035); break;
+      case "idlePop":
+        sweepTone(context, 360, 680, 0.11, 0.045);
+        tone(context, 940, 0.045, 0.045, 0.025, "triangle");
+        break;
+      case "idleAchievement":
+        tone(context, 523, 0.08, 0, 0.045);
+        tone(context, 659, 0.09, 0.07, 0.05);
+        tone(context, 784, 0.11, 0.14, 0.052);
+        tone(context, 1046, 0.18, 0.23, 0.055);
+        break;
     }
   } catch {
     // Áudio é apenas um extra decorativo; falhas silenciosas não afetam o jogo.
