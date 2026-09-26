@@ -12,16 +12,16 @@ test("aba Quarto mostra a arte real e alterna o estado visual ao tocar", () => {
 
   const heart = screen.getByRole("button", { name: "Colocar Quadro coração" });
   expect(heart.getAttribute("aria-pressed")).toBe("false");
-  expect(heart.querySelector("img")?.getAttribute("src")).toBe("/images/pets/room/decor/heart-frame.svg");
+  expect(heart.querySelector("img")?.getAttribute("src")).toBe("/images/pets/room/decor/heart-frame.webp");
   fireEvent.click(heart);
-  expect(onToggle).toHaveBeenCalledWith(expect.objectContaining({ id: "heart-frame", slot: "wall-left" }));
+  expect(onToggle).toHaveBeenCalledWith(expect.objectContaining({ id: "heart-frame", slot: "wall-heart" }));
 
-  view.rerender(<PetRoomDrawer pet={PETS[0]} slots={{ "wall-left": "heart-frame" }} ready error="" onToggle={onToggle} />);
+  view.rerender(<PetRoomDrawer pet={PETS[0]} slots={{ "wall-heart": "heart-frame" }} ready error="" onToggle={onToggle} />);
   expect(screen.getByRole("button", { name: "Remover Quadro coração" }).getAttribute("aria-pressed")).toBe("true");
   fireEvent.click(screen.getByRole("button", { name: "Remover Quadro coração" }));
   expect(onToggle).toHaveBeenCalledTimes(2);
 
   fireEvent.click(screen.getByRole("button", { name: "Parede" }));
-  expect(screen.queryByRole("button", { name: "Colocar Bolinha lilás" })).toBeNull();
-  expect(screen.getByRole("button", { name: "Colocar Pôster de patinha" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Colocar Caminha" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Colocar Quadro patinha" })).toBeTruthy();
 });

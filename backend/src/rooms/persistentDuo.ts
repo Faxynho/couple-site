@@ -69,13 +69,14 @@ export interface PetRoomSnapshot extends PetRoomState {
 
 // These IDs mirror the visual catalog. Reject unknown IDs and never trust a client slot.
 const PET_DECORATION_SLOTS: Record<string, string> = {
-  "heart-frame": "wall-left", "paw-poster": "wall-left", clock: "wall-left",
-  polaroids: "wall-right", garland: "wall-high", "heart-mobile": "wall-high",
-  pillow: "floor-left", "toy-basket": "floor-left", plush: "floor-left",
-  "rope-toy": "floor-right", ball: "floor-right", flowers: "floor-corner",
-  "storage-box": "furniture-right", "side-table": "furniture-right",
-  "star-lamp": "furniture-top", blanket: "bed-top",
+  "heart-frame": "wall-heart", "paw-poster": "wall-paw", shelf: "wall-shelf",
+  plant: "floor-plant", rug: "floor-rug", bed: "floor-bed",
+  dresser: "floor-dresser", lamp: "floor-lamp", bowls: "floor-bowls", bone: "floor-bone",
 };
+const DEFAULT_PET_ROOM_SLOTS = Object.fromEntries(
+  Object.entries(PET_DECORATION_SLOTS).map(([id, slot]) => [slot, id]),
+);
+const newPetRoomState = (): PetRoomState => ({ revision: 0, slots: { ...DEFAULT_PET_ROOM_SLOTS } });
 
 export function isPetRoomId(value: unknown): value is PetRoomId {
   return value === "nix" || value === "max";
@@ -83,13 +84,22 @@ export function isPetRoomId(value: unknown): value is PetRoomId {
 
 function sanitizePetRoomState(value: unknown): PetRoomState {
   const input = value && typeof value === "object" ? value as Partial<PetRoomState> : {};
+  const revision = Number.isSafeInteger(input.revision) && Number(input.revision) >= 0 ? Number(input.revision) : 0;
+  // The original rooms started with an empty revision-0 catalog. Seed the new
+  // composition once; a room the user has changed keeps its chosen items.
+  if (revision === 0 && (!input.slots || Object.keys(input.slots).length === 0)) return newPetRoomState();
   const slots: Record<string, string> = {};
   if (input.slots && typeof input.slots === "object" && !Array.isArray(input.slots)) {
     for (const [slot, id] of Object.entries(input.slots)) {
-      if (typeof id === "string" && PET_DECORATION_SLOTS[id] === slot) slots[slot] = id;
+      if (typeof id !== "string") continue;
+      if (PET_DECORATION_SLOTS[id] === slot) slots[slot] = id;
+      // Both framed pictures used to share a slot in the previous catalog.
+      else if (slot === "wall-left" && (id === "heart-frame" || id === "paw-poster")) {
+        slots[PET_DECORATION_SLOTS[id]] = id;
+      }
     }
   }
-  return { revision: Number.isSafeInteger(input.revision) && Number(input.revision) >= 0 ? Number(input.revision) : 0, slots };
+  return { revision, slots };
 }
 
 export const SHARED_DRAWING_COLORS = [
@@ -226,7 +236,7 @@ export class PersistentDuoStore {
   private data: PersistentDuoStoredData = {
     displayName: PERSISTENT_DUO_DEFAULT_DISPLAY_NAME,
     drawing: emptyDrawingBoard(),
-    petRooms: { nix: { revision: 0, slots: {} }, max: { revision: 0, slots: {} } },
+    petRooms: { nix: newPetRoomState(), max: newPetRoomState() },
   };
   private loadPromise: Promise<void> | null = null;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;

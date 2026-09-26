@@ -11,29 +11,23 @@ export interface Decoration {
   slot: string;
   position: { left: number; top?: number; bottom?: number; width: number };
   layer: "wall" | "rear" | "front";
+  light?: { originX: number; originY: number };
 }
 
-const art = (name: string) => `/images/pets/room/decor/${name}.svg`;
+const art = (name: string) => `/images/pets/room/decor/${name}.webp`;
 
-// Percentages refer to the room stage. Objects retain their intrinsic SVG aspect ratio.
-// A slot has one occupant; selecting another item in it replaces the current one.
+// Positions are percentages of the stage. Slots are validated on the server.
 export const PET_ROOM_DECORATIONS: readonly Decoration[] = [
-  { id: "heart-frame", name: "Quadro coração", asset: art("heart-frame"), category: "Parede", slot: "wall-left", position: { left: 7, top: 28, width: 14 }, layer: "wall" },
-  { id: "paw-poster", name: "Pôster de patinha", asset: art("paw-poster"), category: "Parede", slot: "wall-left", position: { left: 7, top: 26, width: 14 }, layer: "wall" },
-  { id: "clock", name: "Relógio", asset: art("clock"), category: "Parede", slot: "wall-left", position: { left: 7, top: 27, width: 13 }, layer: "wall" },
-  { id: "polaroids", name: "Fotinhas", asset: art("polaroids"), category: "Parede", slot: "wall-right", position: { left: 71, top: 27, width: 23 }, layer: "wall" },
-  { id: "garland", name: "Cordão de luzes", asset: art("garland"), category: "Parede", slot: "wall-high", position: { left: 5, top: 15, width: 28 }, layer: "wall" },
-  { id: "heart-mobile", name: "Corações suspensos", asset: art("heart-mobile"), category: "Parede", slot: "wall-high", position: { left: 14, top: 11, width: 13 }, layer: "wall" },
-  { id: "pillow", name: "Almofada", asset: art("pillow"), category: "Chão", slot: "floor-left", position: { left: 6, bottom: 4, width: 17 }, layer: "front" },
-  { id: "toy-basket", name: "Cesta de brinquedos", asset: art("toy-basket"), category: "Chão", slot: "floor-left", position: { left: 5, bottom: 3, width: 18 }, layer: "front" },
-  { id: "plush", name: "Ursinho de pelúcia", asset: art("plush"), category: "Chão", slot: "floor-left", position: { left: 8, bottom: 3, width: 13 }, layer: "front" },
-  { id: "rope-toy", name: "Brinquedo de corda", asset: art("rope-toy"), category: "Chão", slot: "floor-right", position: { left: 76, bottom: 5, width: 15 }, layer: "front" },
-  { id: "ball", name: "Bolinha lilás", asset: art("ball"), category: "Chão", slot: "floor-right", position: { left: 80, bottom: 5, width: 10 }, layer: "front" },
-  { id: "flowers", name: "Vaso de flores", asset: art("flowers"), category: "Chão", slot: "floor-corner", position: { left: 75, bottom: 29, width: 10 }, layer: "rear" },
-  { id: "storage-box", name: "Caixa organizadora", asset: art("storage-box"), category: "Móveis", slot: "furniture-right", position: { left: 75, bottom: 18, width: 14 }, layer: "rear" },
-  { id: "side-table", name: "Mesinha de flores", asset: art("side-table"), category: "Móveis", slot: "furniture-right", position: { left: 72, bottom: 17, width: 17 }, layer: "rear" },
-  { id: "star-lamp", name: "Luz de estrela", asset: art("star-lamp"), category: "Móveis", slot: "furniture-top", position: { left: 85, bottom: 37, width: 8 }, layer: "rear" },
-  { id: "blanket", name: "Mantinha lilás", asset: art("blanket"), category: "Móveis", slot: "bed-top", position: { left: 8, bottom: 16, width: 18 }, layer: "front" },
+  { id: "heart-frame", name: "Quadro coração", asset: art("heart-frame"), category: "Parede", slot: "wall-heart", position: { left: 8, top: 22, width: 9 }, layer: "wall" },
+  { id: "paw-poster", name: "Quadro patinha", asset: art("paw-poster"), category: "Parede", slot: "wall-paw", position: { left: 8, top: 34, width: 9 }, layer: "wall" },
+  { id: "shelf", name: "Prateleira", asset: art("shelf"), category: "Parede", slot: "wall-shelf", position: { left: 73, top: 29, width: 22 }, layer: "wall" },
+  { id: "plant", name: "Planta", asset: art("plant"), category: "Chão", slot: "floor-plant", position: { left: 2, bottom: 27, width: 18 }, layer: "rear" },
+  { id: "rug", name: "Tapete", asset: art("rug"), category: "Chão", slot: "floor-rug", position: { left: 21, bottom: 4, width: 57 }, layer: "rear" },
+  { id: "bed", name: "Caminha", asset: art("bed"), category: "Móveis", slot: "floor-bed", position: { left: 2, bottom: 14, width: 30 }, layer: "rear" },
+  { id: "dresser", name: "Cômoda", asset: art("dresser"), category: "Móveis", slot: "floor-dresser", position: { left: 82, bottom: 19, width: 16 }, layer: "rear" },
+  { id: "lamp", name: "Abajur", asset: art("lamp"), category: "Móveis", slot: "floor-lamp", position: { left: 71, bottom: 19, width: 10 }, layer: "rear", light: { originX: 50, originY: 18 } },
+  { id: "bowls", name: "Potes", asset: art("bowls"), category: "Chão", slot: "floor-bowls", position: { left: 76, bottom: 5, width: 22 }, layer: "front" },
+  { id: "bone", name: "Ossinho", asset: art("bone"), category: "Chão", slot: "floor-bone", position: { left: 69, bottom: 13, width: 10 }, layer: "rear" },
 ];
 
 export type PetRoomSlots = Record<string, string>;

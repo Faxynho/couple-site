@@ -95,7 +95,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
           : [];
 
   return (
-    <div className={styles.drawer}>
+    <div className={`${styles.drawer} ${activeTab === "room" ? styles.drawerRoom : ""}`}>
       <div className={styles.tabs} role="tablist" aria-label={`Áreas do quarto de ${pet.name}`}>
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
@@ -135,10 +135,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
               <FilterStrip label="Categorias de visual" options={STYLE_FILTERS} selected={styleFilter} onSelect={setStyleFilter} />
             )}
             {activeTab === "room" && (
-              <>
-                <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter} />
-                <p className={styles.drawerHint}>Toque para colocar ou tirar. Cada enfeite tem seu cantinho.</p>
-              </>
+              <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter} />
             )}
             {(activeTab === "food" || activeTab === "play") && (
               <p className={styles.drawerHint}>{activeTab === "food" ? "Para o cantinho das refeições" : "Para os momentos de brincadeira"}</p>

@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 145 80" fill="none" aria-hidden="true"><defs>
-<linearGradient id="wood" x2="0" y2="1"><stop stop-color="#eac2a2"/><stop offset="1" stop-color="#b97968"/></linearGradient>
-<linearGradient id="rose" x2="0" y2="1"><stop stop-color="#f7cdd0"/><stop offset="1" stop-color="#cc839b"/></linearGradient>
-<linearGradient id="lilac" x2="0" y2="1"><stop stop-color="#e5d3e8"/><stop offset="1" stop-color="#a37caa"/></linearGradient>
-<linearGradient id="cream" x2="0" y2="1"><stop stop-color="#fffaf0"/><stop offset="1" stop-color="#ecd3bd"/></linearGradient>
-<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#a9d6e7"/><stop offset="1" stop-color="#fff0ce"/></linearGradient>
-<linearGradient id="night" x2="0" y2="1"><stop stop-color="#262b50"/><stop offset="1" stop-color="#665b84"/></linearGradient>
-<linearGradient id="floor" x2="0" y2="1"><stop stop-color="#d7a38d"/><stop offset="1" stop-color="#b88074"/></linearGradient>
-</defs><g stroke-linejoin="round" stroke-linecap="round"><path d="M8 19q59-27 128 1l-11 45q-55 15-109 1Z" fill="url(#lilac)" stroke="#896f93" stroke-width="5"/><path d="M17 54q56 19 112 0" stroke="#f5dfde" stroke-width="5"/><path d="M27 64v10m15-8v10m15-9v10m15-9v10m15-9v10m15-11v10m15-13v10" stroke="#896f93" stroke-width="3"/><path d="M42 27q8 8 16 0m28-2q8 8 16 0" stroke="#f3e4ed" stroke-width="4"/></g></svg>
