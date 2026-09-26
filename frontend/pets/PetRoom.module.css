@@ -75,9 +75,9 @@
 .baseboard { z-index: 1; top: 59.9%; height: 3.3%; min-height: 9px; background: url('/images/pets/room/base/baseboard.webp') center / 100% 100% no-repeat; }
 .stage img { display: block; position: absolute; height: auto; max-width: none; pointer-events: none; user-select: none; }
 .windowSky { position: absolute; z-index: 1; left: 50%; top: 15.3%; height: 26%; aspect-ratio: .96; overflow: hidden; transform: translateX(-50%); background: #5587b7; }
-.windowSky img { width: 100%; height: 100%; inset: 0; object-fit: cover; }
+.windowSky img { width: 100%; height: 100%; inset: 0; object-fit: cover; object-position: center center; }
 .windowSky .skyNight { opacity: 0; transition: opacity .6s ease; }
-.windowSky .skyNight { left: -13%; width: 100%; object-position: right center; }
+.windowSky .skyNight { left: 0; width: 100%; object-position: center center; }
 .scene[data-time-of-day="night"] .skyNight { opacity: 1; }
 .scene[data-time-of-day="night"] .windowSky { background: #283659; }
 .windowFrame { z-index: 2; left: 50%; top: 12%; height: 36% !important; width: auto; transform: translateX(-50%); }
