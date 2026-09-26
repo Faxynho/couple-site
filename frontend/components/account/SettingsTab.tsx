@@ -200,7 +200,7 @@ function ResetSettings({ overview, onChanged }: Pick<SettingsTabProps, "overview
         <ResetRow label="Melhores marcas cooperativas" onConfirm={() => resetTogetherRecords("andre").then(onChanged)} />
       </Section>
 
-      <Section title="Testes — Nosso Cantinho">
+      <Section title="Testes — Fazendinhas">
         <ResetRow
           label="Moeda global compartilhada"
           confirmation="Tem certeza que deseja zerar a moeda global?"

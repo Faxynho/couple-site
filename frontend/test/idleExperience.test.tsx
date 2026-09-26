@@ -16,7 +16,7 @@ vi.mock("next/image", () => ({ default: ({ alt = "", src }: { alt?: string; src:
 vi.mock("@/lib/idleApi", () => ({ addIdleTestFunds: mocks.addFunds }));
 vi.mock("@/hooks/useIdleGame", () => ({
   useIdleGame: () => ({
-    snapshot: { areaName: "Nosso Cantinho", globalCoins: 1280 },
+    snapshot: { areaName: "Fazendinhas", globalCoins: 1280 },
     error: null,
     loading: false,
     accountId: mocks.accountId,
@@ -53,7 +53,8 @@ describe("Experiência do idle compartilhado", () => {
 
   it("mostra a moeda global compartilhada no badge do lobby", () => {
     render(<DuoGlobalCoinsBadge />);
-    expect(screen.getByText("Moeda global")).toBeInTheDocument();
+    expect(screen.queryByText("Moeda global")).not.toBeInTheDocument();
     expect(screen.getByText("1,3K")).toBeInTheDocument();
+    expect(document.querySelector('[data-src="/idle/icons/global-coin.webp"]')).toBeInTheDocument();
   });
 });

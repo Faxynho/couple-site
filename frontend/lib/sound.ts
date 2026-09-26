@@ -32,6 +32,7 @@ export type SoundEffect =
   | "chessPromotion"
   | "chessDefeat"
   | "idlePop"
+  | "idleUnlock"
   | "idleAchievement";
 
 const SOUND_EVENT = "couple-site:sound-change";
@@ -159,6 +160,12 @@ export function playSoundEffect(effect: SoundEffect) {
         tone(context, 659, 0.09, 0.07, 0.05);
         tone(context, 784, 0.11, 0.14, 0.052);
         tone(context, 1046, 0.18, 0.23, 0.055);
+        break;
+      case "idleUnlock":
+        sweepTone(context, 360, 920, 0.3, 0.05);
+        tone(context, 659, 0.09, 0.06, 0.045);
+        tone(context, 880, 0.11, 0.15, 0.05);
+        tone(context, 1175, 0.2, 0.26, 0.055);
         break;
     }
   } catch {

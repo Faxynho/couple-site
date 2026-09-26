@@ -40,9 +40,22 @@ export interface RenewableObjectiveDefinition {
   reward: number;
 }
 
-export const IDLE_AREA_NAME = "Nosso Cantinho";
+export const IDLE_AREA_NAME = "Fazendinhas";
 export const OFFLINE_CAP_MS = 8 * 60 * 60 * 1_000;
 export const MAX_IDLE_MONEY = 1e300;
+
+export const IDLE_SCENES: Record<IdleModeId, Array<{ id: 0 | 1 | 2; name: string }>> = {
+  farm: [
+    { id: 0, name: "Vale das Flores" },
+    { id: 1, name: "Vila da Colheita" },
+    { id: 2, name: "Mirante Dourado" },
+  ],
+  kitty: [
+    { id: 0, name: "Sala dos Abraços" },
+    { id: 1, name: "Cantinho Encantado" },
+    { id: 2, name: "Sótão das Estrelas" },
+  ],
+};
 
 export const IDLE_CATALOG: Record<IdleModeId, IdleItemDefinition[]> = {
   farm: [
@@ -73,8 +86,15 @@ export const IDLE_CATALOG: Record<IdleModeId, IdleItemDefinition[]> = {
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [
   { id: "farm-first-garden", mode: "farm", title: "Primeira colheita", description: "Tenha a primeira Horta", iconItemId: "garden", reward: 5, condition: { type: "own", itemId: "garden" } },
-  { id: "farm-chicken-coop", mode: "farm", title: "Có-có compartilhado", description: "Compre o Galinheiro", iconItemId: "chicken-coop", reward: 15, condition: { type: "own", itemId: "chicken-coop" } },
-  { id: "farm-bakery", mode: "farm", title: "Cheiro de pão", description: "Compre a Padaria", iconItemId: "bakery", reward: 25, condition: { type: "own", itemId: "bakery" } },
+  { id: "farm-chicken-coop", mode: "farm", title: "Có-có compartilhado", description: "Compre o Galinheiro", iconItemId: "chicken-coop", reward: 8, condition: { type: "own", itemId: "chicken-coop" } },
+  { id: "farm-fruit-stand", mode: "farm", title: "Feirinha colorida", description: "Compre a Barraca de frutas", iconItemId: "fruit-stand", reward: 10, condition: { type: "own", itemId: "fruit-stand" } },
+  { id: "farm-orchard", mode: "farm", title: "Frutas do vale", description: "Compre o Pomar", iconItemId: "orchard", reward: 12, condition: { type: "own", itemId: "orchard" } },
+  { id: "farm-bakery", mode: "farm", title: "Cheiro de pão", description: "Compre a Padaria", iconItemId: "bakery", reward: 15, condition: { type: "own", itemId: "bakery" } },
+  { id: "farm-barn", mode: "farm", title: "Celeiro abastecido", description: "Compre o Celeiro", iconItemId: "barn", reward: 18, condition: { type: "own", itemId: "barn" } },
+  { id: "farm-windmill", mode: "farm", title: "Bons ventos", description: "Compre o Moinho", iconItemId: "windmill", reward: 22, condition: { type: "own", itemId: "windmill" } },
+  { id: "farm-market", mode: "farm", title: "Vila movimentada", description: "Compre o Mercadinho", iconItemId: "market", reward: 28, condition: { type: "own", itemId: "market" } },
+  { id: "farm-greenhouse", mode: "farm", title: "Cultivo o ano inteiro", description: "Compre a Estufa", iconItemId: "greenhouse", reward: 35, condition: { type: "own", itemId: "greenhouse" } },
+  { id: "farm-main-farm", mode: "farm", title: "Coração da fazenda", description: "Compre a Fazenda principal", iconItemId: "main-farm", reward: 50, condition: { type: "own", itemId: "main-farm" } },
   { id: "farm-five", mode: "farm", title: "Fazendinha crescendo", description: "Tenha 5 produtores", reward: 35, condition: { type: "ownedCount", target: 5 } },
   { id: "farm-100", mode: "farm", title: "Cantinho produtivo", description: "Alcance 100/s", reward: 20, condition: { type: "production", target: 100 } },
   { id: "farm-1k", mode: "farm", title: "Renda farta", description: "Alcance 1K/s", reward: 35, condition: { type: "production", target: 1_000 } },
@@ -82,7 +102,15 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   { id: "farm-level-10", mode: "farm", title: "Mãos experientes", description: "Leve um produtor ao nível 10", reward: 30, condition: { type: "level", target: 10 } },
   { id: "farm-all", mode: "farm", title: "Nosso império rural", description: "Compre todos os produtores", reward: 80, condition: { type: "ownAll" } },
   { id: "kitty-first", mode: "kitty", title: "Primeira amizade", description: "Tenha a Hello Kitty", iconItemId: "hello-kitty", reward: 5, condition: { type: "own", itemId: "hello-kitty" } },
-  { id: "kitty-melody", mode: "kitty", title: "Doce melodia", description: "Desbloqueie My Melody", iconItemId: "my-melody", reward: 15, condition: { type: "own", itemId: "my-melody" } },
+  { id: "kitty-melody", mode: "kitty", title: "Doce melodia", description: "Desbloqueie My Melody", iconItemId: "my-melody", reward: 8, condition: { type: "own", itemId: "my-melody" } },
+  { id: "kitty-cinnamoroll", mode: "kitty", title: "Nuvem de carinho", description: "Desbloqueie Cinnamoroll", iconItemId: "cinnamoroll", reward: 10, condition: { type: "own", itemId: "cinnamoroll" } },
+  { id: "kitty-pompompurin", mode: "kitty", title: "Abraço dourado", description: "Desbloqueie Pompompurin", iconItemId: "pompompurin", reward: 12, condition: { type: "own", itemId: "pompompurin" } },
+  { id: "kitty-kuromi", mode: "kitty", title: "Charme travesso", description: "Desbloqueie Kuromi", iconItemId: "kuromi", reward: 15, condition: { type: "own", itemId: "kuromi" } },
+  { id: "kitty-keroppi", mode: "kitty", title: "Salto de alegria", description: "Desbloqueie Keroppi", iconItemId: "keroppi", reward: 18, condition: { type: "own", itemId: "keroppi" } },
+  { id: "kitty-badtz", mode: "kitty", title: "Atitude rara", description: "Desbloqueie Badtz-Maru", iconItemId: "badtz-maru", reward: 22, condition: { type: "own", itemId: "badtz-maru" } },
+  { id: "kitty-chococat", mode: "kitty", title: "Brilho inteligente", description: "Desbloqueie Chococat", iconItemId: "chococat", reward: 28, condition: { type: "own", itemId: "chococat" } },
+  { id: "kitty-pochacco", mode: "kitty", title: "Amizade lendária", description: "Desbloqueie Pochacco", iconItemId: "pochacco", reward: 35, condition: { type: "own", itemId: "pochacco" } },
+  { id: "kitty-twin-stars", mode: "kitty", title: "Sonho entre estrelas", description: "Desbloqueie Little Twin Stars", iconItemId: "little-twin-stars", reward: 50, condition: { type: "own", itemId: "little-twin-stars" } },
   { id: "kitty-three", mode: "kitty", title: "Turminha cozy", description: "Tenha 3 personagens", reward: 20, condition: { type: "ownedCount", target: 3 } },
   { id: "kitty-five", mode: "kitty", title: "Casa cheia", description: "Tenha 5 personagens", reward: 35, condition: { type: "ownedCount", target: 5 } },
   { id: "kitty-100", mode: "kitty", title: "Carinho que rende", description: "Alcance 100/s", reward: 20, condition: { type: "production", target: 100 } },
@@ -124,5 +152,5 @@ export function itemUpgradeCost(item: IdleItemDefinition, level: number): number
 }
 
 export function itemClickReward(item: IdleItemDefinition, level: number): number {
-  return Math.max(1, Math.floor(itemProduction(item, level) * 0.08));
+  return Math.max(1, Math.floor(itemProduction(item, level) * 0.22));
 }

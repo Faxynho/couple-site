@@ -55,6 +55,22 @@ idleRouter.post("/action", (req, res) => {
   res.json(result.snapshot);
 });
 
+idleRouter.post("/upgrade-batch", (req, res) => {
+  const body = req.body as { by?: unknown; mode?: unknown; itemId?: unknown; count?: unknown };
+  if (!requireAccount(body.by, res)) return;
+  const count = Number(body.count);
+  if (!isMode(body.mode) || typeof body.itemId !== "string" || !Number.isInteger(count) || count < 1 || count > 25) {
+    res.status(400).json({ error: "Lote de melhorias inválido." });
+    return;
+  }
+  const result = idleStore.upgradeMany(body.mode, body.itemId, count);
+  if (!result.ok) {
+    res.status(result.applied > 0 ? 200 : 409).json(result);
+    return;
+  }
+  res.json(result);
+});
+
 idleRouter.post("/click", (req, res) => {
   const body = req.body as { by?: unknown; mode?: unknown; itemId?: unknown };
   if (!requireAccount(body.by, res)) return;

@@ -57,7 +57,7 @@ describe("Configurações e temas", () => {
     render(<SettingsTab accountId="andre" overview={null} onChanged={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /Resetar estatísticas e recordes/ }));
 
-    expect(screen.getByText("Testes — Nosso Cantinho")).toBeInTheDocument();
+    expect(screen.getByText("Testes — Fazendinhas")).toBeInTheDocument();
     expect(screen.getByText("Moeda global compartilhada")).toBeInTheDocument();
     expect(screen.getByText("Fazendinha completa")).toBeInTheDocument();
     expect(screen.getByText("Mundo da Hello Kitty completo")).toBeInTheDocument();

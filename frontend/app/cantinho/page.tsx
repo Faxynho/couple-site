@@ -20,7 +20,7 @@ export default function IdleChoicePage() {
   return (
     <main className={styles.page}>
       <IdleHeader
-        title={snapshot?.areaName ?? "Nosso Cantinho"}
+        title={snapshot?.areaName ?? "Fazendinhas"}
         subtitle="Escolha para onde vocês querem ir hoje"
         coins={snapshot?.globalCoins ?? 0}
         onBack={() => router.push("/sala/PERSISTENT_DUO")}

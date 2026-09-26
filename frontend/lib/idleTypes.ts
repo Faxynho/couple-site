@@ -46,7 +46,7 @@ export interface IdleModeSnapshot {
   lastSettledAt: number;
   items: IdleItemSnapshot[];
   achievements: IdleAchievementSnapshot[];
-  scenes: Array<{ id: 0 | 1 | 2; unlocked: boolean }>;
+  scenes: Array<{ id: 0 | 1 | 2; name: string; unlocked: boolean }>;
 }
 
 export interface RenewableObjectiveSnapshot {

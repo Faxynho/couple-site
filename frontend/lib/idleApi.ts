@@ -32,6 +32,15 @@ export async function idleItemAction(accountId: AccountId, mode: IdleModeId, ite
   return parse<IdleSnapshot>(response);
 }
 
+export async function idleUpgradeBatch(accountId: AccountId, mode: IdleModeId, itemId: string, count: number): Promise<{ ok: boolean; applied: number; requested: number; error?: string; snapshot: IdleSnapshot }> {
+  const response = await fetch(`${API_BASE}/api/idle/upgrade-batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ by: accountId, mode, itemId, count }),
+  });
+  return parse<{ ok: boolean; applied: number; requested: number; error?: string; snapshot: IdleSnapshot }>(response);
+}
+
 export async function idleClick(accountId: AccountId, mode: IdleModeId, itemId: string): Promise<{ reward: number; snapshot: IdleSnapshot }> {
   const response = await fetch(`${API_BASE}/api/idle/click`, {
     method: "POST",

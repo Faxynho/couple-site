@@ -50,6 +50,38 @@ test("duas melhorias concorrentes nunca gastam mais que o saldo", () => {
   assert.ok(second.snapshot.modes.farm.balance >= 0);
 });
 
+test("lote de melhorias aplica somente o que o saldo permite e mantém a operação atômica", () => {
+  const now = Date.parse("2026-09-26T12:00:00-03:00");
+  const store = new IdleStore(false, () => now);
+  store.act("farm", "garden", "buy");
+  store.addTestFunds("farm", 300);
+
+  const result = store.upgradeMany("farm", "garden", 5);
+  assert.equal(result.ok, false);
+  assert.equal(result.applied, 2);
+  assert.equal(result.requested, 5);
+  assert.equal(result.snapshot.modes.farm.items[0].level, 3);
+  assert.equal(result.snapshot.modes.farm.balance, 90);
+  assert.equal(result.snapshot.modes.farm.totalUpgrades, 2);
+  assert.ok(result.snapshot.modes.farm.balance >= 0);
+});
+
+test("cada produtor e personagem possui e conclui sua conquista de desbloqueio", () => {
+  const now = Date.parse("2026-09-26T12:00:00-03:00");
+  const store = new IdleStore(false, () => now);
+  store.addTestFunds("farm", 1e13);
+  store.addTestFunds("kitty", 2e13);
+  let snapshot = store.getSnapshot();
+  for (const item of snapshot.modes.farm.items) assert.equal(store.act("farm", item.definition.id, "buy").ok, true);
+  for (const item of snapshot.modes.kitty.items) assert.equal(store.act("kitty", item.definition.id, "buy").ok, true);
+  snapshot = store.getSnapshot();
+  for (const mode of ["farm", "kitty"]) {
+    const ownAchievements = snapshot.modes[mode].achievements.filter((achievement) => achievement.condition.type === "own");
+    assert.equal(ownAchievements.length, 10);
+    assert.ok(ownAchievements.every((achievement) => achievement.completedAt));
+  }
+});
+
 test("ledger impede prêmio duplicado do mesmo encerramento de minigame", () => {
   const now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
@@ -154,6 +186,18 @@ test("clicker premia item comprado e limita spam por conta", () => {
   assert.equal(store.click("kitty", "hello-kitty", "flavia").ok, true, "cada conta tem seu próprio limite curto");
   now += 125;
   assert.equal(store.click("kitty", "hello-kitty", "andre").ok, true);
+});
+
+test("clicker escala em 22% da produção atual do item", () => {
+  let now = Date.parse("2026-09-26T12:00:00-03:00");
+  const store = new IdleStore(false, () => now);
+  store.act("kitty", "hello-kitty", "buy");
+  store.addTestFunds("kitty", 1e12);
+  assert.equal(store.upgradeMany("kitty", "hello-kitty", 20).applied, 20);
+  const before = store.getSnapshot().modes.kitty.items[0];
+  const click = store.click("kitty", "hello-kitty", "andre");
+  assert.equal(click.ok, true);
+  assert.equal(click.reward, Math.max(1, Math.floor(before.production * .22)));
 });
 
 test("créditos de desenvolvedor alteram apenas o saldo escolhido", () => {

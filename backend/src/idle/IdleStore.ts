@@ -4,6 +4,7 @@ import {
   ACHIEVEMENTS,
   IDLE_AREA_NAME,
   IDLE_CATALOG,
+  IDLE_SCENES,
   IdleModeId,
   MAX_IDLE_MONEY,
   MINIGAME_GLOBAL_REWARDS,
@@ -399,6 +400,7 @@ export class IdleStore {
       }),
       scenes: ([0, 1, 2] as const).map((scene) => ({
         id: scene,
+        name: IDLE_SCENES[mode][scene].name,
         unlocked: scene === 0 || IDLE_CATALOG[mode].some((definition) => definition.scene === scene && state.items[definition.id]?.purchased),
       })),
     };
@@ -487,6 +489,42 @@ export class IdleStore {
     this.evaluateAchievements(mode, now);
     this.touch(now);
     return { ok: true, snapshot: this.buildSnapshot(null) };
+  }
+
+  upgradeMany(mode: IdleModeId, itemId: string, requestedCount: number): { ok: true; applied: number; requested: number; snapshot: IdleSnapshot } | { ok: false; applied: number; requested: number; error: string; snapshot: IdleSnapshot } {
+    const now = this.now();
+    const requested = Math.max(1, Math.min(25, Math.floor(requestedCount)));
+    const periodChanged = this.ensurePeriods(now);
+    const settled = this.settle(mode, now);
+    const state = this.data.modes[mode];
+    const definition = IDLE_CATALOG[mode].find((item) => item.id === itemId);
+    const owned = definition ? state.items[itemId] : null;
+    const fail = (error: string) => {
+      if (periodChanged || settled.amount > 0) this.touch(now);
+      return { ok: false as const, applied: 0, requested, error, snapshot: this.buildSnapshot(null) };
+    };
+    if (!definition) return fail("Item não encontrado.");
+    if (!owned?.purchased) return fail("Compre esse item antes de melhorar.");
+
+    let applied = 0;
+    while (applied < requested) {
+      const cost = itemUpgradeCost(definition, owned.level);
+      if (state.balance < cost) break;
+      state.balance = safeMoney(state.balance - cost);
+      owned.level += 1;
+      applied += 1;
+    }
+    if (applied === 0) return fail("Dinheiro interno insuficiente.");
+
+    state.totalUpgrades += applied;
+    this.addMetric(mode === "farm" ? "farmUpgrades" : "kittyUpgrades", applied, now);
+    this.evaluateAchievements(mode, now);
+    this.touch(now);
+    const snapshot = this.buildSnapshot(null);
+    if (applied < requested) {
+      return { ok: false, applied, requested, error: "Dinheiro interno insuficiente.", snapshot };
+    }
+    return { ok: true, applied, requested, snapshot };
   }
 
   click(mode: IdleModeId, itemId: string, accountId: string): { ok: true; reward: number; snapshot: IdleSnapshot } | { ok: false; error: string; snapshot: IdleSnapshot } {
