@@ -19,9 +19,9 @@ const SCENE_BACKGROUNDS: Record<IdleModeId, string[]> = {
 
 // Composição manual sobre os espaços livres e planos de profundidade de cada cenário.
 const FARM_POSITIONS: CSSProperties[][] = [
-  [{ left: "-3%", top: "53%", width: "45%" }, { left: "56.7%", top: "33.3%", width: "41%" }, { left: "3.2%", top: "24.6%", width: "44%" }, { left: "43.7%", top: "64.9%", width: "42%" }],
-  [{ left: "1%", top: "39%", width: "40%" }, { left: "60.9%", top: "29.7%", width: "40%" }, { left: "-1%", top: "21.6%", width: "45%" }, { left: "57%", top: "66%", width: "42%" }],
-  [{ left: "24.9%", top: "43.3%", width: "57%" }, { left: "20.9%", top: "21.4%", width: "57%" }],
+  [{ left: "-3%", top: "53%", width: "45%" }, { left: "56.7%", top: "33.3%", width: "41%" }, { left: "3.2%", top: "23.5%", width: "44%" }, { left: "56.7%", top: "50.9%", width: "42%" }],
+  [{ left: "1%", top: "48%", width: "40%" }, { left: "60.9%", top: "31.7%", width: "40%" }, { left: "-1%", top: "20.6%", width: "45%" }, { left: "57%", top: "65%", width: "42%" }],
+  [{ left: "24.9%", top: "43.3%", width: "57%" }, { left: "20.9%", top: "20.4%", width: "57%" }],
 ];
 
 const KITTY_POSITIONS: CSSProperties[][] = [
