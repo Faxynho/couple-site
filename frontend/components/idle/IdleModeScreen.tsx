@@ -44,6 +44,8 @@ const PARTICLES = [
   [85, 51, 8, -0.8, 4.2, -13], [11, 72, 10, -3.1, 4.5, 15], [70, 73, 7, -2.7, 3.3, -10],
   [38, 17, 8, -1.1, 3.7, 8], [59, 30, 11, -3.6, 4.7, -14], [36, 78, 7, -2, 3.1, 12],
   [91, 69, 6, -1.9, 4.1, -8], [53, 10, 8, -4.2, 4.8, 11], [18, 40, 9, -3.3, 3.9, -11],
+  [48, 43, 12, -0.6, 4.6, 18], [7, 56, 8, -4.5, 3.5, -16], [81, 36, 11, -5.1, 4.4, 17],
+  [63, 62, 13, -1.4, 5, -20], [31, 33, 9, -5.8, 3.7, 15], [46, 68, 12, -2.9, 4.9, -18],
 ] as const;
 
 type ClickBurst = { id: number; left: number; top: number; reward: number };
@@ -244,7 +246,7 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act }: Acti
   const selected = data.items[index];
   const prestige = selected.definition.unlockOrder;
   const tier = rarityTier(prestige);
-  const particleCount = [2, 3, 5, 7, 9, 12][tier - 1];
+  const particleCount = [2, 4, 6, 9, 13, 18][tier - 1];
   const move = (direction: -1 | 1) => setIndex((current) => Math.max(0, Math.min(data.items.length - 1, current + direction)));
   const onTouchStart = (event: TouchEvent) => { touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; dragXRef.current = 0; setDragX(0); };
   const onTouchMove = (event: TouchEvent) => { if (!touchStart.current) return; const dx = event.touches[0].clientX - touchStart.current.x; const dy = event.touches[0].clientY - touchStart.current.y; if (Math.abs(dx) > Math.abs(dy)) { dragXRef.current = dx; setDragX(dx); } };
@@ -253,7 +255,26 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act }: Acti
     <Summary balance={balance} production={data.totalProduction} /><div className={styles.swipeHint}>Arraste para conhecer a turma <span>↔</span></div>
     <div className={styles.carousel} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       <div className={styles.prestigeBackdrop} />
-      <Image className={styles.rarityArtwork} src={RARITY_ASSETS[tier - 1]} alt="" fill sizes="95vw" priority={prestige === 9} />
+      {data.items.map((item, itemIndex) => {
+        const offset = itemIndex - index;
+        if (Math.abs(offset) > 1) return null;
+        const itemTier = rarityTier(item.definition.unlockOrder);
+        const slideDrag = offset === 0 ? dragX : dragX * .4;
+        const selectedOpacity = Math.min(1, .24 + item.definition.unlockOrder * .085);
+        const sideOpacity = Math.min(.42, .14 + item.definition.unlockOrder * .03);
+        return <span
+          key={`rarity-${item.definition.id}`}
+          className={`${styles.raritySlide} ${!item.purchased ? styles.raritySlideLocked : ""}`}
+          data-tier={itemTier}
+          aria-hidden="true"
+          style={{
+            "--rarity-opacity": offset === 0 ? selectedOpacity : sideOpacity,
+            left: `${50 + offset * 104}%`,
+            transform: `translate3d(calc(-50% + ${slideDrag}px), 0, 0) scale(${offset === 0 ? 1 : .59})`,
+            backgroundImage: `url(${RARITY_ASSETS[itemTier - 1]})`,
+          } as CSSProperties}
+        />;
+      })}
       <div className={styles.prestigeParticles} aria-hidden="true">{PARTICLES.slice(0, particleCount).map(([x, y, size, delay, duration, drift], particle) => <i key={particle} className={styles[["particleStar", "particleHeart", "particleOrb"][particle % 3]]} style={{ "--x": `${x}%`, "--y": `${y}%`, "--size": `${size}px`, "--delay": `${delay}s`, "--duration": `${duration}s`, "--drift": `${drift}px` } as CSSProperties} />)}</div>
       {data.items.map((item, itemIndex) => {
         const offset = itemIndex - index;
@@ -291,7 +312,7 @@ function AchievementRow({ title, description, reward, progress, target, complete
 function CelebrationPopup({ celebration, onClose }: { celebration: Celebration; onClose: () => void }) {
   if (celebration.type === "unlock") {
     const noun = celebration.mode === "farm" ? "produtor" : "personagem";
-    return <div className={styles.achievementOverlay} role="dialog" aria-label={`Novo ${noun} desbloqueado`} onClick={onClose}><div className={`${styles.achievementPopup} ${styles.unlockPopup}`}><span className={styles.unlockFlash} /><Image className={styles.unlockAura} src="/idle/rarity/tier-4-rare.webp" alt="" fill sizes="340px" /><Sparkles className={styles.popupSparkleLeft} /><Sparkles className={styles.popupSparkleRight} /><div className={styles.unlockAsset}><Image src={celebration.item.definition.asset} alt={celebration.item.definition.name} fill sizes="180px" /></div><p>Novo {noun} desbloqueado!</p><h2>{celebration.item.definition.name}</h2><span className={styles.popupReward}><GameStatIcon type="production" /> {formatIdleNumber(celebration.item.production)}/s</span><small>Toque para continuar</small></div></div>;
+    return <div className={styles.achievementOverlay} role="dialog" aria-label={`Novo ${noun} desbloqueado`} onClick={onClose}><div className={`${styles.achievementPopup} ${styles.unlockPopup}`}><span className={styles.unlockFlash} /><Sparkles className={styles.popupSparkleLeft} /><Sparkles className={styles.popupSparkleRight} /><div className={styles.unlockAsset}><Image src={celebration.item.definition.asset} alt={celebration.item.definition.name} fill sizes="180px" /></div><p>Novo {noun} desbloqueado!</p><h2>{celebration.item.definition.name}</h2><span className={styles.popupReward}><GameStatIcon type="production" /> {formatIdleNumber(celebration.item.production)}/s</span><small>Toque para continuar</small></div></div>;
   }
   return <div className={styles.achievementOverlay} role="dialog" aria-label="Conquista alcançada" onClick={onClose}><div className={styles.achievementPopup}><span className={styles.achievementGlow} /><Sparkles className={styles.popupSparkleLeft} /><Sparkles className={styles.popupSparkleRight} /><Image src="/idle/icons/global-coin.webp" alt="" width={92} height={92} /><p>Conquista alcançada!</p><h2>{celebration.achievement.title}</h2><span className={styles.popupReward}><GameStatIcon type="global" />+{celebration.achievement.reward} moedas globais</span><small>Toque para continuar</small></div></div>;
 }
