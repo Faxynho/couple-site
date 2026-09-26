@@ -81,9 +81,9 @@
 .scene[data-time-of-day="night"] .skyNight { opacity: 1; }
 .scene[data-time-of-day="night"] .windowSky { background: #283659; }
 .windowFrame { z-index: 2; left: 50%; top: 12%; height: 36% !important; width: auto; transform: translateX(-50%); }
-.curtains { z-index: 4; left: 50%; top: 8.5%; height: 45% !important; width: auto; transform: translateX(-50%); }
-.petShadow { position: absolute; z-index: 6; bottom: 9.5%; left: 27%; width: 46%; height: 4%; border-radius: 50%; background: rgba(75, 44, 55, .23); filter: blur(5px); }
-.scene .pet { position: absolute; z-index: 7; bottom: 9.5%; left: 50%; width: min(57%, 260px); max-height: 57%; transform: translateX(-50%); filter: drop-shadow(0 6px 4px rgba(70, 44, 50, .2)); }
+.curtains { z-index: 40; left: 50%; top: 8.5%; height: 45% !important; width: auto; transform: translateX(-50%); }
+.petShadow { position: absolute; z-index: 80; bottom: 9.5%; left: 27%; width: 46%; height: 4%; border-radius: 50%; background: rgba(75, 44, 55, .23); filter: blur(5px); }
+.scene .pet { position: absolute; z-index: 90; bottom: 9.5%; left: 50%; width: min(57%, 260px); max-height: 57%; transform: translateX(-50%); filter: drop-shadow(0 6px 4px rgba(70, 44, 50, .2)); }
 .scene .pet[data-pet="max"], .scene .pet[data-pet="nix"] { width: min(60%, 270px); }
 .decoration { transform-origin: center bottom; animation: decorPop .22s ease-out both; filter: drop-shadow(0 3px 3px rgba(73, 42, 56, .17)); }
 .stage .decorExit { animation: decorExit .18s ease-in both; }
@@ -93,9 +93,9 @@
 @keyframes decorPop { from { opacity: 0; transform: translateY(5px) scale(.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes decorExit { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.96); } }
 .nightShade, .moonGlow, .lampGlow { position: absolute; pointer-events: none; opacity: 0; transition: opacity .55s ease; }
-.nightShade { z-index: 9; inset: 0; background: linear-gradient(165deg, rgba(20, 20, 57, .38), rgba(42, 33, 76, .46) 60%, rgba(20, 25, 62, .36)); }
-.moonGlow { z-index: 10; left: 18%; top: 7%; width: 64%; height: 68%; background: radial-gradient(ellipse at 50% 24%, rgba(179, 190, 255, .21), rgba(153, 168, 243, .085) 35%, transparent 72%); }
-.lampGlow { z-index: 10; aspect-ratio: 680 / 917; }
+.nightShade { z-index: 100; inset: 0; background: linear-gradient(165deg, rgba(20, 20, 57, .38), rgba(42, 33, 76, .46) 60%, rgba(20, 25, 62, .36)); }
+.moonGlow { z-index: 110; left: 18%; top: 7%; width: 64%; height: 68%; background: radial-gradient(ellipse at 50% 24%, rgba(179, 190, 255, .21), rgba(153, 168, 243, .085) 35%, transparent 72%); }
+.lampGlow { z-index: 110; aspect-ratio: 680 / 917; }
 .lampGlow::before { content: ""; position: absolute; top: var(--light-y); left: var(--light-x); width: clamp(155px, 40vw, 260px); height: clamp(140px, 35vw, 220px); transform: translate(-50%, -38%); background: radial-gradient(ellipse, rgba(255, 230, 151, .42), rgba(255, 201, 135, .19) 29%, transparent 71%); }
 .scene[data-time-of-day="night"] .nightShade, .scene[data-time-of-day="night"] .moonGlow, .scene[data-time-of-day="night"] .lampGlow { opacity: 1; }
 .timePreview { position: absolute; z-index: 12; top: max(15px, env(safe-area-inset-top)); right: max(14px, calc((100% - 600px) / 2 + 15px)); display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(119, 72, 81, .18); border-radius: 50%; color: #775366; background: rgba(255, 248, 236, .88); box-shadow: 0 2px 8px rgba(44, 25, 36, .12); cursor: pointer; }

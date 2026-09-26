@@ -54,12 +54,15 @@ function PetRoomScene({ pet, decorations }: { pet: PetDefinition; decorations: r
     return () => window.clearTimeout(timeout);
   }, [decorations]);
 
-  const byLayer = (layer: Decoration["layer"]) => visible.filter(({ item }) => item.layer === layer).map(({ item, exiting }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img key={item.id} src={item.asset} alt="" aria-hidden="true" draggable={false}
-      className={`${styles.decoration} ${styles[`decor${layer}`]} ${exiting ? styles.decorExit : ""}`}
-      style={decorationStyle(item)} />
-  ));
+  const byLayer = (layer: Decoration["layer"]) => visible
+    .filter(({ item }) => item.layer === layer)
+    .sort((a, b) => a.item.stack - b.item.stack || a.item.id.localeCompare(b.item.id))
+    .map(({ item, exiting }) => (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img key={item.id} src={item.asset} alt="" aria-hidden="true" draggable={false}
+        className={`${styles.decoration} ${styles[`decor${layer}`]} ${exiting ? styles.decorExit : ""}`}
+        style={{ ...decorationStyle(item), zIndex: item.stack }} />
+    ));
 
   return (
     <section className={styles.scene} aria-label={`Quarto de ${pet.name}`} data-time-of-day={timeOfDay}>
