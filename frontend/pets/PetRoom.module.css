@@ -92,12 +92,19 @@
 .stage .decorfront { z-index: 8; }
 @keyframes decorPop { from { opacity: 0; transform: translateY(5px) scale(.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes decorExit { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.96); } }
-.nightShade, .moonGlow, .lampGlow { position: absolute; pointer-events: none; opacity: 0; transition: opacity .55s ease; }
+.nightShade, .ceilingGlow, .lampGlow { position: absolute; pointer-events: none; opacity: 0; transition: opacity .55s ease; }
 .nightShade { z-index: 100; inset: 0; background: linear-gradient(165deg, rgba(20, 20, 57, .38), rgba(42, 33, 76, .46) 60%, rgba(20, 25, 62, .36)); }
-.moonGlow { z-index: 110; left: 18%; top: 7%; width: 64%; height: 68%; background: radial-gradient(ellipse at 50% 24%, rgba(179, 190, 255, .21), rgba(153, 168, 243, .085) 35%, transparent 72%); }
+/* Invisible ceiling light: a warm beam enters from above and keeps the pet readable at night. */
+.ceilingGlow { z-index: 110; inset: 0; overflow: hidden; }
+.ceilingGlow::before { content: ""; position: absolute; inset: -4% -12% 0; background:
+  radial-gradient(ellipse at 50% 0%, rgba(255, 240, 199, .58) 0%, rgba(255, 225, 176, .34) 22%, rgba(255, 211, 159, .14) 43%, transparent 66%),
+  linear-gradient(180deg, rgba(255, 236, 194, .16), rgba(255, 220, 170, .085) 48%, transparent 82%);
+  clip-path: polygon(35% 0, 65% 0, 84% 100%, 16% 100%);
+}
+.ceilingGlow::after { content: ""; position: absolute; left: 50%; bottom: 5%; width: min(78%, 470px); height: 54%; transform: translateX(-50%); background: radial-gradient(ellipse at 50% 72%, rgba(255, 229, 181, .34), rgba(255, 218, 168, .16) 38%, transparent 72%); filter: blur(2px); }
 .lampGlow { z-index: 110; aspect-ratio: 680 / 917; }
-.lampGlow::before { content: ""; position: absolute; top: var(--light-y); left: var(--light-x); width: clamp(155px, 40vw, 260px); height: clamp(140px, 35vw, 220px); transform: translate(-50%, -38%); background: radial-gradient(ellipse, rgba(255, 230, 151, .42), rgba(255, 201, 135, .19) 29%, transparent 71%); }
-.scene[data-time-of-day="night"] .nightShade, .scene[data-time-of-day="night"] .moonGlow, .scene[data-time-of-day="night"] .lampGlow { opacity: 1; }
+.lampGlow::before { content: ""; position: absolute; top: var(--light-y); left: var(--light-x); width: clamp(210px, 52vw, 340px); height: clamp(185px, 46vw, 300px); transform: translate(-50%, -38%); background: radial-gradient(ellipse, rgba(255, 236, 164, .72), rgba(255, 204, 128, .38) 31%, rgba(255, 184, 110, .14) 53%, transparent 76%); }
+.scene[data-time-of-day="night"] .nightShade, .scene[data-time-of-day="night"] .ceilingGlow, .scene[data-time-of-day="night"] .lampGlow { opacity: 1; }
 .timePreview { position: absolute; z-index: 12; top: max(15px, env(safe-area-inset-top)); right: max(14px, calc((100% - 600px) / 2 + 15px)); display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(119, 72, 81, .18); border-radius: 50%; color: #775366; background: rgba(255, 248, 236, .88); box-shadow: 0 2px 8px rgba(44, 25, 36, .12); cursor: pointer; }
 .timePreview:focus-visible { outline: 2px solid #b67b9e; outline-offset: 2px; }
 .scene[data-time-of-day="night"] .timePreview { color: #f8e2ab; background: rgba(51, 37, 66, .85); border-color: rgba(241, 213, 234, .27); }
@@ -413,6 +420,6 @@
   .filterStrip { justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tab, .filter, .backLink, .decorCard, .nightShade, .moonGlow, .lampGlow, .skyNight { transition: none; }
+  .tab, .filter, .backLink, .decorCard, .nightShade, .ceilingGlow, .lampGlow, .skyNight { transition: none; }
   .drawerPanel, .decoration { animation: none; }
 }

@@ -82,7 +82,7 @@ function PetRoomScene({ pet, decorations }: { pet: PetDefinition; decorations: r
         <PetSprite pet={pet} className={styles.pet} />
         {byLayer("front")}
         <div className={styles.nightShade} aria-hidden="true" />
-        <div className={styles.moonGlow} aria-hidden="true" />
+        <div className={styles.ceilingGlow} aria-hidden="true" />
         {visible.filter(({ item, exiting }) => item.light && !exiting).map(({ item }) => (
           <span key={item.id} className={styles.lampGlow} style={{
             ...decorationStyle(item),
