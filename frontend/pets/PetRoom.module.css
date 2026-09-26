@@ -84,7 +84,6 @@
 .curtains { z-index: 40; left: 50%; top: 8.5%; height: 45% !important; width: auto; transform: translateX(-50%); }
 .petShadow { position: absolute; z-index: 80; bottom: 9.5%; left: 27%; width: 46%; height: 4%; border-radius: 50%; background: rgba(75, 44, 55, .23); filter: blur(5px); }
 .scene .pet { position: absolute; z-index: 120; bottom: 9.5%; left: 50%; width: min(57%, 260px); max-height: 57%; transform: translateX(-50%); filter: drop-shadow(0 6px 4px rgba(70, 44, 50, .2)); }
-.scene[data-time-of-day="night"] .pet { filter: brightness(1.08) saturate(.98) drop-shadow(0 7px 5px rgba(54, 35, 48, .24)); }
 .scene .pet[data-pet="max"], .scene .pet[data-pet="nix"] { width: min(60%, 270px); }
 .decoration { transform-origin: center bottom; animation: decorPop .22s ease-out both; filter: drop-shadow(0 3px 3px rgba(73, 42, 56, .17)); }
 .stage .decorExit { animation: decorExit .18s ease-in both; }
@@ -99,14 +98,13 @@
   radial-gradient(ellipse 24% 31% at 88% 43%, rgba(18, 20, 48, .01) 0%, rgba(24, 23, 56, .05) 38%, rgba(26, 24, 58, .15) 67%, transparent 82%),
   linear-gradient(165deg, rgba(21, 24, 58, .18), rgba(35, 30, 68, .24) 62%, rgba(18, 22, 52, .21)); }
 /* Soft ceiling light: no visible fixture or hard cone, only diffuse spill from above. */
-.ceilingGlow { z-index: 110; inset: 0; overflow: hidden; mix-blend-mode: screen; }
+.ceilingGlow { z-index: 140; inset: 0; overflow: hidden; mix-blend-mode: screen; }
 .ceilingGlow::before { content: ""; position: absolute; left: 50%; top: -22%; width: 128%; height: 104%; transform: translateX(-50%); border-radius: 50%; background:
   radial-gradient(ellipse at 50% 8%, rgba(255, 252, 233, .96) 0%, rgba(255, 244, 213, .72) 18%, rgba(255, 232, 193, .44) 40%, rgba(255, 219, 171, .20) 58%, rgba(255, 211, 157, .07) 72%, transparent 84%);
   filter: blur(10px);
 }
-.ceilingGlow::after { content: ""; position: absolute; left: 50%; bottom: -10%; width: min(102%, 610px); height: 68%; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(ellipse at center, rgba(255, 247, 220, .74) 0%, rgba(255, 230, 192, .46) 31%, rgba(255, 215, 169, .22) 53%, rgba(255, 203, 147, .08) 68%, transparent 82%); filter: blur(11px); }
-.lampGlow { z-index: 110; aspect-ratio: 680 / 917; mix-blend-mode: screen; }
-.lampGlow::before { content: ""; position: absolute; top: var(--light-y); left: var(--light-x); width: clamp(260px, 64vw, 410px); height: clamp(225px, 56vw, 350px); transform: translate(-50%, -38%); border-radius: 50%; background: radial-gradient(ellipse, rgba(255, 250, 218, .98) 0%, rgba(255, 231, 174, .76) 24%, rgba(255, 204, 132, .47) 48%, rgba(255, 184, 102, .20) 66%, rgba(255, 169, 86, .07) 76%, transparent 86%); filter: blur(3px); box-shadow: 0 0 34px rgba(255, 212, 141, .32); }
+.lampGlow { z-index: 140; aspect-ratio: 680 / 917; mix-blend-mode: screen; }
+.lampGlow::before { content: ""; position: absolute; top: var(--light-y); left: var(--light-x); width: clamp(150px, 38vw, 235px); height: clamp(135px, 34vw, 210px); transform: translate(-50%, -38%); border-radius: 50%; background: radial-gradient(ellipse, rgba(255, 250, 218, .98) 0%, rgba(255, 231, 174, .76) 24%, rgba(255, 204, 132, .47) 48%, rgba(255, 184, 102, .20) 66%, rgba(255, 169, 86, .07) 76%, transparent 86%); filter: blur(3px); box-shadow: 0 0 18px rgba(255, 212, 141, .26); }
 .scene[data-time-of-day="night"] .nightShade, .scene[data-time-of-day="night"] .ceilingGlow, .scene[data-time-of-day="night"] .lampGlow { opacity: 1; }
 .timePreview { position: absolute; z-index: 12; top: max(15px, env(safe-area-inset-top)); right: max(14px, calc((100% - 600px) / 2 + 15px)); display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(119, 72, 81, .18); border-radius: 50%; color: #775366; background: rgba(255, 248, 236, .88); box-shadow: 0 2px 8px rgba(44, 25, 36, .12); cursor: pointer; }
 .timePreview:focus-visible { outline: 2px solid #b67b9e; outline-offset: 2px; }
