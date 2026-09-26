@@ -19,15 +19,15 @@ const SCENE_BACKGROUNDS: Record<IdleModeId, string[]> = {
 
 // Composição manual sobre os espaços livres e planos de profundidade de cada cenário.
 const FARM_POSITIONS: CSSProperties[][] = [
-  [{ left: "-3%", top: "53%", width: "45%" }, { left: "56.7%", top: "33.3%", width: "41%" }, { left: "3.2%", top: "23.5%", width: "44%" }, { left: "56.7%", top: "50.9%", width: "42%" }],
-  [{ left: "1%", top: "47%", width: "42%" }, { left: "60.9%", top: "31.7%", width: "40%" }, { left: "-1%", top: "18.6%", width: "45%" }, { left: "57%", top: "65%", width: "42%" }],
+  [{ left: "-3%", top: "52%", width: "45%" }, { left: "56.7%", top: "33.3%", width: "41%" }, { left: "1.2%", top: "22.5%", width: "44%" }, { left: "56.7%", top: "50.9%", width: "42%" }],
+  [{ left: "1%", top: "47%", width: "42%" }, { left: "60.9%", top: "31.7%", width: "40%" }, { left: "-1%", top: "16.6%", width: "45%" }, { left: "57%", top: "64%", width: "42%" }],
   [{ left: "24.9%", top: "43.3%", width: "57%" }, { left: "20.9%", top: "20.4%", width: "57%" }],
 ];
 
 const KITTY_POSITIONS: CSSProperties[][] = [
-  [{ left: "12.5%", top: "23.4%", width: "40%" }, { left: "47.3%", top: "25.9%", width: "39%" }, { left: "-5.7%", top: "39.7%", width: "43%" }, { left: "58.5%", top: "36.8%", width: "43%" }],
-  [{ left: "15.7%", top: "17.7%", width: "40%" }, { left: "65%", top: "22.2%", width: "39%" }, { left: "-8.8%", top: "34.4%", width: "41%" }, { left: "66%", top: "40.1%", width: "41%" }],
-  [{ left: "0.1%", top: "26.9%", width: "43%" }, { left: "51.3%", top: "24%", width: "51%" }],
+  [{ left: "12.5%", top: "23.4%", width: "40%" }, { left: "47.3%", top: "22.9%", width: "39%" }, { left: "-5.7%", top: "39.7%", width: "43%" }, { left: "60.5%", top: "36.8%", width: "43%" }],
+  [{ left: "15.7%", top: "17.7%", width: "40%" }, { left: "65%", top: "23.2%", width: "39%" }, { left: "-8.8%", top: "34.4%", width: "41%" }, { left: "66%", top: "40.1%", width: "41%" }],
+  [{ left: "0.1%", top: "26.9%", width: "43%" }, { left: "53.3%", top: "25%", width: "51%" }],
 ];
 
 const RARITY_ASSETS = [
