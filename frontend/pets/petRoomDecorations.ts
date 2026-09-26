@@ -29,7 +29,7 @@ export const PET_ROOM_DECORATIONS: readonly Decoration[] = [
   { id: "rug", name: "Tapete", asset: art("rug"), category: "Chão", slot: "floor-rug", position: { left: 12, bottom: 3.5, width: 76 }, layer: "rear", stack: 50 },
   { id: "bed", name: "Caminha", asset: art("bed"), category: "Móveis", slot: "floor-bed", position: { left: 0, bottom: 21.5, width: 38 }, layer: "rear", stack: 70 },
   { id: "dresser", name: "Cômoda", asset: art("dresser"), category: "Móveis", slot: "floor-dresser", position: { left: 77.5, bottom: 27, width: 21 }, layer: "rear", stack: 65 },
-  { id: "lamp", name: "Abajur", asset: art("lamp"), category: "Móveis", slot: "floor-lamp", position: { left: 82.25, bottom: 42.5, width: 11.5 }, layer: "rear", stack: 76, light: { originX: 50, originY: 18 } },
+  { id: "lamp", name: "Abajur", asset: art("lamp"), category: "Móveis", slot: "floor-lamp", position: { left: 82.25, bottom: 42.5, width: 11.5 }, layer: "rear", stack: 125, light: { originX: 50, originY: 18 } },
   { id: "bowls", name: "Potes", asset: art("bowls"), category: "Chão", slot: "floor-bowls", position: { left: 73, bottom: 7.5, width: 25 }, layer: "front", stack: 74 },
   { id: "bone", name: "Ossinho", asset: art("bone"), category: "Chão", slot: "floor-bone", position: { left: 71, bottom: 16.5, width: 13.5 }, layer: "rear", stack: 72 },
 ];
