@@ -97,28 +97,32 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
 
   return (
     <div className={`${styles.drawer} ${activeTab === "room" ? styles.drawerRoom : ""} ${activeTab === "room" && roomExpanded ? styles.drawerRoomExpanded : ""}`}>
-      {!(activeTab === "room" && roomExpanded) && (
-        <div className={styles.tabs} role="tablist" aria-label={`Áreas do quarto de ${pet.name}`}>
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              id={`pet-tab-${id}`}
-              role="tab"
-              aria-selected={activeTab === id}
-              aria-controls={activeTab === id ? panelId : undefined}
-              className={`${styles.tab} ${activeTab === id ? styles.tabActive : ""}`}
-              onClick={() => {
-                setActiveTab(id);
-                setRoomExpanded(false);
-              }}
-            >
-              <Icon size={21} strokeWidth={1.8} aria-hidden="true" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      <div
+        className={`${styles.tabs} ${activeTab === "room" && roomExpanded ? styles.tabsCollapsed : ""}`}
+        role="tablist"
+        aria-label={`Áreas do quarto de ${pet.name}`}
+        aria-hidden={activeTab === "room" && roomExpanded}
+      >
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            id={`pet-tab-${id}`}
+            role="tab"
+            aria-selected={activeTab === id}
+            aria-controls={activeTab === id ? panelId : undefined}
+            tabIndex={activeTab === "room" && roomExpanded ? -1 : undefined}
+            className={`${styles.tab} ${activeTab === id ? styles.tabActive : ""}`}
+            onClick={() => {
+              setActiveTab(id);
+              setRoomExpanded(false);
+            }}
+          >
+            <Icon size={21} strokeWidth={1.8} aria-hidden="true" />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
       {activeTab === "room" && roomExpanded && (
         <button
           type="button"
