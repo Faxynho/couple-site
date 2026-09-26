@@ -11,7 +11,7 @@ import SoundToggle from "./SoundToggle";
  */
 export default function ThemeToggleGate() {
   const pathname = usePathname();
-  const isGameScreen = pathname?.startsWith("/game/") || pathname === "/mundo" || pathname?.startsWith("/pets");
+  const isGameScreen = pathname?.startsWith("/game/") || pathname === "/mundo" || pathname?.startsWith("/pets") || pathname?.startsWith("/cantinho");
   return (
     <>
       {!isGameScreen && <ThemeToggle />}

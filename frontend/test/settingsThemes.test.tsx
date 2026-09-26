@@ -52,4 +52,14 @@ describe("Configurações e temas", () => {
     expect(getStoredVisualTheme()).toBe("romance");
     expect(window.localStorage.getItem("couple-site:visual-theme")).toBe("romance");
   });
+
+  it("mostra os três resets do cantinho somente dentro das configurações de andre", () => {
+    render(<SettingsTab accountId="andre" overview={null} onChanged={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Resetar estatísticas e recordes/ }));
+
+    expect(screen.getByText("Testes — Nosso Cantinho")).toBeInTheDocument();
+    expect(screen.getByText("Moeda global compartilhada")).toBeInTheDocument();
+    expect(screen.getByText("Fazendinha completa")).toBeInTheDocument();
+    expect(screen.getByText("Mundo da Hello Kitty completo")).toBeInTheDocument();
+  });
 });

@@ -8,6 +8,8 @@ import { accountsRouter } from "./accounts/accountsRoutes";
 import { accountStore } from "./accounts/AccountStore";
 import { persistentDuoStore } from "./rooms/persistentDuo";
 import { worldStore } from "./world/WorldStore";
+import { idleRouter } from "./idle/idleRoutes";
+import { idleStore } from "./idle/IdleStore";
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -51,6 +53,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/accounts", accountsRouter);
+app.use("/api/idle", idleRouter);
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -59,13 +62,14 @@ const io = new Server(httpServer, {
 
 const roomManager = new RoomManager();
 registerSocketHandlers(io, roomManager);
+idleStore.subscribe((snapshot) => io.emit("idle:state", snapshot));
 
 // Limpa salas abandonadas a cada 10 minutos.
 setInterval(() => roomManager.sweepEmptyRooms(), 1000 * 60 * 10);
 
 // Garante que backend/data/accounts.json já esteja carregado em memória
 // antes de aceitar qualquer request (rotas REST e o primeiro room:create).
-Promise.all([accountStore.ready(), persistentDuoStore.ready(), worldStore.ready()]).then(() => {
+Promise.all([accountStore.ready(), persistentDuoStore.ready(), worldStore.ready(), idleStore.ready()]).then(() => {
   httpServer.listen(PORT, () => {
     console.log(`🎮 Servidor de jogos cooperativos rodando em http://localhost:${PORT}`);
   });

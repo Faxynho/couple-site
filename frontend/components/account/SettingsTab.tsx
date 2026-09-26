@@ -9,6 +9,7 @@ import {
   resetSoloStats,
   resetTogetherRecords,
 } from "@/lib/accountApi";
+import { resetIdle } from "@/lib/idleApi";
 import { AccountsOverview } from "@/lib/accountTypes";
 import { AccountId } from "@/lib/accountSession";
 import {
@@ -198,6 +199,24 @@ function ResetSettings({ overview, onChanged }: Pick<SettingsTabProps, "overview
       <Section title="Recordes Juntos (da dupla)">
         <ResetRow label="Melhores marcas cooperativas" onConfirm={() => resetTogetherRecords("andre").then(onChanged)} />
       </Section>
+
+      <Section title="Testes — Nosso Cantinho">
+        <ResetRow
+          label="Moeda global compartilhada"
+          confirmation="Tem certeza que deseja zerar a moeda global?"
+          onConfirm={() => resetIdle("global", "andre").then(() => onChanged())}
+        />
+        <ResetRow
+          label="Fazendinha completa"
+          confirmation="Tem certeza que deseja resetar completamente a Fazendinha?"
+          onConfirm={() => resetIdle("farm", "andre").then(() => onChanged())}
+        />
+        <ResetRow
+          label="Mundo da Hello Kitty completo"
+          confirmation="Tem certeza que deseja resetar completamente o Mundo da Hello Kitty?"
+          onConfirm={() => resetIdle("kitty", "andre").then(() => onChanged())}
+        />
+      </Section>
     </div>
   );
 }
@@ -211,7 +230,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function ResetRow({ label, onConfirm }: { label: string; onConfirm: () => Promise<void> }) {
+function ResetRow({ label, confirmation, onConfirm }: { label: string; confirmation?: string; onConfirm: () => Promise<void> }) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -235,7 +254,7 @@ function ResetRow({ label, onConfirm }: { label: string; onConfirm: () => Promis
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl2 bg-surface/60 px-4 py-2.5">
-      <span className="text-sm text-ink">{label}</span>
+      <span className="text-sm text-ink">{confirming && confirmation ? confirmation : label}</span>
       <div className="flex items-center gap-2">
         {error && <span className="text-xs text-rose-deep">{error}</span>}
         <button

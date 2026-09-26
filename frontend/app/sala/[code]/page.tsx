@@ -24,6 +24,7 @@ import SharedDrawingBoard from "@/components/duo/SharedDrawingBoard";
 import PersistentDuoLobbyScene from "@/components/duo/PersistentDuoLobbyScene";
 import PersistentDuoMinigamesScene from "@/components/duo/PersistentDuoMinigamesScene";
 import PetLobbyArea from "@/pets/components/PetLobbyArea";
+import IdleLobbyEntry from "@/components/duo/IdleLobbyEntry";
 import {
   consumePersistentDuoMinigamesReturn,
   getPersistentDuoAvailabilityMessage,
@@ -362,6 +363,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                 </div>
 
                 <div className="relative z-20 mx-auto w-full max-w-md px-4 pt-2 sm:max-w-2xl">
+                  <IdleLobbyEntry onClick={() => router.push("/cantinho")} />
                   <DuoTogetherTimeBadge />
                   <div className="mt-3">
                     <PersistentDuoStatus presence={persistentPresence} />

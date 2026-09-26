@@ -1,6 +1,7 @@
 import { GameId, Player, RoomMode } from "../types";
 import { accountStore } from "./AccountStore";
 import { ACCOUNT_IDS, AccountId, NO_RANK, RecordScoreType } from "./types";
+import { idleStore } from "../idle/IdleStore";
 
 /**
  * Traduz o estado (já finalizado) de qualquer um dos jogos para um formato
@@ -590,6 +591,20 @@ export function recordFinishedMatch(params: {
 
   const outcome = extractGameOutcome(params.gameId, params.roomMode, params.gameState, params.players, accountByPlayerId);
   if (!outcome) return;
+
+  // A moeda é da dupla inteira, então cada encerramento válido gera UMA
+  // recompensa compartilhada — nunca uma por jogador. O Room chama este
+  // ponto uma vez por partida; o ledger persistente abaixo é uma segunda
+  // proteção para reconexões/replays do mesmo resultado final.
+  const accountsInMatch = params.players.filter((player) => player.accountId);
+  if (accountsInMatch.length > 0) {
+    const timestamps = params.gameState as { finishedAt?: number | null; solvedAt?: number | null };
+    const finishedAt = timestamps.finishedAt ?? timestamps.solvedAt ?? Date.now();
+    const participantKey = accountsInMatch.map((player) => player.id).sort().join(",");
+    const rewardId = `${params.gameId}:${finishedAt}:${participantKey}`;
+    const decisive = outcome.players.some((player) => player.result === "win" || (player.result === "solo" && player.metricValue !== null));
+    idleStore.recordMinigameCompletion(params.gameId, rewardId, decisive);
+  }
 
   if (params.roomMode === "solo") {
     for (const p of outcome.players) {
