@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Armchair, BedDouble, Bone, CircleDot, Crown, Grid3X3, HandHeart,
+  Armchair, BedDouble, Bone, ChevronDown, CircleDot, Crown, Grid3X3, HandHeart,
   Heart, Paintbrush, PawPrint, Shirt, Square, ToyBrick,
   Utensils, Cookie, type LucideIcon,
 } from "lucide-react";
@@ -86,6 +86,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
   const [activeTab, setActiveTab] = useState<TabId>("food");
   const [styleFilter, setStyleFilter] = useState("Roupas");
   const [roomFilter, setRoomFilter] = useState("Todos");
+  const [roomExpanded, setRoomExpanded] = useState(false);
   const panelId = `pet-panel-${activeTab}`;
 
   const items = activeTab === "food" ? FOOD
@@ -95,24 +96,40 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
           : [];
 
   return (
-    <div className={`${styles.drawer} ${activeTab === "room" ? styles.drawerRoom : ""}`}>
-      <div className={styles.tabs} role="tablist" aria-label={`Áreas do quarto de ${pet.name}`}>
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            id={`pet-tab-${id}`}
-            role="tab"
-            aria-selected={activeTab === id}
-            aria-controls={activeTab === id ? panelId : undefined}
-            className={`${styles.tab} ${activeTab === id ? styles.tabActive : ""}`}
-            onClick={() => setActiveTab(id)}
-          >
-            <Icon size={21} strokeWidth={1.8} aria-hidden="true" />
-            <span>{label}</span>
-          </button>
-        ))}
-      </div>
+    <div className={`${styles.drawer} ${activeTab === "room" ? styles.drawerRoom : ""} ${activeTab === "room" && roomExpanded ? styles.drawerRoomExpanded : ""}`}>
+      {!(activeTab === "room" && roomExpanded) && (
+        <div className={styles.tabs} role="tablist" aria-label={`Áreas do quarto de ${pet.name}`}>
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              id={`pet-tab-${id}`}
+              role="tab"
+              aria-selected={activeTab === id}
+              aria-controls={activeTab === id ? panelId : undefined}
+              className={`${styles.tab} ${activeTab === id ? styles.tabActive : ""}`}
+              onClick={() => {
+                setActiveTab(id);
+                setRoomExpanded(false);
+              }}
+            >
+              <Icon size={21} strokeWidth={1.8} aria-hidden="true" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {activeTab === "room" && roomExpanded && (
+        <button
+          type="button"
+          className={styles.catalogCollapse}
+          aria-label="Voltar ao menu principal"
+          title="Voltar ao menu principal"
+          onClick={() => setRoomExpanded(false)}
+        >
+          <ChevronDown size={20} strokeWidth={2} aria-hidden="true" />
+        </button>
+      )}
 
       <section
         id={panelId}
@@ -140,7 +157,15 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
             {(activeTab === "food" || activeTab === "play") && (
               <p className={styles.drawerHint}>{activeTab === "food" ? "Para o cantinho das refeições" : "Para os momentos de brincadeira"}</p>
             )}
-            <div className={styles.drawerScroll} key={activeTab === "style" ? styleFilter : activeTab === "room" ? roomFilter : activeTab}>
+            <div
+              className={styles.drawerScroll}
+              key={activeTab === "style" ? styleFilter : activeTab === "room" ? roomFilter : activeTab}
+              onScroll={(event) => {
+                if (activeTab === "room" && !roomExpanded && event.currentTarget.scrollTop > 6) {
+                  setRoomExpanded(true);
+                }
+              }}
+            >
               {activeTab === "room" ? (
                 <div className={styles.decorGrid}>
                   {PET_ROOM_DECORATIONS.filter((item) => roomFilter === "Todos" || item.category === roomFilter).map((item) => {
@@ -148,7 +173,10 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
                     return (
                       <button key={item.id} type="button" className={`${styles.decorCard} ${selected ? styles.decorCardActive : ""}`}
                         aria-pressed={selected} aria-label={`${selected ? "Remover" : "Colocar"} ${item.name}`}
-                        disabled={!ready} onClick={() => onToggle(item)}>
+                        disabled={!ready} onClick={() => {
+                          setRoomExpanded(true);
+                          onToggle(item);
+                        }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.asset} alt="" loading="lazy" className={styles.decorPreview} />
                         <span className={styles.decorLabel}>{item.name}</span>

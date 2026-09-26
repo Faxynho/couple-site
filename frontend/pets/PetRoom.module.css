@@ -81,7 +81,7 @@
 .scene[data-time-of-day="night"] .skyNight { opacity: 1; }
 .scene[data-time-of-day="night"] .windowSky { background: #283659; }
 .windowFrame { z-index: 2; left: 50%; top: 12%; height: 36% !important; width: auto; transform: translateX(-50%); }
-.curtains { z-index: 4; left: 50%; top: 8%; height: 52% !important; width: auto; transform: translateX(-50%); }
+.curtains { z-index: 4; left: 50%; top: 8.5%; height: 45% !important; width: auto; transform: translateX(-50%); }
 .petShadow { position: absolute; z-index: 6; bottom: 7%; left: 27%; width: 46%; height: 4%; border-radius: 50%; background: rgba(75, 44, 55, .23); filter: blur(5px); }
 .scene .pet { position: absolute; z-index: 7; bottom: 7%; left: 50%; width: min(57%, 260px); max-height: 57%; transform: translateX(-50%); filter: drop-shadow(0 6px 4px rgba(70, 44, 50, .2)); }
 .scene .pet[data-pet="max"], .scene .pet[data-pet="nix"] { width: min(60%, 270px); }
@@ -228,6 +228,25 @@
 .drawerRoom .filterStrip { padding-block: 5px; }
 .drawerRoom .filter { min-height: 34px; }
 .drawerRoom .drawerScroll { padding-top: 8px; }
+.drawerRoomExpanded .filterStrip { padding-left: 58px; }
+.catalogCollapse {
+  position: absolute;
+  z-index: 8;
+  top: 6px;
+  left: max(9px, calc((100% - 650px) / 2 + 9px));
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 34px;
+  border: 1px solid #d9b8b0;
+  border-radius: 18px;
+  color: #7c5263;
+  background: rgba(255, 248, 238, .96);
+  box-shadow: 0 2px 7px rgba(93, 55, 69, .1);
+  transition: transform .16s ease, background .16s ease;
+}
+.catalogCollapse:active { transform: translateY(1px) scale(.96); }
+.catalogCollapse:focus-visible { outline: 2px solid #ac6888; outline-offset: 2px; }
 .filter {
   display: inline-flex;
   flex: none;
@@ -356,6 +375,11 @@
   border-color: #a36b84;
   color: #f0d4e1;
   background: #503447;
+}
+:global(html.dark) .catalogCollapse {
+  border-color: #664858;
+  color: #efd5e1;
+  background: rgba(48, 34, 46, .96);
 }
 :global(html.dark) .decorCard { border-color: #634758; color: #ead3db; background: #392c38; }
 :global(html.dark) .decorCardActive { border-color: #b6809c; background: #503647; box-shadow: inset 0 0 0 1px #855970; }
