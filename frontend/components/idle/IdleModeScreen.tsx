@@ -50,10 +50,10 @@ export const KITTY_CHARACTER_PLACEMENTS: Record<string, { scene: number; p: numb
   "charmmy-kitty": { scene: 4, p: 18, name: "Charmmy Kitty", left: "57%", top: "45%", width: "40%" },
   "hello-kitty-angel": { scene: 4, p: 19, name: "Hello Kitty anjo", left: "4%", top: "61%", width: "40%" },
   "kuromi-angel": { scene: 4, p: 20, name: "Kuromi anjo", left: "55%", top: "61%", width: "40%" },
-  "my-melody-dark-angel": { scene: 5, p: 21, name: "My Melody anjo noturno", left: "3%", top: "48%", width: "35%" },
-  "hello-kitty-gala": { scene: 5, p: 22, name: "Hello Kitty de gala", left: "31%", top: "35%", width: "44%" },
+  "my-melody-dark-angel": { scene: 5, p: 21, name: "My Melody anjo noturno", left: "3%", top: "50%", width: "35%" },
+  "hello-kitty-gala": { scene: 5, p: 22, name: "Hello Kitty de gala", left: "31%", top: "30%", width: "44%" },
   "kuromi-celestial": { scene: 5, p: 23, name: "Kuromi celestial", left: "59%", top: "45%", width: "44%" },
-  "little-twin-stars": { scene: 6, p: 24, name: "Little Twin Stars: Kiki e Lala", left: "16%", top: "22%", width: "62%" },
+  "little-twin-stars": { scene: 6, p: 24, name: "Little Twin Stars: Kiki e Lala", left: "17%", top: "24%", width: "62%" },
 };
 
 const RARITY_ASSETS = [
