@@ -452,3 +452,33 @@
   .drawerPanel, .decoration, .catalogCollapse { animation: none; }
   .tabs { transition: none; }
 }
+
+.petWallet { display: flex; align-items: center; gap: 7px; margin: 0 14px 8px; padding: 7px 10px; border: 1px solid #ead4bd; border-radius: 999px; color: #785b50; background: linear-gradient(135deg,#fff8df,#fff0e8); font-size: 11px; }
+.petWallet strong { margin-left: auto; color: #a16a18; font-size: 13px; }
+.decorCardLocked { border-style: dashed; background: #eee5e2; }
+.decorCardLocked .decorPreview { filter: grayscale(.75) brightness(.64); opacity: .68; }
+.decorLock { position: absolute; top: 7px; right: 7px; display: grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; color: #fff; background: rgba(99,65,79,.88); box-shadow: 0 4px 9px rgba(55,31,41,.2); }
+.decorIndicator { display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
+.decorIndicator img { width: 18px; height: 18px; object-fit: contain; }
+.petDevTools { flex: none; max-height: min(58svh, 420px); margin: 7px 14px calc(env(safe-area-inset-bottom) + 8px); overflow-y: auto; padding: 9px; border: 1px solid #d9c3e8; border-radius: 16px; background: #f5edfb; overscroll-behavior: contain; }
+.petDevTools summary { display: flex; align-items: center; gap: 6px; min-height: 30px; color: #71488b; font-size: 12px; font-weight: 900; cursor: pointer; list-style: none; }
+.petDevTools summary::-webkit-details-marker { display: none; }
+.petDevTools summary::after { content: "+"; margin-left: auto; font-size: 17px; }
+.petDevTools[open] { flex: 1 1 auto; min-height: 0; }
+.petDevTools[open] summary { margin-bottom: 8px; }
+.petDevTools[open] summary::after { content: "−"; }
+.drawerPanel:has(.petDevTools[open]) .drawerScroll { display: none; }
+.petDevTools > label { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 6px; margin: 8px 0 6px; color: #71488b; font-size: 10px; font-weight: 850; }
+.petDevTools input, .petDevTools select { min-width: 0; height: 34px; padding: 0 8px; border: 1px solid #cfb5df; border-radius: 9px; color: #59396c; background: #fff; font-size: 11px; font-weight: 750; }
+.petDevTools > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+.petDevTools button { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 38px; padding: 6px; border-radius: 10px; color: #fff; background: #785098; font-size: 10px; font-weight: 800; }
+.petDevTools .petDevDanger { background: #a84e6c; }
+.devRoom::after { content: ""; position: fixed; z-index: 100; inset: 0; border: 3px solid rgba(122,72,157,.55); pointer-events: none; }
+.devRoomBadge { position: fixed; z-index: 85; top: calc(env(safe-area-inset-top) + 61px); right: 13px; display: inline-flex; align-items: center; gap: 4px; padding: 5px 8px; border-radius: 999px; color: #fff; background: #70438e; box-shadow: 0 5px 14px rgba(58,31,74,.25); font-size: 9px; font-weight: 900; letter-spacing: .08em; }
+.petDevDenied { display: grid; min-height: 45vh; place-items: center; padding: 2rem; color: #8b526b; font-size: .85rem; font-weight: 850; text-align: center; }
+:global(html.dark) .petWallet { border-color: #655040; color: #e8d4c9; background: #3b302c; }
+:global(html.dark) .decorCardLocked { background: #292429; }
+:global(html.dark) .petDevTools { border-color: #60466f; background: #31263a; }
+:global(html.dark) .petDevTools summary { color: #e2c9ee; }
+:global(html.dark) .petDevTools > label { color: #e2c9ee; }
+:global(html.dark) .petDevTools input, :global(html.dark) .petDevTools select { border-color: #684c78; color: #f3e7f8; background: #241c2b; }

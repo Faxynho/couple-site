@@ -1,5 +1,5 @@
 import { AccountId } from "./accountSession";
-import { IdleModeId, IdleSnapshot } from "./idleTypes";
+import { GameEnvironment, IdleEventType, IdleModeId, IdleSnapshot } from "./idleTypes";
 
 const API_BASE = (process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000").replace(/\/+$/, "");
 
@@ -9,45 +9,67 @@ async function parse<T>(response: Response): Promise<T> {
   return body as T;
 }
 
-export async function fetchIdleSnapshot(accountId: AccountId): Promise<IdleSnapshot> {
-  const response = await fetch(`${API_BASE}/api/idle?accountId=${accountId}`, { cache: "no-store" });
+export async function fetchIdleSnapshot(accountId: AccountId, environment: GameEnvironment = "real"): Promise<IdleSnapshot> {
+  const response = await fetch(`${API_BASE}/api/idle?accountId=${accountId}&environment=${environment}`, { cache: "no-store" });
   return parse<IdleSnapshot>(response);
 }
 
-export async function enterIdleMode(accountId: AccountId, mode: IdleModeId): Promise<IdleSnapshot> {
+export async function enterIdleMode(accountId: AccountId, mode: IdleModeId, environment: GameEnvironment = "real"): Promise<IdleSnapshot> {
   const response = await fetch(`${API_BASE}/api/idle/enter`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ by: accountId, mode }),
+    body: JSON.stringify({ by: accountId, mode, environment }),
   });
   return parse<IdleSnapshot>(response);
 }
 
-export async function idleItemAction(accountId: AccountId, mode: IdleModeId, itemId: string, action: "buy" | "upgrade"): Promise<IdleSnapshot> {
+export async function idleItemAction(accountId: AccountId, mode: IdleModeId, itemId: string, action: "buy" | "upgrade", environment: GameEnvironment = "real"): Promise<IdleSnapshot> {
   const response = await fetch(`${API_BASE}/api/idle/action`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ by: accountId, mode, itemId, action }),
+    body: JSON.stringify({ by: accountId, mode, itemId, action, environment }),
   });
   return parse<IdleSnapshot>(response);
 }
 
-export async function idleUpgradeBatch(accountId: AccountId, mode: IdleModeId, itemId: string, count: number): Promise<{ ok: boolean; applied: number; requested: number; error?: string; snapshot: IdleSnapshot }> {
+export async function idleUpgradeBatch(accountId: AccountId, mode: IdleModeId, itemId: string, count: number | "max", environment: GameEnvironment = "real"): Promise<{ ok: boolean; applied: number; requested: number; totalCost: number; error?: string; snapshot: IdleSnapshot }> {
   const response = await fetch(`${API_BASE}/api/idle/upgrade-batch`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ by: accountId, mode, itemId, count }),
+    body: JSON.stringify({ by: accountId, mode, itemId, count, environment }),
   });
-  return parse<{ ok: boolean; applied: number; requested: number; error?: string; snapshot: IdleSnapshot }>(response);
+  return parse<{ ok: boolean; applied: number; requested: number; totalCost: number; error?: string; snapshot: IdleSnapshot }>(response);
 }
 
-export async function idleClick(accountId: AccountId, mode: IdleModeId, itemId: string): Promise<{ reward: number; snapshot: IdleSnapshot }> {
+export async function idleClick(accountId: AccountId, mode: IdleModeId, itemId: string, environment: GameEnvironment = "real"): Promise<{ reward: number; multiplier: number; snapshot: IdleSnapshot }> {
   const response = await fetch(`${API_BASE}/api/idle/click`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ by: accountId, mode, itemId }),
+    body: JSON.stringify({ by: accountId, mode, itemId, environment }),
   });
-  return parse<{ reward: number; snapshot: IdleSnapshot }>(response);
+  return parse<{ reward: number; multiplier: number; snapshot: IdleSnapshot }>(response);
+}
+
+export async function recordIdleActivity(accountId: AccountId, mode: IdleModeId, elapsedMs: number, environment: GameEnvironment): Promise<IdleSnapshot> {
+  return parse<IdleSnapshot>(await fetch(`${API_BASE}/api/idle/activity`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ by: accountId, mode, elapsedMs, environment }),
+  }));
+}
+
+export async function collectIdleEvent(accountId: AccountId, mode: IdleModeId, eventId: string, environment: GameEnvironment) {
+  return parse<{ ok: true; reward: number; eventType: IdleEventType; snapshot: IdleSnapshot }>(await fetch(`${API_BASE}/api/idle/event/collect`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ by: accountId, mode, eventId, environment }),
+  }));
+}
+
+export async function idleDevAction(payload: Record<string, unknown>): Promise<IdleSnapshot> {
+  const body = await parse<{ ok: true; snapshot: IdleSnapshot }>(await fetch(`${API_BASE}/api/idle/dev/action`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, by: "andre" }),
+  }));
+  return body.snapshot;
 }
 
 export async function addIdleTestFunds(target: "global" | IdleModeId, amount: number, by: AccountId): Promise<IdleSnapshot> {

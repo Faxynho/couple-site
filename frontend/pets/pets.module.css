@@ -623,3 +623,11 @@
   }
   .petCard, .petsAccess { transition: none; }
 }
+
+.petDevEntry { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 10px; width: min(100%,520px); margin: 14px auto 0; padding: 10px 12px; border: 1px solid rgba(220,184,239,.5); border-radius: 18px; color: #f9efff; background: linear-gradient(135deg,rgba(78,48,100,.96),rgba(126,67,121,.94)); box-shadow: 0 10px 24px rgba(35,18,46,.28),inset 0 1px rgba(255,255,255,.18); text-decoration: none; }
+.petDevEntry > svg:first-child { width: 42px; height: 42px; padding: 11px; border-radius: 13px; color: #f8dfff; background: rgba(255,255,255,.12); }
+.petDevEntry strong,.petDevEntry small { display: block; }
+.petDevEntry strong { font-size: 13px; }
+.petDevEntry small { margin-top: 2px; color: #d9bfdc; font-size: 9px; }
+.petDevShell::after { content: ""; position: fixed; z-index: 100; inset: 0; border: 3px solid rgba(137,82,170,.5); pointer-events: none; }
+.petDevDenied { display: grid; min-height: 100dvh; place-items: center; color: #fff; font-weight: 800; }

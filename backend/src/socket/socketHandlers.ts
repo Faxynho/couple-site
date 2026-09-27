@@ -41,6 +41,7 @@ import {
   persistentDuoStore,
 } from "../rooms/persistentDuo";
 import { registerWorldSocketHandlers } from "../world/worldSocketHandlers";
+import { idleDevStore, idleStore } from "../idle/IdleStore";
 
 interface SocketData {
   roomCode?: string;
@@ -961,20 +962,44 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
         && room.canManage(playerId!);
     };
 
-    socket.on("petRoom:sync", (payload: { petId?: unknown } | undefined, callback?: AckCallback) => {
+    const petEnvironment = (value: unknown) => value === "dev" ? "dev" as const : "real" as const;
+    const canUsePetEnvironment = (environment: "real" | "dev") => environment === "real" || socket.data.accountId === "andre";
+
+    socket.on("petRoom:sync", (payload: { petId?: unknown; environment?: unknown } | undefined, callback?: AckCallback) => {
+      const environment = petEnvironment(payload?.environment);
       if (!canDecoratePetRoom() || !isPetRoomId(payload?.petId)) {
         callback?.({ ok: false, error: "Quarto indisponível para esta conta." });
         return;
       }
-      callback?.({ ok: true, room: persistentDuoStore.getPetRoom(payload.petId) });
+      if (!canUsePetEnvironment(environment)) {
+        callback?.({ ok: false, error: "Somente André pode acessar o quarto DEV." });
+        return;
+      }
+      const economy = (environment === "dev" ? idleDevStore : idleStore).getSnapshot();
+      callback?.({
+        ok: true,
+        room: persistentDuoStore.getPetRoom(payload.petId, environment),
+        globalCoins: economy.globalCoins,
+        purchasedDecorations: economy.purchasedPetDecorations,
+      });
     });
 
-    socket.on("petRoom:toggle", (payload: { petId?: unknown; decorationId?: unknown } | undefined, callback?: AckCallback) => {
+    socket.on("petRoom:toggle", (payload: { petId?: unknown; decorationId?: unknown; environment?: unknown } | undefined, callback?: AckCallback) => {
+      const environment = petEnvironment(payload?.environment);
       if (!canDecoratePetRoom() || !isPetRoomId(payload?.petId)) {
         callback?.({ ok: false, error: "Você não pode decorar este quarto." });
         return;
       }
-      const snapshot = persistentDuoStore.togglePetDecoration(payload.petId, payload.decorationId);
+      if (!canUsePetEnvironment(environment)) {
+        callback?.({ ok: false, error: "Somente André pode alterar o quarto DEV." });
+        return;
+      }
+      const economy = environment === "dev" ? idleDevStore : idleStore;
+      if (typeof payload?.decorationId !== "string" || !economy.ownsPetDecoration(payload.decorationId)) {
+        callback?.({ ok: false, error: "Compre esta decoração antes de equipá-la." });
+        return;
+      }
+      const snapshot = persistentDuoStore.togglePetDecoration(payload.petId, payload.decorationId, environment);
       if (!snapshot) {
         callback?.({ ok: false, error: "Decoração inválida." });
         return;

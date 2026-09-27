@@ -3,8 +3,8 @@
 import { useState } from "react";
 import {
   Armchair, BedDouble, Bone, ChevronDown, CircleDot, Crown, Grid3X3, HandHeart,
-  Heart, Paintbrush, PawPrint, Shirt, Square, ToyBrick,
-  Utensils, Cookie, type LucideIcon,
+  Heart, Paintbrush, PawPrint, Shirt, Square, ToyBrick, Coins,
+  Utensils, Cookie, FlaskConical, LockKeyhole, RotateCcw, WalletCards, type LucideIcon,
 } from "lucide-react";
 import type { PetDefinition } from "../config";
 import { PET_ROOM_DECORATIONS, type Decoration, type PetRoomSlots } from "../petRoomDecorations";
@@ -76,17 +76,24 @@ function FilterStrip({
   );
 }
 
-export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
+export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBuy, coins, purchased, environment, onDevAction }: {
   pet: PetDefinition;
   slots: PetRoomSlots;
   ready: boolean;
   error: string;
   onToggle: (decoration: Decoration) => void;
+  onBuy: (decoration: Decoration) => void;
+  coins: number;
+  purchased: string[];
+  environment: "real" | "dev";
+  onDevAction: (payload: Record<string, unknown>) => void;
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("food");
   const [styleFilter, setStyleFilter] = useState("Roupas");
   const [roomFilter, setRoomFilter] = useState("Todos");
   const [roomExpanded, setRoomExpanded] = useState(false);
+  const [devAmount, setDevAmount] = useState("500");
+  const [devDecorationId, setDevDecorationId] = useState(PET_ROOM_DECORATIONS[0].id);
   const panelId = `pet-panel-${activeTab}`;
 
   const items = activeTab === "food" ? FOOD
@@ -156,7 +163,10 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
               <FilterStrip label="Categorias de visual" options={STYLE_FILTERS} selected={styleFilter} onSelect={setStyleFilter} />
             )}
             {activeTab === "room" && (
-              <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter} />
+              <>
+                <div className={styles.petWallet}><WalletCards size={16} /><span>{environment === "dev" ? "Moedas DEV" : "Moedas globais"}</span><strong>{coins.toLocaleString("pt-BR")}</strong></div>
+                <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter} />
+              </>
             )}
             {(activeTab === "food" || activeTab === "play") && (
               <p className={styles.drawerHint}>{activeTab === "food" ? "Para o cantinho das refeições" : "Para os momentos de brincadeira"}</p>
@@ -174,17 +184,20 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
                 <div className={styles.decorGrid}>
                   {PET_ROOM_DECORATIONS.filter((item) => roomFilter === "Todos" || item.category === roomFilter).map((item) => {
                     const selected = slots[item.slot] === item.id;
+                    const owned = purchased.includes(item.id);
                     return (
-                      <button key={item.id} type="button" className={`${styles.decorCard} ${selected ? styles.decorCardActive : ""}`}
-                        aria-pressed={selected} aria-label={`${selected ? "Remover" : "Colocar"} ${item.name}`}
+                      <button key={item.id} type="button" className={`${styles.decorCard} ${selected ? styles.decorCardActive : ""} ${!owned ? styles.decorCardLocked : ""}`}
+                        aria-pressed={selected} aria-label={owned ? `${selected ? "Remover" : "Colocar"} ${item.name}` : `Comprar ${item.name} por ${item.price} moedas globais`}
                         disabled={!ready} onClick={() => {
                           setRoomExpanded(true);
-                          onToggle(item);
+                          if (owned) onToggle(item);
+                          else onBuy(item);
                         }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.asset} alt="" loading="lazy" className={styles.decorPreview} />
+                        {!owned && <span className={styles.decorLock}><LockKeyhole size={15} /></span>}
                         <span className={styles.decorLabel}>{item.name}</span>
-                        <span className={styles.decorIndicator}>{selected ? "Colocado" : "Colocar"}</span>
+                        <span className={styles.decorIndicator}>{owned ? selected ? "Colocado" : "Colocar" : <><img src="/idle/icons/global-coin.webp" alt="" /> {item.price}</>}</span>
                       </button>
                     );
                   })}
@@ -192,6 +205,25 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle }: {
               ) : <PetItemGrid items={items} />}
             </div>
             {activeTab === "room" && (error || !ready) && <p className={styles.decorStatus} role="status">{error || "Carregando decorações..."}</p>}
+            {activeTab === "room" && environment === "dev" && <details className={styles.petDevTools}>
+              <summary><FlaskConical size={16} /> Ferramentas PET DEV</summary>
+              <label><Coins size={15} /> Moeda global DEV<input inputMode="numeric" value={devAmount} onChange={(event) => setDevAmount(event.target.value.replace(/\D/g, ""))} aria-label="Quantidade de moeda DEV" /></label>
+              <div>
+                <button onClick={() => onDevAction({ action: "balance", operation: "add", amount: Number(devAmount) || 0 })}>Adicionar</button>
+                <button onClick={() => onDevAction({ action: "balance", operation: "remove", amount: Number(devAmount) || 0 })}>Remover</button>
+                <button onClick={() => onDevAction({ action: "balance", operation: "set", amount: Number(devAmount) || 0 })}>Definir</button>
+                <button className={styles.petDevDanger} onClick={() => window.confirm("Zerar somente a moeda global DEV?") && onDevAction({ action: "balance", operation: "zero" })}>Zerar moeda</button>
+              </div>
+              <label>Decoração DEV<select value={devDecorationId} onChange={(event) => setDevDecorationId(event.target.value)}>{PET_ROOM_DECORATIONS.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
+              <div>
+                <button onClick={() => onDevAction({ action: "decoration", decorationId: devDecorationId, owned: true })}>Desbloquear uma</button>
+                <button className={styles.petDevDanger} onClick={() => window.confirm("Bloquear esta decoração DEV e removê-la dos quartos DEV?") && onDevAction({ action: "decoration", decorationId: devDecorationId, owned: false })}>Bloquear uma</button>
+                <button onClick={() => onDevAction({ action: "allDecorations", owned: true })}>Desbloquear todas</button>
+                <button className={styles.petDevDanger} onClick={() => window.confirm("Remover todas as compras de decoração PET DEV?") && onDevAction({ action: "allDecorations", owned: false })}>Nenhuma comprada</button>
+                <button className={styles.petDevDanger} onClick={() => window.confirm(`Resetar somente o quarto ${pet.name} DEV?`) && onDevAction({ action: "resetRoom", petId: pet.id })}><RotateCcw size={14} /> Resetar {pet.name} DEV</button>
+                <button className={styles.petDevDanger} onClick={() => window.confirm("Resetar Nix DEV, Max DEV e compras PET DEV? A moeda DEV será preservada.") && onDevAction({ action: "resetEnvironment" })}>Reset geral PET DEV</button>
+              </div>
+            </details>}
           </>
         )}
       </section>

@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getActiveAccount } from "@/lib/accountSession";
-import { enterIdleMode, fetchIdleSnapshot, idleClick, idleItemAction, idleUpgradeBatch } from "@/lib/idleApi";
-import { IdleModeId, IdleSnapshot } from "@/lib/idleTypes";
+import { enterIdleMode, fetchIdleSnapshot, idleClick, idleItemAction, idleUpgradeBatch, recordIdleActivity } from "@/lib/idleApi";
+import { GameEnvironment, IdleModeId, IdleSnapshot } from "@/lib/idleTypes";
 import { getSocket } from "@/lib/socket";
 
-export function useIdleGame(mode?: IdleModeId) {
+export function useIdleGame(mode?: IdleModeId, environment: GameEnvironment = "real", activityEnabled = false) {
   const [snapshot, setSnapshot] = useState<IdleSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
@@ -31,14 +31,18 @@ export function useIdleGame(mode?: IdleModeId) {
       setError("Selecione André ou Flávia antes de entrar.");
       return;
     }
+    if (environment === "dev" && accountId !== "andre") {
+      setError("Acesso exclusivo da conta André.");
+      return;
+    }
     try {
       setError(null);
-      const next = mode ? await enterIdleMode(accountId, mode) : await fetchIdleSnapshot(accountId);
+      const next = mode ? await enterIdleMode(accountId, mode, environment) : await fetchIdleSnapshot(accountId, environment);
       applySnapshot(next);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível abrir o cantinho.");
     }
-  }, [accountId, applySnapshot, mode]);
+  }, [accountId, applySnapshot, environment, mode]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -50,10 +54,26 @@ export function useIdleGame(mode?: IdleModeId) {
 
   useEffect(() => {
     const socket = getSocket();
-    const onState = (next: IdleSnapshot) => applySnapshot(next);
+    const onState = (next: IdleSnapshot) => {
+      if (next.environment === environment) applySnapshot(next);
+    };
     socket.on("idle:state", onState);
     return () => { socket.off("idle:state", onState); };
-  }, [applySnapshot]);
+  }, [applySnapshot, environment]);
+
+  useEffect(() => {
+    if (!mode || !accountId || !activityEnabled) return;
+    let lastSentAt = Date.now();
+    const send = () => {
+      if (document.visibilityState !== "visible") { lastSentAt = Date.now(); return; }
+      const current = Date.now();
+      const elapsed = Math.min(10_000, current - lastSentAt);
+      lastSentAt = current;
+      void recordIdleActivity(accountId, mode, elapsed, environment).then(applySnapshot).catch(() => undefined);
+    };
+    const timer = window.setInterval(send, 5_000);
+    return () => window.clearInterval(timer);
+  }, [accountId, activityEnabled, applySnapshot, environment, mode]);
 
   useEffect(() => () => {
     upgradeTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -61,6 +81,7 @@ export function useIdleGame(mode?: IdleModeId) {
   }, []);
 
   useEffect(() => {
+    if (!mode) return;
     const timer = window.setInterval(() => setNow(Date.now()), 500);
     const onVisible = () => {
       if (document.visibilityState === "visible") void load();
@@ -70,11 +91,11 @@ export function useIdleGame(mode?: IdleModeId) {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [load]);
+  }, [load, mode]);
 
   const displayedBalance = mode && snapshot
     ? snapshot.modes[mode].balance
-      + snapshot.modes[mode].totalProduction * Math.max(0, now - snapshot.modes[mode].lastSettledAt) / 1_000
+      + snapshot.modes[mode].effectiveProduction * Math.max(0, now - snapshot.modes[mode].lastSettledAt) / 1_000
     : 0;
 
   const flushUpgrades = useCallback(async (itemId: string) => {
@@ -85,7 +106,7 @@ export function useIdleGame(mode?: IdleModeId) {
     setPendingUpgrades((current) => ({ ...current, [itemId]: Math.max(0, (current[itemId] ?? 0) - count) }));
     upgradeInFlight.current.add(itemId);
     try {
-      const result = await idleUpgradeBatch(accountId, mode, itemId, count);
+      const result = await idleUpgradeBatch(accountId, mode, itemId, count, environment);
       applySnapshot(result.snapshot);
       setNow(Date.now());
       if (result.error || result.applied < result.requested) {
@@ -97,7 +118,7 @@ export function useIdleGame(mode?: IdleModeId) {
       upgradeQueues.current.set(itemId, 0);
       setPendingUpgrades((current) => ({ ...current, [itemId]: 0 }));
       setError(reason instanceof Error ? reason.message : "Não foi possível concluir as melhorias.");
-      if (accountId) void fetchIdleSnapshot(accountId).then(applySnapshot).catch(() => undefined);
+      if (accountId) void fetchIdleSnapshot(accountId, environment).then(applySnapshot).catch(() => undefined);
     } finally {
       upgradeInFlight.current.delete(itemId);
       if ((upgradeQueues.current.get(itemId) ?? 0) > 0) {
@@ -105,7 +126,7 @@ export function useIdleGame(mode?: IdleModeId) {
         upgradeTimers.current.set(itemId, timer);
       }
     }
-  }, [accountId, applySnapshot, mode]);
+  }, [accountId, applySnapshot, environment, mode]);
 
   const queueUpgrade = useCallback((itemId: string): boolean => {
     if (!mode || !accountId) return false;
@@ -151,7 +172,7 @@ export function useIdleGame(mode?: IdleModeId) {
     setBusyItemId(itemId);
     setError(null);
     try {
-      applySnapshot(await idleItemAction(accountId, mode, itemId, action));
+      applySnapshot(await idleItemAction(accountId, mode, itemId, action, environment));
       setNow(Date.now());
       return true;
     } catch (reason) {
@@ -160,7 +181,7 @@ export function useIdleGame(mode?: IdleModeId) {
     } finally {
       setBusyItemId(null);
     }
-  }, [accountId, applySnapshot, busyItemId, mode, queueUpgrade]);
+  }, [accountId, applySnapshot, busyItemId, environment, mode, queueUpgrade]);
 
   const clickItem = useCallback(async (itemId: string): Promise<number | null> => {
     if (!mode || !accountId) return null;
@@ -168,7 +189,7 @@ export function useIdleGame(mode?: IdleModeId) {
     if (clickedAt - lastClickRef.current < 125) return null;
     lastClickRef.current = clickedAt;
     try {
-      const result = await idleClick(accountId, mode, itemId);
+      const result = await idleClick(accountId, mode, itemId, environment);
       applySnapshot(result.snapshot);
       setNow(Date.now());
       return result.reward;
@@ -177,7 +198,25 @@ export function useIdleGame(mode?: IdleModeId) {
       if (!message.includes("rápido demais")) setError(message);
       return null;
     }
-  }, [accountId, applySnapshot, mode]);
+  }, [accountId, applySnapshot, environment, mode]);
 
-  return { snapshot, error, loading: !snapshot && !error, accountId, displayedBalance, busyItemId, pendingUpgrades, act, clickItem, reload: load };
+  const buyUpgrades = useCallback(async (itemId: string, count: 1 | 10 | "max"): Promise<boolean> => {
+    if (!mode || !accountId || busyItemId) return false;
+    setBusyItemId(itemId);
+    setError(null);
+    try {
+      const result = await idleUpgradeBatch(accountId, mode, itemId, count, environment);
+      applySnapshot(result.snapshot);
+      setNow(Date.now());
+      if (result.error && result.applied === 0) setError(result.error);
+      return result.applied > 0;
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Não foi possível concluir as melhorias.");
+      return false;
+    } finally {
+      setBusyItemId(null);
+    }
+  }, [accountId, applySnapshot, busyItemId, environment, mode]);
+
+  return { snapshot, error, loading: !snapshot && !error, accountId, displayedBalance, busyItemId, pendingUpgrades, act, buyUpgrades, clickItem, reload: load, applySnapshot };
 }

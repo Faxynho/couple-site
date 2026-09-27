@@ -37,6 +37,8 @@ function makeSnapshot(purchasedFirst = false, completedFirst = false): IdleSnaps
     production: index + 1,
     nextCost: 10 ** (index + 1),
     unlocked: index === 0,
+    upgradeQuotes: { one: { count: 1, totalCost: 100 }, ten: { count: 10, totalCost: 1_000 }, max: { count: 10, totalCost: 1_000 } },
+    statistics: { passiveEarned: 0, clickEarned: 0, clicks: 0, largestClick: 0 },
   }));
   const achievement = {
     id: "kitty-first", mode: "kitty" as const, title: "Primeira amizade", description: "Tenha a Hello Kitty",
@@ -45,13 +47,17 @@ function makeSnapshot(purchasedFirst = false, completedFirst = false): IdleSnaps
   };
   const kitty = {
     id: "kitty" as const, balance: 1e12, totalEarned: 0, totalProduction: purchasedFirst ? 1 : 0,
+    effectiveProduction: purchasedFirst ? 1 : 0, clickMultiplier: 1,
     totalUpgrades: 0, visits: 1, totalClicks: 0, lastSettledAt: Date.now(), items,
     achievements: [achievement],
     scenes: [{ id: 0 as const, name: "Sala dos Abraços", unlocked: true }, { id: 1 as const, name: "Cantinho Encantado", unlocked: false }, { id: 2 as const, name: "Sótão das Estrelas", unlocked: false }],
+    statistics: { migrationStartedAt: Date.now(), todayKey: "2026-09-26", earnedToday: 0, passiveEarned: 0, clickEarned: 0, eventEarned: 0, offlineEarned: 0, activeTimeMs: 0, eventsCollected: 0, boostsCollected: 0, eventCounters: { money: 0, production2: 0, click2: 0, click3: 0, click5: 0, click10: 0 }, largestClick: 0, highestProduction: purchasedFirst ? 1 : 0, items: {} },
+    activeEvent: null, productionBoost: null, clickBoost: null,
   };
   return {
-    revision: completedFirst ? 2 : 1, areaName: "Fazendinhas", globalCoins: 5, globalLifetimeEarned: 5,
+    revision: completedFirst ? 2 : 1, environment: "real", areaName: "Fazendinhas", globalCoins: 5, globalLifetimeEarned: 5,
     updatedAt: Date.now(), offlineReward: null,
+    purchasedPetDecorations: [],
     modes: { kitty, farm: { ...kitty, id: "farm" as const } },
     objectives: { daily: [], weekly: [] },
   };
@@ -72,8 +78,8 @@ describe("apresentação visual e celebrações do idle", () => {
       expect(carousel).toHaveAttribute("data-prestige", String(index));
       expect(carousel).toHaveAttribute("data-tier", String(expectedTiers[index]));
     });
-    expect(document.querySelector('[data-src="/idle/rarity/tier-6-celestial.webp"]')).toBeInTheDocument();
-    expect(document.querySelectorAll("[data-prestige] i")).toHaveLength(12);
+    expect(document.querySelector('[style*="tier-6-celestial.webp"]')).toBeInTheDocument();
+    expect(document.querySelectorAll("[data-prestige] i")).toHaveLength(18);
   });
 
   it("enfileira desbloqueio antes da conquista sem sobrepor os diálogos", async () => {

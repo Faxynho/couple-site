@@ -43,6 +43,20 @@ export interface RenewableObjectiveDefinition {
 export const IDLE_AREA_NAME = "Fazendinhas";
 export const OFFLINE_CAP_MS = 8 * 60 * 60 * 1_000;
 export const MAX_IDLE_MONEY = 1e300;
+export const IDLE_EVENT_MIN_ACTIVITY_MS = 50_000;
+export const IDLE_EVENT_MAX_ACTIVITY_MS = 110_000;
+export const IDLE_EVENT_VISIBLE_MS = 9_000;
+export const PRODUCTION_BOOST_MS = 90_000;
+export const CLICK_BOOST_DURATIONS = { click2: 20_000, click3: 12_000, click5: 8_000, click10: 5_000 } as const;
+export type IdleEventType = "money" | "production2" | keyof typeof CLICK_BOOST_DURATIONS;
+export const IDLE_EVENT_WEIGHTS: ReadonlyArray<{ type: IdleEventType; weight: number }> = [
+  { type: "money", weight: 35 },
+  { type: "production2", weight: 25 },
+  { type: "click2", weight: 20 },
+  { type: "click3", weight: 11 },
+  { type: "click5", weight: 6 },
+  { type: "click10", weight: 3 },
+];
 
 export const IDLE_SCENES: Record<IdleModeId, Array<{ id: 0 | 1 | 2; name: string }>> = {
   farm: [
@@ -125,22 +139,34 @@ export const RENEWABLE_OBJECTIVES: RenewableObjectiveDefinition[] = [
   { id: "daily-kitty-entry", period: "daily", title: "Visita cheia de carinho", description: "Entre no Mundo da Hello Kitty hoje", metric: "kittyEntries", target: 1, reward: 5 },
   { id: "daily-upgrades", period: "daily", title: "Pequenas melhorias", description: "Faça 3 melhorias", metric: "upgrades", target: 3, reward: 10 },
   { id: "daily-earnings", period: "daily", title: "Rendendo juntinhos", description: "Ganhe 5K de dinheiro interno", metric: "earnings", target: 5_000, reward: 15 },
-  { id: "daily-minigame", period: "daily", title: "Uma partida a dois", description: "Conclua 1 minigame", metric: "minigames", target: 1, reward: 10 },
+  { id: "daily-minigame", period: "daily", title: "Hora de jogar", description: "Conclua 1 minigame", metric: "minigames", target: 1, reward: 10 },
   { id: "weekly-upgrades", period: "weekly", title: "Semana de evolução", description: "Faça 15 melhorias", metric: "upgrades", target: 15, reward: 40 },
   { id: "weekly-earnings", period: "weekly", title: "Cofrinho da semana", description: "Ganhe 500K de dinheiro interno", metric: "earnings", target: 500_000, reward: 60 },
   { id: "weekly-minigames", period: "weekly", title: "Dupla em ação", description: "Conclua 5 minigames", metric: "minigames", target: 5, reward: 50 },
 ];
 
-export const MINIGAME_GLOBAL_REWARDS: Record<GameId, { completion: number; decisiveBonus: number }> = {
-  colors: { completion: 6, decisiveBonus: 2 }, termo: { completion: 7, decisiveBonus: 2 },
-  memory: { completion: 8, decisiveBonus: 3 }, airhockey: { completion: 8, decisiveBonus: 3 },
-  quiz: { completion: 10, decisiveBonus: 3 }, whoami: { completion: 10, decisiveBonus: 3 },
-  sudoku: { completion: 12, decisiveBonus: 3 }, crossword: { completion: 12, decisiveBonus: 3 },
-  wordsearch: { completion: 12, decisiveBonus: 3 }, boardrace: { completion: 13, decisiveBonus: 4 },
-  chess: { completion: 15, decisiveBonus: 5 }, puzzle: { completion: 16, decisiveBonus: 0 },
-  drawguess: { completion: 15, decisiveBonus: 4 }, casino: { completion: 17, decisiveBonus: 4 },
-  rpg: { completion: 20, decisiveBonus: 6 },
+export const MINIGAME_GLOBAL_REWARDS: Record<GameId, Record<string, number>> = {
+  colors: { easy: 8, hard: 13 },
+  termo: { one: 8, single: 8, dueto: 13, quarteto: 20, "1": 8, "2": 13, "4": 20 },
+  memory: { easy: 8, medium: 13, hard: 19 },
+  airhockey: { easy: 10, medium: 16, hard: 23 },
+  quiz: { easy: 10, medium: 16, hard: 23 },
+  whoami: { easy: 10, medium: 15, hard: 21 },
+  sudoku: { easy: 12, medium: 19, hard: 28 },
+  crossword: { easy: 12, medium: 19, hard: 28 },
+  wordsearch: { easy: 10, medium: 16, hard: 23 },
+  puzzle: { easy: 12, medium: 20, hard: 30 },
+  chess: { easy: 12, medium: 20, hard: 30 },
+  boardrace: { geral: 18 },
+  drawguess: { "4": 16, "6": 22, "8": 28 },
+  casino: { quick: 16, normal: 24, long: 34 },
+  rpg: { geral: 24 },
 };
+
+export function minigameGlobalReward(gameId: GameId, rank: string): number {
+  const table = MINIGAME_GLOBAL_REWARDS[gameId];
+  return table[rank] ?? table.medium ?? table.normal ?? table.geral ?? Object.values(table)[0] ?? 0;
+}
 
 export function itemProduction(item: IdleItemDefinition, level: number): number {
   if (level <= 0) return 0;

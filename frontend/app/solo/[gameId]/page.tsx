@@ -25,6 +25,8 @@ import { fetchAccounts } from "@/lib/accountApi";
 import { getActiveAccount } from "@/lib/accountSession";
 import SoloMatchModal from "@/components/SoloMatchModal";
 import { clearSoloMatch, getActiveProfileSoloMatch, resumeSoloMatch, SoloMatchSave } from "@/lib/soloMatch";
+import GlobalRewardPreview from "@/components/GlobalRewardPreview";
+import type { AccountId } from "@/lib/accountSession";
 
 function DifficultyGrid<K extends string>({
   entries,
@@ -66,7 +68,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
   const { error, loading, createRoom, setConfig, startGame } = useRoom();
   const { images, loading: imagesLoading } = usePuzzleImages();
 
-  const [difficulty, setDifficulty] = useState<string>(() => gameId === "termo" ? "one" : gameId === "casino" ? "normal" : "medium");
+  const [difficulty, setDifficulty] = useState<string>(() => gameId === "termo" ? "one" : gameId === "casino" ? "normal" : gameId === "colors" ? "easy" : "medium");
   const [imageId, setImageId] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<{ width: number; height: number } | null>(null);
   const [pawnColor, setPawnColor] = useState<"blue" | "pink">("pink");
@@ -76,10 +78,12 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
   // Continua sem pedir nome (nunca teve essa etapa no Solo) — só passa a usar
   // o nome atual da conta fixa, se houver, no lugar do "Você" genérico.
   const [playerName, setPlayerName] = useState("Você");
+  const [activeAccountId, setActiveAccountId] = useState<AccountId | null>(null);
 
   useEffect(() => {
     const active = getActiveAccount();
     if (active?.type === "account") {
+      setActiveAccountId(active.id);
       fetchAccounts()
         .then((accounts) => {
           const found = accounts.find((a) => a.id === active.id);
@@ -193,6 +197,7 @@ export default function SoloGameConfigPage({ params }: { params: { gameId: strin
           <span className="text-3xl">{game.emoji}</span>
           <h1 className="mt-2 font-display text-xl font-semibold text-ink">{game.name}</h1>
           <p className="mt-1 text-sm text-ink-soft">{game.description}</p>
+          <GlobalRewardPreview gameId={gameId} rank={gameId === "rpg" || gameId === "boardrace" ? "geral" : difficulty} andreSolo={activeAccountId === "andre"} />
         </div>
 
         {gameId === "puzzle" && (

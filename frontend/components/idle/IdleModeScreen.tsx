@@ -7,9 +7,12 @@ import { useRouter } from "next/navigation";
 import { useIdleGame } from "@/hooks/useIdleGame";
 import { formatIdleNumber } from "@/lib/formatIdleNumber";
 import { playSoundEffect } from "@/lib/sound";
-import { IdleAchievementSnapshot, IdleItemSnapshot, IdleModeId, IdleModeSnapshot, IdleSnapshot } from "@/lib/idleTypes";
+import { GameEnvironment, IdleAchievementSnapshot, IdleItemSnapshot, IdleModeId, IdleModeSnapshot, IdleSnapshot } from "@/lib/idleTypes";
 import IdleBottomNav, { IdleTab } from "./IdleBottomNav";
 import IdleHeader from "./IdleHeader";
+import IdleStatistics from "./IdleStatistics";
+import IdleEventLayer from "./IdleEventLayer";
+import IdleDevPanel from "./IdleDevPanel";
 import styles from "./IdleGame.module.css";
 
 const SCENE_BACKGROUNDS: Record<IdleModeId, string[]> = {
@@ -48,7 +51,8 @@ const PARTICLES = [
   [63, 62, 13, -1.4, 5, -20], [31, 33, 9, -5.8, 3.7, 15], [46, 68, 12, -2.9, 4.9, -18],
 ] as const;
 
-type ClickBurst = { id: number; left: number; top: number; reward: number };
+type ClickBurst = { id: number; left: number; top: number; reward: number; multiplier: number };
+type PurchaseMode = 1 | 10 | "max";
 type Celebration =
   | { key: string; type: "unlock"; item: IdleItemSnapshot; mode: IdleModeId }
   | { key: string; type: "achievement"; achievement: IdleAchievementSnapshot };
@@ -62,15 +66,16 @@ function rarityTier(order: number) {
   return 6;
 }
 
-export default function IdleModeScreen({ mode }: { mode: IdleModeId }) {
+export default function IdleModeScreen({ mode, environment = "real" }: { mode: IdleModeId; environment?: GameEnvironment }) {
   const router = useRouter();
   const [tab, setTab] = useState<IdleTab>("home");
   const [scene, setScene] = useState<0 | 1 | 2>(0);
   const [showOfflineReward, setShowOfflineReward] = useState(false);
   const [celebrations, setCelebrations] = useState<Celebration[]>([]);
+  const [purchaseMode, setPurchaseMode] = useState<PurchaseMode>(1);
   const previousAchievements = useRef<Set<string> | null>(null);
   const previousOwned = useRef<Set<string> | null>(null);
-  const { snapshot, error, loading, displayedBalance, busyItemId, pendingUpgrades, act, clickItem } = useIdleGame(mode);
+  const { snapshot, error, accountId, displayedBalance, busyItemId, pendingUpgrades, act, buyUpgrades, clickItem, applySnapshot } = useIdleGame(mode, environment, tab === "home");
   const data = snapshot?.modes[mode];
   const farm = mode === "farm";
   const modeTitle = farm ? "Fazendinha" : "Mundo da Hello Kitty";
@@ -120,24 +125,29 @@ export default function IdleModeScreen({ mode }: { mode: IdleModeId }) {
     return () => window.clearTimeout(timer);
   }, [activeCelebration]);
 
-  if (loading || !snapshot || !data) return <main className={styles.page}><div className={styles.loading}>Carregando {modeTitle}…</div></main>;
+  if (!snapshot || !data) return <main className={styles.page}><div className={styles.loading}>{error ?? `Carregando ${modeTitle}…`}</div></main>;
 
   return (
-    <main className={`${styles.page} ${farm ? styles.farmTheme : styles.kittyTheme}`}>
+    <main className={`${styles.page} ${farm ? styles.farmTheme : styles.kittyTheme} ${environment === "dev" ? styles.devEnvironment : ""} ${data.productionBoost && data.productionBoost.expiresAt > Date.now() ? styles.productionBoostActive : ""}`}>
       <div className={styles.background} key={background} style={{ backgroundImage: `url(${background})` }} aria-hidden="true" />
       <div className={styles.sceneShade} aria-hidden="true" />
-      <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : "Conquistas"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push("/cantinho")} />
+      <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
+      {environment === "dev" && <span className={styles.devBadge}>MODO DEV</span>}
 
       {tab === "home" && <HomeScene mode={mode} data={data} balance={displayedBalance} scene={scene} onSceneChange={setScene} onClickItem={clickItem} />}
+      {tab === "upgrades" && <PurchaseModePicker value={purchaseMode} onChange={setPurchaseMode} />}
       {tab === "upgrades" && (farm
-        ? <FarmUpgrades data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} />
-        : <KittyCarousel data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} />)}
+        ? <FarmUpgrades data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} />
+        : <KittyCarousel data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} />)}
       {tab === "achievements" && <Achievements data={data} snapshot={snapshot} />}
+      {tab === "statistics" && <IdleStatistics data={data} />}
+      {tab === "dev" && environment === "dev" && <IdleDevPanel mode={mode} data={data} onSnapshot={applySnapshot} />}
+      {accountId && <IdleEventLayer accountId={accountId} environment={environment} mode={mode} data={data} onSnapshot={applySnapshot} eventsEnabled={tab === "home"} />}
 
       {showOfflineReward && snapshot.offlineReward?.mode === mode && <div className={styles.toast}>Enquanto vocês estavam fora: +{formatIdleNumber(snapshot.offlineReward.amount)}</div>}
       {error && <p className={styles.error} role="alert"><span>!</span>{error}</p>}
       {activeCelebration && <CelebrationPopup celebration={activeCelebration} onClose={() => setCelebrations((current) => current.slice(1))} />}
-      <IdleBottomNav active={tab} onChange={setTab} />
+      <IdleBottomNav active={tab} onChange={setTab} dev={environment === "dev"} />
     </main>
   );
 }
@@ -180,7 +190,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
     const reward = await onClickItem(item.definition.id);
     if (!reward || !rect) return;
     const id = Date.now() + Math.random();
-    setBursts((current) => [...current.slice(-9), { id, left, top, reward }]);
+    setBursts((current) => [...current.slice(-9), { id, left, top, reward, multiplier: data.clickMultiplier }]);
     const timer = window.setTimeout(() => {
       burstTimers.current.delete(timer);
       setBursts((current) => current.filter((burst) => burst.id !== id));
@@ -190,7 +200,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
 
   return (
     <section className={styles.scene} aria-label={mode === "farm" ? "Cenário da Fazendinha" : "Sala dos personagens"}>
-      <BalancePill balance={balance} production={data.totalProduction} />
+      <BalancePill balance={balance} production={data.effectiveProduction} />
       <div className={styles.sceneLabel}>{data.scenes[scene].name}<span>{scene + 1}/3</span></div>
       {purchased.length === 0 && <div className={styles.emptySceneHint}><Sparkles size={18} />{scene === 0 ? `Compre ${mode === "farm" ? "a Horta" : "Hello Kitty"} na aba Melhorias` : "Compre um item deste cenário para vê-lo aqui"}</div>}
       {purchased.map((item) => {
@@ -198,7 +208,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
         const position = positions[localIndex] ?? positions[0];
         return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : styles.character} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="52vw" /></button>;
       })}
-      {bursts.map((burst) => <span key={burst.id} className={styles.clickBurst} style={{ left: burst.left, top: burst.top }}><GameStatIcon type="money" />+{formatIdleNumber(burst.reward)}</span>)}
+      {bursts.map((burst) => <span key={burst.id} className={styles.clickBurst} style={{ left: burst.left, top: burst.top }}><GameStatIcon type="money" />+{formatIdleNumber(burst.reward)}{burst.multiplier > 1 && <small>x{burst.multiplier}</small>}</span>)}
       <SceneNavigation data={data} scene={scene} onChange={onSceneChange} />
     </section>
   );
@@ -221,24 +231,40 @@ function Summary({ balance, production }: { balance: number; production: number 
   return <div className={styles.summary}><div className={styles.stat}><GameStatIcon type="money" /><span>Dinheiro interno</span><strong>{formatIdleNumber(balance)}</strong></div><div className={styles.stat}><GameStatIcon type="production" /><span>Produção/s</span><strong>{formatIdleNumber(production)}/s</strong></div></div>;
 }
 
-type ActionProps = { data: IdleModeSnapshot; balance: number; busyItemId: string | null; pendingUpgrades: Record<string, number>; act: (itemId: string, action: "buy" | "upgrade") => Promise<boolean> };
+type ActionProps = {
+  data: IdleModeSnapshot;
+  balance: number;
+  busyItemId: string | null;
+  pendingUpgrades: Record<string, number>;
+  act: (itemId: string, action: "buy" | "upgrade") => Promise<boolean>;
+  buyUpgrades: (itemId: string, count: PurchaseMode) => Promise<boolean>;
+  purchaseMode: PurchaseMode;
+};
 
-function FarmUpgrades({ data, balance, busyItemId, pendingUpgrades, act }: ActionProps) {
-  return <section className={styles.content}><Summary balance={balance} production={data.totalProduction} /><h2 className={styles.sectionTitle}>Produtores<small>Melhore os desbloqueados e compre novos para aumentar sua renda.</small></h2><div className={styles.cardGrid}>{data.items.map((item) => <ItemCard key={item.definition.id} item={item} busy={busyItemId === item.definition.id} pending={pendingUpgrades[item.definition.id] ?? 0} onAction={act} />)}</div></section>;
+function PurchaseModePicker({ value, onChange }: { value: PurchaseMode; onChange: (value: PurchaseMode) => void }) {
+  return <div className={styles.purchaseMode} role="group" aria-label="Quantidade de níveis">{([1, 10, "max"] as const).map((option) => <button key={String(option)} type="button" className={value === option ? styles.purchaseModeActive : ""} aria-pressed={value === option} onClick={() => onChange(option)}>{option === "max" ? "Máx." : `x${option}`}</button>)}</div>;
 }
 
-function ItemCard({ item, busy, pending, onAction }: { item: IdleItemSnapshot; busy: boolean; pending: number; onAction: ActionProps["act"] }) {
-  const action = item.purchased ? "upgrade" : "buy";
+function FarmUpgrades({ data, balance, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode }: ActionProps) {
+  return <section className={styles.content}><Summary balance={balance} production={data.effectiveProduction} /><h2 className={styles.sectionTitle}>Produtores<small>Melhore os desbloqueados e compre novos para aumentar sua renda.</small></h2><div className={styles.cardGrid}>{data.items.map((item) => <ItemCard key={item.definition.id} item={item} busy={busyItemId === item.definition.id} pending={pendingUpgrades[item.definition.id] ?? 0} onAction={act} onUpgrade={buyUpgrades} purchaseMode={purchaseMode} />)}</div></section>;
+}
+
+function quoteFor(item: IdleItemSnapshot, mode: PurchaseMode) {
+  return mode === 1 ? item.upgradeQuotes.one : mode === 10 ? item.upgradeQuotes.ten : item.upgradeQuotes.max;
+}
+
+function ItemCard({ item, busy, pending, onAction, onUpgrade, purchaseMode }: { item: IdleItemSnapshot; busy: boolean; pending: number; onAction: ActionProps["act"]; onUpgrade: ActionProps["buyUpgrades"]; purchaseMode: PurchaseMode }) {
+  const quote = quoteFor(item, purchaseMode);
   return <article className={`${styles.itemCard} ${!item.purchased ? styles.locked : ""}`}>
     {!item.purchased && <span className={styles.lockBadge}>{item.unlocked ? "?" : <LockKeyhole size={16} />}</span>}
     <div className={styles.itemImage}><Image src={item.definition.asset} alt="" fill sizes="42vw" /></div><h3>{item.definition.name}</h3>
     <div className={styles.itemMeta}><span>{item.purchased ? `Nv. ${item.level}` : item.unlocked ? "Disponível" : "Bloqueado"}</span><span><GameStatIcon type="production" />+{formatIdleNumber(item.production)}/s</span></div>
-    <p className={styles.price}><GameStatIcon type="money" /> {formatIdleNumber(item.nextCost)}</p>
-    <button type="button" className={`${styles.actionButton} ${!item.purchased ? styles.buyButton : ""}`} disabled={!item.unlocked || (!item.purchased && busy)} onClick={() => void onAction(item.definition.id, action)}>{item.purchased ? <>Melhorar{pending > 0 && <span className={styles.pendingBadge}>+{pending}</span>}</> : busy ? "Comprando…" : item.unlocked ? "Comprar" : "Bloqueado"}</button>
+    <p className={styles.price}><GameStatIcon type="money" /> {formatIdleNumber(item.purchased ? quote?.totalCost ?? item.nextCost : item.nextCost)}</p>
+    <button type="button" className={`${styles.actionButton} ${!item.purchased ? styles.buyButton : ""}`} disabled={!item.unlocked || busy || (item.purchased && !quote)} onClick={() => void (item.purchased ? onUpgrade(item.definition.id, purchaseMode) : onAction(item.definition.id, "buy"))}>{item.purchased ? quote ? <>Melhorar x{quote.count}{pending > 0 && <span className={styles.pendingBadge}>+{pending}</span>}</> : "Saldo insuficiente" : busy ? "Comprando…" : item.unlocked ? "Comprar" : "Bloqueado"}</button>
   </article>;
 }
 
-function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act }: ActionProps) {
+function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode }: ActionProps) {
   const [index, setIndex] = useState(0);
   const [dragX, setDragX] = useState(0);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -252,7 +278,7 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act }: Acti
   const onTouchMove = (event: TouchEvent) => { if (!touchStart.current) return; const dx = event.touches[0].clientX - touchStart.current.x; const dy = event.touches[0].clientY - touchStart.current.y; if (Math.abs(dx) > Math.abs(dy)) { dragXRef.current = dx; setDragX(dx); } };
   const onTouchEnd = () => { const distance = dragXRef.current; if (distance < -45) move(1); else if (distance > 45) move(-1); touchStart.current = null; dragXRef.current = 0; setDragX(0); };
   return <section className={`${styles.content} ${styles.kittyContent}`}>
-    <Summary balance={balance} production={data.totalProduction} /><div className={styles.swipeHint}>Arraste para conhecer a turma <span>↔</span></div>
+    <Summary balance={balance} production={data.effectiveProduction} /><div className={styles.swipeHint}>Arraste para conhecer a turma <span>↔</span></div>
     <div className={styles.carousel} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       <div className={styles.prestigeBackdrop} />
       {data.items.map((item, itemIndex) => {
@@ -287,7 +313,7 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act }: Acti
         <span className={styles.panelOrnament} style={{ backgroundImage: `url(${RARITY_ASSETS[tier - 1]})` }} aria-hidden="true" />
         <div className={styles.characterTitleRow}><span className={styles.prestigeMark}>{"✦".repeat(Math.min(3, Math.ceil(tier / 2)))}</span><h2>{selected.definition.name}</h2><span className={styles.characterOrder}>{index + 1}/10</span></div>
         <div className={styles.characterStats}><span>{selected.purchased ? `Nível ${selected.level}` : selected.unlocked ? "Disponível" : "Bloqueado"}</span><span><GameStatIcon type="production" />{formatIdleNumber(selected.production)}/s</span></div>
-        <button type="button" className={`${styles.actionButton} ${!selected.purchased ? styles.buyButton : ""}`} disabled={!selected.unlocked || (!selected.purchased && busyItemId === selected.definition.id)} onClick={() => void act(selected.definition.id, selected.purchased ? "upgrade" : "buy")}>{selected.purchased ? <>Melhorar <GameStatIcon type="money" /> {formatIdleNumber(selected.nextCost)}{(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}</> : busyItemId === selected.definition.id ? "Comprando…" : selected.unlocked ? <>Comprar <GameStatIcon type="money" /> {formatIdleNumber(selected.nextCost)}</> : "Compre a personagem anterior"}</button>
+        <button type="button" className={`${styles.actionButton} ${!selected.purchased ? styles.buyButton : ""}`} disabled={!selected.unlocked || busyItemId === selected.definition.id || (selected.purchased && !quoteFor(selected, purchaseMode))} onClick={() => void (selected.purchased ? buyUpgrades(selected.definition.id, purchaseMode) : act(selected.definition.id, "buy"))}>{selected.purchased ? quoteFor(selected, purchaseMode) ? <>Melhorar x{quoteFor(selected, purchaseMode)!.count} <GameStatIcon type="money" /> {formatIdleNumber(quoteFor(selected, purchaseMode)!.totalCost)}{(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}</> : "Saldo insuficiente" : busyItemId === selected.definition.id ? "Comprando…" : selected.unlocked ? <>Comprar <GameStatIcon type="money" /> {formatIdleNumber(selected.nextCost)}</> : "Compre a personagem anterior"}</button>
       </div>
     </div>
   </section>;

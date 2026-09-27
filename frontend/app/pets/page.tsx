@@ -1,11 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowUpRight, Heart, PawPrint, Sparkles } from "lucide-react";
 import { PETS, petReturnHref, petRoomQuery } from "@/pets/config";
 import styles from "@/pets/pets.module.css";
+import { useEffect, useState } from "react";
+import { getActiveAccountId, type AccountId } from "@/lib/accountSession";
+import { FlaskConical } from "lucide-react";
 
 export default function PetsPage({ searchParams }: { searchParams: { sala?: string } }) {
   const query = petRoomQuery(searchParams.sala);
+  const [accountId, setAccountId] = useState<AccountId | undefined>();
+  useEffect(() => setAccountId(getActiveAccountId()), []);
 
   return (
     <main className={styles.shell}>
@@ -86,6 +93,7 @@ export default function PetsPage({ searchParams }: { searchParams: { sala?: stri
             </Link>
           ))}
         </div>
+        {accountId === "andre" && <Link href={`/pets/dev${query}`} className={styles.petDevEntry}><FlaskConical size={19} /><span><strong>Modo Desenvolvedor</strong><small>Quartos e compras totalmente separados</small></span><ArrowUpRight size={20} /></Link>}
 
         <div className={styles.selectorFootprint} aria-hidden="true">
           <PawPrint size={18} />

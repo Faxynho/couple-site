@@ -10,6 +10,7 @@ import {
   resetTogetherRecords,
 } from "@/lib/accountApi";
 import { resetIdle } from "@/lib/idleApi";
+import { resetRealPetRooms } from "@/lib/petApi";
 import { AccountsOverview } from "@/lib/accountTypes";
 import { AccountId } from "@/lib/accountSession";
 import {
@@ -215,6 +216,13 @@ function ResetSettings({ overview, onChanged }: Pick<SettingsTabProps, "overview
           label="Mundo da Hello Kitty completo"
           confirmation="Tem certeza que deseja resetar completamente o Mundo da Hello Kitty?"
           onConfirm={() => resetIdle("kitty", "andre").then(() => onChanged())}
+        />
+      </Section>
+      <Section title="Quartos dos pets — REAL">
+        <ResetRow
+          label="Resetar quartos da Nix e do Max"
+          confirmation="Isso vai remover todas as decorações compradas e resetar os quartos reais de Nix e Max. Continuar?"
+          onConfirm={() => resetRealPetRooms().then(() => onChanged())}
         />
       </Section>
     </div>

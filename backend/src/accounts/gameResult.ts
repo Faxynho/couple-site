@@ -2,6 +2,7 @@ import { GameId, Player, RoomMode } from "../types";
 import { accountStore } from "./AccountStore";
 import { ACCOUNT_IDS, AccountId, NO_RANK, RecordScoreType } from "./types";
 import { idleStore } from "../idle/IdleStore";
+import { minigameGlobalReward } from "../idle/idleConfig";
 
 /**
  * Traduz o estado (já finalizado) de qualquer um dos jogos para um formato
@@ -42,6 +43,27 @@ interface MatchOutcome {
    *  sentido virar recorde nesse resultado específico (ex.: Mini RPG em
    *  dupla perdendo pro BOT). */
   togetherMetric?: { value: number; scoreType: RecordScoreType } | null;
+}
+
+export function minigameRewardDecision(params: {
+  roomMode: RoomMode;
+  gameId: GameId;
+  rank: string;
+  durationMs: number;
+  players: Array<Pick<PlayerOutcome, "accountId" | "result" | "metricValue">>;
+}): { reward: number; advanceObjective: boolean } {
+  const fullReward = minigameGlobalReward(params.gameId, params.rank);
+  if (params.roomMode === "duo") {
+    const accounts = new Set(params.players.map((player) => player.accountId));
+    const validDuo = ACCOUNT_IDS.every((accountId) => accounts.has(accountId));
+    return { reward: validDuo ? fullReward : 0, advanceObjective: validDuo };
+  }
+  const flavia = params.players.find((player) => player.accountId === "flavia");
+  if (!flavia) return { reward: 0, advanceObjective: false };
+  const completed = flavia.result === "win" || (flavia.result === "solo" && flavia.metricValue !== null);
+  const validLoss = (flavia.result === "loss" || flavia.result === "draw") && params.durationMs >= 30_000;
+  const reward = completed ? fullReward : validLoss ? Math.max(1, Math.round(fullReward * 0.3)) : 0;
+  return { reward, advanceObjective: reward > 0 };
 }
 
 interface ResultsBasedState {
@@ -601,9 +623,12 @@ export function recordFinishedMatch(params: {
     const timestamps = params.gameState as { finishedAt?: number | null; solvedAt?: number | null };
     const finishedAt = timestamps.finishedAt ?? timestamps.solvedAt ?? Date.now();
     const participantKey = accountsInMatch.map((player) => player.id).sort().join(",");
-    const rewardId = `${params.gameId}:${finishedAt}:${participantKey}`;
-    const decisive = outcome.players.some((player) => player.result === "win" || (player.result === "solo" && player.metricValue !== null));
-    idleStore.recordMinigameCompletion(params.gameId, rewardId, decisive);
+    const rewardId = `${params.roomMode}:${params.gameId}:${outcome.rank}:${finishedAt}:${participantKey}`;
+    const rewardPlayers = params.roomMode === "duo"
+      ? accountsInMatch.flatMap((player) => player.accountId ? [{ accountId: player.accountId, result: "solo" as const, metricValue: null }] : [])
+      : outcome.players;
+    const decision = minigameRewardDecision({ roomMode: params.roomMode, gameId: params.gameId, rank: outcome.rank, durationMs: outcome.durationMs, players: rewardPlayers });
+    if (decision.reward > 0) idleStore.recordMinigameCompletion(rewardId, decision.reward, decision.advanceObjective);
   }
 
   if (params.roomMode === "solo") {

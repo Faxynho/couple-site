@@ -1,20 +1,22 @@
 "use client";
 
-import { Home, Sprout, Trophy } from "lucide-react";
+import { BarChart3, FlaskConical, Home, Sprout, Trophy } from "lucide-react";
 import styles from "./IdleGame.module.css";
 
-export type IdleTab = "home" | "upgrades" | "achievements";
+export type IdleTab = "home" | "upgrades" | "achievements" | "statistics" | "dev";
 
 const TABS: Array<{ id: IdleTab; label: string; icon: typeof Home }> = [
   { id: "home", label: "Inicial", icon: Home },
   { id: "upgrades", label: "Melhorias", icon: Sprout },
   { id: "achievements", label: "Conquistas", icon: Trophy },
+  { id: "statistics", label: "Estatísticas", icon: BarChart3 },
 ];
 
-export default function IdleBottomNav({ active, onChange }: { active: IdleTab; onChange: (tab: IdleTab) => void }) {
+export default function IdleBottomNav({ active, onChange, dev = false }: { active: IdleTab; onChange: (tab: IdleTab) => void; dev?: boolean }) {
+  const tabs = dev ? [...TABS, { id: "dev" as const, label: "DEV", icon: FlaskConical }] : TABS;
   return (
     <nav className={styles.bottomNav} aria-label="Navegação do jogo idle">
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const Icon = tab.icon;
         return (
           <button

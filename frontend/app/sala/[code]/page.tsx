@@ -26,6 +26,7 @@ import PersistentDuoLobbyScene from "@/components/duo/PersistentDuoLobbyScene";
 import PersistentDuoMinigamesScene from "@/components/duo/PersistentDuoMinigamesScene";
 import PetLobbyArea from "@/pets/components/PetLobbyArea";
 import IdleLobbyEntry from "@/components/duo/IdleLobbyEntry";
+import GlobalRewardPreview from "@/components/GlobalRewardPreview";
 import {
   consumePersistentDuoMinigamesReturn,
   getPersistentDuoAvailabilityMessage,
@@ -524,6 +525,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                     setConfig={setConfig}
                     setBoardRacePawnColor={setBoardRacePawnColor}
                   />
+                  {room.gameId && <GlobalRewardPreview gameId={room.gameId} rank={room.pendingDifficulty || "geral"} />}
                 </div>
 
                 <Button onClick={handleStart} disabled={!bothConnected} className="mt-6 w-full">
@@ -575,6 +577,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
 
             <div className="mt-2">
               <GameConfigPanel room={room} isHost={isHost} selfId={selfId} setConfig={setConfig} setBoardRacePawnColor={setBoardRacePawnColor} />
+              {room.gameId && <GlobalRewardPreview gameId={room.gameId} rank={room.pendingDifficulty || "geral"} />}
             </div>
 
             {isHost ? (

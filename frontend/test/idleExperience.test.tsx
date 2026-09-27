@@ -30,6 +30,7 @@ describe("Experiência do idle compartilhado", () => {
     mocks.accountId = "andre";
     mocks.addFunds.mockClear();
     mocks.reload.mockClear();
+    mocks.push.mockClear();
   });
 
   it("exibe o Modo Desenvolvedor apenas para André", () => {
@@ -41,14 +42,11 @@ describe("Experiência do idle compartilhado", () => {
     expect(screen.queryByRole("button", { name: /Modo Desenvolvedor/ })).not.toBeInTheDocument();
   });
 
-  it("permite adicionar separadamente dinheiro de teste", async () => {
+  it("leva André à seleção do ambiente DEV separado", async () => {
     render(<IdleChoicePage />);
     fireEvent.click(screen.getByRole("button", { name: /Modo Desenvolvedor/ }));
-    fireEvent.change(screen.getByLabelText(/Dinheiro da Fazendinha/), { target: { value: "250000" } });
-    const row = screen.getByLabelText(/Dinheiro da Fazendinha/).closest("div")?.parentElement;
-    fireEvent.click(row!.querySelector("button")!);
-    await waitFor(() => expect(mocks.addFunds).toHaveBeenCalledWith("farm", 250000, "andre"));
-    expect(mocks.reload).toHaveBeenCalled();
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/cantinho/dev"));
+    expect(mocks.addFunds).not.toHaveBeenCalled();
   });
 
   it("mostra a moeda global compartilhada no badge do lobby", () => {
@@ -56,5 +54,20 @@ describe("Experiência do idle compartilhado", () => {
     expect(screen.queryByText("Moeda global")).not.toBeInTheDocument();
     expect(screen.getByText("1,3K")).toBeInTheDocument();
     expect(document.querySelector('[data-src="/idle/icons/global-coin.webp"]')).toBeInTheDocument();
+  });
+
+  it("mostra o tutorial de cinco passos somente para Flávia e permite reabrir", () => {
+    mocks.accountId = "flavia";
+    render(<IdleChoicePage />);
+    const open = screen.getByRole("button", { name: /Como jogar/ });
+    fireEvent.click(open);
+    expect(screen.getByRole("dialog", { name: "Como jogar" })).toBeInTheDocument();
+    expect(screen.getByText("Toque para ganhar")).toBeInTheDocument();
+    expect(screen.getByText("Moedas globais")).toBeInTheDocument();
+    expect(screen.getAllByText(/^0[1-5]$/)).toHaveLength(5);
+    fireEvent.click(screen.getByRole("button", { name: "Entendi 💗" }));
+    expect(screen.queryByRole("dialog", { name: "Como jogar" })).not.toBeInTheDocument();
+    fireEvent.click(open);
+    expect(screen.getByRole("dialog", { name: "Como jogar" })).toBeInTheDocument();
   });
 });

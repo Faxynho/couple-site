@@ -56,6 +56,7 @@ export interface SharedDrawingBoardSnapshot {
 interface PersistentDuoStoredData extends PersistentDuoLobbyData {
   drawing: SharedDrawingBoard;
   petRooms: Record<PetRoomId, PetRoomState>;
+  petRoomsDev: Record<PetRoomId, PetRoomState>;
 }
 
 export type PetRoomId = "nix" | "max";
@@ -65,6 +66,7 @@ export interface PetRoomState {
 }
 export interface PetRoomSnapshot extends PetRoomState {
   petId: PetRoomId;
+  environment: "real" | "dev";
 }
 
 // These IDs mirror the visual catalog. Reject unknown IDs and never trust a client slot.
@@ -76,18 +78,18 @@ const PET_DECORATION_SLOTS: Record<string, string> = {
 const DEFAULT_PET_ROOM_SLOTS = Object.fromEntries(
   Object.entries(PET_DECORATION_SLOTS).map(([id, slot]) => [slot, id]),
 );
-const newPetRoomState = (): PetRoomState => ({ revision: 0, slots: { ...DEFAULT_PET_ROOM_SLOTS } });
+const newPetRoomState = (equipped = false): PetRoomState => ({ revision: 0, slots: equipped ? { ...DEFAULT_PET_ROOM_SLOTS } : {} });
 
 export function isPetRoomId(value: unknown): value is PetRoomId {
   return value === "nix" || value === "max";
 }
 
-function sanitizePetRoomState(value: unknown): PetRoomState {
+function sanitizePetRoomState(value: unknown, seedLegacyComposition: boolean): PetRoomState {
   const input = value && typeof value === "object" ? value as Partial<PetRoomState> : {};
   const revision = Number.isSafeInteger(input.revision) && Number(input.revision) >= 0 ? Number(input.revision) : 0;
   // The original rooms started with an empty revision-0 catalog. Seed the new
   // composition once; a room the user has changed keeps its chosen items.
-  if (revision === 0 && (!input.slots || Object.keys(input.slots).length === 0)) return newPetRoomState();
+  if (seedLegacyComposition && revision === 0 && (!input.slots || Object.keys(input.slots).length === 0)) return newPetRoomState(true);
   const slots: Record<string, string> = {};
   if (input.slots && typeof input.slots === "object" && !Array.isArray(input.slots)) {
     for (const [slot, id] of Object.entries(input.slots)) {
@@ -236,7 +238,8 @@ export class PersistentDuoStore {
   private data: PersistentDuoStoredData = {
     displayName: PERSISTENT_DUO_DEFAULT_DISPLAY_NAME,
     drawing: emptyDrawingBoard(),
-    petRooms: { nix: newPetRoomState(), max: newPetRoomState() },
+    petRooms: { nix: newPetRoomState(true), max: newPetRoomState(true) },
+    petRoomsDev: { nix: newPetRoomState(), max: newPetRoomState() },
   };
   private loadPromise: Promise<void> | null = null;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -258,21 +261,55 @@ export class PersistentDuoStore {
     return cloneDrawingBoard(this.data.drawing);
   }
 
-  getPetRoom(petId: PetRoomId): PetRoomSnapshot {
-    const state = this.data.petRooms[petId];
-    return { petId, revision: state.revision, slots: { ...state.slots } };
+  getPetRoom(petId: PetRoomId, environment: "real" | "dev" = "real"): PetRoomSnapshot {
+    const state = environment === "dev" ? this.data.petRoomsDev[petId] : this.data.petRooms[petId];
+    return { petId, environment, revision: state.revision, slots: { ...state.slots } };
   }
 
-  togglePetDecoration(petId: PetRoomId, decorationId: unknown): PetRoomSnapshot | null {
+  togglePetDecoration(petId: PetRoomId, decorationId: unknown, environment: "real" | "dev" = "real"): PetRoomSnapshot | null {
     if (typeof decorationId !== "string") return null;
     const slot = PET_DECORATION_SLOTS[decorationId];
     if (!slot) return null;
-    const state = this.data.petRooms[petId];
+    const state = environment === "dev" ? this.data.petRoomsDev[petId] : this.data.petRooms[petId];
     if (state.slots[slot] === decorationId) delete state.slots[slot];
     else state.slots[slot] = decorationId;
     state.revision++;
     this.scheduleSave();
-    return this.getPetRoom(petId);
+    return this.getPetRoom(petId, environment);
+  }
+
+  resetPetRoom(petId: PetRoomId, environment: "real" | "dev"): PetRoomSnapshot {
+    const rooms = environment === "dev" ? this.data.petRoomsDev : this.data.petRooms;
+    rooms[petId] = newPetRoomState();
+    rooms[petId].revision += 1;
+    this.scheduleSave();
+    return this.getPetRoom(petId, environment);
+  }
+
+  removePetDecoration(decorationId: string, environment: "real" | "dev"): void {
+    const rooms = environment === "dev" ? this.data.petRoomsDev : this.data.petRooms;
+    for (const petId of ["nix", "max"] as const) {
+      const state = rooms[petId];
+      let changed = false;
+      for (const slot of Object.keys(state.slots)) {
+        if (state.slots[slot] === decorationId) {
+          delete state.slots[slot];
+          changed = true;
+        }
+      }
+      if (changed) state.revision += 1;
+    }
+    this.scheduleSave();
+  }
+
+  resetPetEnvironment(environment: "real" | "dev"): Record<PetRoomId, PetRoomSnapshot> {
+    const rooms = environment === "dev" ? this.data.petRoomsDev : this.data.petRooms;
+    rooms.nix = newPetRoomState();
+    rooms.max = newPetRoomState();
+    rooms.nix.revision += 1;
+    rooms.max.revision += 1;
+    this.scheduleSave();
+    return { nix: this.getPetRoom("nix", environment), max: this.getPetRoom("max", environment) };
   }
 
   setDisplayName(value: unknown): string | null {
@@ -342,8 +379,12 @@ export class PersistentDuoStore {
       if (displayName) this.data.displayName = displayName;
       this.data.drawing = sanitizeDrawingBoard(parsed.drawing);
       this.data.petRooms = {
-        nix: sanitizePetRoomState(parsed.petRooms?.nix),
-        max: sanitizePetRoomState(parsed.petRooms?.max),
+        nix: sanitizePetRoomState(parsed.petRooms?.nix, true),
+        max: sanitizePetRoomState(parsed.petRooms?.max, true),
+      };
+      this.data.petRoomsDev = {
+        nix: sanitizePetRoomState(parsed.petRoomsDev?.nix, false),
+        max: sanitizePetRoomState(parsed.petRoomsDev?.max, false),
       };
     } catch {
       // Primeira execução ou arquivo inválido: usa o nome padrão.
