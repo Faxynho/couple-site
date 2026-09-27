@@ -19,6 +19,7 @@ export interface IdleAchievementSnapshot {
   completedAt: number | null; progress: number; target: number;
 }
 export interface IdleBoostState { startedAt: number; expiresAt: number; multiplier: number }
+export interface IdleClickBoostState extends IdleBoostState { visualMultiplier: number; sources: IdleBoostState[] }
 export interface IdleActiveEvent { id: string; type: IdleEventType; spawnedAt: number; expiresAt: number }
 export interface IdleEventCounters { money: number; production2: number; click2: number; click3: number; click5: number; click10: number }
 export interface IdleModeStatistics {
@@ -33,7 +34,7 @@ export interface IdleModeSnapshot {
   items: IdleItemSnapshot[]; achievements: IdleAchievementSnapshot[];
   scenes: Array<{ id: 0 | 1 | 2; name: string; unlocked: boolean }>;
   statistics: IdleModeStatistics; activeEvent: IdleActiveEvent | null;
-  productionBoost: IdleBoostState | null; clickBoost: IdleBoostState | null;
+  productionBoost: IdleBoostState | null; clickBoost: IdleClickBoostState | null;
 }
 export interface RenewableObjectiveSnapshot {
   id: string; period: "daily" | "weekly"; title: string; description: string; metric: string;

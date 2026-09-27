@@ -24,6 +24,7 @@ import {
 import {
   GameEnvironment,
   IdleActiveEvent,
+  IdleClickBoostState,
   IdleItemStatistics,
   IdleModeSnapshot,
   IdleModeState,
@@ -209,6 +210,28 @@ function sanitizeBoost(value: unknown, now: number) {
   return { startedAt, expiresAt, multiplier };
 }
 
+function aggregateClickBoost(sources: Array<{ startedAt: number; expiresAt: number; multiplier: number }>, now: number): IdleClickBoostState | null {
+  const active = sources.filter((source) => source.expiresAt > now && [2, 3, 5, 10].includes(source.multiplier));
+  if (!active.length) return null;
+  return {
+    startedAt: Math.min(...active.map((source) => source.startedAt)),
+    expiresAt: Math.max(...active.map((source) => source.expiresAt)),
+    multiplier: active.reduce((sum, source) => sum + source.multiplier, 0),
+    visualMultiplier: Math.max(...active.map((source) => source.multiplier)),
+    sources: active.map((source) => ({ ...source })),
+  };
+}
+
+function sanitizeClickBoost(value: unknown, now: number): IdleClickBoostState | null {
+  if (!value || typeof value !== "object") return null;
+  const input = value as Partial<IdleClickBoostState>;
+  const rawSources = Array.isArray(input.sources) && input.sources.length ? input.sources : [value];
+  const sources = rawSources
+    .map((source) => sanitizeBoost(source, now))
+    .filter((source): source is NonNullable<ReturnType<typeof sanitizeBoost>> => Boolean(source));
+  return aggregateClickBoost(sources, now);
+}
+
 function sanitizeMode(mode: IdleModeId, value: unknown, now: number): IdleModeState {
   const base = newMode(mode, now);
   if (!value || typeof value !== "object") return base;
@@ -239,7 +262,7 @@ function sanitizeMode(mode: IdleModeId, value: unknown, now: number): IdleModeSt
   base.statistics = sanitizeStatistics(mode, input.statistics, now);
   base.activeEvent = sanitizeEvent(input.activeEvent, now);
   base.productionBoost = sanitizeBoost(input.productionBoost, now);
-  base.clickBoost = sanitizeBoost(input.clickBoost, now);
+  base.clickBoost = sanitizeClickBoost(input.clickBoost, now);
   base.eventActivityMs = safeCount(input.eventActivityMs);
   base.nextEventAtActivityMs = Math.max(base.eventActivityMs + 1_000, safeCount(input.nextEventAtActivityMs) || base.nextEventAtActivityMs);
   return base;
@@ -386,7 +409,8 @@ export class IdleStore {
   private clickMultiplier(mode: IdleModeId, now: number): number {
     const state = this.data.modes[mode];
     const production = (state.productionBoost?.expiresAt ?? 0) > now ? 2 : 1;
-    const rush = (state.clickBoost?.expiresAt ?? 0) > now ? state.clickBoost!.multiplier : 1;
+    const activeClickBoost = aggregateClickBoost(state.clickBoost?.sources ?? [], now);
+    const rush = activeClickBoost?.multiplier ?? 1;
     return production * rush;
   }
 
@@ -494,7 +518,14 @@ export class IdleStore {
       const state = this.data.modes[mode];
       if (state.activeEvent && state.activeEvent.expiresAt <= now) { state.activeEvent = null; changed = true; }
       if (state.productionBoost && state.productionBoost.expiresAt <= now) { state.productionBoost = null; changed = true; }
-      if (state.clickBoost && state.clickBoost.expiresAt <= now) { state.clickBoost = null; changed = true; }
+      if (state.clickBoost) {
+        const previousCount = state.clickBoost.sources.length;
+        const nextClickBoost = aggregateClickBoost(state.clickBoost.sources, now);
+        if (!nextClickBoost || nextClickBoost.sources.length !== previousCount) {
+          state.clickBoost = nextClickBoost;
+          changed = true;
+        }
+      }
     }
     return changed;
   }
@@ -573,7 +604,10 @@ export class IdleStore {
       statistics: JSON.parse(JSON.stringify(state.statistics)) as IdleModeStatistics,
       activeEvent: state.activeEvent ? { ...state.activeEvent } : null,
       productionBoost: state.productionBoost ? { ...state.productionBoost } : null,
-      clickBoost: state.clickBoost ? { ...state.clickBoost } : null,
+      clickBoost: (() => {
+        const active = aggregateClickBoost(state.clickBoost?.sources ?? [], now);
+        return active ? { ...active, sources: active.sources.map((source) => ({ ...source })) } : null;
+      })(),
     };
   }
 
@@ -752,7 +786,9 @@ export class IdleStore {
       stats.boostsCollected += 1;
     } else {
       const multiplier = Number(event.type.replace("click", ""));
-      state.clickBoost = { startedAt: now, expiresAt: now + CLICK_BOOST_DURATIONS[event.type], multiplier };
+      const source = { startedAt: now, expiresAt: now + CLICK_BOOST_DURATIONS[event.type], multiplier };
+      const currentSources = aggregateClickBoost(state.clickBoost?.sources ?? [], now)?.sources ?? [];
+      state.clickBoost = aggregateClickBoost([...currentSources, source], now);
       stats.boostsCollected += 1;
     }
     this.touch(now);

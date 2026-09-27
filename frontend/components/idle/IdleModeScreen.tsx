@@ -189,7 +189,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
     const reward = await onClickItem(item.definition.id);
     if (!reward || !rect) return;
     const id = Date.now() + Math.random();
-    setBursts((current) => [...current.slice(-9), { id, left, top, reward, multiplier: data.clickMultiplier, rushMultiplier: data.clickBoost?.multiplier ?? 1 }]);
+    setBursts((current) => [...current.slice(-9), { id, left, top, reward, multiplier: data.clickMultiplier, rushMultiplier: data.clickBoost?.visualMultiplier ?? data.clickBoost?.multiplier ?? 1 }]);
     const timer = window.setTimeout(() => {
       burstTimers.current.delete(timer);
       setBursts((current) => current.filter((burst) => burst.id !== id));

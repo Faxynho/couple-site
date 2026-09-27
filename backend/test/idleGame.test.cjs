@@ -241,23 +241,64 @@ test("Produção x2 dobra passivo e clique por 90s sem acumular consigo mesma", 
   assert.equal(store.getSnapshot().modes.farm.clickMultiplier, 1);
 });
 
-test("Click Rush usa x2/x3/x5/x10 com durações corretas e combina previsivelmente com Produção x2", () => {
-  let now = Date.parse("2026-09-26T12:00:00-03:00");
+test("Click Rush preserva durações individuais, acumula por soma e mantém o maior efeito visual", () => {
+  const baseNow = Date.parse("2026-09-26T12:00:00-03:00");
+  const durations = { click2: 60_000, click3: 45_000, click5: 30_000, click10: 20_000 };
+
+  for (const [type, duration] of Object.entries(durations)) {
+    let now = baseNow;
+    const isolated = new IdleStore(false, () => now);
+    isolated.act("kitty", "hello-kitty", "buy");
+    const forced = isolated.forceEvent("kitty", type);
+    const result = isolated.collectEvent("kitty", forced.modes.kitty.activeEvent.id);
+    assert.equal(result.snapshot.modes.kitty.clickBoost.multiplier, Number(type.replace("click", "")));
+    assert.equal(result.snapshot.modes.kitty.clickBoost.visualMultiplier, Number(type.replace("click", "")));
+    assert.equal(result.snapshot.modes.kitty.clickBoost.sources.length, 1);
+    assert.equal(result.snapshot.modes.kitty.clickBoost.sources[0].expiresAt - result.snapshot.modes.kitty.clickBoost.sources[0].startedAt, duration);
+  }
+
+  let now = baseNow;
   const store = new IdleStore(false, () => now);
   store.act("kitty", "hello-kitty", "buy");
-  const durations = { click2: 60_000, click3: 45_000, click5: 30_000, click10: 20_000 };
-  for (const [type, duration] of Object.entries(durations)) {
-    const forced = store.forceEvent("kitty", type);
-    const result = store.collectEvent("kitty", forced.modes.kitty.activeEvent.id);
-    assert.equal(result.snapshot.modes.kitty.clickBoost.multiplier, Number(type.replace("click", "")));
-    assert.equal(result.snapshot.modes.kitty.clickBoost.expiresAt - result.snapshot.modes.kitty.clickBoost.startedAt, duration);
-  }
-  let forced = store.forceEvent("kitty", "production2");
-  store.collectEvent("kitty", forced.modes.kitty.activeEvent.id);
+
+  let forced = store.forceEvent("kitty", "click5");
+  let result = store.collectEvent("kitty", forced.modes.kitty.activeEvent.id);
+  assert.equal(result.snapshot.modes.kitty.clickBoost.multiplier, 5);
+  assert.equal(result.snapshot.modes.kitty.clickBoost.visualMultiplier, 5);
+
+  now += 5_000;
   forced = store.forceEvent("kitty", "click10");
-  const result = store.collectEvent("kitty", forced.modes.kitty.activeEvent.id);
-  assert.equal(result.snapshot.modes.kitty.clickMultiplier, 20);
-  assert.equal(store.click("kitty", "hello-kitty", "flavia").reward, 20);
+  result = store.collectEvent("kitty", forced.modes.kitty.activeEvent.id);
+  assert.equal(result.snapshot.modes.kitty.clickBoost.multiplier, 15);
+  assert.equal(result.snapshot.modes.kitty.clickBoost.visualMultiplier, 10);
+  assert.equal(result.snapshot.modes.kitty.clickBoost.sources.length, 2);
+
+  forced = store.forceEvent("kitty", "click2");
+  result = store.collectEvent("kitty", forced.modes.kitty.activeEvent.id);
+  assert.equal(result.snapshot.modes.kitty.clickBoost.multiplier, 17);
+  assert.equal(result.snapshot.modes.kitty.clickBoost.visualMultiplier, 10);
+  assert.equal(store.click("kitty", "hello-kitty", "flavia").reward, 17);
+
+  forced = store.forceEvent("kitty", "production2");
+  result = store.collectEvent("kitty", forced.modes.kitty.activeEvent.id);
+  assert.equal(result.snapshot.modes.kitty.clickMultiplier, 34);
+
+  now += 20_001;
+  let snapshot = store.getSnapshot();
+  assert.equal(snapshot.modes.kitty.clickBoost.multiplier, 7);
+  assert.equal(snapshot.modes.kitty.clickBoost.visualMultiplier, 5);
+  assert.equal(snapshot.modes.kitty.clickMultiplier, 14);
+
+  now += 5_001;
+  snapshot = store.getSnapshot();
+  assert.equal(snapshot.modes.kitty.clickBoost.multiplier, 2);
+  assert.equal(snapshot.modes.kitty.clickBoost.visualMultiplier, 2);
+  assert.equal(snapshot.modes.kitty.clickMultiplier, 4);
+
+  now += 35_001;
+  snapshot = store.getSnapshot();
+  assert.equal(snapshot.modes.kitty.clickBoost, null);
+  assert.equal(snapshot.modes.kitty.clickMultiplier, 2);
 });
 
 test("eventos usam atividade real, mantêm somente um visível e expiram sem recompensa", () => {

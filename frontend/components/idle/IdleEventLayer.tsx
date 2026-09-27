@@ -84,8 +84,17 @@ export default function IdleEventLayer({ accountId, environment, mode, data, onS
   }, []);
   const event = data.activeEvent;
   const productionLeft = data.productionBoost ? seconds(data.productionBoost.expiresAt, now) : 0;
-  const clickLeft = data.clickBoost ? seconds(data.clickBoost.expiresAt, now) : 0;
-  const clickRushMultiplier = clickLeft > 0 ? data.clickBoost?.multiplier ?? 1 : 1;
+  const clickSources = data.clickBoost?.sources?.length ? data.clickBoost.sources : data.clickBoost ? [data.clickBoost] : [];
+  const activeClickSources = clickSources.filter((source) => source.expiresAt > now);
+  const clickRushMultiplier = activeClickSources.length
+    ? activeClickSources.reduce((sum, source) => sum + source.multiplier, 0)
+    : 1;
+  const clickVisualMultiplier = activeClickSources.length
+    ? Math.max(...activeClickSources.map((source) => source.multiplier))
+    : 1;
+  const clickLeft = activeClickSources.length
+    ? seconds(Math.min(...activeClickSources.map((source) => source.expiresAt)), now)
+    : 0;
   const motionStyle = event ? eventMotion(event.id, event.type) : undefined;
   const collect = async () => {
     if (!event || collecting) return;
@@ -93,7 +102,17 @@ export default function IdleEventLayer({ accountId, environment, mode, data, onS
     try {
       const result = await collectIdleEvent(accountId, mode, event.id, environment);
       playSoundEffect(result.eventType === "money" ? "idleAchievement" : "idleUnlock");
-      setImpact({ label: result.eventType === "money" ? `+${Math.round(result.reward).toLocaleString("pt-BR")}` : LABELS[result.eventType], type: result.eventType });
+      if (result.eventType === "money") {
+        setImpact({ label: `+${Math.round(result.reward).toLocaleString("pt-BR")}`, type: result.eventType });
+      } else if (result.eventType === "production2") {
+        setImpact({ label: LABELS[result.eventType], type: result.eventType });
+      } else {
+        const clickBoost = result.snapshot.modes[mode].clickBoost;
+        const sources = clickBoost?.sources?.filter((source) => source.expiresAt > Date.now()) ?? [];
+        const total = sources.length ? sources.reduce((sum, source) => sum + source.multiplier, 0) : clickBoost?.multiplier ?? 1;
+        const visual = sources.length ? Math.max(...sources.map((source) => source.multiplier)) : clickBoost?.visualMultiplier ?? Number(result.eventType.replace("click", ""));
+        setImpact({ label: `CLICK x${total}!`, type: `click${visual}` as IdleEventType });
+      }
       onSnapshot(result.snapshot);
       window.setTimeout(() => setImpact(null), 1_500);
     } catch {
@@ -108,11 +127,12 @@ export default function IdleEventLayer({ accountId, environment, mode, data, onS
       {(productionLeft > 0 || clickLeft > 0) && (
         <div className={styles.boostHud}>
           {productionLeft > 0 && <span className={styles.productionBoostBadge}>PRODUÇÃO x2 <strong>{productionLeft}s</strong></span>}
-          {clickLeft > 0 && <span className={styles.clickBoostBadge} data-multiplier={clickRushMultiplier}>CLICK x{data.clickBoost?.multiplier} <strong>{clickLeft}s</strong></span>}
+          {clickLeft > 0 && <span className={styles.clickBoostBadge} data-multiplier={clickVisualMultiplier}>CLICK x{clickRushMultiplier} <strong>{clickLeft}s</strong></span>}
         </div>
       )}
+      {eventsEnabled && clickVisualMultiplier === 10 && <div className={styles.click10GlobalFx} aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>}
       {eventsEnabled && clickLeft > 0 && (
-        <div className={styles.clickRushFx} data-multiplier={clickRushMultiplier} aria-hidden="true">
+        <div className={styles.clickRushFx} data-multiplier={clickVisualMultiplier} aria-hidden="true">
           {Array.from({ length: 12 }, (_, index) => <i key={index} />)}
         </div>
       )}

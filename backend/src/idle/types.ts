@@ -21,6 +21,11 @@ export interface IdleBoostState {
   multiplier: number;
 }
 
+export interface IdleClickBoostState extends IdleBoostState {
+  visualMultiplier: number;
+  sources: IdleBoostState[];
+}
+
 export interface IdleActiveEvent {
   id: string;
   type: IdleEventType;
@@ -66,7 +71,7 @@ export interface IdleModeState {
   statistics: IdleModeStatistics;
   activeEvent: IdleActiveEvent | null;
   productionBoost: IdleBoostState | null;
-  clickBoost: IdleBoostState | null;
+  clickBoost: IdleClickBoostState | null;
   eventActivityMs: number;
   nextEventAtActivityMs: number;
 }
