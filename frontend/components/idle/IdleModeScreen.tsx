@@ -174,7 +174,7 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
       <div className={styles.background} key={background} style={{ backgroundImage: `url(${background})` }} aria-hidden="true" />
       <div className={styles.sceneShade} aria-hidden="true" />
       <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "relics" ? "Relíquias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "relics" ? "Pequenos encantos, grandes descobertas" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
-      {activeSceneRelic && <span className={styles.sceneRelicBadge} title={activeSceneRelic.definition.name} aria-label={`Relíquia ${activeSceneRelic.definition.name} · nível ${activeSceneRelic.level}`}><Image src={activeSceneRelic.definition.asset} alt="" width={48} height={48} sizes="44px" /></span>}
+      {activeSceneRelic && <span className={styles.sceneRelicBadge} title={activeSceneRelic.definition.name} aria-label={`Relíquia ${activeSceneRelic.definition.name} · nível ${activeSceneRelic.level}`}><Image src={activeSceneRelic.definition.asset} alt="" width={60} height={60} sizes="58px" /></span>}
       {environment === "dev" && <span className={styles.devBadge}>MODO DEV</span>}
 
       {tab === "home" && <HomeScene mode={mode} data={data} balance={displayedBalance} scene={scene} onSceneChange={setScene} onClickItem={clickItem} accountId={accountId} />}
@@ -213,7 +213,16 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem, acc
   const activity = accountId ? data.clickActivity?.[accountId] : undefined;
   const comboLeft = Math.max(0, 2 - (Date.now() - (activity?.lastClickAt ?? 0)) / 1_000);
   const combo = comboLeft > 0 ? 1 + Math.min(1.2, ((activity?.comboClicks ?? 1) - 1) * .03) : 1;
-  const comboMotion = { "--combo-tilt": `${2 + (combo - 1) * 2.5}deg`, "--combo-lift": `${1 + (combo - 1) * 1.5}px`, "--combo-duration": `${2 - (combo - 1) * .48}s` } as CSSProperties;
+  const comboEnergy = Math.max(0, Math.min(1, (combo - 1) / 1.2));
+  const comboMotion = {
+    "--combo-energy": String(comboEnergy),
+    "--combo-tilt": `${1.4 + comboEnergy * 4.8}deg`,
+    "--combo-lift": `${.8 + comboEnergy * 2.8}px`,
+    "--combo-duration": `${2.25 - comboEnergy * .95}s`,
+    "--combo-scale": String(1 + comboEnergy * .075),
+    "--combo-glow": `${10 + comboEnergy * 22}px`,
+    "--combo-spark": `${.72 + comboEnergy * .52}rem`,
+  } as CSSProperties;
 
   useEffect(() => () => {
     animations.current.forEach((animation) => animation.cancel());
@@ -248,7 +257,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem, acc
   return (
     <section className={styles.scene} aria-label={mode === "farm" ? "Cenário da Fazendinha" : "Sala dos personagens"}>
       <BalancePill balance={balance} production={data.effectiveProduction} />
-      {mode === "kitty" && purchased.length > 0 && <div className={styles.activityPanel} aria-live="off"><span className={styles.comboLabel} style={comboMotion}>Combo x{combo.toFixed(1)}</span></div>}
+      {mode === "kitty" && purchased.length > 0 && <div className={styles.activityPanel} style={comboMotion} aria-live="off"><span className={styles.comboLabel}>Combo x{combo.toFixed(1)}</span></div>}
       {purchased.length === 0 && <div className={styles.emptySceneHint}><Sparkles size={18} />{scene === 0 ? `Compre ${mode === "farm" ? "a Horta" : "Hello Kitty"} na aba Melhorias` : "Compre um item deste cenário para vê-lo aqui"}</div>}
       {purchased.map((item) => {
         const localIndex = item.definition.unlockOrder - (scene === 0 ? 0 : scene === 1 ? 4 : 8);

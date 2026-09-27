@@ -721,10 +721,24 @@
 .relicBuy { display: flex; width: 100%; min-height: 2.75rem; align-items: center; justify-content: center; gap: .25rem; margin-top: .5rem; border-radius: .9rem; color: #fff; background: linear-gradient(145deg,#f782ad,#d55f96); box-shadow: 0 3px 0 #b8487c; font-size: .7rem; font-weight: 950; touch-action: manipulation; }
 .relicBuy:disabled { color: #876d82; background: #eadde7; box-shadow: none; }
 .relicBuy:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #b8487c; }
-.activityPanel { position: absolute; z-index: 34; top: calc(env(safe-area-inset-top) + 8.85rem); left: 50%; display: grid; min-width: 7.6rem; min-height: 2.1rem; place-items: center; padding: .3rem .7rem; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.85); border-radius: 999px; color: #9b3b75; background: rgba(255,247,251,.94); box-shadow: 0 5px 17px rgba(78,34,49,.14); font-size: .83rem; font-weight: 950; white-space: nowrap; pointer-events: none; }
-.comboLabel { display: block; animation: comboSway var(--combo-duration,2s) ease-in-out infinite alternate; transform-origin: center 80%; }
-@keyframes comboSway { from { transform: translateY(var(--combo-lift,1px)) rotate(calc(-1 * var(--combo-tilt,2deg))); } to { transform: translateY(calc(-1 * var(--combo-lift,1px))) rotate(var(--combo-tilt,2deg)); } }
-.sceneRelicBadge { position: absolute; z-index: 85; top: calc(env(safe-area-inset-top) + 4.55rem); left: 50%; display: grid; width: 2.35rem; height: 2.35rem; place-items: center; padding: .12rem; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.95); border-radius: 50%; background: radial-gradient(circle,#fffaf2,#ffe1f2); box-shadow: 0 3px 9px rgba(102,50,70,.2); pointer-events: none; }
+.activityPanel { position: absolute; z-index: 34; top: calc(env(safe-area-inset-top) + 8.85rem); left: 50%; display: grid; min-width: 8rem; min-height: 2.25rem; place-items: center; overflow: visible; padding: .34rem .82rem; transform: translateX(-50%) translateZ(0); border: 1px solid rgba(255,255,255,.92); border-radius: 999px; color: #8f3273; background: linear-gradient(145deg,rgba(255,250,253,.97),rgba(255,229,244,.94)); box-shadow: 0 5px 17px rgba(78,34,49,.14),0 0 var(--combo-glow,10px) rgba(239,104,185,.32),inset 0 1px 0 #fff; font-size: .86rem; font-weight: 950; white-space: nowrap; pointer-events: none; isolation: isolate; }
+.activityPanel::before,.activityPanel::after { content: "✦"; position: absolute; z-index: 1; top: 50%; color: #f2a24f; font-size: var(--combo-spark,.72rem); line-height: 1; opacity: calc(.2 + var(--combo-energy,0) * .72); text-shadow: 0 0 8px rgba(255,211,112,.9); animation: comboSpark var(--combo-duration,2.25s) ease-in-out infinite; }
+.activityPanel::before { left: -.34rem; transform-origin: 150% 50%; }
+.activityPanel::after { right: -.34rem; color: #f06fb3; text-shadow: 0 0 9px rgba(247,133,202,.85); animation-delay: calc(var(--combo-duration,2.25s) * -.47); transform-origin: -50% 50%; }
+.comboLabel { position: relative; z-index: 2; display: block; transform-origin: center 78%; text-shadow: 0 1px 0 #fff,0 0 9px rgba(238,99,177,.28); filter: saturate(calc(1 + var(--combo-energy,0) * .38)) brightness(calc(1 + var(--combo-energy,0) * .08)); animation: comboDance var(--combo-duration,2.25s) cubic-bezier(.45,.05,.55,.95) infinite; will-change: transform; }
+@keyframes comboDance {
+  0%,100% { transform: translate3d(0,0,0) rotate(calc(-.45 * var(--combo-tilt,1.4deg))) scale(1); }
+  20% { transform: translate3d(calc(-.45 * var(--combo-lift,.8px)),calc(-.55 * var(--combo-lift,.8px)),0) rotate(calc(.55 * var(--combo-tilt,1.4deg))) scale(var(--combo-scale,1)); }
+  45% { transform: translate3d(var(--combo-lift,.8px),calc(-1 * var(--combo-lift,.8px)),0) rotate(var(--combo-tilt,1.4deg)) scale(var(--combo-scale,1)); }
+  68% { transform: translate3d(calc(-.7 * var(--combo-lift,.8px)),calc(-.25 * var(--combo-lift,.8px)),0) rotate(calc(-.72 * var(--combo-tilt,1.4deg))) scale(calc(1 + var(--combo-energy,0) * .035)); }
+  84% { transform: translate3d(calc(.35 * var(--combo-lift,.8px)),calc(-.72 * var(--combo-lift,.8px)),0) rotate(calc(.35 * var(--combo-tilt,1.4deg))) scale(var(--combo-scale,1)); }
+}
+@keyframes comboSpark {
+  0%,100% { opacity: calc(.16 + var(--combo-energy,0) * .55); transform: translate3d(0,2px,0) scale(.62) rotate(-12deg); }
+  42% { opacity: calc(.38 + var(--combo-energy,0) * .62); transform: translate3d(0,calc(-1 * var(--combo-lift,.8px)),0) scale(calc(.9 + var(--combo-energy,0) * .42)) rotate(14deg); }
+  72% { opacity: calc(.24 + var(--combo-energy,0) * .66); transform: translate3d(0,-2px,0) scale(.78) rotate(-5deg); }
+}
+.sceneRelicBadge { position: absolute; z-index: 85; top: calc(env(safe-area-inset-top) + 4.3rem); left: 50%; display: grid; width: 3.05rem; height: 3.05rem; place-items: center; padding: 0; transform: translateX(-50%); border: 0; border-radius: 0; background: transparent; box-shadow: none; filter: drop-shadow(0 4px 5px rgba(88,43,63,.24)); pointer-events: none; }
 .sceneRelicBadge img { width: 100%; height: 100%; object-fit: contain; }
 .relicCelebrateUnlock,.relicCelebrateUpgrade { isolation: isolate; animation: relicCardCelebrate 1.15s ease-out both; }
 .relicCelebrateUnlock { border-color: #ffe494; box-shadow: 0 8px 22px rgba(127,61,94,.13),0 0 0 2px rgba(255,221,133,.8); }

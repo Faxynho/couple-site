@@ -157,6 +157,20 @@ const RELIC_NAMES = [
   "Laço dos Abraços", "Morango dos Sonhos", "Patinha do Prado",
   "Varinha do Refúgio", "Doçura Estelar", "Chá das Nuvens", "Coração Celestial",
 ] as const;
+// A relíquia global usa marcos econômicos próprios: chegada ao mundo 3 (P9),
+// chegada ao mundo 5 (P17) e reta final antes do P23. Ela deve ser uma decisão
+// grande, não uma melhoria barata que atropela os personagens.
+const GLOBAL_RELIC_COSTS = [
+  Math.ceil(IDLE_CATALOG.kitty[8].baseCost * 6),
+  Math.ceil(IDLE_CATALOG.kitty[16].baseCost * .9),
+  Math.ceil(IDLE_CATALOG.kitty[22].baseCost * .85),
+] as const;
+
+// As demais relíquias preservam o preço de entrada, mas abrem mais distância
+// entre níveis. Isso mantém a primeira compra atraente e transforma níveis 3/4
+// em investimentos que competem de verdade com personagens e upgrades.
+const STANDARD_RELIC_COST_MULTIPLIERS = [1, 7, 50, 350] as const;
+
 export const KITTY_RELICS: KittyRelicDefinition[] = [
   ...RELIC_NAMES.map((name, scene) => ({
     id: `kitty-scene-${scene + 1}`, name, asset: `/idle/relics/mundo${scene + 1}.webp`,
@@ -168,13 +182,18 @@ export const KITTY_RELICS: KittyRelicDefinition[] = [
   { id: "kitty-click", name: "Toque de Carinho", asset: "/idle/relics/clique.webp", kind: "click", unlockOrder: 1,
     baseCost: 420, maxLevel: 4, description: "Multiplica as moedas recebidas ao tocar personagens." },
   { id: "kitty-all", name: "Castelo das Maravilhas", asset: "/idle/relics/todososmundos.webp", kind: "global", unlockOrder: 8,
-    // P9 abre o terceiro cenário; o efeito cobre as sete cenas e pede um investimento maior.
-    baseCost: Math.ceil(IDLE_CATALOG.kitty[8].baseCost * 4), maxLevel: 3,
+    // P9 continua sendo o gatilho de desbloqueio; o custo inicial agora acompanha o caixa real dessa fase.
+    baseCost: GLOBAL_RELIC_COSTS[0], maxLevel: 3,
     description: "Multiplica a produção das sete cenas da Hello Kitty." },
 ];
 
 export function kittyRelicCost(relic: KittyRelicDefinition, level: number): number {
-  return Math.ceil(relic.baseCost * Math.pow(relic.kind === "global" ? 18 : 6, level));
+  if (relic.kind === "global") {
+    const boundedLevel = Math.max(0, Math.min(GLOBAL_RELIC_COSTS.length - 1, level));
+    return GLOBAL_RELIC_COSTS[boundedLevel];
+  }
+  const boundedLevel = Math.max(0, Math.min(STANDARD_RELIC_COST_MULTIPLIERS.length - 1, level));
+  return Math.ceil(relic.baseCost * STANDARD_RELIC_COST_MULTIPLIERS[boundedLevel]);
 }
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [
