@@ -229,6 +229,29 @@ test("nove relíquias usam ordem de cena, aumentam produção e não alteram faz
   assert.equal(store.enterMode("kitty").offlineReward, null);
 });
 
+test("Castelo desbloqueia com P9 e cobra uma curva exclusiva, mais alta que as relíquias de cena", () => {
+  const { KITTY_RELICS, IDLE_CATALOG, kittyRelicCost } = require("../dist/idle/idleConfig.js");
+  const global = KITTY_RELICS.find((relic) => relic.id === "kitty-all");
+  const scene3 = KITTY_RELICS.find((relic) => relic.id === "kitty-scene-3");
+  assert.equal(global.unlockOrder, 8);
+  assert.equal(global.baseCost, Math.ceil(IDLE_CATALOG.kitty[8].baseCost * 4));
+  assert.deepEqual([0, 1, 2].map((level) => kittyRelicCost(global, level)),
+    [global.baseCost, global.baseCost * 18, global.baseCost * 324]);
+  assert.equal(kittyRelicCost(scene3, 1), scene3.baseCost * 6);
+
+  const store = new IdleStore(false, () => Date.parse("2026-09-26T12:00:00-03:00"));
+  store.addTestFunds("kitty", 1e13);
+  for (const item of store.getSnapshot().modes.kitty.items.slice(0, 8)) store.act("kitty", item.definition.id, "buy");
+  assert.equal(store.getSnapshot().modes.kitty.relics.find((relic) => relic.definition.id === "kitty-all").unlocked, false);
+  assert.equal(store.upgradeRelic("kitty-all").ok, false);
+  store.act("kitty", IDLE_CATALOG.kitty[8].id, "buy");
+  assert.equal(store.getSnapshot().modes.kitty.relics.find((relic) => relic.definition.id === "kitty-all").unlocked, true);
+  assert.equal(store.upgradeRelic("kitty-all").ok, true);
+  const upgraded = store.getSnapshot().modes.kitty.relics.find((relic) => relic.definition.id === "kitty-all");
+  assert.equal(upgraded.level, 1);
+  assert.equal(upgraded.nextCost, kittyRelicCost(global, 1));
+});
+
 test("relíquia global soma com a de cena; relíquia de clique, combo e evento se combinam", () => {
   let now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);

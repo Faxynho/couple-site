@@ -168,12 +168,13 @@ export const KITTY_RELICS: KittyRelicDefinition[] = [
   { id: "kitty-click", name: "Toque de Carinho", asset: "/idle/relics/clique.webp", kind: "click", unlockOrder: 1,
     baseCost: 420, maxLevel: 4, description: "Multiplica as moedas recebidas ao tocar personagens." },
   { id: "kitty-all", name: "Castelo das Maravilhas", asset: "/idle/relics/todososmundos.webp", kind: "global", unlockOrder: 8,
-    baseCost: Math.ceil(IDLE_CATALOG.kitty[8].baseCost * .75), maxLevel: 3,
+    // P9 abre o terceiro cenário; o efeito cobre as sete cenas e pede um investimento maior.
+    baseCost: Math.ceil(IDLE_CATALOG.kitty[8].baseCost * 4), maxLevel: 3,
     description: "Multiplica a produção das sete cenas da Hello Kitty." },
 ];
 
 export function kittyRelicCost(relic: KittyRelicDefinition, level: number): number {
-  return Math.ceil(relic.baseCost * Math.pow(6, level));
+  return Math.ceil(relic.baseCost * Math.pow(relic.kind === "global" ? 18 : 6, level));
 }
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [

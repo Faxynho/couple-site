@@ -721,13 +721,26 @@
 .relicBuy { display: flex; width: 100%; min-height: 2.75rem; align-items: center; justify-content: center; gap: .25rem; margin-top: .5rem; border-radius: .9rem; color: #fff; background: linear-gradient(145deg,#f782ad,#d55f96); box-shadow: 0 3px 0 #b8487c; font-size: .7rem; font-weight: 950; touch-action: manipulation; }
 .relicBuy:disabled { color: #876d82; background: #eadde7; box-shadow: none; }
 .relicBuy:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #b8487c; }
-.activityPanel { position: absolute; z-index: 34; top: calc(env(safe-area-inset-top) + 8.85rem); left: 50%; display: flex; width: min(91vw,22rem); flex-wrap: wrap; justify-content: space-between; gap: .2rem; padding: .35rem .75rem .3rem; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.85); border-radius: 1rem; color: #853c6c; background: rgba(255,247,251,.91); box-shadow: 0 5px 17px rgba(78,34,49,.14); font-size: .68rem; font-weight: 850; pointer-events: none; }
-.activityPanel span { display: inline-flex; align-items: center; gap: .2rem; }
-.activityPanel strong { color: #c74880; font-size: .82rem; }
-.activityMeter { width: 100%; height: .24rem; border-radius: 99px; background: #efdae6; }
-.activityMeter i { display: block; height: 100%; border-radius: inherit; background: #ed74a8; transition: width .45s linear; }
-.milestonePopup { position: absolute; z-index: 55; top: 33%; left: 50%; display: flex; flex-direction: column; align-items: center; min-width: 12rem; padding: .85rem 1.25rem; transform: translateX(-50%); border: 2px solid #fff; border-radius: 1.5rem; color: #9d3972; background: linear-gradient(135deg,#fff8e3,#ffe0f2); box-shadow: 0 14px 28px rgba(75,30,63,.27); font-family: var(--font-display),sans-serif; font-size: 1.15rem; font-weight: 950; pointer-events: none; animation: milestoneArrival 2.2s ease-out both; }
-.milestonePopup strong { font-size: .91rem; }
-@keyframes milestoneArrival { 0% { opacity: 0; transform: translate(-50%,18px) scale(.85); } 14%,76% { opacity: 1; transform: translate(-50%,0) scale(1); } 100% { opacity: 0; transform: translate(-50%,-16px) scale(1); } }
-@media (max-height: 760px) { .activityPanel { top: calc(env(safe-area-inset-top) + 8.05rem); } }
-@media (prefers-reduced-motion: reduce) { .milestonePopup { animation: none; } }
+.activityPanel { position: absolute; z-index: 34; top: calc(env(safe-area-inset-top) + 8.85rem); left: 50%; display: grid; min-width: 7.6rem; min-height: 2.1rem; place-items: center; padding: .3rem .7rem; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.85); border-radius: 999px; color: #9b3b75; background: rgba(255,247,251,.94); box-shadow: 0 5px 17px rgba(78,34,49,.14); font-size: .83rem; font-weight: 950; white-space: nowrap; pointer-events: none; }
+.comboLabel { display: block; animation: comboSway var(--combo-duration,2s) ease-in-out infinite alternate; transform-origin: center 80%; }
+@keyframes comboSway { from { transform: translateY(var(--combo-lift,1px)) rotate(calc(-1 * var(--combo-tilt,2deg))); } to { transform: translateY(calc(-1 * var(--combo-lift,1px))) rotate(var(--combo-tilt,2deg)); } }
+.sceneRelicBadge { position: absolute; z-index: 85; top: calc(env(safe-area-inset-top) + 4.55rem); left: 50%; display: grid; width: 2.35rem; height: 2.35rem; place-items: center; padding: .12rem; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.95); border-radius: 50%; background: radial-gradient(circle,#fffaf2,#ffe1f2); box-shadow: 0 3px 9px rgba(102,50,70,.2); pointer-events: none; }
+.sceneRelicBadge img { width: 100%; height: 100%; object-fit: contain; }
+.relicCelebrateUnlock,.relicCelebrateUpgrade { isolation: isolate; animation: relicCardCelebrate 1.15s ease-out both; }
+.relicCelebrateUnlock { border-color: #ffe494; box-shadow: 0 8px 22px rgba(127,61,94,.13),0 0 0 2px rgba(255,221,133,.8); }
+.relicCelebrateUpgrade { border-color: #efb6df; box-shadow: 0 8px 22px rgba(127,61,94,.13),0 0 0 2px rgba(243,167,224,.65); }
+.relicCelebrateUnlock::after,.relicCelebrateUpgrade::after { content: ""; position: absolute; z-index: 0; inset: 0; border-radius: inherit; background: radial-gradient(circle at 50% 31%,rgba(255,245,181,.83),transparent 56%); opacity: 0; pointer-events: none; animation: relicAura 1.3s ease-out both; }
+.relicCelebrateUpgrade::after { background: radial-gradient(circle at 50% 31%,rgba(255,209,248,.82),transparent 56%); }
+.relicCelebrateUnlock .relicArt img,.relicCelebrateUpgrade .relicArt img { animation: relicArtCelebrate 1.05s cubic-bezier(.2,.75,.22,1) both; }
+.relicCelebrateUnlock .relicArtHalo,.relicCelebrateUpgrade .relicArtHalo { animation: relicAura 1.25s ease-out both; }
+.relicCelebration { position: absolute; z-index: 2; top: 6.4rem; left: 50%; display: flex; width: max-content; max-width: calc(100% - .65rem); align-items: center; justify-content: center; gap: .25rem; padding: .38rem .5rem; transform: translateX(-50%); border: 1px solid #fff; border-radius: 999px; color: #8d4a36; background: #fff1bd; box-shadow: 0 4px 9px rgba(101,50,73,.15); font-size: .62rem; font-weight: 950; white-space: nowrap; pointer-events: none; animation: relicToast 1.6s ease both; }
+.relicCelebrateUpgrade .relicCelebration { color: #914d82; background: #ffe2f5; }
+.relicCelebration::before,.relicCelebration::after { content: "✦"; position: absolute; top: -1.4rem; left: -.55rem; color: #f4b153; font-size: 1.1rem; animation: relicSparkle 1.25s ease-out both; }
+.relicCelebration::after { top: -1.9rem; right: -.45rem; left: auto; color: #f482bc; animation-delay: .12s; }
+@keyframes relicCardCelebrate { 0%,100% { transform: scale(1); } 32% { transform: scale(1.035); } 62% { transform: scale(.99); } }
+@keyframes relicArtCelebrate { 0% { transform: scale(.8) rotate(-8deg); opacity: .55; } 48% { transform: scale(1.16) rotate(5deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+@keyframes relicAura { 0% { opacity: 0; transform: scale(.6); } 37% { opacity: 1; transform: scale(1.04); } 100% { opacity: 0; transform: scale(1.25); } }
+@keyframes relicToast { 0% { opacity: 0; transform: translate(-50%,.45rem) scale(.85); } 20%,76% { opacity: 1; transform: translate(-50%,0) scale(1); } 100% { opacity: 0; transform: translate(-50%,-.3rem) scale(1); } }
+@keyframes relicSparkle { 0% { opacity: 0; transform: translateY(.5rem) scale(.5); } 36% { opacity: 1; transform: translateY(-.25rem) scale(1); } 100% { opacity: 0; transform: translateY(-1.15rem) scale(.55); } }
+@media (max-height: 760px) { .activityPanel { top: calc(env(safe-area-inset-top) + 8.05rem); } .sceneRelicBadge { top: calc(env(safe-area-inset-top) + 4.1rem); } }
+@media (prefers-reduced-motion: reduce) { .comboLabel,.relicCelebrateUnlock,.relicCelebrateUpgrade,.relicCelebrateUnlock::after,.relicCelebrateUpgrade::after,.relicCelebrateUnlock .relicArt img,.relicCelebrateUpgrade .relicArt img,.relicCelebrateUnlock .relicArtHalo,.relicCelebrateUpgrade .relicArtHalo,.relicCelebration,.relicCelebration::before,.relicCelebration::after { animation: none; } }
