@@ -501,3 +501,52 @@
 @media (prefers-reduced-motion:reduce) {
   .randomEvent,.randomEvent img,.eventTrail,.clickRushFx,.clickRushFx::before,.clickRushFx::after,.clickRushFx i,.click10GlobalFx,.click10GlobalFx::before,.click10GlobalFx::after,.click10GlobalFx i,.clickBoostBadge,.productionBoostActive .statsPill,.productionBoostActive .summary,.productionBoostActive::before,.eventImpact,.click10Active .header,.click10Active .heading h1,.click10Active .backButton,.click10Active .coinPill,.click10Active .coin,.click10Active .statsPill,.click10Active .statsPill .stat,.click10Active .statsPill .statIcon,.click10Active .statDivider,.click10Active .bottomNav,.click10Active .navButton,.click10Active .navButtonActive,.click10Active .sceneDots,.click10Active .sceneArrow { animation: none; }
 }
+
+/* Hello Kitty: the ZIP rarity artwork always renders at its original opacity and colors. */
+.raritySlide,.raritySlide[data-tier="1"],.raritySlide[data-tier="2"],.raritySlide[data-tier="3"],.raritySlide[data-tier="4"],.raritySlide[data-tier="5"],.raritySlide[data-tier="6"],.raritySlideLocked {
+  opacity: 1 !important;
+  filter: none !important;
+  animation: none !important;
+  will-change: transform;
+}
+.carouselLocked img,.homeLocked img { filter: grayscale(1) brightness(var(--locked-brightness,.25)) contrast(1.08); opacity: 1; }
+.carouselLockIcon,.homeLockIcon { position:absolute; z-index:6; top:47%; left:50%; transform:translate(-50%,-50%); box-sizing:content-box; padding:.35rem; border:1px solid rgba(255,255,255,.72); border-radius:50%; color:#fff; background:rgba(57,39,65,.83); box-shadow:0 3px 11px rgba(37,25,45,.48); pointer-events:none; }
+.homeLocked { filter:none; animation:none; pointer-events:none; }
+.homeLocked img { object-fit:contain; }
+.homeLockIcon { width:1.25rem; height:1.25rem; }
+.characterRare { isolation:isolate; }
+.characterRare img { z-index:2; }
+.characterRare[data-tier="2"]::before,.characterRare[data-tier="3"]::before,.characterRare[data-tier="4"]::before,.characterRare[data-tier="5"]::before,.characterRare[data-tier="6"]::before {
+  content:""; position:absolute; z-index:0; inset:10%; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle,rgba(255,255,255,.43),rgba(255,176,225,.16) 42%,transparent 70%);
+  box-shadow:0 0 12px rgba(255,198,236,.3); animation: kittyAura 4s ease-in-out infinite alternate;
+}
+.characterRare[data-tier="3"]::before { box-shadow:0 0 16px rgba(192,157,255,.5); }
+.characterRare[data-tier="4"]::before { background:radial-gradient(circle,rgba(255,255,255,.6),rgba(192,158,255,.32) 43%,transparent 72%); box-shadow:0 0 21px rgba(198,150,255,.6); }
+.characterRare[data-tier="5"]::before { inset:2%; background:radial-gradient(circle,rgba(255,255,255,.75),rgba(255,171,224,.38) 45%,transparent 75%); box-shadow:0 0 25px rgba(255,170,231,.7); }
+.characterRare[data-tier="6"]::before { inset:-5%; background:radial-gradient(circle,rgba(255,255,255,.8),rgba(245,188,253,.4) 44%,transparent 74%); box-shadow:0 0 30px rgba(255,218,146,.75),0 0 13px rgba(177,156,255,.7); }
+.characterRare[data-tier="6"]::after { content:""; position:absolute; z-index:0; inset:8%; border:1px solid rgba(255,241,185,.75); border-radius:50%; pointer-events:none; box-shadow:0 0 15px rgba(255,223,161,.65); animation:kittyHalo 7s linear infinite; }
+.characterRare[data-tier="6"]:has(img[src*="p24"])::after { inset:-10%; border-width:2px; box-shadow:0 0 20px rgba(255,233,156,.85),inset 0 0 15px rgba(240,195,255,.65); }
+.homeCharacterParticles { position:absolute; z-index:4; inset:0; pointer-events:none; }
+.homeCharacterParticles i,.unlockParticles i { position:absolute; top:var(--y); left:var(--x); width:var(--size); height:var(--size); border-radius:50%; background:#fff4ca; box-shadow:0 0 6px #fff,0 0 10px #ffb9e5; opacity:0; animation:kittySpark var(--duration) var(--delay) ease-in-out infinite; }
+.homeCharacterParticles i:nth-child(3n),.unlockParticles i:nth-child(3n) { background:#cde9ff; box-shadow:0 0 8px #fff,0 0 11px #b6aaff; }
+.carouselSelected { animation:none; }
+.carouselSelected img { animation:kittyFloat 3.2s ease-in-out infinite; }
+.carousel[data-tier="1"][data-prestige="0"] .prestigeBackdrop { display:none; }
+.carousel[data-tier="1"][data-prestige="0"] .carouselSelected img { animation:kittyFloat 3.2s ease-in-out infinite; }
+.prestigeParticles i { filter:none !important; }
+.carouselDots { flex-wrap:wrap; max-width:min(100% - 2rem,24rem); margin:0 auto; row-gap:.35rem; }
+.achievementIconLocked img { filter:grayscale(1) brightness(.06) contrast(1.1); }
+.achievementLock { position:absolute; z-index:2; top:50%; left:50%; transform:translate(-50%,-50%); box-sizing:content-box; padding:.25rem; border-radius:50%; color:#fff; background:rgba(45,31,50,.87); }
+.achievementCompleted { border-color:rgba(246,177,197,.8); background:linear-gradient(120deg,rgba(255,252,250,.96),rgba(255,237,245,.96)); }
+.unlockRarity { position:absolute; z-index:1; top:12%; left:50%; width:16rem; aspect-ratio:1; transform:translateX(-50%); background-position:center; background-size:contain; background-repeat:no-repeat; opacity:1; pointer-events:none; }
+.unlockParticles { position:absolute; z-index:4; inset:9% 12% 36%; pointer-events:none; }
+.unlockPopup[data-unlock-tier="1"] .unlockFlash { display:none; }
+.unlockPopup[data-unlock-tier="5"],.unlockPopup[data-unlock-tier="6"] { box-shadow:0 20px 75px rgba(115,65,151,.48),0 0 35px rgba(255,198,225,.76); }
+.unlockPopup[data-final="true"] { border:2px solid #fff3c0; background:radial-gradient(circle at 50% 35%,#fff 0,#fff4df 34%,#f3dcff 75%,#d9d6ff 100%); }
+.unlockPopup[data-final="true"] .unlockAsset { width:13rem; height:13rem; }
+@keyframes kittyFloat { 0%,100% { transform:translate3d(0,0,0); } 50% { transform:translate3d(0,-6px,0); } }
+@keyframes kittyAura { from { opacity:.45; transform:scale(.92); } to { opacity:.95; transform:scale(1.06); } }
+@keyframes kittyHalo { from { opacity:.45; transform:rotate(0) scale(.96); } to { opacity:.95; transform:rotate(360deg) scale(1.04); } }
+@keyframes kittySpark { 0%,100% { opacity:0; transform:translate3d(0,7px,0) scale(.4); } 35%,65% { opacity:1; transform:translate3d(4px,-7px,0) scale(1); } }
+@media (prefers-reduced-motion:reduce) { .characterRare::before,.characterRare::after,.homeCharacterParticles i,.unlockParticles i,.carouselSelected img { animation:none !important; } }

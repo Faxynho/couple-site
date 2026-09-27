@@ -4,7 +4,7 @@ export type IdleEventType = "money" | "production2" | "click2" | "click3" | "cli
 
 export interface IdleItemDefinition {
   id: string; name: string; asset: string; baseCost: number; upgradeBaseCost: number;
-  baseProduction: number; costGrowth: number; productionGrowth: number; unlockOrder: number; scene: 0 | 1 | 2;
+  baseProduction: number; costGrowth: number; productionGrowth: number; unlockOrder: number; scene: number; clickShare?: number;
 }
 export interface IdleItemStatistics { passiveEarned: number; clickEarned: number; clicks: number; largestClick: number }
 export interface IdleUpgradeQuote { count: number; totalCost: number }
@@ -32,7 +32,7 @@ export interface IdleModeSnapshot {
   id: IdleModeId; balance: number; totalEarned: number; totalProduction: number; effectiveProduction: number;
   clickMultiplier: number; totalUpgrades: number; visits: number; totalClicks: number; lastSettledAt: number;
   items: IdleItemSnapshot[]; achievements: IdleAchievementSnapshot[];
-  scenes: Array<{ id: 0 | 1 | 2; name: string; unlocked: boolean }>;
+  scenes: Array<{ id: number; name: string; unlocked: boolean }>;
   statistics: IdleModeStatistics; activeEvent: IdleActiveEvent | null;
   productionBoost: IdleBoostState | null; clickBoost: IdleClickBoostState | null;
 }

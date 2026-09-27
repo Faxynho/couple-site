@@ -60,6 +60,7 @@ export interface IdleModeStatistics {
 }
 
 export interface IdleModeState {
+  kittyCatalogVersion?: number;
   balance: number;
   totalEarned: number;
   totalUpgrades: number;
@@ -130,7 +131,7 @@ export interface IdleModeSnapshot {
   lastSettledAt: number;
   items: IdleItemSnapshot[];
   achievements: Array<AchievementDefinition & { completedAt: number | null; progress: number; target: number }>;
-  scenes: Array<{ id: 0 | 1 | 2; name: string; unlocked: boolean }>;
+  scenes: Array<{ id: number; name: string; unlocked: boolean }>;
   statistics: IdleModeStatistics;
   activeEvent: IdleActiveEvent | null;
   productionBoost: IdleBoostState | null;

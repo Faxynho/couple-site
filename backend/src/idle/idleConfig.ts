@@ -12,7 +12,8 @@ export interface IdleItemDefinition {
   costGrowth: number;
   productionGrowth: number;
   unlockOrder: number;
-  scene: 0 | 1 | 2;
+  scene: number;
+  clickShare?: number;
 }
 
 export interface AchievementDefinition {
@@ -58,7 +59,7 @@ export const IDLE_EVENT_WEIGHTS: ReadonlyArray<{ type: IdleEventType; weight: nu
   { type: "click10", weight: 3 },
 ];
 
-export const IDLE_SCENES: Record<IdleModeId, Array<{ id: 0 | 1 | 2; name: string }>> = {
+export const IDLE_SCENES: Record<IdleModeId, Array<{ id: number; name: string }>> = {
   farm: [
     { id: 0, name: "Vale das Flores" },
     { id: 1, name: "Vila da Colheita" },
@@ -66,10 +67,58 @@ export const IDLE_SCENES: Record<IdleModeId, Array<{ id: 0 | 1 | 2; name: string
   ],
   kitty: [
     { id: 0, name: "Sala dos Abraços" },
-    { id: 1, name: "Cantinho Encantado" },
-    { id: 2, name: "Sótão das Estrelas" },
+    { id: 1, name: "Jardim dos Sonhos" },
+    { id: 2, name: "Prado Encantado" },
+    { id: 3, name: "Refúgio da Kuromi" },
+    { id: 4, name: "Café das Estrelas" },
+    { id: 5, name: "Salão Celestial" },
+    { id: 6, name: "Santuário das Estrelas" },
   ],
 };
+
+// P1–P24: ordem oficial do ZIP. Mantenha IDs únicos para preservar saves após a migração.
+// A cena vem da posição (4 por cena, com 3 na sexta e 1 na última).
+// Preço do próximo personagem = produção BASE do anterior × horas de espera de referência.
+// Melhorias, cliques e eventos encurtam esse tempo; as horas não são um bloqueio temporal.
+export const KITTY_CHARACTER_SEQUENCE = [
+  { id: "hello-kitty", name: "Hello Kitty", asset: "/idle/characters/v2/p01.webp", scene: 0 }, // P1
+  { id: "dear-daniel", name: "Dear Daniel", asset: "/idle/characters/v2/p02.webp", scene: 0 }, // P2
+  { id: "my-melody", name: "My Melody", asset: "/idle/characters/v2/p03.webp", scene: 0 }, // P3
+  { id: "mimmy", name: "Mimmy", asset: "/idle/characters/v2/p04.webp", scene: 0 }, // P4
+  { id: "cinnamoroll", name: "Cinnamoroll", asset: "/idle/characters/v2/p05.webp", scene: 1 }, // P5
+  { id: "pompompurin", name: "Pompompurin", asset: "/idle/characters/v2/p06.webp", scene: 1 }, // P6
+  { id: "cinnamoroll-blue-bow", name: "Cinnamoroll com laço azul", asset: "/idle/characters/v2/p07.webp", scene: 1 }, // P7
+  { id: "pochacco", name: "Pochacco", asset: "/idle/characters/v2/p08.webp", scene: 1 }, // P8
+  { id: "tiny-chum", name: "Tiny Chum", asset: "/idle/characters/v2/p09.webp", scene: 2 }, // P9
+  { id: "keroppi", name: "Keroppi", asset: "/idle/characters/v2/p10.webp", scene: 2 }, // P10
+  { id: "tuxedosam", name: "Tuxedosam", asset: "/idle/characters/v2/p11.webp", scene: 2 }, // P11
+  { id: "mocha", name: "Mocha", asset: "/idle/characters/v2/p12.webp", scene: 2 }, // P12
+  { id: "baku", name: "Baku", asset: "/idle/characters/v2/p13.webp", scene: 3 }, // P13
+  { id: "badtz-maru", name: "Badtz-Maru", asset: "/idle/characters/v2/p14.webp", scene: 3 }, // P14
+  { id: "chococat", name: "Chococat", asset: "/idle/characters/v2/p15.webp", scene: 3 }, // P15
+  { id: "kuromi", name: "Kuromi", asset: "/idle/characters/v2/p16.webp", scene: 3 }, // P16
+  { id: "my-sweet-piano", name: "My Sweet Piano", asset: "/idle/characters/v2/p17.webp", scene: 4 }, // P17
+  { id: "charmmy-kitty", name: "Charmmy Kitty", asset: "/idle/characters/v2/p18.webp", scene: 4 }, // P18
+  { id: "hello-kitty-angel", name: "Hello Kitty anjo", asset: "/idle/characters/v2/p19.webp", scene: 4 }, // P19
+  { id: "kuromi-angel", name: "Kuromi anjo", asset: "/idle/characters/v2/p20.webp", scene: 4 }, // P20
+  { id: "my-melody-dark-angel", name: "My Melody anjo noturno", asset: "/idle/characters/v2/p21.webp", scene: 5 }, // P21
+  { id: "hello-kitty-gala", name: "Hello Kitty de gala", asset: "/idle/characters/v2/p22.webp", scene: 5 }, // P22
+  { id: "kuromi-celestial", name: "Kuromi celestial", asset: "/idle/characters/v2/p23.webp", scene: 5 }, // P23
+  { id: "little-twin-stars", name: "Little Twin Stars: Kiki e Lala", asset: "/idle/characters/v2/p24.webp", scene: 6 }, // P24: cena final exclusiva
+ ] as const;
+
+function kittyCharacter(index: number): IdleItemDefinition {
+  const character = KITTY_CHARACTER_SEQUENCE[index];
+  const previousProduction = 2 * Math.pow(2.7, index - 1);
+  const lateGameFactor = 1 + .4 * Math.min(1, Math.max(0, (index - 3) / 2));
+  const baseCost = index === 0 ? 60 : Math.ceil(previousProduction * (1.5 * index * lateGameFactor * 3600));
+  return {
+    ...character, unlockOrder: index, baseCost,
+    upgradeBaseCost: index === 0 ? 105 : Math.ceil(baseCost * .11),
+    baseProduction: 2 * Math.pow(2.7, index),
+    costGrowth: 1.52, productionGrowth: 1.27, clickShare: .75,
+  };
+}
 
 export const IDLE_CATALOG: Record<IdleModeId, IdleItemDefinition[]> = {
   farm: [
@@ -84,18 +133,7 @@ export const IDLE_CATALOG: Record<IdleModeId, IdleItemDefinition[]> = {
     { id: "greenhouse", name: "Estufa", asset: "/idle/farm/greenhouse.webp", baseCost: 1_100_000_000, upgradeBaseCost: 1_240_000_000, baseProduction: 10_000, costGrowth: 1.68, productionGrowth: 1.215, unlockOrder: 8, scene: 2 },
     { id: "main-farm", name: "Fazenda principal", asset: "/idle/farm/main-farm.webp", baseCost: 9_500_000_000, upgradeBaseCost: 10_500_000_000, baseProduction: 32_000, costGrowth: 1.69, productionGrowth: 1.22, unlockOrder: 9, scene: 2 },
   ],
-  kitty: [
-    { id: "hello-kitty", name: "Hello Kitty", asset: "/idle/characters/hello-kitty.webp", baseCost: 60, upgradeBaseCost: 120, baseProduction: 2, costGrowth: 1.62, productionGrowth: 1.18, unlockOrder: 0, scene: 0 },
-    { id: "my-melody", name: "My Melody", asset: "/idle/characters/my-melody.webp", baseCost: 900, upgradeBaseCost: 1_150, baseProduction: 8, costGrowth: 1.63, productionGrowth: 1.185, unlockOrder: 1, scene: 0 },
-    { id: "cinnamoroll", name: "Cinnamoroll", asset: "/idle/characters/cinnamoroll.webp", baseCost: 7_000, upgradeBaseCost: 8_600, baseProduction: 24, costGrowth: 1.64, productionGrowth: 1.19, unlockOrder: 2, scene: 0 },
-    { id: "pompompurin", name: "Pompompurin", asset: "/idle/characters/pompompurin.webp", baseCost: 55_000, upgradeBaseCost: 66_000, baseProduction: 72, costGrowth: 1.64, productionGrowth: 1.19, unlockOrder: 3, scene: 0 },
-    { id: "kuromi", name: "Kuromi", asset: "/idle/characters/kuromi.webp", baseCost: 440_000, upgradeBaseCost: 520_000, baseProduction: 210, costGrowth: 1.65, productionGrowth: 1.195, unlockOrder: 4, scene: 1 },
-    { id: "keroppi", name: "Keroppi", asset: "/idle/characters/keroppi.webp", baseCost: 3_600_000, upgradeBaseCost: 4_200_000, baseProduction: 620, costGrowth: 1.66, productionGrowth: 1.2, unlockOrder: 5, scene: 1 },
-    { id: "badtz-maru", name: "Badtz-Maru", asset: "/idle/characters/badtz-maru.webp", baseCost: 30_000_000, upgradeBaseCost: 34_500_000, baseProduction: 1_850, costGrowth: 1.67, productionGrowth: 1.205, unlockOrder: 6, scene: 1 },
-    { id: "chococat", name: "Chococat", asset: "/idle/characters/chococat.webp", baseCost: 250_000_000, upgradeBaseCost: 284_000_000, baseProduction: 5_600, costGrowth: 1.67, productionGrowth: 1.21, unlockOrder: 7, scene: 1 },
-    { id: "pochacco", name: "Pochacco", asset: "/idle/characters/pochacco.webp", baseCost: 2_100_000_000, upgradeBaseCost: 2_350_000_000, baseProduction: 17_000, costGrowth: 1.68, productionGrowth: 1.215, unlockOrder: 8, scene: 2 },
-    { id: "little-twin-stars", name: "Little Twin Stars", asset: "/idle/characters/little-twin-stars.webp", baseCost: 18_000_000_000, upgradeBaseCost: 19_800_000_000, baseProduction: 54_000, costGrowth: 1.69, productionGrowth: 1.22, unlockOrder: 9, scene: 2 },
-  ],
+  kitty: KITTY_CHARACTER_SEQUENCE.map((_, index) => kittyCharacter(index)),
 };
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [
@@ -115,23 +153,24 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   { id: "farm-10k", mode: "farm", title: "Colheita dourada", description: "Alcance 10K/s", reward: 60, condition: { type: "production", target: 10_000 } },
   { id: "farm-level-10", mode: "farm", title: "Mãos experientes", description: "Leve um produtor ao nível 10", reward: 30, condition: { type: "level", target: 10 } },
   { id: "farm-all", mode: "farm", title: "Nosso império rural", description: "Compre todos os produtores", reward: 80, condition: { type: "ownAll" } },
-  { id: "kitty-first", mode: "kitty", title: "Primeira amizade", description: "Tenha a Hello Kitty", iconItemId: "hello-kitty", reward: 5, condition: { type: "own", itemId: "hello-kitty" } },
-  { id: "kitty-melody", mode: "kitty", title: "Doce melodia", description: "Desbloqueie My Melody", iconItemId: "my-melody", reward: 8, condition: { type: "own", itemId: "my-melody" } },
-  { id: "kitty-cinnamoroll", mode: "kitty", title: "Nuvem de carinho", description: "Desbloqueie Cinnamoroll", iconItemId: "cinnamoroll", reward: 10, condition: { type: "own", itemId: "cinnamoroll" } },
-  { id: "kitty-pompompurin", mode: "kitty", title: "Abraço dourado", description: "Desbloqueie Pompompurin", iconItemId: "pompompurin", reward: 12, condition: { type: "own", itemId: "pompompurin" } },
-  { id: "kitty-kuromi", mode: "kitty", title: "Charme travesso", description: "Desbloqueie Kuromi", iconItemId: "kuromi", reward: 15, condition: { type: "own", itemId: "kuromi" } },
-  { id: "kitty-keroppi", mode: "kitty", title: "Salto de alegria", description: "Desbloqueie Keroppi", iconItemId: "keroppi", reward: 18, condition: { type: "own", itemId: "keroppi" } },
-  { id: "kitty-badtz", mode: "kitty", title: "Atitude rara", description: "Desbloqueie Badtz-Maru", iconItemId: "badtz-maru", reward: 22, condition: { type: "own", itemId: "badtz-maru" } },
-  { id: "kitty-chococat", mode: "kitty", title: "Brilho inteligente", description: "Desbloqueie Chococat", iconItemId: "chococat", reward: 28, condition: { type: "own", itemId: "chococat" } },
-  { id: "kitty-pochacco", mode: "kitty", title: "Amizade lendária", description: "Desbloqueie Pochacco", iconItemId: "pochacco", reward: 35, condition: { type: "own", itemId: "pochacco" } },
-  { id: "kitty-twin-stars", mode: "kitty", title: "Sonho entre estrelas", description: "Desbloqueie Little Twin Stars", iconItemId: "little-twin-stars", reward: 50, condition: { type: "own", itemId: "little-twin-stars" } },
+  // Uma conquista por personagem, com ID estável para saves novos.
+  ...KITTY_CHARACTER_SEQUENCE.map((character, index): AchievementDefinition => ({
+    id: index === 0 ? "kitty-first" : `kitty-character-${index + 1}`,
+    mode: "kitty", title: index === 0 ? "Primeira amizade" : `Amizade ${index + 1}`,
+    description: `Desbloqueie ${character.name}`, iconItemId: character.id,
+    reward: Math.min(50, 5 + Math.floor(index * 1.9)), condition: { type: "own", itemId: character.id },
+  })),
   { id: "kitty-three", mode: "kitty", title: "Turminha cozy", description: "Tenha 3 personagens", reward: 20, condition: { type: "ownedCount", target: 3 } },
   { id: "kitty-five", mode: "kitty", title: "Casa cheia", description: "Tenha 5 personagens", reward: 35, condition: { type: "ownedCount", target: 5 } },
+  { id: "kitty-twelve", mode: "kitty", title: "Metade do caminho", description: "Tenha 12 personagens", reward: 55, condition: { type: "ownedCount", target: 12 } },
+  { id: "kitty-twenty", mode: "kitty", title: "Constelação de amigos", description: "Tenha 20 personagens", reward: 75, condition: { type: "ownedCount", target: 20 } },
   { id: "kitty-100", mode: "kitty", title: "Carinho que rende", description: "Alcance 100/s", reward: 20, condition: { type: "production", target: 100 } },
   { id: "kitty-1k", mode: "kitty", title: "Amizade valiosa", description: "Alcance 1K/s", reward: 35, condition: { type: "production", target: 1_000 } },
   { id: "kitty-10k", mode: "kitty", title: "Estrelas brilhantes", description: "Alcance 10K/s", reward: 60, condition: { type: "production", target: 10_000 } },
-  { id: "kitty-level-10", mode: "kitty", title: "Melhores amigos", description: "Leve uma personagem ao nível 10", reward: 30, condition: { type: "level", target: 10 } },
-  { id: "kitty-all", mode: "kitty", title: "Turma completa", description: "Tenha todos os personagens", reward: 80, condition: { type: "ownAll" } },
+  { id: "kitty-1m", mode: "kitty", title: "Luz do santuário", description: "Alcance 1M/s", reward: 80, condition: { type: "production", target: 1_000_000 } },
+  { id: "kitty-1b", mode: "kitty", title: "Brilho infinito", description: "Alcance 1B/s", reward: 100, condition: { type: "production", target: 1_000_000_000 } },
+  { id: "kitty-level-10", mode: "kitty", title: "Melhores amigos", description: "Leve um personagem ao nível 10", reward: 30, condition: { type: "level", target: 10 } },
+  { id: "kitty-all", mode: "kitty", title: "Turma completa", description: "Tenha os 24 personagens", reward: 100, condition: { type: "ownAll" } },
 ];
 
 export const RENEWABLE_OBJECTIVES: RenewableObjectiveDefinition[] = [
@@ -178,5 +217,5 @@ export function itemUpgradeCost(item: IdleItemDefinition, level: number): number
 }
 
 export function itemClickReward(item: IdleItemDefinition, level: number): number {
-  return Math.max(1, Math.floor(itemProduction(item, level) * 0.22));
+  return Math.max(1, Math.floor(itemProduction(item, level) * (item.clickShare ?? .22)));
 }

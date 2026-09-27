@@ -32,7 +32,7 @@ export default function IdleStatistics({ data }: { data: IdleModeSnapshot }) {
     { label: "Total de cliques", value: formatIdleNumber(data.totalClicks), icon: MousePointerClick },
     { label: "Valor atual por clique", value: formatIdleNumber(currentClick), icon: Zap },
     { label: "Maior clique", value: formatIdleNumber(s.largestClick), icon: Zap },
-    { label: "Desbloqueados", value: `${owned.length}/10`, icon: Crown },
+    { label: "Desbloqueados", value: `${owned.length}/${data.items.length}`, icon: Crown },
     { label: "Níveis comprados", value: formatIdleNumber(data.totalUpgrades), icon: TrendingUp },
     { label: "Maior nível", value: formatIdleNumber(highestLevel), icon: Trophy },
     { label: "Conquistas", value: `${complete}/${data.achievements.length}`, icon: Trophy },

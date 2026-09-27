@@ -4,8 +4,8 @@ import "@testing-library/jest-dom";
 import IdleModeScreen from "@/components/idle/IdleModeScreen";
 import { IdleSnapshot } from "@/lib/idleTypes";
 
-const names = ["Hello Kitty", "My Melody", "Cinnamoroll", "Pompompurin", "Kuromi", "Keroppi", "Badtz-Maru", "Chococat", "Pochacco", "Little Twin Stars"];
-const ids = ["hello-kitty", "my-melody", "cinnamoroll", "pompompurin", "kuromi", "keroppi", "badtz-maru", "chococat", "pochacco", "little-twin-stars"];
+const names = ["Hello Kitty", "Dear Daniel", "My Melody", "Mimmy", "Cinnamoroll", "Pompompurin", "Cinnamoroll com laço azul", "Pochacco", "Tiny Chum", "Keroppi", "Tuxedosam", "Mocha", "Baku", "Badtz-Maru", "Chococat", "Kuromi", "My Sweet Piano", "Charmmy Kitty", "Hello Kitty anjo", "Kuromi anjo", "My Melody anjo noturno", "Hello Kitty de gala", "Kuromi celestial", "Little Twin Stars: Kiki e Lala"];
+const ids = ["hello-kitty", "dear-daniel", "my-melody", "mimmy", "cinnamoroll", "pompompurin", "cinnamoroll-blue-bow", "pochacco", "tiny-chum", "keroppi", "tuxedosam", "mocha", "baku", "badtz-maru", "chococat", "kuromi", "my-sweet-piano", "charmmy-kitty", "hello-kitty-angel", "kuromi-angel", "my-melody-dark-angel", "hello-kitty-gala", "kuromi-celestial", "little-twin-stars"];
 let currentSnapshot: IdleSnapshot;
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -30,9 +30,9 @@ function makeSnapshot(purchasedFirst = false, completedFirst = false): IdleSnaps
     level: index === 0 && purchasedFirst ? 1 : 0,
     purchasedAt: index === 0 && purchasedFirst ? 2 : null,
     definition: {
-      id: ids[index], name, asset: `/idle/characters/${ids[index]}.webp`,
+      id: ids[index], name, asset: `/idle/characters/v2/p${String(index + 1).padStart(2, "0")}.webp`,
       baseCost: 10 ** (index + 1), upgradeBaseCost: 100, baseProduction: index + 1,
-      costGrowth: 1.62, productionGrowth: 1.18, unlockOrder: index, scene: (index < 4 ? 0 : index < 8 ? 1 : 2) as 0 | 1 | 2,
+      costGrowth: 1.62, productionGrowth: 1.18, unlockOrder: index, scene: index === 23 ? 6 : Math.floor(index / 4),
     },
     production: index + 1,
     nextCost: 10 ** (index + 1),
@@ -50,7 +50,7 @@ function makeSnapshot(purchasedFirst = false, completedFirst = false): IdleSnaps
     effectiveProduction: purchasedFirst ? 1 : 0, clickMultiplier: 1,
     totalUpgrades: 0, visits: 1, totalClicks: 0, lastSettledAt: Date.now(), items,
     achievements: [achievement],
-    scenes: [{ id: 0 as const, name: "Sala dos Abraços", unlocked: true }, { id: 1 as const, name: "Cantinho Encantado", unlocked: false }, { id: 2 as const, name: "Sótão das Estrelas", unlocked: false }],
+    scenes: ["Sala dos Abraços", "Jardim dos Sonhos", "Prado Encantado", "Refúgio da Kuromi", "Café das Estrelas", "Salão Celestial", "Santuário das Estrelas"].map((name, id) => ({ id, name, unlocked: id === 0 })),
     statistics: { migrationStartedAt: Date.now(), todayKey: "2026-09-26", earnedToday: 0, passiveEarned: 0, clickEarned: 0, eventEarned: 0, offlineEarned: 0, activeTimeMs: 0, eventsCollected: 0, boostsCollected: 0, eventCounters: { money: 0, production2: 0, click2: 0, click3: 0, click5: 0, click10: 0 }, largestClick: 0, highestProduction: purchasedFirst ? 1 : 0, items: {} },
     activeEvent: null, productionBoost: null, clickBoost: null,
   };
@@ -66,11 +66,11 @@ function makeSnapshot(purchasedFirst = false, completedFirst = false): IdleSnaps
 describe("apresentação visual e celebrações do idle", () => {
   afterEach(() => cleanup());
 
-  it("apresenta os dez personagens com progressão até o tier celestial", () => {
+  it("apresenta os 24 personagens com progressão até o tier celestial", () => {
     currentSnapshot = makeSnapshot();
-    render(<IdleModeScreen mode="kitty" />);
+    const view = render(<IdleModeScreen mode="kitty" />);
     fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
-    const expectedTiers = [1, 1, 2, 2, 3, 3, 4, 4, 5, 6];
+    const expectedTiers = names.map((_, index) => Math.floor(index / 4) + 1);
     names.forEach((name, index) => {
       fireEvent.click(screen.getByRole("button", { name: `Ver ${name}` }));
       expect(screen.getByText(name)).toBeInTheDocument();
@@ -79,6 +79,11 @@ describe("apresentação visual e celebrações do idle", () => {
       expect(carousel).toHaveAttribute("data-tier", String(expectedTiers[index]));
     });
     expect(document.querySelector('[style*="tier-6-celestial.webp"]')).toBeInTheDocument();
+    expect(document.querySelectorAll("[data-prestige] i")).toHaveLength(0); // personagens ainda bloqueados não emitem partículas
+    expect(screen.getByText("24/24")).toBeInTheDocument();
+    currentSnapshot = makeSnapshot();
+    currentSnapshot.modes.kitty.items[23].purchased = true;
+    view.rerender(<IdleModeScreen mode="kitty" />);
     expect(document.querySelectorAll("[data-prestige] i")).toHaveLength(18);
   });
 

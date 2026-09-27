@@ -17,7 +17,7 @@ import styles from "./IdleGame.module.css";
 
 const SCENE_BACKGROUNDS: Record<IdleModeId, string[]> = {
   farm: ["/idle/backgrounds/farm.webp", "/idle/backgrounds/farm-2.webp", "/idle/backgrounds/farm-3.webp"],
-  kitty: ["/idle/backgrounds/kitty-room.webp", "/idle/backgrounds/kitty-room-2.webp", "/idle/backgrounds/kitty-room-3.webp"],
+  kitty: ["/idle/backgrounds/kitty-room.webp", ...[2, 3, 4, 5, 6, 7].map((number) => `/idle/backgrounds/kitty-scene-${number}.webp`)],
 };
 
 // Composição manual sobre os espaços livres e planos de profundidade de cada cenário.
@@ -27,20 +27,51 @@ const FARM_POSITIONS: CSSProperties[][] = [
   [{ left: "24.9%", top: "43.3%", width: "57%" }, { left: "20.9%", top: "20.4%", width: "57%" }],
 ];
 
-const KITTY_POSITIONS: CSSProperties[][] = [
-  [{ left: "12.5%", top: "23.4%", width: "40%" }, { left: "47.3%", top: "22.9%", width: "39%" }, { left: "-5.7%", top: "39.7%", width: "43%" }, { left: "60.5%", top: "36.8%", width: "43%" }],
-  [{ left: "15.7%", top: "17.7%", width: "40%" }, { left: "65%", top: "23.2%", width: "39%" }, { left: "-8.8%", top: "34.4%", width: "41%" }, { left: "66%", top: "40.1%", width: "41%" }],
-  [{ left: "0.1%", top: "26.9%", width: "43%" }, { left: "53.3%", top: "25%", width: "51%" }],
-];
+// Coordenadas no quadro do cenário (left/top/width). Edite a entrada pelo nome/ID.
+// Cena 1: as quatro coordenadas originais foram mantidas exatamente.
+export const KITTY_CHARACTER_PLACEMENTS: Record<string, { scene: number; p: number; name: string; left: string; top: string; width: string }> = {
+  "hello-kitty": { scene: 0, p: 1, name: "Hello Kitty", left: "12.5%", top: "23.4%", width: "40%" },
+  "dear-daniel": { scene: 0, p: 2, name: "Dear Daniel", left: "47.3%", top: "22.9%", width: "39%" },
+  "my-melody": { scene: 0, p: 3, name: "My Melody", left: "-5.7%", top: "39.7%", width: "43%" },
+  "mimmy": { scene: 0, p: 4, name: "Mimmy", left: "60.5%", top: "36.8%", width: "43%" },
+  "cinnamoroll": { scene: 1, p: 5, name: "Cinnamoroll", left: "3%", top: "29%", width: "40%" },
+  "pompompurin": { scene: 1, p: 6, name: "Pompompurin", left: "55%", top: "28%", width: "39%" },
+  "cinnamoroll-blue-bow": { scene: 1, p: 7, name: "Cinnamoroll com laço azul", left: "5%", top: "47%", width: "40%" },
+  "pochacco": { scene: 1, p: 8, name: "Pochacco", left: "56%", top: "47%", width: "39%" },
+  "tiny-chum": { scene: 2, p: 9, name: "Tiny Chum", left: "4%", top: "27%", width: "40%" },
+  "keroppi": { scene: 2, p: 10, name: "Keroppi", left: "55%", top: "27%", width: "40%" },
+  "tuxedosam": { scene: 2, p: 11, name: "Tuxedosam", left: "5%", top: "48%", width: "40%" },
+  "mocha": { scene: 2, p: 12, name: "Mocha", left: "55%", top: "48%", width: "40%" },
+  "baku": { scene: 3, p: 13, name: "Baku", left: "3%", top: "29%", width: "40%" },
+  "badtz-maru": { scene: 3, p: 14, name: "Badtz-Maru", left: "56%", top: "29%", width: "40%" },
+  "chococat": { scene: 3, p: 15, name: "Chococat", left: "4%", top: "48%", width: "40%" },
+  "kuromi": { scene: 3, p: 16, name: "Kuromi", left: "55%", top: "48%", width: "40%" },
+  "my-sweet-piano": { scene: 4, p: 17, name: "My Sweet Piano", left: "4%", top: "30%", width: "40%" },
+  "charmmy-kitty": { scene: 4, p: 18, name: "Charmmy Kitty", left: "55%", top: "30%", width: "40%" },
+  "hello-kitty-angel": { scene: 4, p: 19, name: "Hello Kitty anjo", left: "4%", top: "48%", width: "40%" },
+  "kuromi-angel": { scene: 4, p: 20, name: "Kuromi anjo", left: "55%", top: "48%", width: "40%" },
+  "my-melody-dark-angel": { scene: 5, p: 21, name: "My Melody anjo noturno", left: "3%", top: "43%", width: "39%" },
+  "hello-kitty-gala": { scene: 5, p: 22, name: "Hello Kitty de gala", left: "31%", top: "31%", width: "39%" },
+  "kuromi-celestial": { scene: 5, p: 23, name: "Kuromi celestial", left: "59%", top: "43%", width: "39%" },
+  "little-twin-stars": { scene: 6, p: 24, name: "Little Twin Stars: Kiki e Lala", left: "12%", top: "37%", width: "76%" },
+};
 
 const RARITY_ASSETS = [
-  "/idle/rarity/tier-1-soft.webp",
-  "/idle/rarity/tier-2-sparkle.webp",
-  "/idle/rarity/tier-3-magic.webp",
-  "/idle/rarity/tier-4-rare.webp",
+  "/idle/rarity/tier-1-v2.webp",
+  "/idle/rarity/tier-2-v2.webp",
+  "/idle/rarity/tier-3-v2.webp",
+  "/idle/rarity/tier-4-v2.webp",
   "/idle/rarity/tier-5-legendary.webp",
   "/idle/rarity/tier-6-celestial.webp",
 ];
+const RARITY_COLORS = [
+  ["#e983a6", "rgba(233,131,166,.22)"],
+  ["#ec94c6", "rgba(236,148,198,.27)"],
+  ["#b38ce6", "rgba(179,140,230,.31)"],
+  ["#8e83e6", "rgba(142,131,230,.36)"],
+  ["#dc91d4", "rgba(220,145,212,.42)"],
+  ["#e8ba6f", "rgba(232,186,111,.5)"],
+] as const;
 
 const PARTICLES = [
   [14, 27, 7, -0.4, 3.2, -8], [77, 22, 9, -1.6, 3.8, 12], [24, 54, 6, -2.2, 3.4, 9],
@@ -58,18 +89,18 @@ type Celebration =
   | { key: string; type: "achievement"; achievement: IdleAchievementSnapshot };
 
 function rarityTier(order: number) {
-  if (order <= 1) return 1;
-  if (order <= 3) return 2;
-  if (order <= 5) return 3;
-  if (order <= 7) return 4;
-  if (order === 8) return 5;
-  return 6;
+  return Math.min(6, Math.floor(order / 4) + 1);
+}
+
+function lockedBrightness(order: number, furthestPurchased: number) {
+  const distance = Math.max(1, order - furthestPurchased);
+  return Math.max(.05, .3 - .25 * Math.pow((distance - 1) / 23, .72));
 }
 
 export default function IdleModeScreen({ mode, environment = "real" }: { mode: IdleModeId; environment?: GameEnvironment }) {
   const router = useRouter();
   const [tab, setTab] = useState<IdleTab>("home");
-  const [scene, setScene] = useState<0 | 1 | 2>(0);
+  const [scene, setScene] = useState(0);
   const [showOfflineReward, setShowOfflineReward] = useState(false);
   const [celebrations, setCelebrations] = useState<Celebration[]>([]);
   const [purchaseMode, setPurchaseMode] = useState<PurchaseMode>(1);
@@ -84,11 +115,12 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
   const background = tab === "home" ? SCENE_BACKGROUNDS[mode][scene] : SCENE_BACKGROUNDS[mode][0];
 
   useEffect(() => {
-    SCENE_BACKGROUNDS[mode].forEach((src) => {
+    // On mobile only warm the next scenes; loading all seven together wastes bandwidth.
+    SCENE_BACKGROUNDS[mode].slice(scene + 1, scene + 3).forEach((src) => {
       const preload = new window.Image();
       preload.src = src;
     });
-  }, [mode]);
+  }, [mode, scene]);
 
   useEffect(() => {
     if (snapshot?.offlineReward?.mode !== mode) return;
@@ -161,12 +193,13 @@ function BalancePill({ balance, production }: { balance: number; production: num
   return <div className={styles.statsPill}><div className={styles.stat}><GameStatIcon type="money" /><span>Saldo</span><strong>{formatIdleNumber(balance)}</strong></div><div className={styles.statDivider} /><div className={styles.stat}><GameStatIcon type="production" /><span>Produção</span><strong>{formatIdleNumber(production)}/s</strong></div></div>;
 }
 
-function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: { mode: IdleModeId; data: IdleModeSnapshot; balance: number; scene: 0 | 1 | 2; onSceneChange: (scene: 0 | 1 | 2) => void; onClickItem: (itemId: string) => Promise<number | null> }) {
+function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: { mode: IdleModeId; data: IdleModeSnapshot; balance: number; scene: number; onSceneChange: (scene: number) => void; onClickItem: (itemId: string) => Promise<number | null> }) {
   const [bursts, setBursts] = useState<ClickBurst[]>([]);
   const animations = useRef(new Map<string, Animation>());
   const burstTimers = useRef(new Set<number>());
   const purchased = data.items.filter((item) => item.purchased && item.definition.scene === scene);
-  const positions = mode === "farm" ? FARM_POSITIONS[scene] : KITTY_POSITIONS[scene];
+  const visibleItems = data.items.filter((item) => item.definition.scene === scene);
+  const furthestPurchased = data.items.reduce((order, item) => item.purchased ? Math.max(order, item.definition.unlockOrder) : order, -1);
 
   useEffect(() => () => {
     animations.current.forEach((animation) => animation.cancel());
@@ -202,10 +235,16 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
     <section className={styles.scene} aria-label={mode === "farm" ? "Cenário da Fazendinha" : "Sala dos personagens"}>
       <BalancePill balance={balance} production={data.effectiveProduction} />
       {purchased.length === 0 && <div className={styles.emptySceneHint}><Sparkles size={18} />{scene === 0 ? `Compre ${mode === "farm" ? "a Horta" : "Hello Kitty"} na aba Melhorias` : "Compre um item deste cenário para vê-lo aqui"}</div>}
-      {purchased.map((item) => {
+      {(mode === "farm" ? purchased : visibleItems).map((item) => {
         const localIndex = item.definition.unlockOrder - (scene === 0 ? 0 : scene === 1 ? 4 : 8);
-        const position = positions[localIndex] ?? positions[0];
-        return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : styles.character} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="52vw" /></button>;
+        const position = mode === "farm" ? FARM_POSITIONS[scene][localIndex] : KITTY_CHARACTER_PLACEMENTS[item.definition.id];
+        if (!position) return null;
+        if (!item.purchased) return <div key={item.definition.id} className={`${styles.character} ${styles.homeLocked}`} style={{ ...position, "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties & { "--locked-brightness": number }} aria-label={`${item.definition.name} bloqueado`}><Image src={item.definition.asset} alt="" fill sizes="42vw" /><LockKeyhole className={styles.homeLockIcon} size={24} aria-hidden="true" /></div>;
+        const particleCount = mode === "kitty" ? Math.min(8, Math.round(item.definition.unlockOrder / 3)) : 0;
+        return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : `${styles.character} ${styles.characterRare}`} data-tier={mode === "kitty" ? rarityTier(item.definition.unlockOrder) : undefined} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}>
+          {particleCount > 0 && <span className={styles.homeCharacterParticles} aria-hidden="true">{PARTICLES.slice(0, particleCount).map(([x, y, size, delay, duration], particle) => <i key={particle} style={{ "--x": `${x}%`, "--y": `${y}%`, "--size": `${Math.max(3, size - 2)}px`, "--delay": `${delay}s`, "--duration": `${duration}s` } as CSSProperties} />)}</span>}
+          <Image src={item.definition.asset} alt={item.definition.name} fill sizes="42vw" />
+        </button>;
       })}
       {bursts.map((burst) => <span key={burst.id} className={styles.clickBurst} data-rush={burst.rushMultiplier} style={{ left: burst.left, top: burst.top }}><GameStatIcon type="money" />+{formatIdleNumber(burst.reward)}{burst.multiplier > 1 && <small>x{burst.multiplier}</small>}</span>)}
       <SceneNavigation data={data} scene={scene} onChange={onSceneChange} />
@@ -213,14 +252,14 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
   );
 }
 
-function SceneNavigation({ data, scene, onChange }: { data: IdleModeSnapshot; scene: 0 | 1 | 2; onChange: (scene: 0 | 1 | 2) => void }) {
-  const previous = scene > 0 ? (scene - 1) as 0 | 1 : null;
-  const next = scene < 2 ? (scene + 1) as 1 | 2 : null;
+function SceneNavigation({ data, scene, onChange }: { data: IdleModeSnapshot; scene: number; onChange: (scene: number) => void }) {
+  const previous = scene > 0 ? scene - 1 : null;
+  const next = scene < data.scenes.length - 1 ? scene + 1 : null;
   const nextUnlocked = next === null || Boolean(data.scenes.find((item) => item.id === next)?.unlocked);
   const unlockName = next === null ? "" : data.items.find((item) => item.definition.scene === next)?.definition.name ?? "item";
   return <div className={styles.sceneNavigation}>
     <button type="button" className={styles.sceneArrow} disabled={previous === null} onClick={() => previous !== null && onChange(previous)} aria-label="Cenário anterior"><ChevronLeft size={22} /></button>
-    <div className={styles.sceneDots} aria-label={`Cenário ${scene + 1} de 3`}>{[0, 1, 2].map((dot) => <span key={dot} className={dot === scene ? styles.sceneDotActive : ""} />)}</div>
+    <div className={styles.sceneDots} aria-label={`Cenário ${scene + 1} de ${data.scenes.length}`}>{data.scenes.map((item) => <span key={item.id} className={item.id === scene ? styles.sceneDotActive : ""} />)}</div>
     <button type="button" className={`${styles.sceneArrow} ${!nextUnlocked ? styles.sceneArrowLocked : ""}`} disabled={next === null || !nextUnlocked} onClick={() => next !== null && nextUnlocked && onChange(next)} aria-label={nextUnlocked ? "Próximo cenário" : `Compre ${unlockName} para desbloquear`} title={!nextUnlocked ? `Compre ${unlockName} para desbloquear` : undefined}>{!nextUnlocked ? <LockKeyhole size={17} /> : <ChevronRight size={22} />}</button>
     {!nextUnlocked && <span className={styles.sceneLockText}>Compre {unlockName}</span>}
   </div>;
@@ -272,29 +311,27 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const selected = data.items[index];
   const prestige = selected.definition.unlockOrder;
   const tier = rarityTier(prestige);
-  const particleCount = [2, 4, 6, 9, 13, 18][tier - 1];
+  const particleCount = selected.purchased ? Math.min(18, Math.round(Math.pow(prestige / 23, 1.2) * 18)) : 0;
+  const furthestPurchased = data.items.reduce((order, item) => item.purchased ? Math.max(order, item.definition.unlockOrder) : order, -1);
   const move = (direction: -1 | 1) => setIndex((current) => Math.max(0, Math.min(data.items.length - 1, current + direction)));
   const onTouchStart = (event: TouchEvent) => { touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; dragXRef.current = 0; setDragX(0); };
   const onTouchMove = (event: TouchEvent) => { if (!touchStart.current) return; const dx = event.touches[0].clientX - touchStart.current.x; const dy = event.touches[0].clientY - touchStart.current.y; if (Math.abs(dx) > Math.abs(dy)) { dragXRef.current = dx; setDragX(dx); } };
   const onTouchEnd = () => { const distance = dragXRef.current; if (distance < -45) move(1); else if (distance > 45) move(-1); touchStart.current = null; dragXRef.current = 0; setDragX(0); };
   return <section className={`${styles.content} ${styles.kittyContent}`}>
     <Summary balance={balance} production={data.effectiveProduction} /><PurchaseModePicker value={purchaseMode} onChange={onPurchaseModeChange} />
-    <div className={styles.carousel} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+    <div className={styles.carousel} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} style={{ "--prestige": RARITY_COLORS[tier - 1][0], "--prestige-soft": RARITY_COLORS[tier - 1][1] } as CSSProperties} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       <div className={styles.prestigeBackdrop} />
       {data.items.map((item, itemIndex) => {
         const offset = itemIndex - index;
         if (Math.abs(offset) > 1) return null;
         const itemTier = rarityTier(item.definition.unlockOrder);
         const slideDrag = offset === 0 ? dragX : dragX * .4;
-        const selectedOpacity = Math.min(1, .24 + item.definition.unlockOrder * .085);
-        const sideOpacity = Math.min(.42, .14 + item.definition.unlockOrder * .03);
         return <span
           key={`rarity-${item.definition.id}`}
           className={`${styles.raritySlide} ${!item.purchased ? styles.raritySlideLocked : ""}`}
           data-tier={itemTier}
           aria-hidden="true"
           style={{
-            "--rarity-opacity": offset === 0 ? selectedOpacity : sideOpacity,
             left: `${50 + offset * 104}%`,
             transform: `translate3d(calc(-50% + ${slideDrag}px), 0, 0) scale(${offset === 0 ? 1 : .59})`,
             backgroundImage: `url(${RARITY_ASSETS[itemTier - 1]})`,
@@ -306,12 +343,11 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
         const offset = itemIndex - index;
         const visible = Math.abs(offset) <= 1;
         if (!visible) return null;
-        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? dragX : dragX * .4}px), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none" }}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} /></div>;
+        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? dragX : dragX * .4}px), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}</div>;
       })}
       <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
       <div className={styles.characterPanel} data-tier={tier}>
-        <span className={styles.panelOrnament} style={{ backgroundImage: `url(${RARITY_ASSETS[tier - 1]})` }} aria-hidden="true" />
-        <div className={styles.characterTitleRow}><span className={styles.prestigeMark}>{"✦".repeat(Math.min(3, Math.ceil(tier / 2)))}</span><h2>{selected.definition.name}</h2><span className={styles.characterOrder}>{index + 1}/10</span></div>
+        <div className={styles.characterTitleRow}><span className={styles.prestigeMark}>{"✦".repeat(Math.min(3, Math.ceil(tier / 2)))}</span><h2>{selected.definition.name}</h2><span className={styles.characterOrder}>{index + 1}/{data.items.length}</span></div>
         <div className={styles.characterStats}><span>{selected.purchased ? `Nível ${selected.level}` : selected.unlocked ? "Disponível" : "Bloqueado"}</span><span><GameStatIcon type="production" />{formatIdleNumber(selected.production)}/s</span></div>
         <button type="button" className={`${styles.actionButton} ${!selected.purchased ? styles.buyButton : ""}`} disabled={!selected.unlocked || busyItemId === selected.definition.id || (selected.purchased && !quoteFor(selected, purchaseMode))} onClick={() => void (selected.purchased ? buyUpgrades(selected.definition.id, purchaseMode) : act(selected.definition.id, "buy"))}>{selected.purchased ? quoteFor(selected, purchaseMode) ? <>Melhorar x{quoteFor(selected, purchaseMode)!.count} <GameStatIcon type="money" /> {formatIdleNumber(quoteFor(selected, purchaseMode)!.totalCost)}{(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}</> : "Saldo insuficiente" : busyItemId === selected.definition.id ? "Comprando…" : selected.unlocked ? <>Comprar <GameStatIcon type="money" /> {formatIdleNumber(selected.nextCost)}</> : "Compre a personagem anterior"}</button>
       </div>
@@ -332,13 +368,15 @@ function Achievements({ data, snapshot }: { data: IdleModeSnapshot; snapshot: Id
 
 function AchievementRow({ title, description, reward, progress, target, completed, asset }: { title: string; description: string; reward: number; progress: number; target: number; completed: boolean; asset?: string }) {
   const percent = Math.min(100, target > 0 ? progress / target * 100 : 0);
-  return <article className={styles.achievement}><div className={styles.achievementIcon}>{asset ? <Image src={asset} alt="" fill sizes="58px" /> : <GameStatIcon type="global" />}</div><div><h3>{title}</h3><p>{description}</p>{!completed && <div className={styles.progressBar}><div className={styles.progressFill} style={{ width: `${percent}%` }} /></div>}</div><span className={`${styles.reward} ${completed ? styles.done : ""}`}>{completed ? <><Check size={15} /> Feita</> : <><GameStatIcon type="global" />+{reward}</>}</span></article>;
+  return <article className={`${styles.achievement} ${completed ? styles.achievementCompleted : ""}`}><div className={`${styles.achievementIcon} ${asset && !completed ? styles.achievementIconLocked : ""}`}>{asset ? <Image src={asset} alt="" fill sizes="58px" /> : <GameStatIcon type="global" />}{asset && !completed && <LockKeyhole size={16} className={styles.achievementLock} aria-hidden="true" />}</div><div><h3>{title}</h3><p>{description}</p>{!completed && <div className={styles.progressBar}><div className={styles.progressFill} style={{ width: `${percent}%` }} /></div>}</div><span className={`${styles.reward} ${completed ? styles.done : ""}`}>{completed ? <><Check size={15} /> Feita</> : <><GameStatIcon type="global" />+{reward}</>}</span></article>;
 }
 
 function CelebrationPopup({ celebration, onClose }: { celebration: Celebration; onClose: () => void }) {
   if (celebration.type === "unlock") {
     const noun = celebration.mode === "farm" ? "produtor" : "personagem";
-    return <div className={styles.achievementOverlay} role="dialog" aria-label={`Novo ${noun} desbloqueado`} onClick={onClose}><div className={`${styles.achievementPopup} ${styles.unlockPopup}`}><span className={styles.unlockFlash} /><Sparkles className={styles.popupSparkleLeft} /><Sparkles className={styles.popupSparkleRight} /><div className={styles.unlockAsset}><Image src={celebration.item.definition.asset} alt={celebration.item.definition.name} fill sizes="180px" /></div><p>Novo {noun} desbloqueado!</p><h2>{celebration.item.definition.name}</h2><span className={styles.popupReward}><GameStatIcon type="production" /> {formatIdleNumber(celebration.item.production)}/s</span><small>Toque para continuar</small></div></div>;
+    const tier = celebration.mode === "kitty" ? rarityTier(celebration.item.definition.unlockOrder) : 1;
+    const final = celebration.mode === "kitty" && celebration.item.definition.unlockOrder === 23;
+    return <div className={styles.achievementOverlay} role="dialog" aria-label={`Novo ${noun} desbloqueado`} onClick={onClose}><div className={`${styles.achievementPopup} ${styles.unlockPopup}`} data-unlock-tier={tier} data-final={final}><span className={styles.unlockFlash} />{tier >= 2 && <><Sparkles className={styles.popupSparkleLeft} /><Sparkles className={styles.popupSparkleRight} /></>}{tier >= 3 && <span className={styles.unlockRarity} style={{ backgroundImage: `url(${RARITY_ASSETS[tier - 1]})` }} aria-hidden="true" />}{tier >= 4 && <span className={styles.unlockParticles} aria-hidden="true">{PARTICLES.slice(0, final ? 8 : tier >= 6 ? 6 : 3).map(([x, y, size, delay, duration], index) => <i key={index} style={{ "--x": `${x}%`, "--y": `${y}%`, "--size": `${size}px`, "--delay": `${delay}s`, "--duration": `${duration}s` } as CSSProperties} />)}</span>}<div className={styles.unlockAsset}><Image src={celebration.item.definition.asset} alt={celebration.item.definition.name} fill sizes="180px" /></div><p>{final ? "As estrelas finalmente se encontraram!" : `Novo ${noun} desbloqueado!`}</p><h2>{celebration.item.definition.name}</h2><span className={styles.popupReward}><GameStatIcon type="production" /> {formatIdleNumber(celebration.item.production)}/s</span><small>Toque para continuar</small></div></div>;
   }
   return <div className={styles.achievementOverlay} role="dialog" aria-label="Conquista alcançada" onClick={onClose}><div className={styles.achievementPopup}><span className={styles.achievementGlow} /><Sparkles className={styles.popupSparkleLeft} /><Sparkles className={styles.popupSparkleRight} /><Image src="/idle/icons/global-coin.webp" alt="" width={92} height={92} /><p>Conquista alcançada!</p><h2>{celebration.achievement.title}</h2><span className={styles.popupReward}><GameStatIcon type="global" />+{celebration.achievement.reward} moedas globais</span><small>Toque para continuar</small></div></div>;
 }

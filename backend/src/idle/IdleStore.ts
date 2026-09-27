@@ -41,7 +41,8 @@ const DEFAULT_DATA_FILE = path.join(__dirname, "..", "..", "data", "idle-game.js
 const DEFAULT_DEV_DATA_FILE = path.join(__dirname, "..", "..", "data", "idle-game-dev.json");
 const SAVE_DEBOUNCE_MS = 350;
 const MAX_REWARDED_MATCHES = 1_000;
-const CURRENT_SCHEMA_VERSION = 4;
+const CURRENT_SCHEMA_VERSION = 5;
+const LEGACY_KITTY_ORDER = ["hello-kitty", "my-melody", "cinnamoroll", "pompompurin", "kuromi", "keroppi", "badtz-maru", "chococat", "pochacco", "little-twin-stars"];
 const CLICK_COOLDOWN_MS = 125;
 const MAX_BATCH_LEVELS = 10_000;
 const INITIAL_BALANCE: Record<IdleModeId, number> = {
@@ -127,6 +128,7 @@ function newMode(mode: IdleModeId, now: number): IdleModeState {
     IDLE_CATALOG[mode].map((item) => [item.id, { purchased: false, level: 0, purchasedAt: null }]),
   );
   return {
+    kittyCatalogVersion: mode === "kitty" ? 2 : undefined,
     balance: INITIAL_BALANCE[mode],
     totalEarned: 0,
     totalUpgrades: 0,
@@ -236,6 +238,13 @@ function sanitizeMode(mode: IdleModeId, value: unknown, now: number): IdleModeSt
   const base = newMode(mode, now);
   if (!value || typeof value !== "object") return base;
   const input = value as Partial<IdleModeState>;
+  // Saves from the ten-character catalog keep their ordinal progression. Copy before
+  // reading: several old IDs also occur in different positions in the new catalog.
+  const legacy = mode === "kitty" && input.kittyCatalogVersion !== 2;
+  const previousItems = input.items;
+  const previousStats = input.statistics?.items;
+  const migratedItems = legacy ? Object.fromEntries(IDLE_CATALOG.kitty.slice(0, 10).map((item, index) => [item.id, previousItems?.[LEGACY_KITTY_ORDER[index]]])) : previousItems;
+  const migratedStats = legacy ? Object.fromEntries(IDLE_CATALOG.kitty.slice(0, 10).map((item, index) => [item.id, previousStats?.[LEGACY_KITTY_ORDER[index]]])) : previousStats;
   base.balance = safeMoney(Number(input.balance ?? base.balance));
   base.totalEarned = safeMoney(Number(input.totalEarned ?? 0));
   base.totalUpgrades = safeCount(input.totalUpgrades);
@@ -244,7 +253,7 @@ function sanitizeMode(mode: IdleModeId, value: unknown, now: number): IdleModeSt
   const savedAt = Number(input.lastSettledAt);
   base.lastSettledAt = Number.isFinite(savedAt) ? Math.min(now, Math.max(0, savedAt)) : now;
   for (const definition of IDLE_CATALOG[mode]) {
-    const saved = input.items?.[definition.id];
+    const saved = migratedItems?.[definition.id];
     if (!saved || typeof saved !== "object") continue;
     const purchased = Boolean(saved.purchased);
     base.items[definition.id] = {
@@ -255,11 +264,17 @@ function sanitizeMode(mode: IdleModeId, value: unknown, now: number): IdleModeSt
   }
   if (input.unlockedAchievements && typeof input.unlockedAchievements === "object") {
     for (const definition of ACHIEVEMENTS.filter((item) => item.mode === mode)) {
-      const at = Number(input.unlockedAchievements[definition.id]);
+      const at = definition.id === "kitty-all" && legacy ? NaN : Number(input.unlockedAchievements[definition.id]);
       if (Number.isFinite(at) && at > 0) base.unlockedAchievements[definition.id] = at;
     }
   }
-  base.statistics = sanitizeStatistics(mode, input.statistics, now);
+  if (legacy) {
+    IDLE_CATALOG.kitty.slice(0, 10).forEach((item, index) => {
+      const owned = base.items[item.id];
+      if (owned.purchased) base.unlockedAchievements[index === 0 ? "kitty-first" : `kitty-character-${index + 1}`] = owned.purchasedAt || now;
+    });
+  }
+  base.statistics = sanitizeStatistics(mode, { ...input.statistics, items: migratedStats }, now);
   base.activeEvent = sanitizeEvent(input.activeEvent, now);
   base.productionBoost = sanitizeBoost(input.productionBoost, now);
   base.clickBoost = sanitizeClickBoost(input.clickBoost, now);
@@ -348,7 +363,7 @@ export class IdleStore {
           : [],
         // Before the shop existed every current decoration was already available/equipped.
         // Granting them during the one-time real migration preserves both rooms exactly.
-        purchasedPetDecorations: schemaVersion < CURRENT_SCHEMA_VERSION && this.environment === "real"
+        purchasedPetDecorations: schemaVersion < 4 && this.environment === "real"
           ? [...PET_DECORATION_IDS]
           : Array.isArray(parsed.purchasedPetDecorations)
             ? parsed.purchasedPetDecorations.filter((id): id is PetDecorationId => id in PET_DECORATION_PRICES)
@@ -596,9 +611,9 @@ export class IdleStore {
         const status = this.achievementProgress(mode, achievement.id);
         return { ...achievement, completedAt: state.unlockedAchievements[achievement.id] ?? null, ...status };
       }),
-      scenes: ([0, 1, 2] as const).map((scene) => ({
+      scenes: IDLE_SCENES[mode].map(({ id: scene, name }) => ({
         id: scene,
-        name: IDLE_SCENES[mode][scene].name,
+        name,
         unlocked: scene === 0 || IDLE_CATALOG[mode].some((definition) => definition.scene === scene && state.items[definition.id]?.purchased),
       })),
       statistics: JSON.parse(JSON.stringify(state.statistics)) as IdleModeStatistics,

@@ -72,14 +72,14 @@ test("cada produtor e personagem possui e conclui sua conquista de desbloqueio",
   const now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
   store.addTestFunds("farm", 1e13);
-  store.addTestFunds("kitty", 2e13);
+  store.addTestFunds("kitty", 2e16);
   let snapshot = store.getSnapshot();
   for (const item of snapshot.modes.farm.items) assert.equal(store.act("farm", item.definition.id, "buy").ok, true);
   for (const item of snapshot.modes.kitty.items) assert.equal(store.act("kitty", item.definition.id, "buy").ok, true);
   snapshot = store.getSnapshot();
   for (const mode of ["farm", "kitty"]) {
     const ownAchievements = snapshot.modes[mode].achievements.filter((achievement) => achievement.condition.type === "own");
-    assert.equal(ownAchievements.length, 10);
+    assert.equal(ownAchievements.length, mode === "kitty" ? 24 : 10);
     assert.ok(ownAchievements.every((achievement) => achievement.completedAt));
   }
 });
@@ -190,7 +190,7 @@ test("clicker premia item comprado e limita spam por conta", () => {
   assert.equal(store.click("kitty", "hello-kitty", "andre").ok, true);
 });
 
-test("clicker escala em 22% da produção atual do item", () => {
+test("cliques Hello Kitty geram 75% da produção do personagem; fazenda mantém a regra antiga", () => {
   let now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
   store.act("kitty", "hello-kitty", "buy");
@@ -199,7 +199,9 @@ test("clicker escala em 22% da produção atual do item", () => {
   const before = store.getSnapshot().modes.kitty.items[0];
   const click = store.click("kitty", "hello-kitty", "andre");
   assert.equal(click.ok, true);
-  assert.equal(click.reward, Math.max(1, Math.floor(before.production * .22)));
+  assert.equal(click.reward, Math.max(1, Math.floor(before.production * .75)));
+  store.act("farm", "garden", "buy");
+  assert.equal(store.click("farm", "garden", "andre").reward, 1);
 });
 
 test("créditos de desenvolvedor alteram apenas o saldo escolhido", () => {
@@ -398,4 +400,60 @@ test("migration v3 preserva progresso e libera decorações existentes sem inven
   } finally {
     await rm(folder, { recursive: true, force: true });
   }
+});
+
+test("24 personagens, sete cenas e raridades oficiais preservam a Fazendinha", () => {
+  const store = new IdleStore(false, () => Date.parse("2026-09-27T12:00:00-03:00"));
+  const snapshot = store.getSnapshot();
+  const kitty = snapshot.modes.kitty;
+  assert.equal(kitty.items.length, 24);
+  assert.equal(kitty.scenes.length, 7);
+  assert.equal(snapshot.modes.farm.items.length, 10);
+  assert.equal(snapshot.modes.farm.scenes.length, 3);
+  assert.deepEqual(kitty.items.map((item) => item.definition.scene), [...Array(24)].map((_, index) => index === 23 ? 6 : Math.floor(index / 4)));
+  assert.deepEqual(kitty.items.map((item) => item.definition.asset), [...Array(24)].map((_, index) => `/idle/characters/v2/p${String(index + 1).padStart(2, "0")}.webp`));
+  assert.deepEqual(kitty.scenes.map((scene) => scene.unlocked), [true, false, false, false, false, false, false]);
+  assert.equal(kitty.achievements.filter((achievement) => achievement.condition.type === "own").length, 24);
+  assert.equal(kitty.items.at(-1).definition.name, "Little Twin Stars: Kiki e Lala");
+  for (let index = 1; index < kitty.items.length; index += 1) {
+    assert.ok(kitty.items[index].nextCost > kitty.items[index - 1].nextCost);
+    assert.ok(kitty.items[index].production > kitty.items[index - 1].production);
+  }
+});
+
+test("desbloquear P24 ativa a cena final, a conquista individual e a final", () => {
+  const store = new IdleStore(false, () => Date.parse("2026-09-27T12:00:00-03:00"));
+  store.addTestFunds("kitty", 2e16);
+  for (const item of store.getSnapshot().modes.kitty.items) assert.equal(store.act("kitty", item.definition.id, "buy").ok, true);
+  const kitty = store.getSnapshot().modes.kitty;
+  assert.ok(kitty.scenes.every((scene) => scene.unlocked));
+  assert.equal(kitty.items.filter((item) => item.definition.scene === 6).length, 1);
+  assert.ok(kitty.achievements.find((achievement) => achievement.id === "kitty-character-24").completedAt);
+  assert.ok(kitty.achievements.find((achievement) => achievement.id === "kitty-all").completedAt);
+});
+
+test("migração v4 mantém dez compras por posição e não duplica moedas globais", async () => {
+  const { writeFile } = require("node:fs/promises");
+  const folder = await mkdtemp(join(tmpdir(), "kitty-catalog-migration-"));
+  const file = join(folder, "idle-game.json");
+  const now = Date.parse("2026-09-27T12:00:00-03:00");
+  try {
+    await writeFile(file, JSON.stringify({ schemaVersion: 4, globalCoins: 88, modes: { kitty: {
+      balance: 12345, items: {
+        "hello-kitty": { purchased: true, level: 3, purchasedAt: now - 3000 },
+        "my-melody": { purchased: true, level: 2, purchasedAt: now - 2000 },
+        cinnamoroll: { purchased: true, level: 1, purchasedAt: now - 1000 },
+      }, unlockedAchievements: { "kitty-first": now - 2000, "kitty-melody": now - 1000, "kitty-three": now - 900 },
+    } } }));
+    const store = new IdleStore(true, () => now, file, "real");
+    await store.ready();
+    const snapshot = store.getSnapshot();
+    assert.deepEqual(snapshot.modes.kitty.items.slice(0, 4).map((item) => item.purchased), [true, true, true, false]);
+    assert.equal(snapshot.modes.kitty.items[1].definition.id, "dear-daniel");
+    assert.equal(snapshot.modes.kitty.items[1].level, 2);
+    assert.equal(snapshot.modes.kitty.items[2].definition.id, "my-melody");
+    assert.ok(snapshot.modes.kitty.achievements.find((item) => item.id === "kitty-character-2").completedAt);
+    assert.equal(snapshot.globalCoins, 88);
+    assert.equal(snapshot.modes.kitty.balance, 12345);
+  } finally { await rm(folder, { recursive: true, force: true }); }
 });
