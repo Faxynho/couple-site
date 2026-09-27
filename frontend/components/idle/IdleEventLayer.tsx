@@ -133,7 +133,7 @@ export default function IdleEventLayer({ accountId, environment, mode, data, onS
       {eventsEnabled && clickVisualMultiplier === 10 && <div className={styles.click10GlobalFx} aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>}
       {eventsEnabled && clickLeft > 0 && (
         <div className={styles.clickRushFx} data-multiplier={clickVisualMultiplier} aria-hidden="true">
-          {Array.from({ length: 12 }, (_, index) => <i key={index} />)}
+          {Array.from({ length: clickVisualMultiplier === 10 ? 8 : clickVisualMultiplier === 5 ? 10 : 12 }, (_, index) => <i key={index} />)}
         </div>
       )}
       {eventsEnabled && event && event.expiresAt > now && (

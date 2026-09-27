@@ -77,6 +77,7 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
   const previousOwned = useRef<Set<string> | null>(null);
   const { snapshot, error, accountId, displayedBalance, busyItemId, pendingUpgrades, act, buyUpgrades, clickItem, applySnapshot } = useIdleGame(mode, environment, tab === "home");
   const data = snapshot?.modes[mode];
+  const click10HomeActive = tab === "home" && (data?.clickBoost?.visualMultiplier ?? data?.clickBoost?.multiplier ?? 1) === 10;
   const farm = mode === "farm";
   const modeTitle = farm ? "Fazendinha" : "Mundo da Hello Kitty";
   const sceneName = data?.scenes.find((item) => item.id === scene)?.name ?? modeTitle;
@@ -128,7 +129,7 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
   if (!snapshot || !data) return <main className={styles.page}><div className={styles.loading}>{error ?? `Carregando ${modeTitle}…`}</div></main>;
 
   return (
-    <main className={`${styles.page} ${farm ? styles.farmTheme : styles.kittyTheme} ${environment === "dev" ? styles.devEnvironment : ""} ${data.productionBoost && data.productionBoost.expiresAt > Date.now() ? styles.productionBoostActive : ""}`}>
+    <main className={`${styles.page} ${farm ? styles.farmTheme : styles.kittyTheme} ${environment === "dev" ? styles.devEnvironment : ""} ${data.productionBoost && data.productionBoost.expiresAt > Date.now() ? styles.productionBoostActive : ""} ${click10HomeActive ? styles.click10Active : ""}`}>
       <div className={styles.background} key={background} style={{ backgroundImage: `url(${background})` }} aria-hidden="true" />
       <div className={styles.sceneShade} aria-hidden="true" />
       <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
