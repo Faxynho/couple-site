@@ -51,7 +51,7 @@ const PARTICLES = [
   [63, 62, 13, -1.4, 5, -20], [31, 33, 9, -5.8, 3.7, 15], [46, 68, 12, -2.9, 4.9, -18],
 ] as const;
 
-type ClickBurst = { id: number; left: number; top: number; reward: number; multiplier: number };
+type ClickBurst = { id: number; left: number; top: number; reward: number; multiplier: number; rushMultiplier: number };
 type PurchaseMode = 1 | 10 | "max";
 type Celebration =
   | { key: string; type: "unlock"; item: IdleItemSnapshot; mode: IdleModeId }
@@ -189,7 +189,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
     const reward = await onClickItem(item.definition.id);
     if (!reward || !rect) return;
     const id = Date.now() + Math.random();
-    setBursts((current) => [...current.slice(-9), { id, left, top, reward, multiplier: data.clickMultiplier }]);
+    setBursts((current) => [...current.slice(-9), { id, left, top, reward, multiplier: data.clickMultiplier, rushMultiplier: data.clickBoost?.multiplier ?? 1 }]);
     const timer = window.setTimeout(() => {
       burstTimers.current.delete(timer);
       setBursts((current) => current.filter((burst) => burst.id !== id));
@@ -206,7 +206,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
         const position = positions[localIndex] ?? positions[0];
         return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : styles.character} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="52vw" /></button>;
       })}
-      {bursts.map((burst) => <span key={burst.id} className={styles.clickBurst} style={{ left: burst.left, top: burst.top }}><GameStatIcon type="money" />+{formatIdleNumber(burst.reward)}{burst.multiplier > 1 && <small>x{burst.multiplier}</small>}</span>)}
+      {bursts.map((burst) => <span key={burst.id} className={styles.clickBurst} data-rush={burst.rushMultiplier} style={{ left: burst.left, top: burst.top }}><GameStatIcon type="money" />+{formatIdleNumber(burst.reward)}{burst.multiplier > 1 && <small>x{burst.multiplier}</small>}</span>)}
       <SceneNavigation data={data} scene={scene} onChange={onSceneChange} />
     </section>
   );

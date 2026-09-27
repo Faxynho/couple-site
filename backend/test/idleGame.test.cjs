@@ -245,7 +245,7 @@ test("Click Rush usa x2/x3/x5/x10 com durações corretas e combina previsivelme
   let now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
   store.act("kitty", "hello-kitty", "buy");
-  const durations = { click2: 20_000, click3: 12_000, click5: 8_000, click10: 5_000 };
+  const durations = { click2: 60_000, click3: 45_000, click5: 30_000, click10: 20_000 };
   for (const [type, duration] of Object.entries(durations)) {
     const forced = store.forceEvent("kitty", type);
     const result = store.collectEvent("kitty", forced.modes.kitty.activeEvent.id);
@@ -272,7 +272,7 @@ test("eventos usam atividade real, mantêm somente um visível e expiram sem rec
   const firstId = snapshot.modes.farm.activeEvent.id;
   snapshot = store.recordActivity("farm", 1_000);
   assert.equal(snapshot.modes.farm.activeEvent.id, firstId);
-  now += 9_001;
+  now += 60_001;
   const expired = store.collectEvent("farm", firstId);
   assert.equal(expired.ok, false);
   assert.equal(expired.snapshot.modes.farm.statistics.eventsCollected, 0);
