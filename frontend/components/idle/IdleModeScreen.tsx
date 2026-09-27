@@ -308,9 +308,11 @@ function ItemCard({ item, busy, pending, onAction, onUpgrade, purchaseMode }: { 
 
 function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode, onPurchaseModeChange }: ActionProps) {
   const [index, setIndex] = useState(0);
-  const [dragX, setDragX] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const dragXRef = useRef(0);
+  const pendingDragX = useRef(0);
+  const dragFrame = useRef<number | null>(null);
   const selected = data.items[index];
   const prestige = selected.definition.unlockOrder;
   const tier = rarityTier(prestige);
@@ -324,18 +326,64 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const particleLift = [34, 38, 44, 52, 61, 70][tier - 1];
   const furthestPurchased = data.items.reduce((order, item) => item.purchased ? Math.max(order, item.definition.unlockOrder) : order, -1);
   const move = (direction: -1 | 1) => setIndex((current) => Math.max(0, Math.min(data.items.length - 1, current + direction)));
-  const onTouchStart = (event: TouchEvent) => { touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; dragXRef.current = 0; setDragX(0); };
-  const onTouchMove = (event: TouchEvent) => { if (!touchStart.current) return; const dx = event.touches[0].clientX - touchStart.current.x; const dy = event.touches[0].clientY - touchStart.current.y; if (Math.abs(dx) > Math.abs(dy)) { dragXRef.current = dx; setDragX(dx); } };
-  const onTouchEnd = () => { const distance = dragXRef.current; if (distance < -45) move(1); else if (distance > 45) move(-1); touchStart.current = null; dragXRef.current = 0; setDragX(0); };
+  const paintDrag = (value: number) => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+    carousel.style.setProperty("--drag-main", `${value}px`);
+    carousel.style.setProperty("--drag-side", `${value * .4}px`);
+  };
+  const queueDrag = (value: number) => {
+    pendingDragX.current = value;
+    if (dragFrame.current !== null) return;
+    dragFrame.current = window.requestAnimationFrame(() => {
+      dragFrame.current = null;
+      paintDrag(pendingDragX.current);
+    });
+  };
+  const resetDrag = (commitSwipe: boolean) => {
+    const distance = dragXRef.current;
+    if (dragFrame.current !== null) {
+      window.cancelAnimationFrame(dragFrame.current);
+      dragFrame.current = null;
+    }
+    pendingDragX.current = 0;
+    carouselRef.current?.setAttribute("data-dragging", "no");
+    paintDrag(0);
+    touchStart.current = null;
+    dragXRef.current = 0;
+    if (!commitSwipe) return;
+    if (distance < -45) move(1);
+    else if (distance > 45) move(-1);
+  };
+  useEffect(() => () => {
+    if (dragFrame.current !== null) window.cancelAnimationFrame(dragFrame.current);
+  }, []);
+  const onTouchStart = (event: TouchEvent) => {
+    touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    dragXRef.current = 0;
+    pendingDragX.current = 0;
+    paintDrag(0);
+    carouselRef.current?.setAttribute("data-dragging", "yes");
+  };
+  const onTouchMove = (event: TouchEvent) => {
+    if (!touchStart.current) return;
+    const dx = event.touches[0].clientX - touchStart.current.x;
+    const dy = event.touches[0].clientY - touchStart.current.y;
+    if (Math.abs(dx) <= Math.abs(dy)) return;
+    dragXRef.current = dx;
+    queueDrag(dx);
+  };
+  const onTouchEnd = () => resetDrag(true);
+  const onTouchCancel = () => resetDrag(false);
   return <section className={`${styles.content} ${styles.kittyContent}`}>
     <Summary balance={balance} production={data.effectiveProduction} /><PurchaseModePicker value={purchaseMode} onChange={onPurchaseModeChange} />
-    <div className={styles.carousel} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} style={{ "--prestige": RARITY_COLORS[tier - 1][0], "--prestige-soft": RARITY_COLORS[tier - 1][1] } as CSSProperties} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+    <div ref={carouselRef} className={styles.carousel} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} data-dragging="no" style={{ "--prestige": RARITY_COLORS[tier - 1][0], "--prestige-soft": RARITY_COLORS[tier - 1][1] } as CSSProperties} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchCancel}>
       <div className={styles.prestigeBackdrop} />
       {data.items.map((item, itemIndex) => {
         const offset = itemIndex - index;
         if (Math.abs(offset) > 1) return null;
         const itemTier = rarityTier(item.definition.unlockOrder);
-        const slideDrag = offset === 0 ? dragX : dragX * .4;
+        const dragVariable = offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)";
         return <span
           key={`rarity-${item.definition.id}`}
           className={`${styles.raritySlide} ${!item.purchased ? styles.raritySlideLocked : ""}`}
@@ -343,7 +391,7 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
           aria-hidden="true"
           style={{
             left: `${50 + offset * 104}%`,
-            transform: `translate3d(calc(-50% + ${slideDrag}px), 0, 0) scale(${offset === 0 ? 1 : .59})`,
+            transform: `translate3d(calc(-50% + ${dragVariable}), 0, 0) scale(${offset === 0 ? 1 : .59})`,
             backgroundImage: `url(${RARITY_ASSETS[itemTier - 1]})`,
           } as CSSProperties}
         />;
@@ -353,7 +401,7 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
         const offset = itemIndex - index;
         const visible = Math.abs(offset) <= 1;
         if (!visible) return null;
-        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? dragX : dragX * .4}px), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}</div>;
+        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}</div>;
       })}
       <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
       <div className={styles.characterPanel} data-tier={tier}>

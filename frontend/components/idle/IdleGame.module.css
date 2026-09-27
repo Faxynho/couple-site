@@ -195,10 +195,10 @@
 .carouselSelected { animation: characterBreath 3.1s ease-in-out infinite; }
 .carouselLocked { filter: drop-shadow(0 12px 11px rgba(44,33,41,.3)); }
 .carouselLocked img { filter: grayscale(.9) saturate(.15) brightness(.28) contrast(.96); opacity: .72; transition: filter .35s ease,opacity .35s ease; }
-.carouselDots { position: absolute; z-index: 10; right: 0; bottom: 13.75rem; left: 0; display: flex; justify-content: center; gap: .29rem; }
+.carouselDots { position: absolute; z-index: 10; right: 0; bottom: 14.65rem; left: 0; display: flex; justify-content: center; gap: .29rem; }
 .carouselDots button { width: .42rem; height: .42rem; border-radius: 999px; background: rgba(109,74,79,.34); transition: width .2s ease,background .2s ease; }
 .carouselDots .carouselDotActive { width: 1rem; background: var(--prestige); }
-.characterPanel { position: absolute; z-index: 9; right: .72rem; bottom: 4.95rem; left: .72rem; overflow: hidden; padding: .84rem .9rem .95rem; border: 1px solid rgba(255,255,255,.9); border-radius: 1.7rem; background: linear-gradient(145deg,rgba(255,253,250,.97),rgba(255,238,246,.95)); box-shadow: 0 14px 35px rgba(95,44,55,.2),inset 0 1px 0 #fff,0 0 28px var(--prestige-soft); text-align: center; backdrop-filter: blur(15px); transition: box-shadow .4s ease,border-color .4s ease; }
+.characterPanel { position: absolute; z-index: 9; right: .72rem; bottom: 5.85rem; left: .72rem; overflow: hidden; padding: .84rem .9rem .95rem; border: 1px solid rgba(255,255,255,.9); border-radius: 1.7rem; background: linear-gradient(145deg,rgba(255,253,250,.97),rgba(255,238,246,.95)); box-shadow: 0 14px 35px rgba(95,44,55,.2),inset 0 1px 0 #fff,0 0 28px var(--prestige-soft); text-align: center; backdrop-filter: blur(15px); transition: box-shadow .4s ease,border-color .4s ease; }
 .characterPanel[data-tier="4"],.characterPanel[data-tier="5"],.characterPanel[data-tier="6"] { border-color: color-mix(in srgb,var(--prestige) 44%,white); }
 .characterPanel[data-tier="6"] { background: linear-gradient(145deg,rgba(255,253,250,.98),rgba(255,235,250,.97) 48%,rgba(236,246,255,.97)); box-shadow: 0 16px 42px rgba(86,62,120,.25),inset 0 1px 0 #fff,0 0 34px rgba(255,215,104,.34); }
 .characterPanel::before { content: ""; position: absolute; top: 0; left: 18%; width: 64%; height: 3px; border-radius: 0 0 999px 999px; background: linear-gradient(90deg,transparent,var(--prestige),transparent); box-shadow: 0 0 10px var(--prestige); }
@@ -286,8 +286,8 @@
   .statsPill { top: calc(env(safe-area-inset-top) + 5.2rem); }
   .carousel { min-height: 27rem; }
   .carouselCharacter { width: min(62vw,18rem); height: min(62vw,18rem); }
-  .carouselDots { bottom: 13.4rem; }
-  .characterPanel { bottom: 4.85rem; }
+  .carouselDots { bottom: 14.15rem; }
+  .characterPanel { bottom: 5.6rem; }
 }
 @media (prefers-reduced-motion:reduce) {
   .producer,.character,.carouselSelected,.prestigeParticles i,.achievementGlow,.achievementPopup > img,.raritySlide,.panelOrnament { animation: none; }
@@ -662,5 +662,29 @@
   .carouselSelected img {
     animation:none !important;
   }
+}
+
+/* Improvements carousel performance: keep all visuals while making touch swipes direct and compositor-friendly. */
+.kittyContent .carousel[data-dragging="yes"] .raritySlide,
+.kittyContent .carousel[data-dragging="yes"] .carouselCharacter {
+  transition: none !important;
+}
+.kittyContent .raritySlide,
+.kittyContent .carouselCharacter {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+.kittyContent .prestigeParticles {
+  transform: translate3d(-50%,0,0);
+  backface-visibility: hidden;
+  isolation: isolate;
+}
+.kittyContent .prestigeParticles i {
+  backface-visibility: hidden;
+}
+.kittyContent .characterPanel {
+  contain: paint;
+  transform: translateZ(0);
 }
 
