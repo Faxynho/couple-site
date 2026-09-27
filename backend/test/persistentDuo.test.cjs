@@ -1,5 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { readFileSync, existsSync } = require("node:fs");
+const { join } = require("node:path");
+const { PET_DECORATION_CATALOG, PET_DECORATION_PRICES, PET_DECORATION_IDS, isPetDecorationId } = require("../dist/pets/petEconomy.js");
 
 const { RoomManager } = require("../dist/rooms/RoomManager.js");
 const {
@@ -68,6 +71,62 @@ test("nova composição inicia montada e cada decoração preserva seu slot", ()
   assert.equal(store.getPetRoom("nix").revision, 3);
   assert.equal(store.togglePetDecoration("max", "unknown"), null);
   assert.equal(store.getPetRoom("max").revision, 0);
+});
+
+test("catálogo frontend/backend, preços, slots, assets e compra/equipamento têm paridade", () => {
+  const front = JSON.parse(readFileSync(join(__dirname, "../../frontend/pets/catalog.json"), "utf8"));
+  assert.deepEqual(front, PET_DECORATION_CATALOG);
+  assert.equal(new Set(front.map((item) => item.id)).size, front.length);
+  assert.deepEqual(new Set(PET_DECORATION_IDS), new Set(front.map((item) => item.id)));
+  for (const item of front) {
+    assert.equal(isPetDecorationId(item.id), true);
+    assert.equal(PET_DECORATION_PRICES[item.id], item.price);
+    assert.equal(item.asset.endsWith(`${item.id}.webp`), true);
+    assert.equal(existsSync(join(__dirname, "../../frontend/public", item.asset)), true, item.id);
+    const store = new PersistentDuoStore(false);
+    store.resetPetRoom("nix", "real");
+    assert.equal(store.togglePetDecoration("nix", item.id).slots[item.slot], item.id, item.id);
+  }
+  assert.equal(isPetDecorationId("toString"), false);
+  assert.equal(isPetDecorationId("unknown"), false);
+});
+
+test("variantes substituem o slot; quadro duplo remove os quadros individuais em ambas direções", () => {
+  const store = new PersistentDuoStore(false);
+  const before = store.getPetRoom("nix").slots;
+  assert.equal(Object.keys(before).length, 10);
+  assert.equal(before["floor-bed"], "bed");
+  store.togglePetDecoration("nix", "bed-princess");
+  assert.equal(store.getPetRoom("nix").slots["floor-bed"], "bed-princess");
+  store.togglePetDecoration("nix", "frame-double");
+  let slots = store.getPetRoom("nix").slots;
+  assert.equal(slots["wall-heart"], undefined);
+  assert.equal(slots["wall-paw"], undefined);
+  assert.equal(slots["wall-left-feature"], "frame-double");
+  store.togglePetDecoration("nix", "frame-flower");
+  slots = store.getPetRoom("nix").slots;
+  assert.equal(slots["wall-left-feature"], undefined);
+  assert.equal(slots["wall-heart"], "frame-flower");
+  store.togglePetDecoration("nix", "frame-double");
+  store.togglePetDecoration("nix", "frame-bone");
+  assert.equal(store.getPetRoom("nix").slots["wall-left-feature"], undefined);
+  assert.equal(store.getPetRoom("nix").slots["wall-paw"], "frame-bone");
+  store.togglePetDecoration("nix", "wall-floral");
+  store.togglePetDecoration("nix", "floor-honey");
+  store.togglePetDecoration("nix", "baseboard-hearts");
+  store.togglePetDecoration("nix", "curtain-stars");
+  store.togglePetDecoration("nix", "wall-floral");
+  store.togglePetDecoration("nix", "curtain-stars");
+  slots = store.getPetRoom("nix").slots;
+  assert.equal(slots["room-wall"], undefined);
+  assert.equal(slots["room-floor"], "floor-honey");
+  assert.equal(slots["room-baseboard"], "baseboard-hearts");
+  assert.equal(slots["window-curtain"], undefined);
+  assert.equal(store.getPetRoom("max").slots["floor-bed"], "bed");
+  store.togglePetDecoration("nix", "accent-teddy", "dev");
+  store.removePetDecoration("accent-teddy", "dev");
+  assert.equal(store.getPetRoom("nix", "dev").slots["floor-left-accent"], undefined);
+  assert.equal(store.getPetRoom("nix").slots["floor-bed"], "bed-princess");
 });
 
 test("presença agrega múltiplas abas sem duplicar a conta nem criar slot fantasma", () => {

@@ -20,7 +20,10 @@ function SceneAsset({ name, className }: { name: string; className: string }) {
 }
 
 function PetRoomScene({ pet, decorations, coins, environment }: { pet: PetDefinition; decorations: readonly Decoration[]; coins: number; environment: "real" | "dev" }) {
-  const [visible, setVisible] = useState(() => decorations.map((item) => ({ item, exiting: false })));
+  const sceneDecorations = decorations.filter((item) => item.kind === "decor");
+  const structural = (slot: string) => decorations.find((item) => item.slot === slot);
+  const curtain = structural("window-curtain");
+  const [visible, setVisible] = useState(() => sceneDecorations.map((item) => ({ item, exiting: false })));
   const [automaticTime, setAutomaticTime] = useState<TimeOfDay>("day");
   const [preview, setPreview] = useState<TimeOfDay | null>(null);
   const timeOfDay = preview ?? automaticTime;
@@ -35,15 +38,16 @@ function PetRoomScene({ pet, decorations, coins, environment }: { pet: PetDefini
     };
   }, []);
   useEffect(() => {
-    const incoming = new Set(decorations.map((item) => item.id));
+    const incoming = new Set(sceneDecorations.map((item) => item.id));
     setVisible((previous) => {
       const existing = new Set(previous.map(({ item }) => item.id));
       const changed = previous.some(({ item, exiting }) => exiting !== !incoming.has(item.id))
-        || decorations.some((item) => !existing.has(item.id));
+        || sceneDecorations.some((item) => !existing.has(item.id));
       if (!changed) return previous;
       return [
-        ...previous.map(({ item }) => ({ item, exiting: !incoming.has(item.id) })),
-        ...decorations.filter((item) => !existing.has(item.id)).map((item) => ({ item, exiting: false })),
+        ...previous.filter(({ item }) => incoming.has(item.id) || !sceneDecorations.some((next) => next.slot === item.slot))
+          .map(({ item }) => ({ item, exiting: !incoming.has(item.id) })),
+        ...sceneDecorations.filter((item) => !existing.has(item.id)).map((item) => ({ item, exiting: false })),
       ];
     });
     const timeout = window.setTimeout(() => {
@@ -67,15 +71,16 @@ function PetRoomScene({ pet, decorations, coins, environment }: { pet: PetDefini
   return (
     <section className={styles.scene} aria-label={`Quarto de ${pet.name}`} data-time-of-day={timeOfDay}>
       <div className={styles.stage}>
-        <div className={styles.wall} aria-hidden="true" />
-        <div className={styles.floor} aria-hidden="true" />
-        <div className={styles.baseboard} aria-hidden="true" />
+        <div className={styles.wall} style={structural("room-wall") ? { backgroundImage: `url("${structural("room-wall")!.asset}")` } : undefined} aria-hidden="true" />
+        <div className={styles.floor} style={structural("room-floor") ? { backgroundImage: `url("${structural("room-floor")!.asset}")` } : undefined} aria-hidden="true" />
+        <div className={styles.baseboard} style={structural("room-baseboard") ? { backgroundImage: `url("${structural("room-baseboard")!.asset}")` } : undefined} aria-hidden="true" />
         <div className={styles.windowSky} aria-hidden="true">
           <SceneAsset name="sky-day" className={styles.skyDay} />
           <SceneAsset name="sky-night" className={styles.skyNight} />
         </div>
         <SceneAsset name="window-frame" className={styles.windowFrame} />
-        <SceneAsset name="curtains" className={styles.curtains} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={curtain?.asset ?? `${BASE}curtains.webp`} className={styles.curtains} alt="" draggable={false} aria-hidden="true" />
         {byLayer("wall")}
         {byLayer("rear")}
         <div className={styles.petShadow} aria-hidden="true" />

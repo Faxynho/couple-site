@@ -1,20 +1,20 @@
-export const PET_DECORATION_PRICES = {
-  bone: 80,
-  bowls: 100,
-  "paw-poster": 120,
-  "heart-frame": 140,
-  lamp: 180,
-  plant: 220,
-  shelf: 260,
-  rug: 320,
-  dresser: 400,
-  bed: 500,
-} as const;
+import catalog from "./catalog.json";
 
-export type PetDecorationId = keyof typeof PET_DECORATION_PRICES;
-export const PET_DECORATION_IDS = Object.keys(PET_DECORATION_PRICES) as PetDecorationId[];
-export const PET_DECORATION_TOTAL_PRICE = Object.values(PET_DECORATION_PRICES).reduce((sum, price) => sum + price, 0);
+/** Generated from the ZIP manifest; parity with the frontend is checked in tests. */
+export const PET_DECORATION_CATALOG = catalog;
+export const PET_DECORATION_PRICES: Readonly<Record<string, number>> = Object.fromEntries(
+  catalog.map(({ id, price }) => [id, price]),
+);
+export type PetDecorationId = string;
+export const PET_DECORATION_IDS = catalog.map(({ id }) => id);
+export const PET_DECORATION_TOTAL_PRICE = catalog.reduce((sum, item) => sum + item.price, 0);
+
+/** The ten items owned before the shop existed; never expand this for a new release. */
+export const LEGACY_PET_DECORATION_IDS = [
+  "heart-frame", "paw-poster", "shelf", "plant", "rug",
+  "bed", "dresser", "lamp", "bowls", "bone",
+] as const;
 
 export function isPetDecorationId(value: unknown): value is PetDecorationId {
-  return typeof value === "string" && value in PET_DECORATION_PRICES;
+  return typeof value === "string" && Object.hasOwn(PET_DECORATION_PRICES, value);
 }

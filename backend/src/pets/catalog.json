@@ -1,0 +1,1483 @@
+[
+  {
+    "id": "heart-frame",
+    "name": "Quadro coração",
+    "price": 140,
+    "asset": "/images/pets/room/decor/heart-frame.webp",
+    "category": "Parede",
+    "slot": "wall-heart",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 15,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 30,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "paw-poster",
+    "name": "Quadro patinha",
+    "price": 120,
+    "asset": "/images/pets/room/decor/paw-poster.webp",
+    "category": "Parede",
+    "slot": "wall-paw",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 28.5,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 31,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "shelf",
+    "name": "Prateleira",
+    "price": 260,
+    "asset": "/images/pets/room/decor/shelf.webp",
+    "category": "Parede",
+    "slot": "wall-shelf",
+    "kind": "decor",
+    "position": {
+      "left": 70,
+      "top": 29,
+      "width": 27
+    },
+    "layer": "wall",
+    "stack": 32
+  },
+  {
+    "id": "plant",
+    "name": "Planta",
+    "price": 220,
+    "asset": "/images/pets/room/decor/plant.webp",
+    "category": "Chão",
+    "slot": "floor-plant",
+    "kind": "decor",
+    "position": {
+      "left": -1,
+      "bottom": 33.5,
+      "width": 31
+    },
+    "layer": "rear",
+    "stack": 60
+  },
+  {
+    "id": "rug",
+    "name": "Tapete",
+    "price": 320,
+    "asset": "/images/pets/room/decor/rug.webp",
+    "category": "Chão",
+    "slot": "floor-rug",
+    "kind": "decor",
+    "position": {
+      "left": 12,
+      "bottom": 3.5,
+      "width": 76
+    },
+    "layer": "rear",
+    "stack": 50
+  },
+  {
+    "id": "bed",
+    "name": "Caminha",
+    "price": 500,
+    "asset": "/images/pets/room/decor/bed.webp",
+    "category": "Móveis",
+    "slot": "floor-bed",
+    "kind": "decor",
+    "position": {
+      "left": 0,
+      "bottom": 21.5,
+      "width": 38
+    },
+    "layer": "rear",
+    "stack": 70
+  },
+  {
+    "id": "dresser",
+    "name": "Cômoda",
+    "price": 400,
+    "asset": "/images/pets/room/decor/dresser.webp",
+    "category": "Móveis",
+    "slot": "floor-dresser",
+    "kind": "decor",
+    "position": {
+      "left": 77.5,
+      "bottom": 27,
+      "width": 21
+    },
+    "layer": "rear",
+    "stack": 65
+  },
+  {
+    "id": "lamp",
+    "name": "Abajur",
+    "price": 180,
+    "asset": "/images/pets/room/decor/lamp.webp",
+    "category": "Móveis",
+    "slot": "floor-lamp",
+    "kind": "decor",
+    "position": {
+      "left": 82.25,
+      "bottom": 42.5,
+      "width": 11.5
+    },
+    "layer": "rear",
+    "stack": 125,
+    "light": {
+      "originX": 50,
+      "originY": 18
+    }
+  },
+  {
+    "id": "bowls",
+    "name": "Potes",
+    "price": 100,
+    "asset": "/images/pets/room/decor/bowls.webp",
+    "category": "Chão",
+    "slot": "floor-bowls",
+    "kind": "decor",
+    "position": {
+      "left": 73,
+      "bottom": 7.5,
+      "width": 25
+    },
+    "layer": "front",
+    "stack": 74
+  },
+  {
+    "id": "bone",
+    "name": "Ossinho",
+    "price": 80,
+    "asset": "/images/pets/room/decor/bone.webp",
+    "category": "Brinquedos",
+    "slot": "floor-bone",
+    "kind": "decor",
+    "position": {
+      "left": 71,
+      "bottom": 16.5,
+      "width": 13.5
+    },
+    "layer": "rear",
+    "stack": 72
+  },
+  {
+    "id": "rug-celestial",
+    "name": "Tapete celestial",
+    "price": 2500,
+    "asset": "/images/pets/room/decor/rug-celestial.webp",
+    "category": "Chão",
+    "slot": "floor-rug",
+    "kind": "decor",
+    "position": {
+      "left": 12,
+      "bottom": 3.5,
+      "width": 76
+    },
+    "layer": "rear",
+    "stack": 50
+  },
+  {
+    "id": "rug-paw",
+    "name": "Tapete patinha",
+    "price": 300,
+    "asset": "/images/pets/room/decor/rug-paw.webp",
+    "category": "Chão",
+    "slot": "floor-rug",
+    "kind": "decor",
+    "position": {
+      "left": 20,
+      "bottom": 3.5,
+      "width": 60
+    },
+    "layer": "rear",
+    "stack": 50
+  },
+  {
+    "id": "rug-cloud",
+    "name": "Tapete nuvem",
+    "price": 800,
+    "asset": "/images/pets/room/decor/rug-cloud.webp",
+    "category": "Chão",
+    "slot": "floor-rug",
+    "kind": "decor",
+    "position": {
+      "left": 12,
+      "bottom": 3.5,
+      "width": 76
+    },
+    "layer": "rear",
+    "stack": 50
+  },
+  {
+    "id": "rug-flower",
+    "name": "Tapete flor",
+    "price": 450,
+    "asset": "/images/pets/room/decor/rug-flower.webp",
+    "category": "Chão",
+    "slot": "floor-rug",
+    "kind": "decor",
+    "position": {
+      "left": 12,
+      "bottom": 3.5,
+      "width": 76
+    },
+    "layer": "rear",
+    "stack": 50
+  },
+  {
+    "id": "rug-bow",
+    "name": "Tapete laço",
+    "price": 1300,
+    "asset": "/images/pets/room/decor/rug-bow.webp",
+    "category": "Chão",
+    "slot": "floor-rug",
+    "kind": "decor",
+    "position": {
+      "left": 12,
+      "bottom": 3.5,
+      "width": 76
+    },
+    "layer": "rear",
+    "stack": 50
+  },
+  {
+    "id": "bed-bow",
+    "name": "Caminha com laço",
+    "price": 500,
+    "asset": "/images/pets/room/decor/bed-bow.webp",
+    "category": "Móveis",
+    "slot": "floor-bed",
+    "kind": "decor",
+    "position": {
+      "left": 0,
+      "bottom": 21.5,
+      "width": 38
+    },
+    "layer": "rear",
+    "stack": 70
+  },
+  {
+    "id": "bed-flower",
+    "name": "Caminha flor",
+    "price": 850,
+    "asset": "/images/pets/room/decor/bed-flower.webp",
+    "category": "Móveis",
+    "slot": "floor-bed",
+    "kind": "decor",
+    "position": {
+      "left": 0,
+      "bottom": 21.5,
+      "width": 38
+    },
+    "layer": "rear",
+    "stack": 70
+  },
+  {
+    "id": "bed-heart",
+    "name": "Caminha coração",
+    "price": 1100,
+    "asset": "/images/pets/room/decor/bed-heart.webp",
+    "category": "Móveis",
+    "slot": "floor-bed",
+    "kind": "decor",
+    "position": {
+      "left": 0,
+      "bottom": 21.5,
+      "width": 38
+    },
+    "layer": "rear",
+    "stack": 70
+  },
+  {
+    "id": "bed-cloud",
+    "name": "Caminha nuvem",
+    "price": 1400,
+    "asset": "/images/pets/room/decor/bed-cloud.webp",
+    "category": "Móveis",
+    "slot": "floor-bed",
+    "kind": "decor",
+    "position": {
+      "left": 0,
+      "bottom": 21.5,
+      "width": 38
+    },
+    "layer": "rear",
+    "stack": 70
+  },
+  {
+    "id": "bed-princess",
+    "name": "Caminha princesa",
+    "price": 2200,
+    "asset": "/images/pets/room/decor/bed-princess.webp",
+    "category": "Móveis",
+    "slot": "floor-bed",
+    "kind": "decor",
+    "position": {
+      "left": -1,
+      "bottom": 21.5,
+      "width": 40
+    },
+    "layer": "rear",
+    "stack": 70
+  },
+  {
+    "id": "bed-winged",
+    "name": "Caminha alada",
+    "price": 3800,
+    "asset": "/images/pets/room/decor/bed-winged.webp",
+    "category": "Móveis",
+    "slot": "floor-bed",
+    "kind": "decor",
+    "position": {
+      "left": -1.5,
+      "bottom": 21,
+      "width": 41
+    },
+    "layer": "rear",
+    "stack": 70
+  },
+  {
+    "id": "plant-compact",
+    "name": "Planta compacta",
+    "price": 250,
+    "asset": "/images/pets/room/decor/plant-compact.webp",
+    "category": "Chão",
+    "slot": "floor-plant",
+    "kind": "decor",
+    "position": {
+      "left": 0.5,
+      "bottom": 33.5,
+      "width": 25
+    },
+    "layer": "rear",
+    "stack": 60
+  },
+  {
+    "id": "plant-daisies",
+    "name": "Vaso de margaridas",
+    "price": 320,
+    "asset": "/images/pets/room/decor/plant-daisies.webp",
+    "category": "Chão",
+    "slot": "floor-plant",
+    "kind": "decor",
+    "position": {
+      "left": 0,
+      "bottom": 33.5,
+      "width": 27
+    },
+    "layer": "rear",
+    "stack": 60
+  },
+  {
+    "id": "plant-hanging",
+    "name": "Planta pendente",
+    "price": 600,
+    "asset": "/images/pets/room/decor/plant-hanging.webp",
+    "category": "Chão",
+    "slot": "floor-plant",
+    "kind": "decor",
+    "position": {
+      "left": 1,
+      "width": 20,
+      "top": 40
+    },
+    "layer": "rear",
+    "stack": 60
+  },
+  {
+    "id": "plant-heart-topiary",
+    "name": "Topiaria coração",
+    "price": 1100,
+    "asset": "/images/pets/room/decor/plant-heart-topiary.webp",
+    "category": "Chão",
+    "slot": "floor-plant",
+    "kind": "decor",
+    "position": {
+      "left": 0,
+      "bottom": 33.2,
+      "width": 26
+    },
+    "layer": "rear",
+    "stack": 60
+  },
+  {
+    "id": "plant-roses",
+    "name": "Arranjo de rosas",
+    "price": 1800,
+    "asset": "/images/pets/room/decor/plant-roses.webp",
+    "category": "Chão",
+    "slot": "floor-plant",
+    "kind": "decor",
+    "position": {
+      "left": 0,
+      "bottom": 33.5,
+      "width": 28
+    },
+    "layer": "rear",
+    "stack": 60
+  },
+  {
+    "id": "dresser-stars",
+    "name": "Cômoda estrelas",
+    "price": 600,
+    "asset": "/images/pets/room/decor/dresser-stars.webp",
+    "category": "Móveis",
+    "slot": "floor-dresser",
+    "kind": "decor",
+    "position": {
+      "left": 77.5,
+      "bottom": 27,
+      "width": 21
+    },
+    "layer": "rear",
+    "stack": 65
+  },
+  {
+    "id": "dresser-heart",
+    "name": "Cômoda coração",
+    "price": 700,
+    "asset": "/images/pets/room/decor/dresser-heart.webp",
+    "category": "Móveis",
+    "slot": "floor-dresser",
+    "kind": "decor",
+    "position": {
+      "left": 76,
+      "bottom": 27,
+      "width": 23
+    },
+    "layer": "rear",
+    "stack": 65
+  },
+  {
+    "id": "dresser-bow",
+    "name": "Cômoda com laço",
+    "price": 950,
+    "asset": "/images/pets/room/decor/dresser-bow.webp",
+    "category": "Móveis",
+    "slot": "floor-dresser",
+    "kind": "decor",
+    "position": {
+      "left": 76,
+      "bottom": 27,
+      "width": 23
+    },
+    "layer": "rear",
+    "stack": 65
+  },
+  {
+    "id": "dresser-floral",
+    "name": "Cômoda floral",
+    "price": 1500,
+    "asset": "/images/pets/room/decor/dresser-floral.webp",
+    "category": "Móveis",
+    "slot": "floor-dresser",
+    "kind": "decor",
+    "position": {
+      "left": 76,
+      "bottom": 27,
+      "width": 23
+    },
+    "layer": "rear",
+    "stack": 65
+  },
+  {
+    "id": "dresser-mini-cabinet",
+    "name": "Mini armário coração",
+    "price": 1600,
+    "asset": "/images/pets/room/decor/dresser-mini-cabinet.webp",
+    "category": "Móveis",
+    "slot": "floor-dresser",
+    "kind": "decor",
+    "position": {
+      "left": 77.5,
+      "bottom": 27,
+      "width": 21
+    },
+    "layer": "rear",
+    "stack": 65
+  },
+  {
+    "id": "dresser-gold",
+    "name": "Cômoda rosé dourada",
+    "price": 2600,
+    "asset": "/images/pets/room/decor/dresser-gold.webp",
+    "category": "Móveis",
+    "slot": "floor-dresser",
+    "kind": "decor",
+    "position": {
+      "left": 76,
+      "bottom": 27,
+      "width": 23
+    },
+    "layer": "rear",
+    "stack": 65
+  },
+  {
+    "id": "lamp-floral",
+    "name": "Abajur floral",
+    "price": 300,
+    "asset": "/images/pets/room/decor/lamp-floral.webp",
+    "category": "Móveis",
+    "slot": "floor-lamp",
+    "kind": "decor",
+    "position": {
+      "left": 82.25,
+      "bottom": 42.5,
+      "width": 11.5
+    },
+    "layer": "rear",
+    "stack": 125,
+    "light": {
+      "originX": 50,
+      "originY": 26
+    }
+  },
+  {
+    "id": "lamp-moon",
+    "name": "Abajur lua",
+    "price": 700,
+    "asset": "/images/pets/room/decor/lamp-moon.webp",
+    "category": "Móveis",
+    "slot": "floor-lamp",
+    "kind": "decor",
+    "position": {
+      "left": 82.25,
+      "bottom": 42.5,
+      "width": 11.5
+    },
+    "layer": "rear",
+    "stack": 125,
+    "light": {
+      "originX": 50,
+      "originY": 31
+    }
+  },
+  {
+    "id": "lamp-cloud",
+    "name": "Abajur nuvem",
+    "price": 1200,
+    "asset": "/images/pets/room/decor/lamp-cloud.webp",
+    "category": "Móveis",
+    "slot": "floor-lamp",
+    "kind": "decor",
+    "position": {
+      "left": 82.25,
+      "bottom": 42.5,
+      "width": 11.5
+    },
+    "layer": "rear",
+    "stack": 125,
+    "light": {
+      "originX": 50,
+      "originY": 27
+    }
+  },
+  {
+    "id": "lamp-star",
+    "name": "Abajur estrela",
+    "price": 2100,
+    "asset": "/images/pets/room/decor/lamp-star.webp",
+    "category": "Móveis",
+    "slot": "floor-lamp",
+    "kind": "decor",
+    "position": {
+      "left": 82.25,
+      "bottom": 42.5,
+      "width": 11.5
+    },
+    "layer": "rear",
+    "stack": 125,
+    "light": {
+      "originX": 50,
+      "originY": 25
+    }
+  },
+  {
+    "id": "dresser-cookie-jar-bow",
+    "name": "Pote de biscoitos com laço",
+    "price": 500,
+    "asset": "/images/pets/room/decor/dresser-cookie-jar-bow.webp",
+    "category": "Móveis",
+    "slot": "floor-lamp",
+    "kind": "decor",
+    "position": {
+      "left": 83.1,
+      "bottom": 42.8,
+      "width": 10.5
+    },
+    "layer": "rear",
+    "stack": 125
+  },
+  {
+    "id": "dresser-cookie-jar-heart",
+    "name": "Pote de biscoitos coração",
+    "price": 900,
+    "asset": "/images/pets/room/decor/dresser-cookie-jar-heart.webp",
+    "category": "Móveis",
+    "slot": "floor-lamp",
+    "kind": "decor",
+    "position": {
+      "left": 83.1,
+      "bottom": 42.8,
+      "width": 10.5
+    },
+    "layer": "rear",
+    "stack": 125
+  },
+  {
+    "id": "dresser-snowglobe",
+    "name": "Globo de neve coelhinho",
+    "price": 1300,
+    "asset": "/images/pets/room/decor/dresser-snowglobe.webp",
+    "category": "Móveis",
+    "slot": "floor-lamp",
+    "kind": "decor",
+    "position": {
+      "left": 83.2,
+      "bottom": 42.5,
+      "width": 10.5
+    },
+    "layer": "rear",
+    "stack": 125
+  },
+  {
+    "id": "dresser-music-box",
+    "name": "Caixinha de música",
+    "price": 1800,
+    "asset": "/images/pets/room/decor/dresser-music-box.webp",
+    "category": "Móveis",
+    "slot": "floor-lamp",
+    "kind": "decor",
+    "position": {
+      "left": 83,
+      "bottom": 42.3,
+      "width": 11
+    },
+    "layer": "rear",
+    "stack": 125
+  },
+  {
+    "id": "bowls-polka",
+    "name": "Potes poá",
+    "price": 120,
+    "asset": "/images/pets/room/decor/bowls-polka.webp",
+    "category": "Chão",
+    "slot": "floor-bowls",
+    "kind": "decor",
+    "position": {
+      "left": 73,
+      "bottom": 7.5,
+      "width": 25
+    },
+    "layer": "front",
+    "stack": 74
+  },
+  {
+    "id": "bowls-strawberry",
+    "name": "Potes moranguinho",
+    "price": 220,
+    "asset": "/images/pets/room/decor/bowls-strawberry.webp",
+    "category": "Chão",
+    "slot": "floor-bowls",
+    "kind": "decor",
+    "position": {
+      "left": 73,
+      "bottom": 7.5,
+      "width": 25
+    },
+    "layer": "front",
+    "stack": 74
+  },
+  {
+    "id": "bowls-bow",
+    "name": "Potes com laços",
+    "price": 380,
+    "asset": "/images/pets/room/decor/bowls-bow.webp",
+    "category": "Chão",
+    "slot": "floor-bowls",
+    "kind": "decor",
+    "position": {
+      "left": 73,
+      "bottom": 7.5,
+      "width": 25
+    },
+    "layer": "front",
+    "stack": 74
+  },
+  {
+    "id": "bowls-porcelain",
+    "name": "Potes porcelana",
+    "price": 750,
+    "asset": "/images/pets/room/decor/bowls-porcelain.webp",
+    "category": "Chão",
+    "slot": "floor-bowls",
+    "kind": "decor",
+    "position": {
+      "left": 73,
+      "bottom": 7.5,
+      "width": 25
+    },
+    "layer": "front",
+    "stack": 74
+  },
+  {
+    "id": "toy-rope-pink",
+    "name": "Cordinha rosa",
+    "price": 140,
+    "asset": "/images/pets/room/decor/toy-rope-pink.webp",
+    "category": "Brinquedos",
+    "slot": "floor-bone",
+    "kind": "decor",
+    "position": {
+      "left": 68.5,
+      "bottom": 16.5,
+      "width": 17
+    },
+    "layer": "rear",
+    "stack": 72
+  },
+  {
+    "id": "toy-bone-plush",
+    "name": "Ossinho de pelúcia",
+    "price": 260,
+    "asset": "/images/pets/room/decor/toy-bone-plush.webp",
+    "category": "Brinquedos",
+    "slot": "floor-bone",
+    "kind": "decor",
+    "position": {
+      "left": 71,
+      "bottom": 16.5,
+      "width": 13.5
+    },
+    "layer": "rear",
+    "stack": 72
+  },
+  {
+    "id": "toy-bone-bow",
+    "name": "Ossinho com laço",
+    "price": 380,
+    "asset": "/images/pets/room/decor/toy-bone-bow.webp",
+    "category": "Brinquedos",
+    "slot": "floor-bone",
+    "kind": "decor",
+    "position": {
+      "left": 69.5,
+      "bottom": 16.5,
+      "width": 16
+    },
+    "layer": "rear",
+    "stack": 72
+  },
+  {
+    "id": "toy-mouse",
+    "name": "Ratinho de pelúcia",
+    "price": 450,
+    "asset": "/images/pets/room/decor/toy-mouse.webp",
+    "category": "Brinquedos",
+    "slot": "floor-bone",
+    "kind": "decor",
+    "position": {
+      "left": 70,
+      "bottom": 16.2,
+      "width": 14.5
+    },
+    "layer": "rear",
+    "stack": 72
+  },
+  {
+    "id": "toy-rope-pastel",
+    "name": "Corda trançada pastel",
+    "price": 500,
+    "asset": "/images/pets/room/decor/toy-rope-pastel.webp",
+    "category": "Brinquedos",
+    "slot": "floor-bone",
+    "kind": "decor",
+    "position": {
+      "left": 68.5,
+      "bottom": 16.5,
+      "width": 17
+    },
+    "layer": "rear",
+    "stack": 72
+  },
+  {
+    "id": "toy-ball-paw",
+    "name": "Bola de patinha",
+    "price": 500,
+    "asset": "/images/pets/room/decor/toy-ball-paw.webp",
+    "category": "Brinquedos",
+    "slot": "floor-bone",
+    "kind": "decor",
+    "position": {
+      "left": 71,
+      "bottom": 16.5,
+      "width": 13.5
+    },
+    "layer": "rear",
+    "stack": 72
+  },
+  {
+    "id": "frame-bow",
+    "name": "Quadro laço",
+    "price": 180,
+    "asset": "/images/pets/room/decor/frame-bow.webp",
+    "category": "Parede",
+    "slot": "wall-heart",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 15,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 30,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "frame-flower",
+    "name": "Quadro flor",
+    "price": 220,
+    "asset": "/images/pets/room/decor/frame-flower.webp",
+    "category": "Parede",
+    "slot": "wall-heart",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 15,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 30,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "frame-stars",
+    "name": "Quadro estrelinhas",
+    "price": 320,
+    "asset": "/images/pets/room/decor/frame-stars.webp",
+    "category": "Parede",
+    "slot": "wall-heart",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 15,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 30,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "frame-crown",
+    "name": "Quadro coroa",
+    "price": 520,
+    "asset": "/images/pets/room/decor/frame-crown.webp",
+    "category": "Parede",
+    "slot": "wall-heart",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 15,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 30,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "frame-husky",
+    "name": "Retrato husky",
+    "price": 900,
+    "asset": "/images/pets/room/decor/frame-husky.webp",
+    "category": "Parede",
+    "slot": "wall-heart",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 15,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 30,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "frame-puppy",
+    "name": "Retrato cãozinho",
+    "price": 900,
+    "asset": "/images/pets/room/decor/frame-puppy.webp",
+    "category": "Parede",
+    "slot": "wall-heart",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 15,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 30,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "frame-bone",
+    "name": "Quadro ossinho",
+    "price": 180,
+    "asset": "/images/pets/room/decor/frame-bone.webp",
+    "category": "Parede",
+    "slot": "wall-paw",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 28.5,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 31,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "frame-paw-classic",
+    "name": "Quadro patinha clássico",
+    "price": 240,
+    "asset": "/images/pets/room/decor/frame-paw-classic.webp",
+    "category": "Parede",
+    "slot": "wall-paw",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 28.5,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 31,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "frame-medal",
+    "name": "Quadro medalha",
+    "price": 650,
+    "asset": "/images/pets/room/decor/frame-medal.webp",
+    "category": "Parede",
+    "slot": "wall-paw",
+    "kind": "decor",
+    "position": {
+      "left": 7,
+      "top": 28.5,
+      "width": 11.5
+    },
+    "layer": "wall",
+    "stack": 31,
+    "conflictsWithSlots": [
+      "wall-left-feature"
+    ]
+  },
+  {
+    "id": "frame-double",
+    "name": "Quadro duplo coração e patinha",
+    "price": 1200,
+    "asset": "/images/pets/room/decor/frame-double.webp",
+    "category": "Parede",
+    "slot": "wall-left-feature",
+    "kind": "decor",
+    "position": {
+      "left": 6.2,
+      "top": 14.5,
+      "width": 12.8
+    },
+    "layer": "wall",
+    "stack": 34,
+    "conflictsWithSlots": [
+      "wall-heart",
+      "wall-paw"
+    ]
+  },
+  {
+    "id": "shelf-books-candle",
+    "name": "Prateleira com livros e vela",
+    "price": 350,
+    "asset": "/images/pets/room/decor/shelf-books-candle.webp",
+    "category": "Parede",
+    "slot": "wall-shelf",
+    "kind": "decor",
+    "position": {
+      "left": 70,
+      "top": 29,
+      "width": 27
+    },
+    "layer": "wall",
+    "stack": 32
+  },
+  {
+    "id": "curtain-floral",
+    "name": "Cortina floral",
+    "price": 700,
+    "asset": "/images/pets/room/decor/curtain-floral.webp",
+    "category": "Parede",
+    "slot": "window-curtain",
+    "kind": "curtain",
+    "position": {
+      "left": 50,
+      "top": 8.5,
+      "width": 55
+    },
+    "layer": "wall",
+    "stack": 40
+  },
+  {
+    "id": "curtain-stars",
+    "name": "Cortina estrelas",
+    "price": 1100,
+    "asset": "/images/pets/room/decor/curtain-stars.webp",
+    "category": "Parede",
+    "slot": "window-curtain",
+    "kind": "curtain",
+    "position": {
+      "left": 50,
+      "top": 8.5,
+      "width": 55
+    },
+    "layer": "wall",
+    "stack": 40
+  },
+  {
+    "id": "curtain-cloud",
+    "name": "Cortina nuvem",
+    "price": 1600,
+    "asset": "/images/pets/room/decor/curtain-cloud.webp",
+    "category": "Parede",
+    "slot": "window-curtain",
+    "kind": "curtain",
+    "position": {
+      "left": 50,
+      "top": 8.5,
+      "width": 55
+    },
+    "layer": "wall",
+    "stack": 40
+  },
+  {
+    "id": "curtain-hearts",
+    "name": "Cortina corações",
+    "price": 2600,
+    "asset": "/images/pets/room/decor/curtain-hearts.webp",
+    "category": "Parede",
+    "slot": "window-curtain",
+    "kind": "curtain",
+    "position": {
+      "left": 50,
+      "top": 8.5,
+      "width": 55
+    },
+    "layer": "wall",
+    "stack": 40
+  },
+  {
+    "id": "garland-hearts",
+    "name": "Guirlanda de corações",
+    "price": 750,
+    "asset": "/images/pets/room/decor/garland-hearts.webp",
+    "category": "Parede",
+    "slot": "wall-garland",
+    "kind": "decor",
+    "position": {
+      "left": 23,
+      "top": 8.5,
+      "width": 54
+    },
+    "layer": "wall",
+    "stack": 45
+  },
+  {
+    "id": "garland-hearts-light",
+    "name": "Luzes de corações",
+    "price": 900,
+    "asset": "/images/pets/room/decor/garland-hearts-light.webp",
+    "category": "Parede",
+    "slot": "wall-garland",
+    "kind": "decor",
+    "position": {
+      "left": 23,
+      "top": 8.5,
+      "width": 54
+    },
+    "layer": "wall",
+    "stack": 45
+  },
+  {
+    "id": "garland-stars",
+    "name": "Guirlanda de estrelas",
+    "price": 1100,
+    "asset": "/images/pets/room/decor/garland-stars.webp",
+    "category": "Parede",
+    "slot": "wall-garland",
+    "kind": "decor",
+    "position": {
+      "left": 23,
+      "top": 8.5,
+      "width": 54
+    },
+    "layer": "wall",
+    "stack": 45
+  },
+  {
+    "id": "garland-stars-light",
+    "name": "Luzes de estrelas",
+    "price": 1300,
+    "asset": "/images/pets/room/decor/garland-stars-light.webp",
+    "category": "Parede",
+    "slot": "wall-garland",
+    "kind": "decor",
+    "position": {
+      "left": 23,
+      "top": 8.5,
+      "width": 54
+    },
+    "layer": "wall",
+    "stack": 45
+  },
+  {
+    "id": "wall-nameplate",
+    "name": "Placa decorativa",
+    "price": 450,
+    "asset": "/images/pets/room/decor/wall-nameplate.webp",
+    "category": "Parede",
+    "slot": "wall-right-accent",
+    "kind": "decor",
+    "position": {
+      "left": 76.5,
+      "top": 16,
+      "width": 21
+    },
+    "layer": "wall",
+    "stack": 35
+  },
+  {
+    "id": "wall-clock-bow",
+    "name": "Relógio de laço",
+    "price": 500,
+    "asset": "/images/pets/room/decor/wall-clock-bow.webp",
+    "category": "Parede",
+    "slot": "wall-right-accent",
+    "kind": "decor",
+    "position": {
+      "left": 82,
+      "top": 14.5,
+      "width": 14
+    },
+    "layer": "wall",
+    "stack": 35
+  },
+  {
+    "id": "wall-mirror-bow",
+    "name": "Espelho de laço",
+    "price": 950,
+    "asset": "/images/pets/room/decor/wall-mirror-bow.webp",
+    "category": "Parede",
+    "slot": "wall-right-accent",
+    "kind": "decor",
+    "position": {
+      "left": 81,
+      "top": 14,
+      "width": 17
+    },
+    "layer": "wall",
+    "stack": 35
+  },
+  {
+    "id": "wall-led-heart",
+    "name": "Coração LED",
+    "price": 1400,
+    "asset": "/images/pets/room/decor/wall-led-heart.webp",
+    "category": "Parede",
+    "slot": "wall-right-accent",
+    "kind": "decor",
+    "position": {
+      "left": 82,
+      "top": 15,
+      "width": 14
+    },
+    "layer": "wall",
+    "stack": 35
+  },
+  {
+    "id": "wall-neon-heart",
+    "name": "Coração neon",
+    "price": 2200,
+    "asset": "/images/pets/room/decor/wall-neon-heart.webp",
+    "category": "Parede",
+    "slot": "wall-right-accent",
+    "kind": "decor",
+    "position": {
+      "left": 82,
+      "top": 15,
+      "width": 14
+    },
+    "layer": "wall",
+    "stack": 35
+  },
+  {
+    "id": "accent-teddy",
+    "name": "Ursinho rosa",
+    "price": 450,
+    "asset": "/images/pets/room/decor/accent-teddy.webp",
+    "category": "Chão",
+    "slot": "floor-left-accent",
+    "kind": "decor",
+    "position": {
+      "left": 1.5,
+      "bottom": 9,
+      "width": 18
+    },
+    "layer": "rear",
+    "stack": 76
+  },
+  {
+    "id": "accent-storage-box",
+    "name": "Caixa organizadora",
+    "price": 850,
+    "asset": "/images/pets/room/decor/accent-storage-box.webp",
+    "category": "Chão",
+    "slot": "floor-left-accent",
+    "kind": "decor",
+    "position": {
+      "left": 1.5,
+      "bottom": 9,
+      "width": 18
+    },
+    "layer": "rear",
+    "stack": 76
+  },
+  {
+    "id": "accent-blankets",
+    "name": "Cesta de mantinhas",
+    "price": 900,
+    "asset": "/images/pets/room/decor/accent-blankets.webp",
+    "category": "Chão",
+    "slot": "floor-left-accent",
+    "kind": "decor",
+    "position": {
+      "left": 1.5,
+      "bottom": 9,
+      "width": 18
+    },
+    "layer": "rear",
+    "stack": 76
+  },
+  {
+    "id": "accent-chest",
+    "name": "Baú coração",
+    "price": 1700,
+    "asset": "/images/pets/room/decor/accent-chest.webp",
+    "category": "Chão",
+    "slot": "floor-left-accent",
+    "kind": "decor",
+    "position": {
+      "left": 1.5,
+      "bottom": 9,
+      "width": 18
+    },
+    "layer": "rear",
+    "stack": 76
+  },
+  {
+    "id": "accent-toy-basket",
+    "name": "Cesta de brinquedos",
+    "price": 350,
+    "asset": "/images/pets/room/decor/accent-toy-basket.webp",
+    "category": "Chão",
+    "slot": "floor-right-accent",
+    "kind": "decor",
+    "position": {
+      "left": 80,
+      "bottom": 15.5,
+      "width": 17
+    },
+    "layer": "front",
+    "stack": 78
+  },
+  {
+    "id": "accent-toy-basket-premium",
+    "name": "Cesta de brinquedos premium",
+    "price": 900,
+    "asset": "/images/pets/room/decor/accent-toy-basket-premium.webp",
+    "category": "Chão",
+    "slot": "floor-right-accent",
+    "kind": "decor",
+    "position": {
+      "left": 80,
+      "bottom": 15.5,
+      "width": 17
+    },
+    "layer": "front",
+    "stack": 78
+  },
+  {
+    "id": "floor-rose",
+    "name": "Piso madeira rosé",
+    "price": 850,
+    "asset": "/images/pets/room/structure/floor-rose.webp",
+    "category": "Estrutura",
+    "slot": "room-floor",
+    "kind": "structure",
+    "position": {
+      "left": 0,
+      "top": 61,
+      "width": 100
+    },
+    "layer": "rear",
+    "stack": 0
+  },
+  {
+    "id": "floor-whitewash",
+    "name": "Piso madeira clara",
+    "price": 1200,
+    "asset": "/images/pets/room/structure/floor-whitewash.webp",
+    "category": "Estrutura",
+    "slot": "room-floor",
+    "kind": "structure",
+    "position": {
+      "left": 0,
+      "top": 61,
+      "width": 100
+    },
+    "layer": "rear",
+    "stack": 0
+  },
+  {
+    "id": "floor-honey",
+    "name": "Piso madeira mel",
+    "price": 1400,
+    "asset": "/images/pets/room/structure/floor-honey.webp",
+    "category": "Estrutura",
+    "slot": "room-floor",
+    "kind": "structure",
+    "position": {
+      "left": 0,
+      "top": 61,
+      "width": 100
+    },
+    "layer": "rear",
+    "stack": 0
+  },
+  {
+    "id": "wall-floral",
+    "name": "Parede floral rosa",
+    "price": 1200,
+    "asset": "/images/pets/room/structure/wall-floral.webp",
+    "category": "Estrutura",
+    "slot": "room-wall",
+    "kind": "structure",
+    "position": {
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "layer": "wall",
+    "stack": 0
+  },
+  {
+    "id": "wall-striped-hearts",
+    "name": "Parede listrada com corações",
+    "price": 1400,
+    "asset": "/images/pets/room/structure/wall-striped-hearts.webp",
+    "category": "Estrutura",
+    "slot": "room-wall",
+    "kind": "structure",
+    "position": {
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "layer": "wall",
+    "stack": 0
+  },
+  {
+    "id": "wall-mauve-paws",
+    "name": "Parede mauve com patinhas",
+    "price": 1700,
+    "asset": "/images/pets/room/structure/wall-mauve-paws.webp",
+    "category": "Estrutura",
+    "slot": "room-wall",
+    "kind": "structure",
+    "position": {
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "layer": "wall",
+    "stack": 0
+  },
+  {
+    "id": "baseboard-pink",
+    "name": "Rodapé rosa liso",
+    "price": 500,
+    "asset": "/images/pets/room/structure/baseboard-pink.webp",
+    "category": "Estrutura",
+    "slot": "room-baseboard",
+    "kind": "structure",
+    "position": {
+      "left": 0,
+      "top": 59.9,
+      "width": 100
+    },
+    "layer": "wall",
+    "stack": 1
+  },
+  {
+    "id": "baseboard-rosewood",
+    "name": "Rodapé madeira rosé",
+    "price": 700,
+    "asset": "/images/pets/room/structure/baseboard-rosewood.webp",
+    "category": "Estrutura",
+    "slot": "room-baseboard",
+    "kind": "structure",
+    "position": {
+      "left": 0,
+      "top": 59.9,
+      "width": 100
+    },
+    "layer": "wall",
+    "stack": 1
+  },
+  {
+    "id": "baseboard-hearts",
+    "name": "Rodapé de corações",
+    "price": 900,
+    "asset": "/images/pets/room/structure/baseboard-hearts.webp",
+    "category": "Estrutura",
+    "slot": "room-baseboard",
+    "kind": "structure",
+    "position": {
+      "left": 0,
+      "top": 59.9,
+      "width": 100
+    },
+    "layer": "wall",
+    "stack": 1
+  }
+]

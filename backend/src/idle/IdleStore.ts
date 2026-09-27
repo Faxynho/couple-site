@@ -37,7 +37,7 @@ import {
   ObjectiveMetric,
   ObjectivePeriodState,
 } from "./types";
-import { PET_DECORATION_IDS, PET_DECORATION_PRICES, PetDecorationId } from "../pets/petEconomy";
+import { LEGACY_PET_DECORATION_IDS, PET_DECORATION_IDS, PET_DECORATION_PRICES, PetDecorationId, isPetDecorationId } from "../pets/petEconomy";
 
 const DEFAULT_DATA_FILE = path.join(__dirname, "..", "..", "data", "idle-game.json");
 const DEFAULT_DEV_DATA_FILE = path.join(__dirname, "..", "..", "data", "idle-game-dev.json");
@@ -382,9 +382,9 @@ export class IdleStore {
         // Before the shop existed every current decoration was already available/equipped.
         // Granting them during the one-time real migration preserves both rooms exactly.
         purchasedPetDecorations: schemaVersion < 4 && this.environment === "real"
-          ? [...PET_DECORATION_IDS]
+          ? [...LEGACY_PET_DECORATION_IDS]
           : Array.isArray(parsed.purchasedPetDecorations)
-            ? parsed.purchasedPetDecorations.filter((id): id is PetDecorationId => id in PET_DECORATION_PRICES)
+            ? parsed.purchasedPetDecorations.filter((id): id is PetDecorationId => isPetDecorationId(id))
             : [],
         updatedAt: Number.isFinite(parsed.updatedAt) ? Number(parsed.updatedAt) : now,
       };
@@ -969,6 +969,7 @@ export class IdleStore {
   }
 
   purchasePetDecoration(id: PetDecorationId) {
+    if (!isPetDecorationId(id)) return { ok: false as const, error: "Decoração inválida.", snapshot: this.getSnapshot() };
     if (this.data.purchasedPetDecorations.includes(id)) return { ok: true as const, alreadyOwned: true, snapshot: this.getSnapshot() };
     const price = PET_DECORATION_PRICES[id];
     if (this.data.globalCoins < price) return { ok: false as const, error: "Moedas globais insuficientes.", snapshot: this.getSnapshot() };
@@ -983,6 +984,7 @@ export class IdleStore {
   }
 
   setPetDecorationOwned(id: PetDecorationId, owned: boolean): IdleSnapshot {
+    if (!isPetDecorationId(id)) return this.getSnapshot();
     const set = new Set(this.data.purchasedPetDecorations);
     if (owned) set.add(id); else set.delete(id);
     this.data.purchasedPetDecorations = [...set];

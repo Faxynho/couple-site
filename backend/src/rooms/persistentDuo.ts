@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { PET_DECORATION_CATALOG } from "../pets/petEconomy";
 import { ACCOUNT_IDS, AccountId, isAccountId } from "../accounts/types";
 import { PersistentDuoPresence } from "../types";
 
@@ -69,15 +70,13 @@ export interface PetRoomSnapshot extends PetRoomState {
   environment: "real" | "dev";
 }
 
-// These IDs mirror the visual catalog. Reject unknown IDs and never trust a client slot.
-const PET_DECORATION_SLOTS: Record<string, string> = {
-  "heart-frame": "wall-heart", "paw-poster": "wall-paw", shelf: "wall-shelf",
-  plant: "floor-plant", rug: "floor-rug", bed: "floor-bed",
-  dresser: "floor-dresser", lamp: "floor-lamp", bowls: "floor-bowls", bone: "floor-bone",
+// The server validates ID, slot and conflicts from the same catalog as its shop.
+const PET_DECORATIONS = new Map(PET_DECORATION_CATALOG.map((item) => [item.id, item]));
+const DEFAULT_PET_ROOM_SLOTS: Record<string, string> = {
+  "wall-heart": "heart-frame", "wall-paw": "paw-poster", "wall-shelf": "shelf",
+  "floor-plant": "plant", "floor-rug": "rug", "floor-bed": "bed",
+  "floor-dresser": "dresser", "floor-lamp": "lamp", "floor-bowls": "bowls", "floor-bone": "bone",
 };
-const DEFAULT_PET_ROOM_SLOTS = Object.fromEntries(
-  Object.entries(PET_DECORATION_SLOTS).map(([id, slot]) => [slot, id]),
-);
 const newPetRoomState = (equipped = false): PetRoomState => ({ revision: 0, slots: equipped ? { ...DEFAULT_PET_ROOM_SLOTS } : {} });
 
 export function isPetRoomId(value: unknown): value is PetRoomId {
@@ -94,12 +93,16 @@ function sanitizePetRoomState(value: unknown, seedLegacyComposition: boolean): P
   if (input.slots && typeof input.slots === "object" && !Array.isArray(input.slots)) {
     for (const [slot, id] of Object.entries(input.slots)) {
       if (typeof id !== "string") continue;
-      if (PET_DECORATION_SLOTS[id] === slot) slots[slot] = id;
+      if (PET_DECORATIONS.get(id)?.slot === slot) slots[slot] = id;
       // Both framed pictures used to share a slot in the previous catalog.
       else if (slot === "wall-left" && (id === "heart-frame" || id === "paw-poster")) {
-        slots[PET_DECORATION_SLOTS[id]] = id;
+        slots[PET_DECORATIONS.get(id)!.slot] = id;
       }
     }
+  }
+  if (slots["wall-left-feature"]) {
+    delete slots["wall-heart"];
+    delete slots["wall-paw"];
   }
   return { revision, slots };
 }
@@ -268,11 +271,15 @@ export class PersistentDuoStore {
 
   togglePetDecoration(petId: PetRoomId, decorationId: unknown, environment: "real" | "dev" = "real"): PetRoomSnapshot | null {
     if (typeof decorationId !== "string") return null;
-    const slot = PET_DECORATION_SLOTS[decorationId];
-    if (!slot) return null;
+    const decoration = PET_DECORATIONS.get(decorationId);
+    if (!decoration) return null;
+    const slot = decoration.slot;
     const state = environment === "dev" ? this.data.petRoomsDev[petId] : this.data.petRooms[petId];
     if (state.slots[slot] === decorationId) delete state.slots[slot];
-    else state.slots[slot] = decorationId;
+    else {
+      for (const conflict of decoration.conflictsWithSlots || []) delete state.slots[conflict];
+      state.slots[slot] = decorationId;
+    }
     state.revision++;
     this.scheduleSave();
     return this.getPetRoom(petId, environment);

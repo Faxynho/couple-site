@@ -5,7 +5,7 @@ const { tmpdir } = require("node:os");
 const { join } = require("node:path");
 
 const { IdleStore } = require("../dist/idle/IdleStore.js");
-const { PET_DECORATION_IDS, PET_DECORATION_PRICES, PET_DECORATION_TOTAL_PRICE } = require("../dist/pets/petEconomy.js");
+const { PET_DECORATION_IDS, PET_DECORATION_PRICES, PET_DECORATION_TOTAL_PRICE, LEGACY_PET_DECORATION_IDS } = require("../dist/pets/petEconomy.js");
 const { PersistentDuoStore } = require("../dist/rooms/persistentDuo.js");
 
 test("estado inicial começa vazio e permite comprar o primeiro item nos dois modos", () => {
@@ -467,7 +467,7 @@ test("estatísticas novas separam clique, passivo, offline, hoje e dados por ite
 test("loja de pets cobra a tabela central uma vez, nunca negativa e compartilha unlock", () => {
   const now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
-  assert.equal(PET_DECORATION_TOTAL_PRICE, 2_320);
+  assert.equal(PET_DECORATION_TOTAL_PRICE, PET_DECORATION_IDS.reduce((sum, id) => sum + PET_DECORATION_PRICES[id], 0));
   assert.equal(store.purchasePetDecoration("bed").ok, false);
   store.changeBalance("global", "set", PET_DECORATION_TOTAL_PRICE);
   for (const id of PET_DECORATION_IDS) {
@@ -482,6 +482,35 @@ test("loja de pets cobra a tabela central uma vez, nunca negativa e compartilha 
   const repeat = store.purchasePetDecoration("bed");
   assert.equal(repeat.alreadyOwned, true);
   assert.equal(repeat.snapshot.globalCoins, 0);
+  assert.equal(store.purchasePetDecoration("toString").ok, false);
+  assert.equal(store.getSnapshot().globalCoins, 0);
+});
+
+test("PET DEV reconhece o catálogo completo e bloqueio de uma peça não afeta compras reais", () => {
+  const real = new IdleStore(false);
+  const dev = new IdleStore(false, () => Date.now(), undefined, "dev");
+  dev.setAllPetDecorationsOwned(true);
+  assert.deepEqual(new Set(dev.getSnapshot().purchasedPetDecorations), new Set(PET_DECORATION_IDS));
+  dev.setPetDecorationOwned("curtain-floral", false);
+  assert.equal(dev.ownsPetDecoration("curtain-floral"), false);
+  assert.equal(real.getSnapshot().purchasedPetDecorations.length, 0);
+  dev.setAllPetDecorationsOwned(false);
+  assert.equal(dev.getSnapshot().purchasedPetDecorations.length, 0);
+});
+
+test("save com compras anteriores preserva as dez peças antigas e descarta IDs inválidos", async () => {
+  const { writeFile } = require("node:fs/promises");
+  const folder = await mkdtemp(join(tmpdir(), "pet-owned-migration-"));
+  const file = join(folder, "idle-game.json");
+  try {
+    await writeFile(file, JSON.stringify({ schemaVersion: 4, globalCoins: 550,
+      purchasedPetDecorations: [...LEGACY_PET_DECORATION_IDS, "unknown", "toString"] }));
+    const store = new IdleStore(true, () => Date.now(), file, "real");
+    await store.ready();
+    assert.deepEqual(new Set(store.getSnapshot().purchasedPetDecorations), new Set(LEGACY_PET_DECORATION_IDS));
+    assert.equal(store.getSnapshot().globalCoins, 550);
+    assert.equal(store.getSnapshot().purchasedPetDecorations.includes("lamp-moon"), false);
+  } finally { await rm(folder, { recursive: true, force: true }); }
 });
 
 test("quartos real e DEV, Nix e Max, permanecem isolados nos resets", () => {
@@ -514,7 +543,8 @@ test("migration v3 preserva progresso e libera decorações existentes sem inven
     assert.equal(snapshot.modes.farm.balance, 777);
     assert.equal(snapshot.modes.farm.items[0].level, 4);
     assert.equal(snapshot.modes.farm.statistics.passiveEarned, 0);
-    assert.deepEqual(new Set(snapshot.purchasedPetDecorations), new Set(PET_DECORATION_IDS));
+    assert.deepEqual(new Set(snapshot.purchasedPetDecorations), new Set(LEGACY_PET_DECORATION_IDS));
+    assert.equal(snapshot.purchasedPetDecorations.includes("bed-princess"), false);
   } finally {
     await rm(folder, { recursive: true, force: true });
   }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   Armchair, BedDouble, Bone, ChevronDown, CircleDot, Crown, Grid3X3, HandHeart,
-  Heart, Paintbrush, PawPrint, Shirt, Square, ToyBrick, Coins,
+  Heart, Paintbrush, PawPrint, Shirt, Square, ToyBrick, Coins, Layers3,
   Utensils, Cookie, FlaskConical, LockKeyhole, RotateCcw, type LucideIcon,
 } from "lucide-react";
 import type { PetDefinition } from "../config";
@@ -30,6 +30,8 @@ const ROOM_FILTERS: readonly { label: string; icon: LucideIcon }[] = [
   { label: "Parede", icon: Paintbrush },
   { label: "Chão", icon: Square },
   { label: "Móveis", icon: Armchair },
+  { label: "Brinquedos", icon: ToyBrick },
+  { label: "Estrutura", icon: Layers3 },
 ];
 
 const FOOD: readonly PetItemPreview[] = [
@@ -179,7 +181,9 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
             >
               {activeTab === "room" ? (
                 <div className={styles.decorGrid}>
-                  {PET_ROOM_DECORATIONS.filter((item) => roomFilter === "Todos" || item.category === roomFilter).map((item) => {
+                  {PET_ROOM_DECORATIONS.filter((item) => roomFilter === "Todos" || item.category === roomFilter)
+                    .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name, "pt-BR"))
+                    .map((item) => {
                     const selected = slots[item.slot] === item.id;
                     const owned = purchased.includes(item.id);
                     return (
@@ -191,7 +195,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
                           else onBuy(item);
                         }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.asset} alt="" loading="lazy" className={styles.decorPreview} />
+                        <img src={item.asset} alt="" loading="lazy" decoding="async" className={styles.decorPreview} />
                         {!owned && <span className={styles.decorLock}><LockKeyhole size={15} /></span>}
                         <span className={styles.decorLabel}>{item.name}</span>
                         <span className={styles.decorIndicator}>{owned ? selected ? "Colocado" : "Colocar" : <><img src="/idle/icons/global-coin.webp" alt="" /> {item.price}</>}</span>
