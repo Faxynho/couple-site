@@ -237,15 +237,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
         const localIndex = item.definition.unlockOrder - (scene === 0 ? 0 : scene === 1 ? 4 : 8);
         const position = mode === "farm" ? FARM_POSITIONS[scene][localIndex] : KITTY_CHARACTER_PLACEMENTS[item.definition.id];
         if (!position) return null;
-        const prestige = item.definition.unlockOrder;
-        const tier = mode === "kitty" ? rarityTier(prestige) : 1;
-        const particleCount = mode === "kitty"
-          ? tier === 1
-            ? Math.max(0, prestige - 1)
-            : Math.min(18, 2 + tier * 2 + Math.floor((prestige % 4) / 2))
-          : 0;
-        return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : `${styles.character} ${styles.characterRare}`} data-tier={mode === "kitty" ? tier : undefined} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}>
-          {particleCount > 0 && <span className={styles.homeCharacterParticles} aria-hidden="true">{PARTICLES.slice(0, particleCount).map(([x, y, size, delay, duration], particle) => <i key={particle} style={{ "--x": `${x}%`, "--y": `${y}%`, "--size": `${Math.max(3, size - 2)}px`, "--delay": `${delay}s`, "--duration": `${duration}s` } as CSSProperties} />)}</span>}
+        return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : styles.character} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}>
           <Image src={item.definition.asset} alt={item.definition.name} fill sizes="42vw" />
         </button>;
       })}
