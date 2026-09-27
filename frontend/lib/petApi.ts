@@ -58,7 +58,7 @@ export async function purchasePetDecoration(accountId: AccountId, decorationId: 
 }
 
 export async function petDevAction(payload: Record<string, unknown>) {
-  return parse<{ ok: true; snapshot?: IdleSnapshot; room?: PetRoomSnapshot }>(await fetch(`${API_BASE}/api/pets/dev/action`, {
+  return parse<{ ok: true; snapshot?: IdleSnapshot; room?: PetRoomSnapshot; care?: PetCareSnapshot }>(await fetch(`${API_BASE}/api/pets/dev/action`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...payload, by: "andre" }),
   }));

@@ -93,6 +93,22 @@ petRouter.post("/dev/action", (req, res) => {
     res.json({ ok: true, snapshot });
     return;
   }
+  if (action === "care" && isPetRoomId(body.petId)) {
+    const affection = body.affection === undefined ? undefined : Number(body.affection);
+    const satiety = body.satiety === undefined ? undefined : Number(body.satiety);
+    if (affection === undefined && satiety === undefined) {
+      res.status(400).json({ error: "Informe carinho ou saciedade para o PET DEV." });
+      return;
+    }
+    if ((affection !== undefined && (!Number.isFinite(affection) || affection < 0 || affection > 100))
+      || (satiety !== undefined && (!Number.isFinite(satiety) || satiety < 0 || satiety > 100))) {
+      res.status(400).json({ error: "Status PET DEV deve ficar entre 0 e 100." });
+      return;
+    }
+    const care = persistentDuoStore.setPetCare(body.petId, "dev", { affection, satiety });
+    res.json({ ok: true, care });
+    return;
+  }
   if (action === "decoration" && isPetDecorationId(body.decorationId)) {
     if (!body.owned) persistentDuoStore.removePetDecoration(body.decorationId, "dev");
     const snapshot = idleDevStore.setPetDecorationOwned(body.decorationId, Boolean(body.owned));

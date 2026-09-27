@@ -65,6 +65,17 @@ test("soltar comida fora cancela; somente soltar no pet solicita alimentação",
   expect(onFeed).toHaveBeenCalledTimes(5);
 });
 
+test.each(PETS)("$name permite forçar carinho e saciedade somente no PET DEV", (pet) => {
+  const onDevAction = vi.fn();
+  const { container } = render(<PetRoomDrawer pet={pet} slots={{}} ready error="" onToggle={vi.fn()} onBuy={vi.fn()} coins={8}
+    purchased={[]} environment="dev" onDevAction={onDevAction} care={{ petId: pet.id, environment: "dev", affection: 50, satiety: 75, lastUpdatedAt: Date.now(), revision: 1, mood: "neutral" }} />);
+  expect(container.textContent).toContain("Forçar estado DEV");
+  fireEvent.click(container.querySelector('button[aria-label="Carinho Baixo, 25%"]')!);
+  expect(onDevAction).toHaveBeenCalledWith({ action: "care", petId: pet.id, affection: 25 });
+  fireEvent.click(container.querySelector('button[aria-label="Saciedade Cheio, 100%"]')!);
+  expect(onDevAction).toHaveBeenCalledWith({ action: "care", petId: pet.id, satiety: 100 });
+});
+
 test.each(PETS)("$name abre Carinho primeiro, mostra seu humor e deixa Comida em segundo", (pet) => {
   const { container } = render(<PetRoomDrawer pet={pet} slots={{}} ready error="" onToggle={vi.fn()} onBuy={vi.fn()} coins={8}
     purchased={[]} environment="real" onDevAction={vi.fn()} care={{ petId: pet.id, environment: "real", affection: 42, satiety: 75, lastUpdatedAt: Date.now(), revision: 1, mood: "neutral" }} />);

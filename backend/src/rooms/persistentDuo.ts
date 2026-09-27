@@ -331,6 +331,20 @@ export class PersistentDuoStore {
     return this.updatePetCare(petId, environment, 0, amount);
   }
 
+  setPetCare(petId: PetRoomId, environment: "real" | "dev", values: { affection?: number; satiety?: number }): PetCareSnapshot {
+    const state = (environment === "dev" ? this.data.petCareDev! : this.data.petCare!)[petId];
+    const current = projectPetCare(state, petId, environment);
+    const clamp = (value: number) => Math.max(0, Math.min(100, value));
+    state.affection = values.affection === undefined ? current.affection : clamp(values.affection);
+    state.satiety = values.satiety === undefined ? current.satiety : clamp(values.satiety);
+    state.lastUpdatedAt = Date.now();
+    state.revision += 1;
+    this.scheduleSave();
+    const updated = this.getPetCare(petId, environment);
+    this.careListeners.forEach((listener) => listener(updated));
+    return updated;
+  }
+
   private updatePetCare(petId: PetRoomId, environment: "real" | "dev", affectionGain: number, satietyGain: number): PetCareSnapshot {
     const state = (environment === "dev" ? this.data.petCareDev! : this.data.petCare!)[petId];
     const current = projectPetCare(state, petId, environment);

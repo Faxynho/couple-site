@@ -37,6 +37,21 @@ const ROOM_FILTERS: readonly { label: string; icon: LucideIcon }[] = [
   { label: "Estrutura", icon: Layers3 },
 ];
 
+const DEV_AFFECTION_PRESETS = [
+  { value: 0, label: "Zerado" },
+  { value: 25, label: "Baixo" },
+  { value: 50, label: "Médio" },
+  { value: 75, label: "Alto" },
+  { value: 100, label: "Máximo" },
+] as const;
+const DEV_SATIETY_PRESETS = [
+  { value: 0, label: "Faminto" },
+  { value: 25, label: "Muita fome" },
+  { value: 50, label: "Com fome" },
+  { value: 75, label: "Pouca fome" },
+  { value: 100, label: "Cheio" },
+] as const;
+
 const TOYS: readonly PetItemPreview[] = [
   { label: "Bola", icon: CircleDot, tone: "rose" },
   { label: "Brinquedo", icon: ToyBrick, tone: "sage" },
@@ -168,6 +183,37 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
           <div className={styles.carePanel}>
             <div className={styles.careHeading}><span className={styles.careHeadingMark} aria-hidden="true"><PawPrint size={17} /></span><h2>Faça carinho {pet.id === "nix" ? "na" : "no"} {pet.name}</h2><span className={styles.careMood} data-mood={care?.mood}>{care?.mood === "sad" ? "Triste" : care?.mood === "neutral" ? "Sério" : care ? "Feliz" : "—"}</span></div>
             <div className={styles.careMeters}><CareMeter label="Carinho" value={care?.affection} icon={Heart} tone="heart" /><CareMeter label="Saciedade" value={care?.satiety} icon={Utensils} tone="meal" /></div>
+            {environment === "dev" && (
+              <details className={styles.petDevCareTools}>
+                <summary><FlaskConical size={15} /> Forçar estado DEV</summary>
+                <div className={styles.petDevCareGroup}>
+                  <span className={styles.petDevCareLabel}><Heart size={14} /> Carinho</span>
+                  <div className={styles.petDevPresetGrid}>
+                    {DEV_AFFECTION_PRESETS.map((preset) => (
+                      <button type="button" key={preset.value} disabled={!care}
+                        aria-label={`Carinho ${preset.label}, ${preset.value}%`}
+                        aria-pressed={Boolean(care && Math.abs(care.affection - preset.value) < 1)}
+                        onClick={() => onDevAction({ action: "care", petId: pet.id, affection: preset.value })}>
+                        <strong>{preset.label}</strong><small>{preset.value}%</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.petDevCareGroup}>
+                  <span className={styles.petDevCareLabel}><Utensils size={14} /> Saciedade</span>
+                  <div className={styles.petDevPresetGrid}>
+                    {DEV_SATIETY_PRESETS.map((preset) => (
+                      <button type="button" key={preset.value} disabled={!care}
+                        aria-label={`Saciedade ${preset.label}, ${preset.value}%`}
+                        aria-pressed={Boolean(care && Math.abs(care.satiety - preset.value) < 1)}
+                        onClick={() => onDevAction({ action: "care", petId: pet.id, satiety: preset.value })}>
+                        <strong>{preset.label}</strong><small>{preset.value}%</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </details>
+            )}
           </div>
         ) : (
           <>

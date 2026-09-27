@@ -33,6 +33,23 @@ test("Max e Nix têm cuidado independente, inclusive no PET DEV, e o servidor li
   assert.equal(store.getPetCare("nix", "dev").revision, 0);
 });
 
+test("PET DEV pode forçar carinho e saciedade sem alterar o estado real", () => {
+  const store = new PersistentDuoStore(false);
+  const realBefore = store.getPetCare("max", "real");
+  const sad = store.setPetCare("max", "dev", { affection: 25, satiety: 100 });
+  assert.equal(sad.affection, 25);
+  assert.equal(sad.satiety, 100);
+  assert.equal(sad.mood, "sad");
+  const neutral = store.setPetCare("max", "dev", { affection: 50, satiety: 75 });
+  assert.equal(neutral.mood, "neutral");
+  const happy = store.setPetCare("max", "dev", { affection: 100, satiety: 100 });
+  assert.equal(happy.mood, "happy");
+  const realAfter = store.getPetCare("max", "real");
+  assert.equal(realAfter.revision, realBefore.revision);
+  assert.equal(realAfter.affection, realBefore.affection);
+  assert.equal(realAfter.satiety, realBefore.satiety);
+});
+
 test("cuidado sobrevive à gravação e recarga do estado sem tocar nas decorações", async () => {
   const directory = await mkdtemp(join(tmpdir(), "couple-pet-care-"));
   const file = join(directory, "state.json");
