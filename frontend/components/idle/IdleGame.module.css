@@ -570,7 +570,7 @@
 /* Keep the complete rarity artwork inside the upgrades viewport instead of clipping its top edge. */
 .kittyContent .raritySlide,
 .kittyContent .raritySlide[data-tier="6"] {
-  top: .45rem;
+  top: .5rem;
 }
 
 /* Improvements only: stronger rarity feedback from the middle tiers onward. */
