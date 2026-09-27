@@ -82,6 +82,14 @@ const PARTICLES = [
   [63, 62, 13, -1.4, 5, -20], [31, 33, 9, -5.8, 3.7, 15], [46, 68, 12, -2.9, 4.9, -18],
 ] as const;
 
+const UPGRADE_PARTICLES = [
+  ...PARTICLES,
+  [5, 18, 7, -0.7, 3.1, -24], [94, 25, 9, -1.9, 3.5, 25], [8, 87, 8, -2.8, 3.2, -28],
+  [93, 82, 10, -0.3, 3.7, 29], [22, 8, 6, -2.1, 2.9, -20], [75, 8, 8, -1.1, 3.3, 22],
+  [4, 46, 9, -3.2, 3.6, -31], [96, 57, 7, -2.5, 3.0, 32], [42, 5, 10, -0.9, 3.8, -18],
+  [58, 91, 9, -1.7, 3.4, 21],
+] as const;
+
 type ClickBurst = { id: number; left: number; top: number; reward: number; multiplier: number; rushMultiplier: number };
 type PurchaseMode = 1 | 10 | "max";
 type Celebration =
@@ -309,8 +317,11 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const particleCount = selected.purchased
     ? prestige === 0
       ? 0
-      : Math.min(18, tier === 1 ? Math.max(0, prestige - 1) : 3 + tier * 2 + (prestige % 4))
+      : Math.min(28, tier === 1 ? Math.max(0, prestige - 1) : 4 + tier * 3 + (prestige % 4) * 2)
     : 0;
+  const particleSpeed = [1, .92, .82, .72, .62, .54][tier - 1];
+  const particleSpread = [1, 1.08, 1.24, 1.43, 1.68, 1.95][tier - 1];
+  const particleLift = [34, 38, 44, 52, 61, 70][tier - 1];
   const furthestPurchased = data.items.reduce((order, item) => item.purchased ? Math.max(order, item.definition.unlockOrder) : order, -1);
   const move = (direction: -1 | 1) => setIndex((current) => Math.max(0, Math.min(data.items.length - 1, current + direction)));
   const onTouchStart = (event: TouchEvent) => { touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; dragXRef.current = 0; setDragX(0); };
@@ -337,7 +348,7 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
           } as CSSProperties}
         />;
       })}
-      <div className={styles.prestigeParticles} aria-hidden="true">{PARTICLES.slice(0, particleCount).map(([x, y, size, delay, duration, drift], particle) => <i key={particle} className={styles[["particleStar", "particleHeart", "particleOrb"][particle % 3]]} style={{ "--x": `${x}%`, "--y": `${y}%`, "--size": `${size}px`, "--delay": `${delay}s`, "--duration": `${duration}s`, "--drift": `${drift}px` } as CSSProperties} />)}</div>
+      <div className={styles.prestigeParticles} aria-hidden="true">{UPGRADE_PARTICLES.slice(0, particleCount).map(([x, y, size, delay, duration, drift], particle) => <i key={particle} className={styles[["particleStar", "particleHeart", "particleOrb"][particle % 3]]} style={{ "--x": `${x}%`, "--y": `${y}%`, "--size": `${Math.round(size * (1 + Math.max(0, tier - 2) * .055))}px`, "--delay": `${delay}s`, "--duration": `${Math.max(1.65, duration * particleSpeed).toFixed(2)}s`, "--drift": `${Math.round(drift * particleSpread)}px`, "--lift-mid": `${-Math.round(particleLift * .55)}px`, "--lift": `${-particleLift}px` } as CSSProperties} />)}</div>
       {data.items.map((item, itemIndex) => {
         const offset = itemIndex - index;
         const visible = Math.abs(offset) <= 1;
