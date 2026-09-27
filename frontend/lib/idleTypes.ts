@@ -14,6 +14,16 @@ export interface IdleItemSnapshot {
   upgradeQuotes: { one: IdleUpgradeQuote; ten: IdleUpgradeQuote; max: IdleUpgradeQuote | null };
   statistics: IdleItemStatistics;
 }
+export interface KittyRelicDefinition {
+  id: string; name: string; asset: string; kind: "scene" | "click" | "global";
+  scene?: number; unlockOrder: number; baseCost: number; maxLevel: number; description: string;
+}
+export interface KittyRelicSnapshot {
+  definition: KittyRelicDefinition; level: number; multiplier: number; nextCost: number | null; unlocked: boolean;
+}
+export interface KittyClickActivity {
+  streak: number; comboClicks: number; lastClickAt: number; bestStreak: number; milestoneCount: number;
+}
 export interface IdleAchievementSnapshot {
   id: string; mode: IdleModeId; title: string; description: string; iconItemId?: string; reward: number;
   completedAt: number | null; progress: number; target: number;
@@ -32,6 +42,7 @@ export interface IdleModeSnapshot {
   id: IdleModeId; balance: number; totalEarned: number; totalProduction: number; effectiveProduction: number;
   clickMultiplier: number; totalUpgrades: number; visits: number; totalClicks: number; lastSettledAt: number;
   items: IdleItemSnapshot[]; achievements: IdleAchievementSnapshot[];
+  relics?: KittyRelicSnapshot[]; clickActivity?: Record<string, KittyClickActivity>;
   scenes: Array<{ id: number; name: string; unlocked: boolean }>;
   statistics: IdleModeStatistics; activeEvent: IdleActiveEvent | null;
   productionBoost: IdleBoostState | null; clickBoost: IdleClickBoostState | null;

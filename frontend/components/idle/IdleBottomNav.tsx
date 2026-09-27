@@ -1,9 +1,9 @@
 "use client";
 
-import { BarChart3, FlaskConical, Home, Sprout, Trophy } from "lucide-react";
+import { BarChart3, FlaskConical, Home, Sparkles, Sprout, Trophy } from "lucide-react";
 import styles from "./IdleGame.module.css";
 
-export type IdleTab = "home" | "upgrades" | "achievements" | "statistics" | "dev";
+export type IdleTab = "home" | "upgrades" | "relics" | "achievements" | "statistics" | "dev";
 
 const TABS: Array<{ id: IdleTab; label: string; icon: typeof Home }> = [
   { id: "home", label: "Inicial", icon: Home },
@@ -12,8 +12,9 @@ const TABS: Array<{ id: IdleTab; label: string; icon: typeof Home }> = [
   { id: "statistics", label: "Estatísticas", icon: BarChart3 },
 ];
 
-export default function IdleBottomNav({ active, onChange, dev = false }: { active: IdleTab; onChange: (tab: IdleTab) => void; dev?: boolean }) {
-  const tabs = dev ? [...TABS, { id: "dev" as const, label: "DEV", icon: FlaskConical }] : TABS;
+export default function IdleBottomNav({ active, onChange, dev = false, kitty = false }: { active: IdleTab; onChange: (tab: IdleTab) => void; dev?: boolean; kitty?: boolean }) {
+  const modeTabs = kitty ? [TABS[0], TABS[1], { id: "relics" as const, label: "Relíquias", icon: Sparkles }, ...TABS.slice(2)] : TABS;
+  const tabs = dev ? [...modeTabs, { id: "dev" as const, label: "DEV", icon: FlaskConical }] : modeTabs;
   return (
     <nav className={styles.bottomNav} aria-label="Navegação do jogo idle">
       {tabs.map((tab) => {

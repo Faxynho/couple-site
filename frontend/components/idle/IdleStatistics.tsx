@@ -23,7 +23,8 @@ export default function IdleStatistics({ data }: { data: IdleModeSnapshot }) {
   const leader = incomeSorted[0];
   const mostClicked = clickSorted[0];
   const s = data.statistics;
-  const currentClick = Math.max(0, ...owned.map((item) => Math.max(1, Math.floor(item.production * .22)) * data.clickMultiplier));
+  const clickRelic = data.relics?.find((relic) => relic.definition.kind === "click")?.multiplier ?? 1;
+  const currentClick = Math.max(0, ...owned.map((item) => Math.max(1, Math.floor(item.production * (data.id === "kitty" ? .55 : .22))) * data.clickMultiplier * clickRelic));
   const cards = [
     { label: "Produzido hoje", value: formatIdleNumber(s.earnedToday), icon: Sparkles },
     { label: "Renda passiva", value: formatIdleNumber(s.passiveEarned), icon: Clock3 },
@@ -41,6 +42,11 @@ export default function IdleStatistics({ data }: { data: IdleModeSnapshot }) {
     { label: "Produção offline", value: formatIdleNumber(s.offlineEarned), icon: Clock3 },
     { label: "Tempo ativo", value: duration(s.activeTimeMs), icon: Clock3 },
     { label: "Maior produção", value: `${formatIdleNumber(s.highestProduction)}/s`, icon: TrendingUp },
+    ...(data.id === "kitty" ? [
+      { label: "Relíquias despertas", value: `${data.relics?.filter((relic) => relic.level > 0).length ?? 0}/9`, icon: Sparkles },
+      { label: "Maior sequência", value: formatIdleNumber(Math.max(0, ...Object.values(data.clickActivity ?? {}).map((entry) => entry.bestStreak))), icon: MousePointerClick },
+      { label: "Marcos alcançados", value: formatIdleNumber(Object.values(data.clickActivity ?? {}).reduce((sum, entry) => sum + entry.milestoneCount, 0)), icon: Trophy },
+    ] : []),
   ];
 
   return (

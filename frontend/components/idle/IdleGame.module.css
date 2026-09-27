@@ -688,3 +688,46 @@
   transform: translateZ(0);
 }
 
+
+/* Tesouros da Hello Kitty: camadas estáticas, sem filtros animados grandes. */
+.bottomNav:has(.navButton:nth-child(6)) { grid-template-columns: repeat(6,minmax(0,1fr)); }
+.bottomNav:has(.navButton:nth-child(6)) .navButton { font-size: .48rem; }
+.relicPage { background: linear-gradient(165deg,rgba(255,242,250,.97),rgba(255,236,233,.96) 45%,rgba(250,232,249,.98)); }
+.relicHero { display: grid; grid-template-columns: 2.8rem minmax(0,1fr) auto; align-items: center; gap: .65rem; width: min(100%,42rem); margin: .65rem auto 1rem; padding: .8rem; border: 1px solid rgba(255,255,255,.95); border-radius: 1.55rem; background: linear-gradient(125deg,#ffdeee,#ffeac9 75%,#fff5df); box-shadow: 0 9px 25px rgba(145,75,110,.16),inset 0 1px #fff; }
+.relicHeroMark { display: grid; width: 2.65rem; height: 2.65rem; place-items: center; border-radius: .9rem; color: #b15289; background: rgba(255,255,255,.75); }
+.relicHero small { color: #a34b79; font-size: .57rem; font-weight: 950; letter-spacing: .11em; }
+.relicHero h2 { color: #743253; font-family: var(--font-display),sans-serif; font-size: 1.05rem; font-weight: 950; line-height: 1.13; }
+.relicHero p { margin-top: .17rem; color: #936478; font-size: .62rem; font-weight: 700; line-height: 1.35; }
+.relicHero b { align-self: start; padding: .28rem .4rem; border-radius: 999px; color: #9a537b; background: #fffaf6; font-size: .63rem; }
+.relicGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .65rem; width: min(100%,42rem); margin: 0 auto; }
+.relicCard { position: relative; min-width: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.96); border-radius: 1.5rem; background: linear-gradient(165deg,#fffaf9,#ffedf5); box-shadow: 0 8px 22px rgba(127,61,94,.13),inset 0 1px #fff; }
+.relicCardGlobal { background: linear-gradient(160deg,#fff9df,#ffe8f3 70%,#f2e8ff); }
+.relicArt { position: relative; height: clamp(8rem,37vw,11rem); isolation: isolate; }
+.relicArtHalo { position: absolute; z-index: -1; inset: 19% 15%; border-radius: 50%; background: radial-gradient(circle,#fff9d7,#f9d0e8 54%,transparent 72%); }
+.relicArt img { object-fit: contain; padding: .22rem; filter: drop-shadow(0 7px 9px rgba(133,67,101,.16)); }
+.relicCardLocked .relicArt img { filter: brightness(.055) saturate(.15); opacity: 1; }
+.relicCardLocked .relicArtHalo { background: radial-gradient(circle,#b9a6b5,transparent 72%); }
+.relicLock { position: absolute; top: 50%; left: 50%; display: grid; width: 2.9rem; height: 2.9rem; place-items: center; transform: translate(-50%,-50%); border: 2px solid #fff; border-radius: 50%; color: #fff; background: #795b81; box-shadow: 0 5px 16px rgba(49,25,54,.35); }
+.relicBody { padding: .05rem .7rem .8rem; }
+.relicKind { display: inline-block; padding: .22rem .45rem; border-radius: 999px; color: #a34e79; background: #ffe1ed; font-size: .54rem; font-weight: 950; letter-spacing: .07em; }
+.relicBody h3 { margin-top: .4rem; color: #6a3552; font-family: var(--font-display),sans-serif; font-size: .95rem; font-weight: 950; line-height: 1.13; }
+.relicBody p { min-height: 2.55rem; margin-top: .3rem; color: #886e79; font-size: .63rem; font-weight: 700; line-height: 1.35; }
+.relicLevels { display: flex; gap: .26rem; margin: .45rem 0; }
+.relicLevels span { flex: 1; height: .36rem; border-radius: 999px; background: #eadce4; }
+.relicLevels .relicLevelFilled { background: linear-gradient(90deg,#ee83aa,#f9c787); box-shadow: 0 1px 3px rgba(189,91,132,.3); }
+.relicEffect { display: flex; align-items: baseline; gap: .27rem; min-height: 2rem; padding: .33rem .45rem; border-radius: .75rem; background: rgba(255,255,255,.72); }
+.relicEffect span,.relicEffect small { color: #987783; font-size: .55rem; font-weight: 800; }
+.relicEffect strong { margin-left: auto; color: #c35785; font-family: var(--font-display),sans-serif; font-size: 1.1rem; }
+.relicBuy { display: flex; width: 100%; min-height: 2.75rem; align-items: center; justify-content: center; gap: .25rem; margin-top: .5rem; border-radius: .9rem; color: #fff; background: linear-gradient(145deg,#f782ad,#d55f96); box-shadow: 0 3px 0 #b8487c; font-size: .7rem; font-weight: 950; touch-action: manipulation; }
+.relicBuy:disabled { color: #876d82; background: #eadde7; box-shadow: none; }
+.relicBuy:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #b8487c; }
+.activityPanel { position: absolute; z-index: 34; top: calc(env(safe-area-inset-top) + 8.85rem); left: 50%; display: flex; width: min(91vw,22rem); flex-wrap: wrap; justify-content: space-between; gap: .2rem; padding: .35rem .75rem .3rem; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.85); border-radius: 1rem; color: #853c6c; background: rgba(255,247,251,.91); box-shadow: 0 5px 17px rgba(78,34,49,.14); font-size: .68rem; font-weight: 850; pointer-events: none; }
+.activityPanel span { display: inline-flex; align-items: center; gap: .2rem; }
+.activityPanel strong { color: #c74880; font-size: .82rem; }
+.activityMeter { width: 100%; height: .24rem; border-radius: 99px; background: #efdae6; }
+.activityMeter i { display: block; height: 100%; border-radius: inherit; background: #ed74a8; transition: width .45s linear; }
+.milestonePopup { position: absolute; z-index: 55; top: 33%; left: 50%; display: flex; flex-direction: column; align-items: center; min-width: 12rem; padding: .85rem 1.25rem; transform: translateX(-50%); border: 2px solid #fff; border-radius: 1.5rem; color: #9d3972; background: linear-gradient(135deg,#fff8e3,#ffe0f2); box-shadow: 0 14px 28px rgba(75,30,63,.27); font-family: var(--font-display),sans-serif; font-size: 1.15rem; font-weight: 950; pointer-events: none; animation: milestoneArrival 2.2s ease-out both; }
+.milestonePopup strong { font-size: .91rem; }
+@keyframes milestoneArrival { 0% { opacity: 0; transform: translate(-50%,18px) scale(.85); } 14%,76% { opacity: 1; transform: translate(-50%,0) scale(1); } 100% { opacity: 0; transform: translate(-50%,-16px) scale(1); } }
+@media (max-height: 760px) { .activityPanel { top: calc(env(safe-area-inset-top) + 8.05rem); } }
+@media (prefers-reduced-motion: reduce) { .milestonePopup { animation: none; } }

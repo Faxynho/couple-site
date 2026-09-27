@@ -68,6 +68,8 @@ export interface IdleModeState {
   totalClicks: number;
   lastSettledAt: number;
   items: Record<string, IdleOwnedItem>;
+  relicLevels?: Record<string, number>;
+  clickActivity?: Record<string, KittyClickActivity>;
   unlockedAchievements: Record<string, number>;
   statistics: IdleModeStatistics;
   activeEvent: IdleActiveEvent | null;
@@ -75,6 +77,22 @@ export interface IdleModeState {
   clickBoost: IdleClickBoostState | null;
   eventActivityMs: number;
   nextEventAtActivityMs: number;
+}
+
+export interface KittyClickActivity {
+  streak: number;
+  comboClicks: number;
+  lastClickAt: number;
+  bestStreak: number;
+  milestoneCount: number;
+}
+
+export interface KittyRelicSnapshot {
+  definition: import("./idleConfig").KittyRelicDefinition;
+  level: number;
+  multiplier: number;
+  nextCost: number | null;
+  unlocked: boolean;
 }
 
 export type ObjectiveMetric =
@@ -130,6 +148,8 @@ export interface IdleModeSnapshot {
   totalClicks: number;
   lastSettledAt: number;
   items: IdleItemSnapshot[];
+  relics?: KittyRelicSnapshot[];
+  clickActivity?: Record<string, KittyClickActivity>;
   achievements: Array<AchievementDefinition & { completedAt: number | null; progress: number; target: number }>;
   scenes: Array<{ id: number; name: string; unlocked: boolean }>;
   statistics: IdleModeStatistics;

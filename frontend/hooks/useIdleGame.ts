@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getActiveAccount } from "@/lib/accountSession";
-import { enterIdleMode, fetchIdleSnapshot, idleClick, idleItemAction, idleUpgradeBatch, recordIdleActivity } from "@/lib/idleApi";
+import { enterIdleMode, fetchIdleSnapshot, idleClick, idleItemAction, idleRelicUpgrade, idleUpgradeBatch, recordIdleActivity } from "@/lib/idleApi";
 import { GameEnvironment, IdleModeId, IdleSnapshot } from "@/lib/idleTypes";
 import { getSocket } from "@/lib/socket";
 
@@ -10,6 +10,7 @@ export function useIdleGame(mode?: IdleModeId, environment: GameEnvironment = "r
   const [snapshot, setSnapshot] = useState<IdleSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
+  const [milestone, setMilestone] = useState<{ count: number; bonus: number; key: number } | null>(null);
   const [pendingUpgrades, setPendingUpgrades] = useState<Record<string, number>>({});
   const [now, setNow] = useState(() => Date.now());
   const lastClickRef = useRef(0);
@@ -191,6 +192,7 @@ export function useIdleGame(mode?: IdleModeId, environment: GameEnvironment = "r
     try {
       const result = await idleClick(accountId, mode, itemId, environment);
       applySnapshot(result.snapshot);
+      if (result.milestone) setMilestone({ count: result.milestone, bonus: result.bonus, key: Date.now() });
       setNow(Date.now());
       return result.reward;
     } catch (reason) {
@@ -199,6 +201,21 @@ export function useIdleGame(mode?: IdleModeId, environment: GameEnvironment = "r
       return null;
     }
   }, [accountId, applySnapshot, environment, mode]);
+
+  const upgradeRelic = useCallback(async (relicId: string): Promise<boolean> => {
+    if (mode !== "kitty" || !accountId || busyItemId) return false;
+    setBusyItemId(relicId);
+    try {
+      applySnapshot(await idleRelicUpgrade(accountId, relicId, environment));
+      setNow(Date.now());
+      return true;
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Não foi possível melhorar a relíquia.");
+      return false;
+    } finally {
+      setBusyItemId(null);
+    }
+  }, [accountId, applySnapshot, busyItemId, environment, mode]);
 
   const buyUpgrades = useCallback(async (itemId: string, count: 1 | 10 | "max"): Promise<boolean> => {
     if (!mode || !accountId || busyItemId) return false;
@@ -218,5 +235,5 @@ export function useIdleGame(mode?: IdleModeId, environment: GameEnvironment = "r
     }
   }, [accountId, applySnapshot, busyItemId, environment, mode]);
 
-  return { snapshot, error, loading: !snapshot && !error, accountId, displayedBalance, busyItemId, pendingUpgrades, act, buyUpgrades, clickItem, reload: load, applySnapshot };
+  return { snapshot, error, loading: !snapshot && !error, accountId, displayedBalance, busyItemId, pendingUpgrades, act, buyUpgrades, clickItem, milestone, upgradeRelic, reload: load, applySnapshot };
 }

@@ -70,6 +70,16 @@ idleRouter.post("/action", (req, res) => {
   res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
 });
 
+idleRouter.post("/relic/upgrade", (req, res) => {
+  const body = req.body as { by?: unknown; relicId?: unknown; environment?: unknown };
+  if (!requireAccount(body.by, res)) return;
+  const environment = resolveEnvironment(body.environment, body.by, res);
+  if (!environment) return;
+  if (typeof body.relicId !== "string" || body.relicId.length > 80) { res.status(400).json({ error: "Relíquia inválida." }); return; }
+  const result = storeFor(environment).upgradeRelic(body.relicId);
+  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
+});
+
 idleRouter.post("/upgrade-batch", (req, res) => {
   const body = req.body as { by?: unknown; mode?: unknown; itemId?: unknown; count?: unknown; environment?: unknown };
   if (!requireAccount(body.by, res)) return;

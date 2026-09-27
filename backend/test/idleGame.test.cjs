@@ -190,7 +190,7 @@ test("clicker premia item comprado e limita spam por conta", () => {
   assert.equal(store.click("kitty", "hello-kitty", "andre").ok, true);
 });
 
-test("cliques Hello Kitty geram 75% da produção do personagem; fazenda mantém a regra antiga", () => {
+test("cliques Hello Kitty partem de 55% da produção; fazenda mantém a regra antiga", () => {
   let now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
   store.act("kitty", "hello-kitty", "buy");
@@ -199,9 +199,99 @@ test("cliques Hello Kitty geram 75% da produção do personagem; fazenda mantém
   const before = store.getSnapshot().modes.kitty.items[0];
   const click = store.click("kitty", "hello-kitty", "andre");
   assert.equal(click.ok, true);
-  assert.equal(click.reward, Math.max(1, Math.floor(before.production * .75)));
+  assert.equal(click.reward, Math.max(1, Math.floor(before.production * .55)));
   store.act("farm", "garden", "buy");
   assert.equal(store.click("farm", "garden", "andre").reward, 1);
+});
+
+test("nove relíquias usam ordem de cena, aumentam produção e não alteram fazendinha", () => {
+  let now = Date.parse("2026-09-26T12:00:00-03:00");
+  const store = new IdleStore(false, () => now);
+  store.act("kitty", "hello-kitty", "buy");
+  store.act("farm", "garden", "buy");
+  const farmBefore = store.getSnapshot().modes.farm.totalProduction;
+  const relics = store.getSnapshot().modes.kitty.relics;
+  assert.equal(relics.length, 9);
+  assert.equal(relics.filter((relic) => relic.unlocked).length, 1);
+  assert.equal(store.upgradeRelic("kitty-scene-2").ok, false);
+  assert.equal(store.upgradeRelic("kitty-all").ok, false);
+  store.addTestFunds("kitty", 200);
+  assert.equal(store.upgradeRelic("kitty-scene-1").ok, true);
+  const snapshot = store.getSnapshot();
+  assert.equal(snapshot.modes.kitty.relics[0].level, 1);
+  assert.equal(snapshot.modes.kitty.relics[0].multiplier, 2);
+  assert.equal(snapshot.modes.kitty.totalProduction, 4);
+  assert.equal(snapshot.modes.farm.totalProduction, farmBefore);
+  assert.equal(store.upgradeRelic("kitty-scene-1").ok, false, "o próximo nível precisa de saldo");
+  now += 60 * 60 * 1000;
+  const settled = store.enterMode("kitty");
+  assert.equal(settled.offlineReward.amount, 4 * 3600);
+  assert.equal(store.enterMode("kitty").offlineReward, null);
+});
+
+test("relíquia global soma com a de cena; relíquia de clique, combo e evento se combinam", () => {
+  let now = Date.parse("2026-09-26T12:00:00-03:00");
+  const store = new IdleStore(false, () => now);
+  store.addTestFunds("kitty", 1e12);
+  for (const item of store.getSnapshot().modes.kitty.items.slice(0, 9)) assert.equal(store.act("kitty", item.definition.id, "buy").ok, true);
+  const base = store.getSnapshot().modes.kitty.totalProduction;
+  assert.equal(store.upgradeRelic("kitty-all").ok, true);
+  assert.equal(store.getSnapshot().modes.kitty.totalProduction, base * 2);
+  assert.equal(store.upgradeRelic("kitty-scene-1").ok, true);
+  assert.equal(store.upgradeRelic("kitty-click").ok, true);
+  const first = store.click("kitty", "hello-kitty", "andre");
+  now += 250;
+  const second = store.click("kitty", "hello-kitty", "andre");
+  assert.ok(second.reward > first.reward);
+  const event = store.forceEvent("kitty", "click3").modes.kitty.activeEvent;
+  store.collectEvent("kitty", event.id);
+  now += 250;
+  const rushed = store.click("kitty", "hello-kitty", "andre");
+  assert.ok(rushed.reward >= second.reward * 2.9);
+  assert.equal(rushed.snapshot.modes.kitty.clickActivity.andre.streak, 3);
+  assert.equal(store.getSnapshot().modes.farm.relics, undefined);
+});
+
+test("marcos de 50 em 50 dão bônus uma vez; cinco segundos reiniciam só a sequência da conta", () => {
+  let now = Date.parse("2026-09-26T12:00:00-03:00");
+  const store = new IdleStore(false, () => now);
+  store.act("kitty", "hello-kitty", "buy");
+  for (let i = 1; i <= 100; i++) {
+    const click = store.click("kitty", "hello-kitty", "andre");
+    assert.equal(click.ok, true);
+    assert.equal(click.milestone, i % 50 === 0 ? i : 0);
+    if (i % 50 === 0) assert.ok(click.bonus > 0);
+    now += 150;
+  }
+  assert.equal(store.getSnapshot().modes.kitty.clickActivity.andre.milestoneCount, 2);
+  store.click("kitty", "hello-kitty", "flavia");
+  now += 5_050;
+  const restarted = store.click("kitty", "hello-kitty", "andre");
+  assert.equal(restarted.snapshot.modes.kitty.clickActivity.andre.streak, 1);
+  assert.equal(restarted.snapshot.modes.kitty.clickActivity.andre.bestStreak, 100);
+  assert.equal(restarted.snapshot.modes.kitty.clickActivity.flavia.streak, 1);
+});
+
+test("níveis e sequência persistem; o combo expirado é descartado no carregamento", async () => {
+  const folder = await mkdtemp(join(tmpdir(), "kitty-relic-"));
+  const file = join(folder, "save.json");
+  let now = Date.parse("2026-09-26T12:00:00-03:00");
+  try {
+    const first = new IdleStore(true, () => now, file);
+    await first.ready();
+    first.act("kitty", "hello-kitty", "buy");
+    first.addTestFunds("kitty", 200);
+    first.upgradeRelic("kitty-scene-1");
+    first.click("kitty", "hello-kitty", "andre");
+    await new Promise((resolve) => setTimeout(resolve, 650));
+    now += 6_000;
+    const reloaded = new IdleStore(true, () => now, file);
+    await reloaded.ready();
+    const snapshot = reloaded.getSnapshot();
+    assert.equal(snapshot.modes.kitty.relics[0].level, 1);
+    assert.equal(snapshot.modes.kitty.clickActivity.andre.streak, 0);
+    assert.equal(snapshot.modes.kitty.clickActivity.andre.bestStreak, 1);
+  } finally { await rm(folder, { recursive: true, force: true }); }
 });
 
 test("créditos de desenvolvedor alteram apenas o saldo escolhido", () => {

@@ -20,6 +20,7 @@ vi.mock("@/hooks/useIdleGame", () => ({
     busyItemId: null,
     pendingUpgrades: {},
     act: vi.fn(async () => true),
+    upgradeRelic: vi.fn(async () => true),
     clickItem: vi.fn(async () => null),
   }),
 }));
@@ -52,7 +53,14 @@ function makeSnapshot(purchasedFirst = false, completedFirst = false): IdleSnaps
     achievements: [achievement],
     scenes: ["Sala dos Abraços", "Jardim dos Sonhos", "Prado Encantado", "Refúgio da Kuromi", "Café das Estrelas", "Salão Celestial", "Santuário das Estrelas"].map((name, id) => ({ id, name, unlocked: id === 0 })),
     statistics: { migrationStartedAt: Date.now(), todayKey: "2026-09-26", earnedToday: 0, passiveEarned: 0, clickEarned: 0, eventEarned: 0, offlineEarned: 0, activeTimeMs: 0, eventsCollected: 0, boostsCollected: 0, eventCounters: { money: 0, production2: 0, click2: 0, click3: 0, click5: 0, click10: 0 }, largestClick: 0, highestProduction: purchasedFirst ? 1 : 0, items: {} },
-    activeEvent: null, productionBoost: null, clickBoost: null,
+    relics: Array.from({ length: 9 }, (_, i) => ({
+      definition: { id: `kitty-${i}`, name: i === 8 ? "Castelo das Maravilhas" : `Relíquia ${i + 1}`,
+        asset: `/idle/relics/${i === 7 ? "clique" : i === 8 ? "todososmundos" : `mundo${i + 1}`}.webp`,
+        kind: (i === 7 ? "click" : i === 8 ? "global" : "scene") as "scene" | "click" | "global",
+        scene: i < 7 ? i : undefined, unlockOrder: i === 7 ? 1 : i === 8 ? 8 : Math.min(23, i * 4),
+        baseCost: 180, maxLevel: 4, description: "Multiplica a produção." },
+      level: 0, multiplier: 1, nextCost: 180, unlocked: i === 0 && purchasedFirst,
+    })), clickActivity: {}, activeEvent: null, productionBoost: null, clickBoost: null,
   };
   return {
     revision: completedFirst ? 2 : 1, environment: "real", areaName: "Fazendinhas", globalCoins: 5, globalLifetimeEarned: 5,
@@ -65,6 +73,18 @@ function makeSnapshot(purchasedFirst = false, completedFirst = false): IdleSnaps
 
 describe("apresentação visual e celebrações do idle", () => {
   afterEach(() => cleanup());
+
+  it("exibe nove relíquias, oculta artes futuras e mantém a Fazendinha com quatro abas", () => {
+    currentSnapshot = makeSnapshot(true);
+    const view = render(<IdleModeScreen mode="kitty" />);
+    fireEvent.click(screen.getByRole("button", { name: "Relíquias" }));
+    expect(screen.getByRole("region", { name: "Relíquias da Hello Kitty" })).toBeInTheDocument();
+    expect(screen.getAllByText("Tesouro misterioso")).toHaveLength(8);
+    expect(screen.getByText("Relíquia 1")).toBeInTheDocument();
+    expect(screen.getAllByRole("img", { name: "Relíquia misteriosa" })).toHaveLength(8);
+    view.rerender(<IdleModeScreen mode="farm" />);
+    expect(screen.queryByRole("button", { name: "Relíquias" })).not.toBeInTheDocument();
+  });
 
   it("apresenta os 24 personagens com progressão até o tier celestial", () => {
     currentSnapshot = makeSnapshot();
@@ -84,7 +104,7 @@ describe("apresentação visual e celebrações do idle", () => {
     currentSnapshot = makeSnapshot();
     currentSnapshot.modes.kitty.items[23].purchased = true;
     view.rerender(<IdleModeScreen mode="kitty" />);
-    expect(document.querySelectorAll("[data-prestige] i")).toHaveLength(18);
+    expect(document.querySelectorAll("[data-prestige] i")).toHaveLength(28);
   });
 
   it("enfileira desbloqueio antes da conquista sem sobrepor os diálogos", async () => {

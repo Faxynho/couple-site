@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { CSSProperties, MouseEvent, TouchEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, LockKeyhole, Sparkles } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, LockKeyhole, Sparkles, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIdleGame } from "@/hooks/useIdleGame";
 import { formatIdleNumber } from "@/lib/formatIdleNumber";
@@ -114,7 +114,7 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
   const [purchaseMode, setPurchaseMode] = useState<PurchaseMode>(1);
   const previousAchievements = useRef<Set<string> | null>(null);
   const previousOwned = useRef<Set<string> | null>(null);
-  const { snapshot, error, accountId, displayedBalance, busyItemId, pendingUpgrades, act, buyUpgrades, clickItem, applySnapshot } = useIdleGame(mode, environment, tab === "home");
+  const { snapshot, error, accountId, displayedBalance, busyItemId, pendingUpgrades, act, buyUpgrades, clickItem, milestone, upgradeRelic, applySnapshot } = useIdleGame(mode, environment, tab === "home");
   const data = snapshot?.modes[mode];
   const click10HomeActive = tab === "home" && (data?.clickBoost?.visualMultiplier ?? data?.clickBoost?.multiplier ?? 1) === 10;
   const farm = mode === "farm";
@@ -172,14 +172,15 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
     <main className={`${styles.page} ${farm ? styles.farmTheme : styles.kittyTheme} ${environment === "dev" ? styles.devEnvironment : ""} ${data.productionBoost && data.productionBoost.expiresAt > Date.now() ? styles.productionBoostActive : ""} ${click10HomeActive ? styles.click10Active : ""}`}>
       <div className={styles.background} key={background} style={{ backgroundImage: `url(${background})` }} aria-hidden="true" />
       <div className={styles.sceneShade} aria-hidden="true" />
-      <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
+      <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "relics" ? "Relíquias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "relics" ? "Pequenos encantos, grandes descobertas" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
       {environment === "dev" && <span className={styles.devBadge}>MODO DEV</span>}
 
-      {tab === "home" && <HomeScene mode={mode} data={data} balance={displayedBalance} scene={scene} onSceneChange={setScene} onClickItem={clickItem} />}
+      {tab === "home" && <HomeScene mode={mode} data={data} balance={displayedBalance} scene={scene} onSceneChange={setScene} onClickItem={clickItem} accountId={accountId} milestone={milestone} />}
       {tab === "upgrades" && (farm
         ? <FarmUpgrades data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} onPurchaseModeChange={setPurchaseMode} />
         : <KittyCarousel data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} onPurchaseModeChange={setPurchaseMode} />)}
       {tab === "achievements" && <Achievements data={data} snapshot={snapshot} />}
+      {tab === "relics" && !farm && <RelicGallery data={data} balance={displayedBalance} busyItemId={busyItemId} onUpgrade={upgradeRelic} />}
       {tab === "statistics" && <IdleStatistics data={data} />}
       {tab === "dev" && environment === "dev" && <IdleDevPanel mode={mode} data={data} onSnapshot={applySnapshot} />}
       {accountId && <IdleEventLayer accountId={accountId} environment={environment} mode={mode} data={data} onSnapshot={applySnapshot} eventsEnabled={tab === "home"} />}
@@ -187,7 +188,7 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
       {showOfflineReward && snapshot.offlineReward?.mode === mode && <div className={styles.toast}>Enquanto vocês estavam fora: +{formatIdleNumber(snapshot.offlineReward.amount)}</div>}
       {error && <p className={styles.error} role="alert"><span>!</span>{error}</p>}
       {activeCelebration && <CelebrationPopup celebration={activeCelebration} onClose={() => setCelebrations((current) => current.slice(1))} />}
-      <IdleBottomNav active={tab} onChange={setTab} dev={environment === "dev"} />
+      <IdleBottomNav active={tab} onChange={setTab} dev={environment === "dev"} kitty={!farm} />
     </main>
   );
 }
@@ -201,11 +202,16 @@ function BalancePill({ balance, production }: { balance: number; production: num
   return <div className={styles.statsPill}><div className={styles.stat}><GameStatIcon type="money" /><span>Saldo</span><strong>{formatIdleNumber(balance)}</strong></div><div className={styles.statDivider} /><div className={styles.stat}><GameStatIcon type="production" /><span>Produção</span><strong>{formatIdleNumber(production)}/s</strong></div></div>;
 }
 
-function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: { mode: IdleModeId; data: IdleModeSnapshot; balance: number; scene: number; onSceneChange: (scene: number) => void; onClickItem: (itemId: string) => Promise<number | null> }) {
+function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem, accountId, milestone }: { mode: IdleModeId; data: IdleModeSnapshot; balance: number; scene: number; onSceneChange: (scene: number) => void; onClickItem: (itemId: string) => Promise<number | null>; accountId: string | null; milestone: { count: number; bonus: number; key: number } | null }) {
   const [bursts, setBursts] = useState<ClickBurst[]>([]);
   const animations = useRef(new Map<string, Animation>());
   const burstTimers = useRef(new Set<number>());
   const purchased = data.items.filter((item) => item.purchased && item.definition.scene === scene);
+  const activity = accountId ? data.clickActivity?.[accountId] : undefined;
+  const secondsLeft = Math.max(0, 5 - (Date.now() - (activity?.lastClickAt ?? 0)) / 1_000);
+  const streak = secondsLeft > 0 ? activity?.streak ?? 0 : 0;
+  const comboLeft = Math.max(0, 2 - (Date.now() - (activity?.lastClickAt ?? 0)) / 1_000);
+  const combo = comboLeft > 0 ? 1 + Math.min(1.2, ((activity?.comboClicks ?? 1) - 1) * .03) : 1;
 
   useEffect(() => () => {
     animations.current.forEach((animation) => animation.cancel());
@@ -240,6 +246,8 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
   return (
     <section className={styles.scene} aria-label={mode === "farm" ? "Cenário da Fazendinha" : "Sala dos personagens"}>
       <BalancePill balance={balance} production={data.effectiveProduction} />
+      {mode === "kitty" && purchased.length > 0 && <div className={styles.activityPanel} aria-live="off"><span><Sparkles size={15} /> Combo <strong>x{combo.toFixed(1)}</strong></span><span>Sequência <strong>{streak}</strong> / {Math.ceil((streak + 1) / 50) * 50}</span><div className={styles.activityMeter}><i style={{ width: `${streak ? secondsLeft / 5 * 100 : 0}%` }} /></div></div>}
+      {mode === "kitty" && milestone && Date.now() - milestone.key < 2_300 && <div key={milestone.key} className={styles.milestonePopup} role="status"><Sparkles size={25} /> {milestone.count} toques! <strong>+{formatIdleNumber(milestone.bonus)}</strong></div>}
       {purchased.length === 0 && <div className={styles.emptySceneHint}><Sparkles size={18} />{scene === 0 ? `Compre ${mode === "farm" ? "a Horta" : "Hello Kitty"} na aba Melhorias` : "Compre um item deste cenário para vê-lo aqui"}</div>}
       {purchased.map((item) => {
         const localIndex = item.definition.unlockOrder - (scene === 0 ? 0 : scene === 1 ? 4 : 8);
@@ -270,6 +278,27 @@ function SceneNavigation({ data, scene, onChange }: { data: IdleModeSnapshot; sc
 
 function Summary({ balance, production }: { balance: number; production: number }) {
   return <div className={styles.summary}><div className={styles.stat}><GameStatIcon type="money" /><span>Dinheiro interno</span><strong>{formatIdleNumber(balance)}</strong></div><div className={styles.stat}><GameStatIcon type="production" /><span>Produção/s</span><strong>{formatIdleNumber(production)}/s</strong></div></div>;
+}
+
+function RelicGallery({ data, balance, busyItemId, onUpgrade }: { data: IdleModeSnapshot; balance: number; busyItemId: string | null; onUpgrade: (id: string) => Promise<boolean> }) {
+  const relics = data.relics ?? [];
+  return <section className={`${styles.content} ${styles.relicPage}`} aria-label="Relíquias da Hello Kitty">
+    <Summary balance={balance} production={data.effectiveProduction} />
+    <div className={styles.relicHero}><span className={styles.relicHeroMark}><WandSparkles size={23} /></span><div><small>COLEÇÃO ENCANTADA</small><h2>Pequenos tesouros, grandes magias</h2><p>Escolha entre ampliar uma cena, fortalecer seus toques ou encantar o mundo inteiro.</p></div><b>{relics.filter((relic) => relic.level > 0).length}/{relics.length}</b></div>
+    <div className={styles.relicGrid}>{relics.map((relic) => {
+      const { definition, level, unlocked, nextCost } = relic;
+      const target = data.items[definition.unlockOrder]?.definition.name ?? "personagem";
+      const kind = definition.kind === "scene" ? `CENA ${(definition.scene ?? 0) + 1}` : definition.kind === "click" ? "JOGO ATIVO" : "TODAS AS CENAS";
+      return <article key={definition.id} className={`${styles.relicCard} ${!unlocked ? styles.relicCardLocked : ""} ${definition.kind === "global" ? styles.relicCardGlobal : ""}`}>
+        <div className={styles.relicArt}><span className={styles.relicArtHalo} /><Image src={definition.asset} alt={unlocked ? definition.name : "Relíquia misteriosa"} fill sizes="(max-width: 600px) 42vw, 180px" />{!unlocked && <span className={styles.relicLock}><LockKeyhole size={23} /></span>}</div>
+        <div className={styles.relicBody}><span className={styles.relicKind}>{kind}</span><h3>{unlocked ? definition.name : "Tesouro misterioso"}</h3><p>{unlocked ? definition.description : `Desbloqueie ${target} para revelar.`}</p>
+          <div className={styles.relicLevels} aria-label={`Nível ${level} de ${definition.maxLevel}`}>{Array.from({ length: definition.maxLevel }, (_, index) => <span key={index} className={index < level ? styles.relicLevelFilled : ""} />)}</div>
+          <div className={styles.relicEffect}><span>{level ? "Poder atual" : "Próximo poder"}</span><strong>x{level ? relic.multiplier : 2}</strong><small>{nextCost === null ? "máximo" : level ? `Próximo x${relic.multiplier + 1}` : "ao comprar"}</small></div>
+          <button type="button" className={styles.relicBuy} disabled={!unlocked || nextCost === null || busyItemId === definition.id || (nextCost !== null && balance < nextCost)} onClick={() => void onUpgrade(definition.id)}>{!unlocked ? <><LockKeyhole size={15} /> Bloqueada</> : nextCost === null ? "Poder máximo" : busyItemId === definition.id ? "Encantando…" : <>{level ? "Melhorar" : "Despertar"} · {formatIdleNumber(nextCost)}</>}</button>
+        </div>
+      </article>;
+    })}</div>
+  </section>;
 }
 
 type ActionProps = {

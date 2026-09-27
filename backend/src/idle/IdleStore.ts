@@ -11,6 +11,7 @@ import {
   IDLE_EVENT_VISIBLE_MS,
   IDLE_EVENT_WEIGHTS,
   IDLE_SCENES,
+  KITTY_RELICS,
   IdleEventType,
   IdleModeId,
   MAX_IDLE_MONEY,
@@ -20,6 +21,7 @@ import {
   itemClickReward,
   itemProduction,
   itemUpgradeCost,
+  kittyRelicCost,
 } from "./idleConfig";
 import {
   GameEnvironment,
@@ -41,7 +43,7 @@ const DEFAULT_DATA_FILE = path.join(__dirname, "..", "..", "data", "idle-game.js
 const DEFAULT_DEV_DATA_FILE = path.join(__dirname, "..", "..", "data", "idle-game-dev.json");
 const SAVE_DEBOUNCE_MS = 350;
 const MAX_REWARDED_MATCHES = 1_000;
-const CURRENT_SCHEMA_VERSION = 5;
+const CURRENT_SCHEMA_VERSION = 6;
 const LEGACY_KITTY_ORDER = ["hello-kitty", "my-melody", "cinnamoroll", "pompompurin", "kuromi", "keroppi", "badtz-maru", "chococat", "pochacco", "little-twin-stars"];
 const CLICK_COOLDOWN_MS = 125;
 const MAX_BATCH_LEVELS = 10_000;
@@ -136,6 +138,7 @@ function newMode(mode: IdleModeId, now: number): IdleModeState {
     totalClicks: 0,
     lastSettledAt: now,
     items,
+    ...(mode === "kitty" ? { relicLevels: {}, clickActivity: {} } : {}),
     unlockedAchievements: {},
     statistics: newStatistics(mode, now),
     activeEvent: null,
@@ -275,6 +278,21 @@ function sanitizeMode(mode: IdleModeId, value: unknown, now: number): IdleModeSt
     });
   }
   base.statistics = sanitizeStatistics(mode, { ...input.statistics, items: migratedStats }, now);
+  if (mode === "kitty") {
+    base.relicLevels = Object.fromEntries(KITTY_RELICS.map((relic) => [relic.id, Math.max(0, Math.min(relic.maxLevel, safeCount(input.relicLevels?.[relic.id])))]));
+    base.clickActivity = {};
+    for (const account of ["andre", "flavia"]) {
+      const saved = input.clickActivity?.[account];
+      if (!saved || typeof saved !== "object") continue;
+      const lastClickAt = Number(saved.lastClickAt);
+      base.clickActivity[account] = {
+        streak: Number.isFinite(lastClickAt) && now - lastClickAt < 5_000 ? Math.min(100_000, safeCount(saved.streak)) : 0,
+        comboClicks: Number.isFinite(lastClickAt) && now - lastClickAt < 2_000 ? Math.min(40, safeCount(saved.comboClicks)) : 0,
+        lastClickAt: Number.isFinite(lastClickAt) ? Math.min(now, Math.max(0, lastClickAt)) : 0,
+        bestStreak: Math.min(100_000, safeCount(saved.bestStreak)), milestoneCount: safeCount(saved.milestoneCount),
+      };
+    }
+  }
   base.activeEvent = sanitizeEvent(input.activeEvent, now);
   base.productionBoost = sanitizeBoost(input.productionBoost, now);
   base.clickBoost = sanitizeClickBoost(input.clickBoost, now);
@@ -413,8 +431,17 @@ export class IdleStore {
   private totalProduction(mode: IdleModeId): number {
     return IDLE_CATALOG[mode].reduce((sum, definition) => {
       const owned = this.data.modes[mode].items[definition.id];
-      return sum + (owned?.purchased ? itemProduction(definition, owned.level) : 0);
+      return sum + (owned?.purchased ? this.itemProduction(mode, definition, owned.level) : 0);
     }, 0);
+  }
+
+  private relicMultiplier(id: string): number {
+    return 1 + (this.data.modes.kitty.relicLevels?.[id] ?? 0);
+  }
+
+  private itemProduction(mode: IdleModeId, definition: (typeof IDLE_CATALOG)[IdleModeId][number], level: number): number {
+    const base = itemProduction(definition, level);
+    return mode === "kitty" ? base * this.relicMultiplier(`kitty-scene-${definition.scene + 1}`) * this.relicMultiplier("kitty-all") : base;
   }
 
   private productionMultiplier(mode: IdleModeId, now: number): number {
@@ -520,7 +547,7 @@ export class IdleStore {
     for (const definition of IDLE_CATALOG[mode]) {
       const owned = state.items[definition.id];
       if (!owned.purchased) continue;
-      const amount = safeMoney(itemProduction(definition, owned.level) * effectiveSeconds);
+      const amount = safeMoney(this.itemProduction(mode, definition, owned.level) * effectiveSeconds);
       total = safeMoney(total + amount);
       this.addModeEarning(mode, amount, "passive", now, definition.id, offline);
     }
@@ -588,7 +615,7 @@ export class IdleStore {
       return {
         ...owned,
         definition,
-        production: owned.purchased ? itemProduction(definition, owned.level) : definition.baseProduction,
+        production: owned.purchased ? this.itemProduction(mode, definition, owned.level) : this.itemProduction(mode, definition, 1),
         nextCost: owned.purchased ? itemUpgradeCost(definition, owned.level) : definition.baseCost,
         unlocked: index === 0 || Boolean(previous?.purchased),
         upgradeQuotes: { one, ten, max: max.count > 0 ? max : null },
@@ -607,6 +634,15 @@ export class IdleStore {
       totalClicks: state.totalClicks,
       lastSettledAt: state.lastSettledAt,
       items,
+      ...(mode === "kitty" ? {
+        relics: KITTY_RELICS.map((relic) => {
+          const level = state.relicLevels?.[relic.id] ?? 0;
+          return { definition: relic, level, multiplier: 1 + level,
+            nextCost: level < relic.maxLevel ? kittyRelicCost(relic, level) : null,
+            unlocked: Boolean(state.items[IDLE_CATALOG.kitty[relic.unlockOrder].id]?.purchased) };
+        }),
+        clickActivity: { ...state.clickActivity },
+      } : {}),
       achievements: ACHIEVEMENTS.filter((item) => item.mode === mode).map((achievement) => {
         const status = this.achievementProgress(mode, achievement.id);
         return { ...achievement, completedAt: state.unlockedAchievements[achievement.id] ?? null, ...status };
@@ -696,6 +732,29 @@ export class IdleStore {
     return { ok: true as const, snapshot: this.buildSnapshot(null) };
   }
 
+  upgradeRelic(relicId: string) {
+    const now = this.now();
+    this.ensurePeriods(now);
+    const settled = this.settle("kitty", now);
+    const state = this.data.modes.kitty;
+    const fail = (error: string) => {
+      if (settled.amount > 0) this.touch(now);
+      return { ok: false as const, error, snapshot: this.buildSnapshot(null) };
+    };
+    const relic = KITTY_RELICS.find((entry) => entry.id === relicId);
+    if (!relic) return fail("Relíquia não encontrada.");
+    if (!state.items[IDLE_CATALOG.kitty[relic.unlockOrder].id]?.purchased) return fail("Descubra o personagem desta relíquia primeiro.");
+    const level = state.relicLevels?.[relicId] ?? 0;
+    if (level >= relic.maxLevel) return fail("Esta relíquia já atingiu o nível máximo.");
+    const price = kittyRelicCost(relic, level);
+    if (state.balance < price) return fail("Dinheiro interno insuficiente.");
+    state.balance = safeMoney(state.balance - price);
+    state.relicLevels![relicId] = level + 1;
+    this.evaluateAchievements("kitty", now);
+    this.touch(now);
+    return { ok: true as const, snapshot: this.buildSnapshot(null) };
+  }
+
   upgradeMany(mode: IdleModeId, itemId: string, requestedCount: number | "max") {
     const now = this.now();
     this.ensurePeriods(now);
@@ -744,16 +803,31 @@ export class IdleStore {
     const owned = definition ? this.data.modes[mode].items[itemId] : null;
     if (!definition || !owned?.purchased) return fail("Compre este item antes de coletar com ele.");
     this.lastClickAt.set(clickKey, now);
-    const multiplier = this.clickMultiplier(mode, now);
-    const reward = safeMoney(itemClickReward(definition, owned.level) * multiplier);
     const state = this.data.modes[mode];
+    let milestone = 0;
+    let bonus = 0;
+    let comboMultiplier = 1;
+    if (mode === "kitty") {
+      const previous = state.clickActivity?.[accountId];
+      const streak = now - (previous?.lastClickAt ?? -Infinity) < 5_000 ? (previous?.streak ?? 0) + 1 : 1;
+      const comboClicks = now - (previous?.lastClickAt ?? -Infinity) < 2_000 ? Math.min(40, (previous?.comboClicks ?? 0) + 1) : 1;
+      comboMultiplier = 1 + Math.min(1.2, (comboClicks - 1) * .03);
+      milestone = streak % 50 === 0 ? streak : 0;
+      if (milestone) bonus = safeMoney(this.totalProduction(mode) * (35 + Math.min(65, streak / 10)));
+      state.clickActivity![accountId] = { streak, comboClicks, lastClickAt: now,
+        bestStreak: Math.max(previous?.bestStreak ?? 0, streak), milestoneCount: (previous?.milestoneCount ?? 0) + (milestone ? 1 : 0) };
+    }
+    const multiplier = this.clickMultiplier(mode, now) * comboMultiplier * (mode === "kitty" ? this.relicMultiplier("kitty-click") : 1);
+    const baseClick = mode === "kitty" ? Math.max(1, Math.floor(this.itemProduction(mode, definition, owned.level) * .55)) : itemClickReward(definition, owned.level);
+    const reward = safeMoney(baseClick * multiplier);
     state.totalClicks += 1;
     state.statistics.items[itemId].clicks += 1;
     state.statistics.items[itemId].largestClick = Math.max(state.statistics.items[itemId].largestClick, reward);
     state.statistics.largestClick = Math.max(state.statistics.largestClick, reward);
     this.addModeEarning(mode, reward, "click", now, itemId);
+    if (bonus > 0) this.addModeEarning(mode, bonus, "click", now);
     this.touch(now);
-    return { ok: true as const, reward, multiplier, snapshot: this.buildSnapshot(null) };
+    return { ok: true as const, reward, multiplier, milestone, bonus, snapshot: this.buildSnapshot(null) };
   }
 
   recordActivity(mode: IdleModeId, elapsedMs: number): IdleSnapshot {

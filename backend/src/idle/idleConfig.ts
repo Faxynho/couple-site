@@ -16,6 +16,18 @@ export interface IdleItemDefinition {
   clickShare?: number;
 }
 
+export interface KittyRelicDefinition {
+  id: string;
+  name: string;
+  asset: string;
+  kind: "scene" | "click" | "global";
+  scene?: number;
+  unlockOrder: number;
+  baseCost: number;
+  maxLevel: number;
+  description: string;
+}
+
 export interface AchievementDefinition {
   id: string;
   mode: IdleModeId;
@@ -111,7 +123,10 @@ function kittyCharacter(index: number): IdleItemDefinition {
   const character = KITTY_CHARACTER_SEQUENCE[index];
   const previousProduction = 2 * Math.pow(2.7, index - 1);
   const lateGameFactor = 1 + .4 * Math.min(1, Math.max(0, (index - 3) / 2));
-  const baseCost = index === 0 ? 60 : Math.ceil(previousProduction * (1.5 * index * lateGameFactor * 3600));
+  // Os novos multiplicadores de relíquias exigem uma curva acumulativa após P5;
+  // os quatro primeiros personagens conservam o ritmo acessível da abertura.
+  const relicCurve = Math.pow(1.13, Math.max(0, index - 4));
+  const baseCost = index === 0 ? 60 : Math.ceil(previousProduction * (1.5 * index * lateGameFactor * 3600) * relicCurve);
   return {
     ...character, unlockOrder: index, baseCost,
     upgradeBaseCost: index === 0 ? 105 : Math.ceil(baseCost * .11),
@@ -135,6 +150,31 @@ export const IDLE_CATALOG: Record<IdleModeId, IdleItemDefinition[]> = {
   ],
   kitty: KITTY_CHARACTER_SEQUENCE.map((_, index) => kittyCharacter(index)),
 };
+
+// Relíquias afetam apenas as sete cenas da Hello Kitty. Os preços são uma
+// alternativa de investimento na faixa do personagem que abre cada cena.
+const RELIC_NAMES = [
+  "Laço dos Abraços", "Morango dos Sonhos", "Patinha do Prado",
+  "Varinha do Refúgio", "Doçura Estelar", "Chá das Nuvens", "Coração Celestial",
+] as const;
+export const KITTY_RELICS: KittyRelicDefinition[] = [
+  ...RELIC_NAMES.map((name, scene) => ({
+    id: `kitty-scene-${scene + 1}`, name, asset: `/idle/relics/mundo${scene + 1}.webp`,
+    kind: "scene" as const, scene, unlockOrder: Math.min(scene * 4, 23),
+    baseCost: scene === 0 ? 180 : Math.ceil(IDLE_CATALOG.kitty[Math.min(scene * 4, 23)].baseCost * .55),
+    maxLevel: 4,
+    description: `Multiplica a produção de ${IDLE_SCENES.kitty[scene].name}.`,
+  })),
+  { id: "kitty-click", name: "Toque de Carinho", asset: "/idle/relics/clique.webp", kind: "click", unlockOrder: 1,
+    baseCost: 420, maxLevel: 4, description: "Multiplica as moedas recebidas ao tocar personagens." },
+  { id: "kitty-all", name: "Castelo das Maravilhas", asset: "/idle/relics/todososmundos.webp", kind: "global", unlockOrder: 8,
+    baseCost: Math.ceil(IDLE_CATALOG.kitty[8].baseCost * .75), maxLevel: 3,
+    description: "Multiplica a produção das sete cenas da Hello Kitty." },
+];
+
+export function kittyRelicCost(relic: KittyRelicDefinition, level: number): number {
+  return Math.ceil(relic.baseCost * Math.pow(6, level));
+}
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [
   { id: "farm-first-garden", mode: "farm", title: "Primeira colheita", description: "Tenha a primeira Horta", iconItemId: "garden", reward: 5, condition: { type: "own", itemId: "garden" } },

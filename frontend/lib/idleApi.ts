@@ -32,6 +32,13 @@ export async function idleItemAction(accountId: AccountId, mode: IdleModeId, ite
   return parse<IdleSnapshot>(response);
 }
 
+export async function idleRelicUpgrade(accountId: AccountId, relicId: string, environment: GameEnvironment = "real"): Promise<IdleSnapshot> {
+  return parse<IdleSnapshot>(await fetch(`${API_BASE}/api/idle/relic/upgrade`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ by: accountId, relicId, environment }),
+  }));
+}
+
 export async function idleUpgradeBatch(accountId: AccountId, mode: IdleModeId, itemId: string, count: number | "max", environment: GameEnvironment = "real"): Promise<{ ok: boolean; applied: number; requested: number; totalCost: number; error?: string; snapshot: IdleSnapshot }> {
   const response = await fetch(`${API_BASE}/api/idle/upgrade-batch`, {
     method: "POST",
@@ -41,13 +48,13 @@ export async function idleUpgradeBatch(accountId: AccountId, mode: IdleModeId, i
   return parse<{ ok: boolean; applied: number; requested: number; totalCost: number; error?: string; snapshot: IdleSnapshot }>(response);
 }
 
-export async function idleClick(accountId: AccountId, mode: IdleModeId, itemId: string, environment: GameEnvironment = "real"): Promise<{ reward: number; multiplier: number; snapshot: IdleSnapshot }> {
+export async function idleClick(accountId: AccountId, mode: IdleModeId, itemId: string, environment: GameEnvironment = "real"): Promise<{ reward: number; multiplier: number; milestone: number; bonus: number; snapshot: IdleSnapshot }> {
   const response = await fetch(`${API_BASE}/api/idle/click`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ by: accountId, mode, itemId, environment }),
   });
-  return parse<{ reward: number; multiplier: number; snapshot: IdleSnapshot }>(response);
+  return parse<{ reward: number; multiplier: number; milestone: number; bonus: number; snapshot: IdleSnapshot }>(response);
 }
 
 export async function recordIdleActivity(accountId: AccountId, mode: IdleModeId, elapsedMs: number, environment: GameEnvironment): Promise<IdleSnapshot> {
