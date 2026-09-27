@@ -19,7 +19,7 @@ function SceneAsset({ name, className }: { name: string; className: string }) {
   return <img src={`${BASE}${name}.webp`} alt="" className={className} draggable={false} aria-hidden="true" />;
 }
 
-function PetRoomScene({ pet, decorations }: { pet: PetDefinition; decorations: readonly Decoration[] }) {
+function PetRoomScene({ pet, decorations, coins, environment }: { pet: PetDefinition; decorations: readonly Decoration[]; coins: number; environment: "real" | "dev" }) {
   const [visible, setVisible] = useState(() => decorations.map((item) => ({ item, exiting: false })));
   const [automaticTime, setAutomaticTime] = useState<TimeOfDay>("day");
   const [preview, setPreview] = useState<TimeOfDay | null>(null);
@@ -91,6 +91,11 @@ function PetRoomScene({ pet, decorations }: { pet: PetDefinition; decorations: r
             ["--light-y" as string]: `${item.light!.originY}%`,
           }} aria-hidden="true" />
         ))}
+      </div>
+      <div className={styles.petWalletTop} aria-label={`${coins.toLocaleString("pt-BR")} ${environment === "dev" ? "moedas DEV" : "moedas globais"}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/idle/icons/global-coin.webp" alt="" aria-hidden="true" />
+        <strong>{coins.toLocaleString("pt-BR")}</strong>
       </div>
       <button type="button" className={styles.timePreview}
         aria-label={`Visualizar ${timeOfDay === "day" ? "noite" : "dia"}`}

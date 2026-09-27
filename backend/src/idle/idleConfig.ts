@@ -45,9 +45,9 @@ export const OFFLINE_CAP_MS = 8 * 60 * 60 * 1_000;
 export const MAX_IDLE_MONEY = 1e300;
 export const IDLE_EVENT_MIN_ACTIVITY_MS = 50_000;
 export const IDLE_EVENT_MAX_ACTIVITY_MS = 110_000;
-export const IDLE_EVENT_VISIBLE_MS = 9_000;
+export const IDLE_EVENT_VISIBLE_MS = 60_000;
 export const PRODUCTION_BOOST_MS = 90_000;
-export const CLICK_BOOST_DURATIONS = { click2: 20_000, click3: 12_000, click5: 8_000, click10: 5_000 } as const;
+export const CLICK_BOOST_DURATIONS = { click2: 60_000, click3: 45_000, click5: 30_000, click10: 20_000 } as const;
 export type IdleEventType = "money" | "production2" | keyof typeof CLICK_BOOST_DURATIONS;
 export const IDLE_EVENT_WEIGHTS: ReadonlyArray<{ type: IdleEventType; weight: number }> = [
   { type: "money", weight: 35 },

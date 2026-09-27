@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   Armchair, BedDouble, Bone, ChevronDown, CircleDot, Crown, Grid3X3, HandHeart,
   Heart, Paintbrush, PawPrint, Shirt, Square, ToyBrick, Coins,
-  Utensils, Cookie, FlaskConical, LockKeyhole, RotateCcw, WalletCards, type LucideIcon,
+  Utensils, Cookie, FlaskConical, LockKeyhole, RotateCcw, type LucideIcon,
 } from "lucide-react";
 import type { PetDefinition } from "../config";
 import { PET_ROOM_DECORATIONS, type Decoration, type PetRoomSlots } from "../petRoomDecorations";
@@ -76,7 +76,7 @@ function FilterStrip({
   );
 }
 
-export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBuy, coins, purchased, environment, onDevAction }: {
+export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBuy, coins: _coins, purchased, environment, onDevAction }: {
   pet: PetDefinition;
   slots: PetRoomSlots;
   ready: boolean;
@@ -163,10 +163,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
               <FilterStrip label="Categorias de visual" options={STYLE_FILTERS} selected={styleFilter} onSelect={setStyleFilter} />
             )}
             {activeTab === "room" && (
-              <>
-                <div className={styles.petWallet}><WalletCards size={16} /><span>{environment === "dev" ? "Moedas DEV" : "Moedas globais"}</span><strong>{coins.toLocaleString("pt-BR")}</strong></div>
-                <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter} />
-              </>
+              <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter} />
             )}
             {(activeTab === "food" || activeTab === "play") && (
               <p className={styles.drawerHint}>{activeTab === "food" ? "Para o cantinho das refeições" : "Para os momentos de brincadeira"}</p>

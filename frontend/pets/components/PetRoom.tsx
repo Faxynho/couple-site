@@ -92,7 +92,7 @@ export default function PetRoom({ pet, environment = "real" }: { pet: PetDefinit
 
   return (
     <div className={styles.roomLayout}>
-      <PetRoomScene pet={pet} decorations={selected} />
+      <PetRoomScene pet={pet} decorations={selected} coins={coins} environment={environment} />
       <PetRoomDrawer pet={pet} slots={snapshot?.slots ?? {}} ready={Boolean(snapshot)} error={error} onToggle={toggleDecoration} onBuy={buyDecoration} coins={coins} purchased={purchased} environment={environment} onDevAction={runDevAction} />
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { BarChart3, Clock3, Coins, Crown, MousePointerClick, Sparkles, TrendingUp, Trophy, Zap } from "lucide-react";
+import { Clock3, Crown, MousePointerClick, Sparkles, TrendingUp, Trophy, Zap } from "lucide-react";
 import { formatIdleNumber } from "@/lib/formatIdleNumber";
 import { IdleModeSnapshot } from "@/lib/idleTypes";
 import styles from "./IdleGame.module.css";
@@ -25,9 +25,6 @@ export default function IdleStatistics({ data }: { data: IdleModeSnapshot }) {
   const s = data.statistics;
   const currentClick = Math.max(0, ...owned.map((item) => Math.max(1, Math.floor(item.production * .22)) * data.clickMultiplier));
   const cards = [
-    { label: "Saldo atual", value: formatIdleNumber(data.balance), icon: Coins },
-    { label: "Produção atual", value: `${formatIdleNumber(data.effectiveProduction)}/s`, icon: TrendingUp },
-    { label: "Dinheiro total produzido", value: formatIdleNumber(data.totalEarned), icon: BarChart3 },
     { label: "Produzido hoje", value: formatIdleNumber(s.earnedToday), icon: Sparkles },
     { label: "Renda passiva", value: formatIdleNumber(s.passiveEarned), icon: Clock3 },
     { label: "Renda por clique", value: formatIdleNumber(s.clickEarned), icon: MousePointerClick },
@@ -48,13 +45,13 @@ export default function IdleStatistics({ data }: { data: IdleModeSnapshot }) {
 
   return (
     <section className={styles.content + " " + styles.statisticsPage}>
-      {leader && (
-        <article className={styles.incomeLeader}>
-          <div className={styles.incomeLeaderArt}><Image src={leader.definition.asset} alt="" fill sizes="120px" /></div>
-          <div><span>Maior fonte de renda</span><h2>{leader.definition.name}</h2><strong>{formatIdleNumber(leader.statistics.passiveEarned + leader.statistics.clickEarned)} produzidos</strong></div>
-        </article>
-      )}
-      <h2 className={styles.sectionTitle}>Hoje e desde o início<small>Os novos detalhamentos começaram a ser registrados nesta atualização.</small></h2>
+      <div className={styles.statHighlights}>
+        <article className={`${styles.statHighlightCard} ${styles.balanceHighlight}`}><Image className={styles.statHighlightIcon} src="/idle/icons/game-money.webp" alt="" width={72} height={72} /><span>Saldo atual</span><strong>{formatIdleNumber(data.balance)}</strong></article>
+        <article className={`${styles.statHighlightCard} ${styles.productionHighlight}`}><Image className={styles.statHighlightIcon} src="/idle/icons/production.webp" alt="" width={72} height={72} /><span>Produção atual</span><strong>{formatIdleNumber(data.effectiveProduction)}/s</strong></article>
+      </div>
+      <article className={styles.totalProducedSpotlight}><Image src="/idle/icons/game-money.webp" alt="" width={80} height={80} /><div><span>Total produzido</span><strong>{formatIdleNumber(data.totalEarned)}</strong><small>Dinheiro gerado desde o início</small></div></article>
+      {leader && (<article className={styles.incomeLeader}><div className={styles.incomeLeaderArt}><Image src={leader.definition.asset} alt="" fill sizes="150px" /></div><div className={styles.incomeLeaderCopy}><span className={styles.incomeLeaderEyebrow}>Maior fonte de renda</span><h2>{leader.definition.name}</h2><strong>{formatIdleNumber(leader.statistics.passiveEarned + leader.statistics.clickEarned)} produzidos</strong></div></article>)}
+      <h2 className={styles.sectionTitle}>Mais estatísticas<small>Os novos detalhamentos começaram a ser registrados nesta atualização.</small></h2>
       <div className={styles.statDashboard}>
         {cards.map(({ label, value, icon: Icon }) => <article key={label} className={styles.dashboardCard}><Icon size={18} /><span>{label}</span><strong>{value}</strong></article>)}
       </div>

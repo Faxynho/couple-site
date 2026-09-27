@@ -135,10 +135,9 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
       {environment === "dev" && <span className={styles.devBadge}>MODO DEV</span>}
 
       {tab === "home" && <HomeScene mode={mode} data={data} balance={displayedBalance} scene={scene} onSceneChange={setScene} onClickItem={clickItem} />}
-      {tab === "upgrades" && <PurchaseModePicker value={purchaseMode} onChange={setPurchaseMode} />}
       {tab === "upgrades" && (farm
-        ? <FarmUpgrades data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} />
-        : <KittyCarousel data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} />)}
+        ? <FarmUpgrades data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} onPurchaseModeChange={setPurchaseMode} />
+        : <KittyCarousel data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} onPurchaseModeChange={setPurchaseMode} />)}
       {tab === "achievements" && <Achievements data={data} snapshot={snapshot} />}
       {tab === "statistics" && <IdleStatistics data={data} />}
       {tab === "dev" && environment === "dev" && <IdleDevPanel mode={mode} data={data} onSnapshot={applySnapshot} />}
@@ -201,7 +200,6 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
   return (
     <section className={styles.scene} aria-label={mode === "farm" ? "Cenário da Fazendinha" : "Sala dos personagens"}>
       <BalancePill balance={balance} production={data.effectiveProduction} />
-      <div className={styles.sceneLabel}>{data.scenes[scene].name}<span>{scene + 1}/3</span></div>
       {purchased.length === 0 && <div className={styles.emptySceneHint}><Sparkles size={18} />{scene === 0 ? `Compre ${mode === "farm" ? "a Horta" : "Hello Kitty"} na aba Melhorias` : "Compre um item deste cenário para vê-lo aqui"}</div>}
       {purchased.map((item) => {
         const localIndex = item.definition.unlockOrder - (scene === 0 ? 0 : scene === 1 ? 4 : 8);
@@ -239,14 +237,15 @@ type ActionProps = {
   act: (itemId: string, action: "buy" | "upgrade") => Promise<boolean>;
   buyUpgrades: (itemId: string, count: PurchaseMode) => Promise<boolean>;
   purchaseMode: PurchaseMode;
+  onPurchaseModeChange: (value: PurchaseMode) => void;
 };
 
 function PurchaseModePicker({ value, onChange }: { value: PurchaseMode; onChange: (value: PurchaseMode) => void }) {
   return <div className={styles.purchaseMode} role="group" aria-label="Quantidade de níveis">{([1, 10, "max"] as const).map((option) => <button key={String(option)} type="button" className={value === option ? styles.purchaseModeActive : ""} aria-pressed={value === option} onClick={() => onChange(option)}>{option === "max" ? "Máx." : `x${option}`}</button>)}</div>;
 }
 
-function FarmUpgrades({ data, balance, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode }: ActionProps) {
-  return <section className={styles.content}><Summary balance={balance} production={data.effectiveProduction} /><h2 className={styles.sectionTitle}>Produtores<small>Melhore os desbloqueados e compre novos para aumentar sua renda.</small></h2><div className={styles.cardGrid}>{data.items.map((item) => <ItemCard key={item.definition.id} item={item} busy={busyItemId === item.definition.id} pending={pendingUpgrades[item.definition.id] ?? 0} onAction={act} onUpgrade={buyUpgrades} purchaseMode={purchaseMode} />)}</div></section>;
+function FarmUpgrades({ data, balance, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode, onPurchaseModeChange }: ActionProps) {
+  return <section className={styles.content}><Summary balance={balance} production={data.effectiveProduction} /><PurchaseModePicker value={purchaseMode} onChange={onPurchaseModeChange} /><h2 className={styles.sectionTitle}>Produtores<small>Melhore os desbloqueados e compre novos para aumentar sua renda.</small></h2><div className={styles.cardGrid}>{data.items.map((item) => <ItemCard key={item.definition.id} item={item} busy={busyItemId === item.definition.id} pending={pendingUpgrades[item.definition.id] ?? 0} onAction={act} onUpgrade={buyUpgrades} purchaseMode={purchaseMode} />)}</div></section>;
 }
 
 function quoteFor(item: IdleItemSnapshot, mode: PurchaseMode) {
@@ -264,7 +263,7 @@ function ItemCard({ item, busy, pending, onAction, onUpgrade, purchaseMode }: { 
   </article>;
 }
 
-function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode }: ActionProps) {
+function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode, onPurchaseModeChange }: ActionProps) {
   const [index, setIndex] = useState(0);
   const [dragX, setDragX] = useState(0);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -278,7 +277,7 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const onTouchMove = (event: TouchEvent) => { if (!touchStart.current) return; const dx = event.touches[0].clientX - touchStart.current.x; const dy = event.touches[0].clientY - touchStart.current.y; if (Math.abs(dx) > Math.abs(dy)) { dragXRef.current = dx; setDragX(dx); } };
   const onTouchEnd = () => { const distance = dragXRef.current; if (distance < -45) move(1); else if (distance > 45) move(-1); touchStart.current = null; dragXRef.current = 0; setDragX(0); };
   return <section className={`${styles.content} ${styles.kittyContent}`}>
-    <Summary balance={balance} production={data.effectiveProduction} /><div className={styles.swipeHint}>Arraste para conhecer a turma <span>↔</span></div>
+    <Summary balance={balance} production={data.effectiveProduction} /><PurchaseModePicker value={purchaseMode} onChange={onPurchaseModeChange} />
     <div className={styles.carousel} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       <div className={styles.prestigeBackdrop} />
       {data.items.map((item, itemIndex) => {

@@ -67,7 +67,6 @@ export default function IdleEventLayer({ accountId, environment, mode, data, onS
         <button type="button" className={styles.randomEvent} data-event={event.type} onClick={() => void collect()} disabled={collecting} aria-label={`Coletar ${LABELS[event.type]}`}>
           <span className={styles.eventTrail} />
           <Image src={`/idle/events/${event.type}.webp`} alt="" width={180} height={180} priority />
-          <strong>{LABELS[event.type]}</strong>
           <small>{seconds(event.expiresAt, now)}s</small>
         </button>
       )}
