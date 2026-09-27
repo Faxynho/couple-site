@@ -1,6 +1,17 @@
 import { AccountId } from "./accountSession";
 import { GameEnvironment, IdleSnapshot } from "./idleTypes";
 import { PetId, PetRoomSnapshot } from "@/pets/petRoomDecorations";
+import { PetMood } from "@/pets/config";
+
+export interface PetCareSnapshot {
+  petId: PetId;
+  environment: GameEnvironment;
+  affection: number;
+  satiety: number;
+  lastUpdatedAt: number;
+  revision: number;
+  mood: PetMood;
+}
 
 const API_BASE = (process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000").replace(/\/+$/, "");
 async function parse<T>(response: Response): Promise<T> {
@@ -14,6 +25,25 @@ export interface PetEconomySnapshot {
   globalCoins: number;
   purchasedDecorations: string[];
   prices: Record<string, number>;
+  care: PetCareSnapshot;
+}
+
+export async function fetchPetCare(accountId: AccountId, petId: PetId, environment: GameEnvironment) {
+  return parse<{ care: PetCareSnapshot }>(await fetch(`${API_BASE}/api/pets/care?accountId=${accountId}&petId=${petId}&environment=${environment}`, { cache: "no-store" }));
+}
+
+export async function strokePet(accountId: AccountId, petId: PetId, environment: GameEnvironment) {
+  return parse<{ accepted: boolean; care: PetCareSnapshot }>(await fetch(`${API_BASE}/api/pets/care`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ by: accountId, petId, environment }),
+  }));
+}
+
+export async function feedPet(accountId: AccountId, petId: PetId, foodId: string, environment: GameEnvironment) {
+  return parse<{ ok: true; care: PetCareSnapshot; globalCoins: number }>(await fetch(`${API_BASE}/api/pets/feed`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ by: accountId, petId, foodId, environment }),
+  }));
 }
 
 export async function fetchPetEconomy(accountId: AccountId, petId: PetId, environment: GameEnvironment) {

@@ -3,6 +3,7 @@ import { isAccountId } from "../accounts/types";
 import { idleDevStore, idleStore } from "../idle/IdleStore";
 import { isPetRoomId, persistentDuoStore } from "../rooms/persistentDuo";
 import { isPetDecorationId, PET_DECORATION_PRICES } from "./petEconomy";
+import { feedPetPurchase, getPetFood, PET_FOODS } from "./petFood";
 
 export const petRouter = Router();
 
@@ -32,7 +33,41 @@ petRouter.get("/", (req, res) => {
     globalCoins: idle.globalCoins,
     purchasedDecorations: idle.purchasedPetDecorations,
     prices: PET_DECORATION_PRICES,
+    care: persistentDuoStore.getPetCare(req.query.petId, access.environment),
+    foods: PET_FOODS,
   });
+});
+
+petRouter.get("/care", (req, res) => {
+  const access = authorize(req.query.accountId, req.query.environment, res);
+  if (!access) return;
+  if (!isPetRoomId(req.query.petId)) { res.status(400).json({ error: "Pet inválido." }); return; }
+  res.json({ care: persistentDuoStore.getPetCare(req.query.petId, access.environment) });
+});
+
+petRouter.post("/care", (req, res) => {
+  const body = req.body as { by?: unknown; petId?: unknown; environment?: unknown };
+  const access = authorize(body.by, body.environment, res);
+  if (!access) return;
+  if (!isPetRoomId(body.petId)) { res.status(400).json({ error: "Pet inválido." }); return; }
+  const care = persistentDuoStore.strokePet(body.petId, access.environment, access.accountId);
+  res.json({ accepted: Boolean(care), care: care ?? persistentDuoStore.getPetCare(body.petId, access.environment) });
+});
+
+petRouter.post("/feed", (req, res) => {
+  const body = req.body as { by?: unknown; petId?: unknown; environment?: unknown; foodId?: unknown };
+  const access = authorize(body.by, body.environment, res);
+  if (!access) return;
+  if (!isPetRoomId(body.petId)) { res.status(400).json({ error: "Pet inválido." }); return; }
+  const food = getPetFood(body.foodId);
+  if (!food) { res.status(400).json({ error: "Comida inválida." }); return; }
+  const result = feedPetPurchase(persistentDuoStore, access.store, body.petId, access.environment, food);
+  if (!result.ok) {
+    res.status(409).json({ ...result, error: result.reason === "full"
+      ? `${body.petId === "max" ? "Max já está satisfeito" : "Nix já está satisfeita"}.` : "Moedas insuficientes." });
+    return;
+  }
+  res.json(result);
 });
 
 petRouter.post("/purchase", (req, res) => {

@@ -1,4 +1,5 @@
-export type PetAnimation = "idle";
+export type PetAnimation = "idle" | "petting" | "eating";
+export type PetMood = "happy" | "neutral" | "sad";
 
 interface PetBase {
   id: "nix" | "max";

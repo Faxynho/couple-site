@@ -1,8 +1,19 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowUpRight, PawPrint } from "lucide-react";
 import { PETS, petRoomQuery } from "../config";
-import PetSprite from "./PetSprite";
+import PetInteraction from "./PetInteraction";
+import { usePetCare } from "../usePetCare";
 import styles from "../pets.module.css";
+
+function LobbyPet({ pet }: { pet: (typeof PETS)[number] }) {
+  const { care, stroke } = usePetCare(pet.id);
+  return <div className={styles.lobbyPet}>
+    <PetInteraction pet={pet} mood={care?.mood} onStroke={stroke} className={styles.lobbySprite} />
+    <span className={styles.lobbyPetName}>{pet.name}</span>
+  </div>;
+}
 
 export default function PetLobbyArea({ roomCode }: { roomCode: string }) {
   return (
@@ -17,12 +28,7 @@ export default function PetLobbyArea({ roomCode }: { roomCode: string }) {
         <span className={styles.stageRug} aria-hidden="true" />
         <span className={styles.stageToy} aria-hidden="true" />
         <div className={styles.lobbyPets}>
-          {PETS.map((pet) => (
-            <div className={styles.lobbyPet} key={pet.id}>
-              <PetSprite pet={pet} className={styles.lobbySprite} />
-              <span className={styles.lobbyPetName}>{pet.name}</span>
-            </div>
-          ))}
+          {PETS.map((pet) => <LobbyPet pet={pet} key={pet.id} />)}
         </div>
       </div>
       <Link className={styles.petsAccess} href={`/pets${petRoomQuery(roomCode)}`}>

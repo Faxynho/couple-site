@@ -113,7 +113,7 @@
 .lampGlow { z-index: 140; aspect-ratio: 680 / 917; mix-blend-mode: screen; }
 .lampGlow::before { content: ""; position: absolute; top: var(--light-y); left: var(--light-x); width: clamp(150px, 38vw, 235px); height: clamp(135px, 34vw, 210px); transform: translate(-50%, -38%); border-radius: 50%; background: radial-gradient(ellipse, rgba(255, 250, 218, .98) 0%, rgba(255, 231, 174, .76) 24%, rgba(255, 204, 132, .47) 48%, rgba(255, 184, 102, .20) 66%, rgba(255, 169, 86, .07) 76%, transparent 86%); filter: blur(3px); box-shadow: 0 0 18px rgba(255, 212, 141, .26); }
 .scene[data-time-of-day="night"] .nightShade, .scene[data-time-of-day="night"] .ceilingGlow, .scene[data-time-of-day="night"] .lampGlow { opacity: 1; }
-.petWalletTop { position:absolute; z-index:13; top:max(66px,calc(env(safe-area-inset-top) + 66px)); right:max(14px,calc((100% - 600px) / 2 + 15px)); display:inline-flex; min-width:4.6rem; height:2.55rem; align-items:center; justify-content:center; gap:.3rem; padding:.16rem .55rem .16rem .2rem; border:1px solid rgba(237,188,133,.58); border-radius:999px; color:#6e461f; background:rgba(255,247,225,.93); box-shadow:0 5px 16px rgba(91,55,28,.16),inset 0 1px 0 rgba(255,255,255,.9); backdrop-filter:blur(9px); pointer-events:none; }
+.petWalletTop { position:absolute; z-index:13; top:max(15px,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); display:inline-flex; min-width:4.6rem; height:2.55rem; align-items:center; justify-content:center; gap:.3rem; padding:.16rem .55rem .16rem .2rem; border:1px solid rgba(237,188,133,.58); border-radius:999px; color:#6e461f; background:rgba(255,247,225,.93); box-shadow:0 5px 16px rgba(91,55,28,.16),inset 0 1px 0 rgba(255,255,255,.9); backdrop-filter:blur(9px); pointer-events:none; }
 .petWalletTop img { position:static; width:2rem; height:2rem; object-fit:contain; filter:drop-shadow(0 3px 5px rgba(123,75,24,.16)); }
 .petWalletTop strong { max-width:5.6rem; overflow:hidden; font-family:var(--font-display),sans-serif; font-size:.86rem; font-weight:950; text-overflow:ellipsis; white-space:nowrap; }
 .timePreview { position: absolute; z-index: 12; top: max(15px, env(safe-area-inset-top)); right: max(14px, calc((100% - 600px) / 2 + 15px)); display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(119, 72, 81, .18); border-radius: 50%; color: #775366; background: rgba(255, 248, 236, .88); box-shadow: 0 2px 8px rgba(44, 25, 36, .12); cursor: pointer; }
@@ -336,6 +336,43 @@
 .careIllustration svg:last-child { position: absolute; right: 11px; bottom: 8px; color: #8b735d; }
 .carePanel h2 { font-family: var(--font-display), sans-serif; font-size: 19px; font-weight: 700; }
 .carePanel p { margin-top: 3px; color: #9d7880; font-size: 12px; }
+
+/* Carinho: uma faixa de tecido com medidores talhados em duas cores do quarto. */
+.carePanel { display: flex; flex-direction: column; justify-content: center; gap: 12px; width: min(100%, 580px); margin: auto; padding: 12px 16px 15px; }
+.careHeading { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.careHeading h2 { flex: 1; min-width: 0; color: #755062; font-size: clamp(15px, 4.2vw, 19px); white-space: nowrap; }
+.careHeadingMark { display: grid; flex: none; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: #fff8ee; background: #b9798e; box-shadow: inset 0 1px 2px #e4a9b9, 0 2px 5px #a9768a50; }
+.careMood { flex: none; padding: 4px 9px; border: 1px solid #ecc7bd; border-radius: 999px; color: #945c70; background: #f9e7db; font-size: 11px; font-weight: 800; }
+.careMood[data-mood="sad"] { color: #836780; background: #e8dfea; border-color: #cdb8d6; }
+.careMood[data-mood="neutral"] { color: #806e62; background: #eee4d4; }
+.careMeters { display: grid; gap: 9px; }
+.careMeter { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.careIcon { display: grid; flex: none; place-items: center; width: 37px; height: 37px; border: 1px solid #e7bcc8; border-radius: 12px 12px 15px 15px; color: #a55f79; background: #f6dbe0; box-shadow: inset 0 1px #fff9f1; transform: rotate(-4deg); }
+.careMeal .careIcon { transform: rotate(3deg); border-color: #d2cfb1; color: #798463; background: #e8ead9; }
+.careMeasure { flex: 1; min-width: 0; }
+.careMeasureText { display: flex; justify-content: space-between; margin-bottom: 4px; color: #826570; font-size: 11px; font-weight: 800; }
+.careMeasureText span { color: #986f7a; font-variant-numeric: tabular-nums; }
+.careTrack { position: relative; display: block; height: 13px; overflow: hidden; border: 1px solid #d5b6ae; border-radius: 999px; background: #ead7cf; box-shadow: inset 0 2px 3px #94726524, 0 1px #fff; }
+.careTrack::after { content: ""; position: absolute; inset: 2px 0 2px 0; pointer-events: none; background: repeating-linear-gradient(90deg, transparent 0 calc(20% - 1px), #fff9eb80 calc(20% - 1px) 20%); }
+.careFill { display: block; height: 100%; border-radius: inherit; background: linear-gradient(180deg, #e9a4b7, #c87791); transition: width .45s ease; }
+.careMeal .careFill { background: linear-gradient(180deg, #b9c792, #8fa66f); }
+.foodGrid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; width: min(100%,580px); margin: 3px auto; }
+.foodItem { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 122px; padding: 5px; border: 1px solid #e8c8be; border-radius: 15px; color: #785560; background: linear-gradient(160deg,#fff8ed,#f5e3d8); box-shadow: inset 0 1px #fff, 0 3px 7px #9f737d15; touch-action: none; user-select: none; cursor: grab; }
+.foodItem:active { cursor: grabbing; border-color: #c58f9e; }
+.foodItem:disabled { opacity: .55; cursor: default; }
+.foodItem img { width: 65px; height: 63px; object-fit: contain; pointer-events: none; }
+.foodItem strong { max-width: 100%; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.foodDetails { display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 100%; padding-inline: 5px; color: #a45e79; font-size: 10px; font-weight: 850; }
+.foodDetails span:last-child { color: #9c7850; }
+.foodGhost { position: fixed; z-index: 500; width: 82px; height: 82px; transform: translate(-50%,-50%); pointer-events: none; filter: drop-shadow(0 5px 6px #5c364b55); }
+.foodGhost img { width: 100%; height: 100%; object-fit: contain; }
+.foodFeedback { flex: none; align-self: center; max-width: calc(100% - 30px); margin: 3px 0 9px; padding: 6px 14px; border: 1px solid #e9bfbf; border-radius: 999px; color: #85566d; background: #fae5de; font-size: 11px; font-weight: 800; }
+.pet[data-drop-active]::after { content: ""; position: absolute; z-index: -1; inset: 6% 15%; border: 2px solid #f7d5ac; border-radius: 49%; box-shadow: 0 0 0 5px #fff2d440; pointer-events: none; }
+:global(html.dark) .careHeading h2, :global(html.dark) .careMeasureText { color: #f1dce3; }
+:global(html.dark) .careMood, :global(html.dark) .foodFeedback { color: #f6d3e0; border-color: #785263; background: #4c3241; }
+:global(html.dark) .careTrack { border-color: #715365; background: #4f3947; }
+:global(html.dark) .foodItem { color: #ecd7de; border-color: #654655; background: linear-gradient(160deg,#3b2b36,#30232d); }
+@media (max-height: 680px) and (max-width: 600px) { .carePanel { gap: 6px; padding-block: 7px; } .foodItem { min-height: 106px; } .foodItem img { height: 54px; } }
 
 
 :global(html.dark) .shell {

@@ -68,4 +68,18 @@ describe("Nix layered idle", () => {
     act(() => vi.advanceTimersByTime(4750));
     expect(container.querySelector<HTMLElement>("[data-blink-state]")?.dataset.blinkState).toBe("half");
   });
+
+  it.each(PETS)("$name troca apenas a expressão durante tristeza, carinho e alimentação", (pet) => {
+    const view = render(<PetSprite pet={pet} mood="sad" />);
+    const head = () => view.container.querySelector<HTMLElement>('[data-rig-part="head"]');
+    expect(head()?.style.backgroundImage).toContain(`/pets/${pet.id}/head-sad.webp`);
+    expect(view.container.querySelector('[data-rig-part="fixed"]')?.getAttribute("style")).toContain(`/pets/${pet.id}/body.webp`);
+    view.rerender(<PetSprite pet={pet} mood="sad" animation="petting" />);
+    expect(head()?.style.backgroundImage).toContain(`/pets/${pet.id}/head-petting.webp`);
+    view.rerender(<PetSprite pet={pet} mood="happy" animation="eating" />);
+    expect(head()?.style.backgroundImage).toContain(`/pets/${pet.id}/head-eating.webp`);
+    view.rerender(<PetSprite pet={pet} mood="happy" />);
+    expect(head()?.style.backgroundImage).toContain(`/pets/${pet.id}/head.webp`);
+    expect(view.container.querySelector('[data-blink-state]')).not.toBeNull();
+  });
 });

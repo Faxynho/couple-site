@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
-import type { PetAnimation, PetDefinition } from "../config";
+import type { PetAnimation, PetDefinition, PetMood } from "../config";
 import PetBlink from "./PetBlink";
 import styles from "../pets.module.css";
 
@@ -47,10 +47,14 @@ function randomSign() {
 export default function PetRig({
   pet,
   animation,
+  mood,
+  reactionTick,
   className,
 }: {
   pet: RigPet;
   animation: PetAnimation;
+  mood: PetMood;
+  reactionTick: number;
   className: string;
 }) {
   const rootRef = useRef<HTMLSpanElement>(null);
@@ -279,6 +283,34 @@ export default function PetRig({
     };
   }, [animation, duration, breathWidth, breathHeight, earMotion]);
 
+  useEffect(() => {
+    if (animation === "idle") return;
+    const root = rootRef.current;
+    const head = root?.querySelector<HTMLElement>('[data-rig-part="headLife"]');
+    const chest = root?.querySelector<HTMLElement>('[data-rig-part="breath"]');
+    if (!head) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const keyframes: Keyframe[] = animation === "petting" ? [
+      { offset: 0, transform: "translateY(0) rotate(0deg)" },
+      { offset: .22, transform: "translateY(5px) rotate(-4deg)" },
+      { offset: .55, transform: "translateY(3px) rotate(-1.5deg)" },
+      { offset: .8, transform: "translateY(4px) rotate(2deg)" },
+      { offset: 1, transform: "translateY(0) rotate(0deg)" },
+    ] : [
+      { offset: 0, transform: "translateY(0) rotate(0deg)" },
+      { offset: .24, transform: "translateY(7px) rotate(3deg)" },
+      { offset: .43, transform: "translateY(3px) rotate(1deg)" },
+      { offset: .62, transform: "translateY(7px) rotate(3deg)" },
+      { offset: .82, transform: "translateY(2px) rotate(0deg)" },
+      { offset: 1, transform: "translateY(0) rotate(0deg)" },
+    ];
+    const headAnimation = head.animate(keyframes, { duration: animation === "eating" ? 860 : 740, easing: "ease-in-out" });
+    const chestAnimation = chest?.animate([
+      { transform: "scale(1)" }, { transform: "scale(1.018,.985)" }, { transform: "scale(1)" },
+    ], { duration: animation === "eating" ? 860 : 740, easing: "ease-in-out" });
+    return () => { headAnimation.cancel(); chestAnimation?.cancel(); };
+  }, [animation, reactionTick]);
+
   const rigStyle = {
     aspectRatio: "1 / 1",
     "--rig-duration": `${duration}s`,
@@ -297,8 +329,10 @@ export default function PetRig({
       {groundedParts.map((part) => renderPart(part, canvasSize))}
       <span className={styles.rigHeadGroup} data-rig-part="headBreath" aria-hidden="true">
         <span className={styles.rigHeadLife} data-rig-part="headLife">
-          {headParts.map((part) => renderPart(part, canvasSize))}
-          {blink && <PetBlink artwork={blink} canvasSize={canvasSize} />}
+          {headParts.map((part) => renderPart({ ...part, src: animation !== "idle"
+            ? `/pets/${pet.id}/head-${animation}.webp`
+            : mood !== "happy" ? `/pets/${pet.id}/head-${mood}.webp` : part.src }, canvasSize))}
+          {blink && animation === "idle" && mood === "happy" && <PetBlink artwork={blink} canvasSize={canvasSize} />}
           {earParts.map((part) => renderPart(part, canvasSize))}
         </span>
       </span>

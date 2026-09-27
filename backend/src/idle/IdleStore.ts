@@ -979,6 +979,15 @@ export class IdleStore {
     return { ok: true as const, alreadyOwned: false, snapshot: this.buildSnapshot(null) };
   }
 
+  spendPetFood(price: number): { ok: boolean; snapshot: IdleSnapshot } {
+    if (!Number.isSafeInteger(price) || price < 1 || this.data.globalCoins < price) {
+      return { ok: false, snapshot: this.getSnapshot() };
+    }
+    this.data.globalCoins = safeMoney(this.data.globalCoins - price);
+    this.touch(this.now());
+    return { ok: true, snapshot: this.buildSnapshot(null) };
+  }
+
   ownsPetDecoration(id: string): boolean {
     return this.data.purchasedPetDecorations.includes(id);
   }

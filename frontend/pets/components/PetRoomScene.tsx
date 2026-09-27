@@ -2,9 +2,9 @@
 
 import { memo, useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
-import type { PetDefinition } from "../config";
+import type { PetAnimation, PetDefinition, PetMood } from "../config";
 import { decorationStyle, type Decoration } from "../petRoomDecorations";
-import PetSprite from "./PetSprite";
+import PetInteraction from "./PetInteraction";
 import styles from "../PetRoom.module.css";
 
 const BASE = "/images/pets/room/base/";
@@ -19,7 +19,7 @@ function SceneAsset({ name, className }: { name: string; className: string }) {
   return <img src={`${BASE}${name}.webp`} alt="" className={className} draggable={false} aria-hidden="true" />;
 }
 
-function PetRoomScene({ pet, decorations, coins, environment }: { pet: PetDefinition; decorations: readonly Decoration[]; coins: number; environment: "real" | "dev" }) {
+function PetRoomScene({ pet, decorations, coins, environment, mood = "happy", action = "idle", onStroke = async () => false, dropActive = false }: { pet: PetDefinition; decorations: readonly Decoration[]; coins: number; environment: "real" | "dev"; mood?: PetMood; action?: PetAnimation; onStroke?: () => Promise<boolean>; dropActive?: boolean }) {
   const sceneDecorations = decorations.filter((item) => item.kind === "decor");
   const structural = (slot: string) => decorations.find((item) => item.slot === slot);
   const curtain = structural("window-curtain");
@@ -84,7 +84,7 @@ function PetRoomScene({ pet, decorations, coins, environment }: { pet: PetDefini
         {byLayer("wall")}
         {byLayer("rear")}
         <div className={styles.petShadow} aria-hidden="true" />
-        <PetSprite pet={pet} className={styles.pet} />
+        <PetInteraction pet={pet} mood={mood} action={action} onStroke={onStroke} dropActive={dropActive} className={styles.pet} />
         {byLayer("front")}
         <div className={styles.nightShade} aria-hidden="true" />
         <div className={styles.ceilingGlow} aria-hidden="true" />

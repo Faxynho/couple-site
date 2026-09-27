@@ -66,6 +66,7 @@ const roomManager = new RoomManager();
 registerSocketHandlers(io, roomManager);
 idleStore.subscribe((snapshot) => io.emit("idle:state", snapshot));
 idleDevStore.subscribe((snapshot) => io.emit("idle:state", snapshot));
+persistentDuoStore.subscribePetCare((snapshot) => io.emit("petCare:changed", snapshot));
 
 // Limpa salas abandonadas a cada 10 minutos.
 setInterval(() => roomManager.sweepEmptyRooms(), 1000 * 60 * 10);

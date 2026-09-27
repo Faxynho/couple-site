@@ -27,6 +27,11 @@
   overflow: visible;
   contain: layout;
 }
+.petInteraction { position: relative; display: block; flex: none; touch-action: none; user-select: none; -webkit-user-select: none; }
+.interactionSprite { width: 100%; pointer-events: none; }
+.petHearts { position: absolute; z-index: 3; top: 21%; left: 50%; width: 0; height: 0; pointer-events: none; }
+.floatingHeart { position: absolute; color: #f28ca8; font-size: 17px; line-height: 1; text-shadow: 0 1px #fff1e9, 0 2px 4px #a95d7a55; opacity: 0; animation: floatPetHeart 1.05s ease-out forwards; }
+@keyframes floatPetHeart { 0% { opacity: 0; transform: translate(var(--heart-x),10px) scale(.45) rotate(-12deg); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(var(--heart-x) + var(--heart-drift)),-54px) scale(1) rotate(15deg); } }
 
 .rigPart {
   position: absolute;

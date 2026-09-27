@@ -2,18 +2,21 @@
 
 import { useState } from "react";
 import {
-  Armchair, BedDouble, Bone, ChevronDown, CircleDot, Crown, Grid3X3, HandHeart,
+  Armchair, BedDouble, Bone, ChevronDown, CircleDot, Crown, Grid3X3,
   Heart, Paintbrush, PawPrint, Shirt, Square, ToyBrick, Coins, Layers3,
-  Utensils, Cookie, FlaskConical, LockKeyhole, RotateCcw, type LucideIcon,
+  Utensils, FlaskConical, LockKeyhole, RotateCcw, type LucideIcon,
 } from "lucide-react";
 import type { PetDefinition } from "../config";
+import type { PetCareSnapshot } from "@/lib/petApi";
+import type { PetFood } from "../food";
+import PetFoodShelf from "./PetFoodShelf";
 import { PET_ROOM_DECORATIONS, type Decoration, type PetRoomSlots } from "../petRoomDecorations";
 import PetItemGrid, { type PetItemPreview } from "./PetItemGrid";
 import styles from "../PetRoom.module.css";
 
 const TABS = [
-  { id: "food", label: "Comida", icon: Utensils },
   { id: "care", label: "Carinho", icon: Heart },
+  { id: "food", label: "Comida", icon: Utensils },
   { id: "play", label: "Brincar", icon: CircleDot },
   { id: "style", label: "Visual", icon: Shirt },
   { id: "room", label: "Quarto", icon: BedDouble },
@@ -34,11 +37,6 @@ const ROOM_FILTERS: readonly { label: string; icon: LucideIcon }[] = [
   { label: "Estrutura", icon: Layers3 },
 ];
 
-const FOOD: readonly PetItemPreview[] = [
-  { label: "Tigela", icon: Utensils, tone: "peach" },
-  { label: "Petisco", icon: Bone, tone: "rose" },
-  { label: "Lanchinho", icon: Cookie, tone: "sage" },
-];
 const TOYS: readonly PetItemPreview[] = [
   { label: "Bola", icon: CircleDot, tone: "rose" },
   { label: "Brinquedo", icon: ToyBrick, tone: "sage" },
@@ -78,7 +76,19 @@ function FilterStrip({
   );
 }
 
-export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBuy, coins: _coins, purchased, environment, onDevAction }: {
+function CareMeter({ label, value, icon: Icon, tone }: { label: string; value: number | undefined; icon: LucideIcon; tone: "heart" | "meal" }) {
+  return <div className={`${styles.careMeter} ${tone === "meal" ? styles.careMeal : styles.careHeart}`}>
+    <span className={styles.careIcon}><Icon size={18} strokeWidth={1.8} /></span>
+    <div className={styles.careMeasure}>
+      <span className={styles.careMeasureText}><strong>{label}</strong><span>{value === undefined ? "—" : `${Math.round(value)}%`}</span></span>
+      <span className={styles.careTrack} role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value === undefined ? 0 : Math.round(value)}>
+        <span className={styles.careFill} style={{ width: `${Math.max(0, Math.min(100, value ?? 0))}%` }} />
+      </span>
+    </div>
+  </div>;
+}
+
+export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBuy, coins: _coins, purchased, environment, onDevAction, care = null, onFeed = async () => false, onFoodHover = () => {}, feedback = "" }: {
   pet: PetDefinition;
   slots: PetRoomSlots;
   ready: boolean;
@@ -89,8 +99,12 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
   purchased: string[];
   environment: "real" | "dev";
   onDevAction: (payload: Record<string, unknown>) => void;
+  care?: PetCareSnapshot | null;
+  onFeed?: (food: PetFood) => Promise<boolean>;
+  onFoodHover?: (value: boolean) => void;
+  feedback?: string;
 }) {
-  const [activeTab, setActiveTab] = useState<TabId>("food");
+  const [activeTab, setActiveTab] = useState<TabId>("care");
   const [styleFilter, setStyleFilter] = useState("Roupas");
   const [roomFilter, setRoomFilter] = useState("Todos");
   const [roomExpanded, setRoomExpanded] = useState(false);
@@ -98,8 +112,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
   const [devDecorationId, setDevDecorationId] = useState(PET_ROOM_DECORATIONS[0].id);
   const panelId = `pet-panel-${activeTab}`;
 
-  const items = activeTab === "food" ? FOOD
-    : activeTab === "play" ? TOYS
+  const items = activeTab === "play" ? TOYS
       : activeTab === "style" ? STYLE.filter((item) => item.category === styleFilter)
         : activeTab === "room" ? []
           : [];
@@ -153,11 +166,8 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
       >
         {activeTab === "care" ? (
           <div className={styles.carePanel}>
-            <span className={styles.careIllustration} aria-hidden="true"><HandHeart size={48} strokeWidth={1.35} /><PawPrint size={18} /></span>
-            <div>
-              <h2>Um carinho para {pet.name}</h2>
-              <p>Um momento tranquilo, só de vocês.</p>
-            </div>
+            <div className={styles.careHeading}><span className={styles.careHeadingMark} aria-hidden="true"><PawPrint size={17} /></span><h2>Faça carinho {pet.id === "nix" ? "na" : "no"} {pet.name}</h2><span className={styles.careMood} data-mood={care?.mood}>{care?.mood === "sad" ? "Triste" : care?.mood === "neutral" ? "Sério" : care ? "Feliz" : "—"}</span></div>
+            <div className={styles.careMeters}><CareMeter label="Carinho" value={care?.affection} icon={Heart} tone="heart" /><CareMeter label="Saciedade" value={care?.satiety} icon={Utensils} tone="meal" /></div>
           </div>
         ) : (
           <>
@@ -167,8 +177,8 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
             {activeTab === "room" && (
               <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter} />
             )}
-            {(activeTab === "food" || activeTab === "play") && (
-              <p className={styles.drawerHint}>{activeTab === "food" ? "Para o cantinho das refeições" : "Para os momentos de brincadeira"}</p>
+            {activeTab === "play" && (
+              <p className={styles.drawerHint}>Para os momentos de brincadeira</p>
             )}
             <div
               className={styles.drawerScroll}
@@ -203,8 +213,9 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
                     );
                   })}
                 </div>
-              ) : <PetItemGrid items={items} />}
+              ) : activeTab === "food" ? <PetFoodShelf onFeed={onFeed} onHover={onFoodHover} ready={ready && Boolean(care)} /> : <PetItemGrid items={items} />}
             </div>
+            {activeTab === "food" && feedback && <p className={styles.foodFeedback} role="status">{feedback}</p>}
             {activeTab === "room" && (error || !ready) && <p className={styles.decorStatus} role="status">{error || "Carregando decorações..."}</p>}
             {activeTab === "room" && environment === "dev" && <details className={styles.petDevTools}>
               <summary><FlaskConical size={16} /> Ferramentas PET DEV</summary>

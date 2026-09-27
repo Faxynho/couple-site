@@ -58,6 +58,8 @@ interface PersistentDuoStoredData extends PersistentDuoLobbyData {
   drawing: SharedDrawingBoard;
   petRooms: Record<PetRoomId, PetRoomState>;
   petRoomsDev: Record<PetRoomId, PetRoomState>;
+  petCare?: Record<PetRoomId, PetCareState>;
+  petCareDev?: Record<PetRoomId, PetCareState>;
 }
 
 export type PetRoomId = "nix" | "max";
@@ -68,6 +70,40 @@ export interface PetRoomState {
 export interface PetRoomSnapshot extends PetRoomState {
   petId: PetRoomId;
   environment: "real" | "dev";
+}
+
+export interface PetCareState {
+  affection: number;
+  satiety: number;
+  lastUpdatedAt: number;
+  revision: number;
+}
+export interface PetCareSnapshot extends PetCareState {
+  petId: PetRoomId;
+  environment: "real" | "dev";
+  mood: "happy" | "neutral" | "sad";
+}
+
+// A full heart lasts ~23 hours before sadness; a full belly ~28 hours.
+export const PET_AFFECTION_PER_HOUR = 3;
+export const PET_SATIETY_PER_HOUR = 2.5;
+export const PET_STROKE_GAIN = 4;
+const newPetCare = (now = Date.now()): PetCareState => ({ affection: 100, satiety: 100, lastUpdatedAt: now, revision: 0 });
+function sanitizePetCare(value: unknown): PetCareState {
+  if (!value || typeof value !== "object") return newPetCare();
+  const item = value as Partial<PetCareState>;
+  const clamp = (n: unknown) => typeof n === "number" && Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 100;
+  return { affection: clamp(item.affection), satiety: clamp(item.satiety),
+    lastUpdatedAt: typeof item.lastUpdatedAt === "number" && Number.isFinite(item.lastUpdatedAt) ? Math.min(Date.now(), Math.max(0, item.lastUpdatedAt)) : Date.now(),
+    revision: Number.isSafeInteger(item.revision) && Number(item.revision) >= 0 ? Number(item.revision) : 0 };
+}
+export function projectPetCare(value: PetCareState, petId: PetRoomId, environment: "real" | "dev", now = Date.now()): PetCareSnapshot {
+  const hours = Math.max(0, now - value.lastUpdatedAt) / 3_600_000;
+  const affection = Math.max(0, Math.round((value.affection - hours * PET_AFFECTION_PER_HOUR) * 10) / 10);
+  const satiety = Math.max(0, Math.round((value.satiety - hours * PET_SATIETY_PER_HOUR) * 10) / 10);
+  const lowest = Math.min(affection, satiety);
+  return { petId, environment, affection, satiety, lastUpdatedAt: now, revision: value.revision,
+    mood: lowest < 30 ? "sad" : lowest < 65 ? "neutral" : "happy" };
 }
 
 // The server validates ID, slot and conflicts from the same catalog as its shop.
@@ -243,13 +279,17 @@ export class PersistentDuoStore {
     drawing: emptyDrawingBoard(),
     petRooms: { nix: newPetRoomState(true), max: newPetRoomState(true) },
     petRoomsDev: { nix: newPetRoomState(), max: newPetRoomState() },
+    petCare: { nix: newPetCare(), max: newPetCare() },
+    petCareDev: { nix: newPetCare(), max: newPetCare() },
   };
   private loadPromise: Promise<void> | null = null;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private savingNow = false;
   private saveAgainAfter = false;
+  private careListeners = new Set<(snapshot: PetCareSnapshot) => void>();
+  private lastStrokeAt = new Map<string, number>();
 
-  constructor(private readonly shouldPersist = true) {}
+  constructor(private readonly shouldPersist = true, private readonly dataFile = DATA_FILE) {}
 
   ready(): Promise<void> {
     if (!this.loadPromise) this.loadPromise = this.load();
@@ -267,6 +307,41 @@ export class PersistentDuoStore {
   getPetRoom(petId: PetRoomId, environment: "real" | "dev" = "real"): PetRoomSnapshot {
     const state = environment === "dev" ? this.data.petRoomsDev[petId] : this.data.petRooms[petId];
     return { petId, environment, revision: state.revision, slots: { ...state.slots } };
+  }
+
+  subscribePetCare(listener: (snapshot: PetCareSnapshot) => void): () => void {
+    this.careListeners.add(listener);
+    return () => this.careListeners.delete(listener);
+  }
+
+  getPetCare(petId: PetRoomId, environment: "real" | "dev" = "real"): PetCareSnapshot {
+    const state = (environment === "dev" ? this.data.petCareDev! : this.data.petCare!)[petId];
+    return projectPetCare(state, petId, environment);
+  }
+
+  strokePet(petId: PetRoomId, environment: "real" | "dev", accountId: AccountId): PetCareSnapshot | null {
+    const key = `${environment}:${petId}:${accountId}`;
+    const now = Date.now();
+    if (now - (this.lastStrokeAt.get(key) ?? 0) < 450) return null;
+    this.lastStrokeAt.set(key, now);
+    return this.updatePetCare(petId, environment, PET_STROKE_GAIN, 0);
+  }
+
+  feedPet(petId: PetRoomId, environment: "real" | "dev", amount: number): PetCareSnapshot {
+    return this.updatePetCare(petId, environment, 0, amount);
+  }
+
+  private updatePetCare(petId: PetRoomId, environment: "real" | "dev", affectionGain: number, satietyGain: number): PetCareSnapshot {
+    const state = (environment === "dev" ? this.data.petCareDev! : this.data.petCare!)[petId];
+    const current = projectPetCare(state, petId, environment);
+    state.affection = Math.min(100, current.affection + affectionGain);
+    state.satiety = Math.min(100, current.satiety + satietyGain);
+    state.lastUpdatedAt = current.lastUpdatedAt;
+    state.revision += 1;
+    this.scheduleSave();
+    const updated = this.getPetCare(petId, environment);
+    this.careListeners.forEach((listener) => listener(updated));
+    return updated;
   }
 
   togglePetDecoration(petId: PetRoomId, decorationId: unknown, environment: "real" | "dev" = "real"): PetRoomSnapshot | null {
@@ -379,8 +454,9 @@ export class PersistentDuoStore {
 
   private async load() {
     try {
-      await fs.mkdir(DATA_DIR, { recursive: true });
-      const raw = await fs.readFile(DATA_FILE, "utf-8");
+      if (!this.shouldPersist) return;
+      await fs.mkdir(path.dirname(this.dataFile), { recursive: true });
+      const raw = await fs.readFile(this.dataFile, "utf-8");
       const parsed = JSON.parse(raw) as Partial<PersistentDuoStoredData>;
       const displayName = normalizePersistentDuoDisplayName(parsed.displayName);
       if (displayName) this.data.displayName = displayName;
@@ -393,6 +469,8 @@ export class PersistentDuoStore {
         nix: sanitizePetRoomState(parsed.petRoomsDev?.nix, false),
         max: sanitizePetRoomState(parsed.petRoomsDev?.max, false),
       };
+      this.data.petCare = { nix: sanitizePetCare(parsed.petCare?.nix), max: sanitizePetCare(parsed.petCare?.max) };
+      this.data.petCareDev = { nix: sanitizePetCare(parsed.petCareDev?.nix), max: sanitizePetCare(parsed.petCareDev?.max) };
     } catch {
       // Primeira execução ou arquivo inválido: usa o nome padrão.
     }
@@ -414,12 +492,12 @@ export class PersistentDuoStore {
     }
     this.savingNow = true;
     try {
-      await fs.mkdir(DATA_DIR, { recursive: true });
-      const tmpFile = `${DATA_FILE}.tmp`;
+      await fs.mkdir(path.dirname(this.dataFile), { recursive: true });
+      const tmpFile = `${this.dataFile}.tmp`;
       // O quadro pode acumular muitos pontos; JSON compacto evita inflar o
       // volume persistente sem mudar a estrutura ou a precisão do desenho.
       await fs.writeFile(tmpFile, JSON.stringify(this.data), "utf-8");
-      await fs.rename(tmpFile, DATA_FILE);
+      await fs.rename(tmpFile, this.dataFile);
     } catch (error) {
       console.error("Não foi possível salvar backend/data/persistent-duo-lobby.json:", error);
     } finally {
