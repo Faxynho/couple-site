@@ -46,14 +46,14 @@ export const KITTY_CHARACTER_PLACEMENTS: Record<string, { scene: number; p: numb
   "badtz-maru": { scene: 3, p: 14, name: "Badtz-Maru", left: "56%", top: "44%", width: "40%" },
   "chococat": { scene: 3, p: 15, name: "Chococat", left: "64%", top: "25%", width: "40%" },
   "kuromi": { scene: 3, p: 16, name: "Kuromi", left: "15%", top: "24%", width: "40%" },
-  "my-sweet-piano": { scene: 4, p: 17, name: "My Sweet Piano", left: "4%", top: "44%", width: "40%" },
-  "charmmy-kitty": { scene: 4, p: 18, name: "Charmmy Kitty", left: "55%", top: "44%", width: "40%" },
-  "hello-kitty-angel": { scene: 4, p: 19, name: "Hello Kitty anjo", left: "4%", top: "68%", width: "40%" },
-  "kuromi-angel": { scene: 4, p: 20, name: "Kuromi anjo", left: "55%", top: "68%", width: "40%" },
+  "my-sweet-piano": { scene: 4, p: 17, name: "My Sweet Piano", left: "1%", top: "46%", width: "40%" },
+  "charmmy-kitty": { scene: 4, p: 18, name: "Charmmy Kitty", left: "57%", top: "45%", width: "40%" },
+  "hello-kitty-angel": { scene: 4, p: 19, name: "Hello Kitty anjo", left: "4%", top: "58%", width: "40%" },
+  "kuromi-angel": { scene: 4, p: 20, name: "Kuromi anjo", left: "55%", top: "58%", width: "40%" },
   "my-melody-dark-angel": { scene: 5, p: 21, name: "My Melody anjo noturno", left: "3%", top: "43%", width: "35%" },
-  "hello-kitty-gala": { scene: 5, p: 22, name: "Hello Kitty de gala", left: "31%", top: "31%", width: "44%" },
-  "kuromi-celestial": { scene: 5, p: 23, name: "Kuromi celestial", left: "59%", top: "43%", width: "44%" },
-  "little-twin-stars": { scene: 6, p: 24, name: "Little Twin Stars: Kiki e Lala", left: "12%", top: "27%", width: "76%" },
+  "hello-kitty-gala": { scene: 5, p: 22, name: "Hello Kitty de gala", left: "31%", top: "45%", width: "44%" },
+  "kuromi-celestial": { scene: 5, p: 23, name: "Kuromi celestial", left: "59%", top: "45%", width: "44%" },
+  "little-twin-stars": { scene: 6, p: 24, name: "Little Twin Stars: Kiki e Lala", left: "12%", top: "15%", width: "62%" },
 };
 
 const RARITY_ASSETS = [
