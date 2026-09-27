@@ -198,8 +198,6 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
   const animations = useRef(new Map<string, Animation>());
   const burstTimers = useRef(new Set<number>());
   const purchased = data.items.filter((item) => item.purchased && item.definition.scene === scene);
-  const visibleItems = data.items.filter((item) => item.definition.scene === scene);
-  const furthestPurchased = data.items.reduce((order, item) => item.purchased ? Math.max(order, item.definition.unlockOrder) : order, -1);
 
   useEffect(() => () => {
     animations.current.forEach((animation) => animation.cancel());
@@ -235,13 +233,18 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem }: {
     <section className={styles.scene} aria-label={mode === "farm" ? "Cenário da Fazendinha" : "Sala dos personagens"}>
       <BalancePill balance={balance} production={data.effectiveProduction} />
       {purchased.length === 0 && <div className={styles.emptySceneHint}><Sparkles size={18} />{scene === 0 ? `Compre ${mode === "farm" ? "a Horta" : "Hello Kitty"} na aba Melhorias` : "Compre um item deste cenário para vê-lo aqui"}</div>}
-      {(mode === "farm" ? purchased : visibleItems).map((item) => {
+      {purchased.map((item) => {
         const localIndex = item.definition.unlockOrder - (scene === 0 ? 0 : scene === 1 ? 4 : 8);
         const position = mode === "farm" ? FARM_POSITIONS[scene][localIndex] : KITTY_CHARACTER_PLACEMENTS[item.definition.id];
         if (!position) return null;
-        if (!item.purchased) return <div key={item.definition.id} className={`${styles.character} ${styles.homeLocked}`} style={{ ...position, "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties & { "--locked-brightness": number }} aria-label={`${item.definition.name} bloqueado`}><Image src={item.definition.asset} alt="" fill sizes="42vw" /><LockKeyhole className={styles.homeLockIcon} size={24} aria-hidden="true" /></div>;
-        const particleCount = mode === "kitty" ? Math.min(8, Math.round(item.definition.unlockOrder / 3)) : 0;
-        return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : `${styles.character} ${styles.characterRare}`} data-tier={mode === "kitty" ? rarityTier(item.definition.unlockOrder) : undefined} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}>
+        const prestige = item.definition.unlockOrder;
+        const tier = mode === "kitty" ? rarityTier(prestige) : 1;
+        const particleCount = mode === "kitty"
+          ? tier === 1
+            ? Math.max(0, prestige - 1)
+            : Math.min(18, 2 + tier * 2 + Math.floor((prestige % 4) / 2))
+          : 0;
+        return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : `${styles.character} ${styles.characterRare}`} data-tier={mode === "kitty" ? tier : undefined} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}>
           {particleCount > 0 && <span className={styles.homeCharacterParticles} aria-hidden="true">{PARTICLES.slice(0, particleCount).map(([x, y, size, delay, duration], particle) => <i key={particle} style={{ "--x": `${x}%`, "--y": `${y}%`, "--size": `${Math.max(3, size - 2)}px`, "--delay": `${delay}s`, "--duration": `${duration}s` } as CSSProperties} />)}</span>}
           <Image src={item.definition.asset} alt={item.definition.name} fill sizes="42vw" />
         </button>;
@@ -311,7 +314,11 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const selected = data.items[index];
   const prestige = selected.definition.unlockOrder;
   const tier = rarityTier(prestige);
-  const particleCount = selected.purchased ? Math.min(18, Math.round(Math.pow(prestige / 23, 1.2) * 18)) : 0;
+  const particleCount = selected.purchased
+    ? prestige === 0
+      ? 0
+      : Math.min(18, tier === 1 ? Math.max(0, prestige - 1) : 3 + tier * 2 + (prestige % 4))
+    : 0;
   const furthestPurchased = data.items.reduce((order, item) => item.purchased ? Math.max(order, item.definition.unlockOrder) : order, -1);
   const move = (direction: -1 | 1) => setIndex((current) => Math.max(0, Math.min(data.items.length - 1, current + direction)));
   const onTouchStart = (event: TouchEvent) => { touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; dragXRef.current = 0; setDragX(0); };

@@ -550,3 +550,104 @@
 @keyframes kittyHalo { from { opacity:.45; transform:rotate(0) scale(.96); } to { opacity:.95; transform:rotate(360deg) scale(1.04); } }
 @keyframes kittySpark { 0%,100% { opacity:0; transform:translate3d(0,7px,0) scale(.4); } 35%,65% { opacity:1; transform:translate3d(4px,-7px,0) scale(1); } }
 @media (prefers-reduced-motion:reduce) { .characterRare::before,.characterRare::after,.homeCharacterParticles i,.unlockParticles i,.carouselSelected img { animation:none !important; } }
+
+/* Rarity polish: stronger progression without circular halos in the world scenes. */
+.characterRare[data-tier="2"] { filter:drop-shadow(0 12px 10px rgba(91,41,62,.22)) drop-shadow(0 0 6px rgba(255,192,226,.32)); animation:kittyHomeTier2 2.9s ease-in-out infinite; }
+.characterRare[data-tier="3"] { filter:drop-shadow(0 13px 11px rgba(91,41,62,.24)) drop-shadow(0 0 9px rgba(197,168,255,.5)); animation:kittyHomeTier3 2.65s ease-in-out infinite; }
+.characterRare[data-tier="4"] { filter:drop-shadow(0 14px 12px rgba(78,40,83,.27)) drop-shadow(0 0 13px rgba(188,150,255,.68)) drop-shadow(0 0 7px rgba(255,196,228,.42)); animation:kittyHomeTier4 2.45s ease-in-out infinite; }
+.characterRare[data-tier="5"] { filter:drop-shadow(0 15px 13px rgba(76,37,84,.29)) drop-shadow(0 0 17px rgba(255,149,220,.76)) drop-shadow(0 0 11px rgba(255,221,137,.58)); animation:kittyHomeTier5 2.25s ease-in-out infinite; }
+.characterRare[data-tier="6"] { filter:drop-shadow(0 16px 14px rgba(68,38,91,.31)) drop-shadow(0 0 21px rgba(247,161,236,.86)) drop-shadow(0 0 15px rgba(255,225,133,.76)) drop-shadow(0 0 9px rgba(149,191,255,.62)); animation:kittyHomeTier6 2.05s ease-in-out infinite; }
+
+/* Replace the old circular aura/ring with scattered glints and soft asymmetric light. */
+.characterRare[data-tier="2"]::before,
+.characterRare[data-tier="3"]::before,
+.characterRare[data-tier="4"]::before,
+.characterRare[data-tier="5"]::before,
+.characterRare[data-tier="6"]::before {
+  inset:-8%;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  background:
+    radial-gradient(circle at 14% 28%,rgba(255,255,255,.95) 0 1.3%,transparent 3.8%),
+    radial-gradient(circle at 84% 22%,rgba(255,224,139,.92) 0 1.6%,transparent 4.3%),
+    radial-gradient(circle at 88% 74%,rgba(199,181,255,.88) 0 1.4%,transparent 4%),
+    radial-gradient(circle at 18% 79%,rgba(255,164,221,.88) 0 1.5%,transparent 4.2%);
+  opacity:.58;
+  animation:kittySceneGlints 3.8s ease-in-out infinite alternate;
+}
+.characterRare[data-tier="3"]::before { opacity:.72; transform:scale(1.03); }
+.characterRare[data-tier="4"]::before {
+  opacity:.9;
+  background:
+    radial-gradient(circle at 10% 22%,rgba(255,255,255,1) 0 1.4%,transparent 4%),
+    radial-gradient(circle at 30% 8%,rgba(255,219,122,.95) 0 1.4%,transparent 4%),
+    radial-gradient(circle at 83% 17%,rgba(199,181,255,.95) 0 1.6%,transparent 4.4%),
+    radial-gradient(circle at 94% 52%,rgba(255,255,255,.95) 0 1.2%,transparent 3.8%),
+    radial-gradient(circle at 76% 86%,rgba(255,165,222,.95) 0 1.5%,transparent 4.2%),
+    radial-gradient(circle at 16% 82%,rgba(169,220,255,.9) 0 1.5%,transparent 4.2%);
+}
+.characterRare[data-tier="5"]::before,
+.characterRare[data-tier="6"]::before { inset:-13%; opacity:1; }
+.characterRare[data-tier="6"]::after,
+.characterRare[data-tier="6"]:has(img[src*="p24"])::after {
+  content:"";
+  inset:-18%;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  background:
+    radial-gradient(circle at 8% 48%,rgba(255,240,159,.98) 0 1.5%,transparent 4.2%),
+    radial-gradient(circle at 23% 10%,rgba(218,190,255,.98) 0 1.5%,transparent 4.2%),
+    radial-gradient(circle at 52% 3%,rgba(255,255,255,1) 0 1.3%,transparent 3.7%),
+    radial-gradient(circle at 82% 16%,rgba(163,218,255,.98) 0 1.6%,transparent 4.4%),
+    radial-gradient(circle at 96% 58%,rgba(255,194,232,.98) 0 1.5%,transparent 4.2%),
+    radial-gradient(circle at 73% 93%,rgba(255,231,139,.98) 0 1.6%,transparent 4.4%),
+    radial-gradient(circle at 34% 96%,rgba(193,180,255,.98) 0 1.5%,transparent 4.2%);
+  opacity:.9;
+  animation:kittySceneConstellation 4.8s linear infinite;
+}
+
+/* World particles become richer from the middle tiers onward, while P1 stays clean. */
+.homeCharacterParticles i { box-shadow:0 0 7px #fff,0 0 12px #ffb9e5; }
+.homeCharacterParticles i:nth-child(3n+1) { border-radius:0; clip-path:polygon(50% 0,61% 36%,100% 50%,61% 64%,50% 100%,39% 64%,0 50%,39% 36%); background:#ffe59a; box-shadow:0 0 8px #fff,0 0 14px #ffd36a; }
+.homeCharacterParticles i:nth-child(3n+2) { background:#f3c8ff; box-shadow:0 0 8px #fff,0 0 14px #bf9cff; }
+.characterRare[data-tier="3"] .homeCharacterParticles i { filter:brightness(1.08) saturate(1.15); }
+.characterRare[data-tier="4"] .homeCharacterParticles i { filter:brightness(1.14) saturate(1.28); }
+.characterRare[data-tier="5"] .homeCharacterParticles i { filter:brightness(1.2) saturate(1.38); }
+.characterRare[data-tier="6"] .homeCharacterParticles i { filter:brightness(1.28) saturate(1.5); }
+
+/* Improvements keep the same layout/assets, but the rarity effects read more strongly. */
+.carousel[data-tier="2"] .prestigeParticles { opacity:.64; }
+.carousel[data-tier="3"] .prestigeParticles { opacity:.84; filter:saturate(1.2) brightness(1.1); }
+.carousel[data-tier="4"] .prestigeParticles { opacity:1; filter:saturate(1.34) brightness(1.16); }
+.carousel[data-tier="4"] .prestigeParticles i { filter:drop-shadow(0 0 16px currentColor) drop-shadow(0 0 7px #fff); }
+.carousel[data-tier="5"] .prestigeParticles { opacity:1; filter:saturate(1.46) brightness(1.2); }
+.carousel[data-tier="5"] .prestigeParticles i { filter:drop-shadow(0 0 20px currentColor) drop-shadow(0 0 9px #fff); }
+.carousel[data-tier="6"] .prestigeParticles { opacity:1; filter:saturate(1.58) brightness(1.27); }
+.carousel[data-tier="6"] .prestigeParticles i { filter:drop-shadow(0 0 24px currentColor) drop-shadow(0 0 11px #fff); }
+.carousel[data-tier="3"] .carouselSelected img { animation:kittyUpgradeFloat3 2.9s ease-in-out infinite; }
+.carousel[data-tier="4"] .carouselSelected img { animation:kittyUpgradeFloat4 2.65s ease-in-out infinite; }
+.carousel[data-tier="5"] .carouselSelected img { animation:kittyUpgradeFloat5 2.4s ease-in-out infinite; }
+.carousel[data-tier="6"] .carouselSelected img { animation:kittyUpgradeFloat6 2.15s ease-in-out infinite; }
+
+@keyframes kittyHomeTier2 { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(0,-6px,0) scale(1.018)} }
+@keyframes kittyHomeTier3 { 0%,100%{transform:translate3d(0,0,0) scale(1) rotate(-.35deg)} 50%{transform:translate3d(0,-8px,0) scale(1.027) rotate(.45deg)} }
+@keyframes kittyHomeTier4 { 0%,100%{transform:translate3d(0,0,0) scale(1) rotate(-.55deg)} 45%{transform:translate3d(0,-10px,0) scale(1.038) rotate(.7deg)} 72%{transform:translate3d(0,-5px,0) scale(1.018) rotate(-.2deg)} }
+@keyframes kittyHomeTier5 { 0%,100%{transform:translate3d(0,0,0) scale(1) rotate(-.7deg)} 42%{transform:translate3d(0,-12px,0) scale(1.047) rotate(.9deg)} 70%{transform:translate3d(0,-6px,0) scale(1.022) rotate(-.3deg)} }
+@keyframes kittyHomeTier6 { 0%,100%{transform:translate3d(0,0,0) scale(1) rotate(-.85deg)} 38%{transform:translate3d(0,-14px,0) scale(1.057) rotate(1deg)} 68%{transform:translate3d(0,-7px,0) scale(1.026) rotate(-.4deg)} }
+@keyframes kittySceneGlints { from{opacity:.48;transform:translate3d(-2px,2px,0) scale(.96)} to{opacity:1;transform:translate3d(3px,-4px,0) scale(1.05)} }
+@keyframes kittySceneConstellation { 0%{opacity:.55;transform:rotate(0deg) scale(.98)} 50%{opacity:1;transform:rotate(180deg) scale(1.05)} 100%{opacity:.55;transform:rotate(360deg) scale(.98)} }
+@keyframes kittyUpgradeFloat3 { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(0,-8px,0) scale(1.025)} }
+@keyframes kittyUpgradeFloat4 { 0%,100%{transform:translate3d(0,0,0) scale(1) rotate(-.35deg)} 50%{transform:translate3d(0,-10px,0) scale(1.035) rotate(.45deg)} }
+@keyframes kittyUpgradeFloat5 { 0%,100%{transform:translate3d(0,0,0) scale(1) rotate(-.5deg)} 50%{transform:translate3d(0,-12px,0) scale(1.045) rotate(.65deg)} }
+@keyframes kittyUpgradeFloat6 { 0%,100%{transform:translate3d(0,0,0) scale(1) rotate(-.65deg)} 45%{transform:translate3d(0,-14px,0) scale(1.055) rotate(.8deg)} 72%{transform:translate3d(0,-7px,0) scale(1.025) rotate(-.25deg)} }
+
+@media (prefers-reduced-motion:reduce) {
+  .characterRare[data-tier="2"],.characterRare[data-tier="3"],.characterRare[data-tier="4"],.characterRare[data-tier="5"],.characterRare[data-tier="6"],
+  .characterRare::before,.characterRare::after,
+  .carousel[data-tier="3"] .carouselSelected img,.carousel[data-tier="4"] .carouselSelected img,.carousel[data-tier="5"] .carouselSelected img,.carousel[data-tier="6"] .carouselSelected img {
+    animation:none !important;
+  }
+}
+
