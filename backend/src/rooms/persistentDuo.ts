@@ -87,7 +87,7 @@ export interface PetCareSnapshot extends PetCareState {
 // A full heart lasts ~23 hours before sadness; a full belly ~28 hours.
 export const PET_AFFECTION_PER_HOUR = 3;
 export const PET_SATIETY_PER_HOUR = 2.5;
-export const PET_STROKE_GAIN = 4;
+export const PET_STROKE_GAIN = 9;
 const newPetCare = (now = Date.now()): PetCareState => ({ affection: 100, satiety: 100, lastUpdatedAt: now, revision: 0 });
 function sanitizePetCare(value: unknown): PetCareState {
   if (!value || typeof value !== "object") return newPetCare();
@@ -533,3 +533,4 @@ export function isPersistentDuoAccountId(value: unknown): value is AccountId {
 export function isPersistentDuoPresence(value: unknown): value is Exclude<PersistentDuoPresence, "offline"> {
   return value === "lobby" || value === "world" || value === "minigame";
 }
+

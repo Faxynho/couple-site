@@ -29,9 +29,11 @@
 }
 .petInteraction { position: relative; display: block; flex: none; touch-action: none; user-select: none; -webkit-user-select: none; }
 .interactionSprite { width: 100%; pointer-events: none; }
-.petHearts { position: absolute; z-index: 3; top: 21%; left: 50%; width: 0; height: 0; pointer-events: none; }
-.floatingHeart { position: absolute; color: #f28ca8; font-size: 17px; line-height: 1; text-shadow: 0 1px #fff1e9, 0 2px 4px #a95d7a55; opacity: 0; animation: floatPetHeart 1.05s ease-out forwards; }
-@keyframes floatPetHeart { 0% { opacity: 0; transform: translate(var(--heart-x),10px) scale(.45) rotate(-12deg); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(var(--heart-x) + var(--heart-drift)),-54px) scale(1) rotate(15deg); } }
+.petHearts { position: absolute; z-index: 3; inset: 0; pointer-events: none; }
+.floatingHeart { position: absolute; color: #ec849f; line-height: 1; -webkit-text-stroke: .6px #fff0e8; text-shadow: 0 2px 3px #a95d7a55; opacity: 0; animation: floatPetHeart 1.05s cubic-bezier(.2,.7,.3,1) forwards; }
+.floatingHeart:nth-child(3n) { color: #f5a4b4; }
+@keyframes floatPetHeart { 0% { opacity: 0; transform: translate(0,8px) scale(.45) rotate(calc(var(--heart-rotation) - 10deg)); } 19% { opacity: .95; transform: translate(0,0) scale(1.12) rotate(var(--heart-rotation)); } 100% { opacity: 0; transform: translate(var(--heart-drift),calc(0px - var(--heart-rise))) scale(.78) rotate(calc(var(--heart-rotation) + 14deg)); } }
+@media (prefers-reduced-motion: reduce) { .floatingHeart { animation-duration: .25s; animation-delay: 0ms !important; } }
 
 .rigPart {
   position: absolute;
@@ -41,6 +43,9 @@
   pointer-events: none;
   backface-visibility: hidden;
 }
+.rigHeadImage { position: absolute; inset: 0; background-repeat: no-repeat; background-size: 100% 100%; opacity: 1; transition: opacity .18s ease-in-out; }
+.rigHeadPrevious { z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .rigHeadImage { transition-duration: .01ms; } }
 
 .rigHeadGroup,
 .rigHeadLife {
@@ -285,7 +290,7 @@
 .lobbyPet { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: end; width: 35%; max-width: 166px; height: 100%; }
 .lobbySprite { width: min(100%, 150px); max-height: calc(100% - 28px); margin-bottom: 23px; filter: drop-shadow(0 6px 4px rgba(30, 12, 24, .35)); }
 .lobbySprite[data-pet="max"] { width: min(135%, 175px); }
-.lobbySprite[data-pet="nix"][data-animation="idle"] { width: min(135%, 175px); }
+.lobbySprite[data-pet="nix"] { width: min(135%, 175px); }
 .lobbyPetName {
   position: absolute; bottom: 7px; z-index: 2;
   padding: 2px 15px 3px; border-radius: 20px;
@@ -636,3 +641,4 @@
 .petDevEntry small { margin-top: 2px; color: #d9bfdc; font-size: 9px; }
 .petDevShell::after { content: ""; position: fixed; z-index: 100; inset: 0; border: 3px solid rgba(137,82,170,.5); pointer-events: none; }
 .petDevDenied { display: grid; min-height: 100dvh; place-items: center; color: #fff; font-weight: 800; }
+

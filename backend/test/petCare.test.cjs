@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { mkdtemp, readFile, writeFile, rm } = require("node:fs/promises");
 const { tmpdir } = require("node:os");
 const { join } = require("node:path");
-const { PersistentDuoStore, projectPetCare, PET_AFFECTION_PER_HOUR, PET_SATIETY_PER_HOUR } = require("../dist/rooms/persistentDuo.js");
+const { PersistentDuoStore, projectPetCare, PET_AFFECTION_PER_HOUR, PET_SATIETY_PER_HOUR, PET_STROKE_GAIN } = require("../dist/rooms/persistentDuo.js");
 const { IdleStore } = require("../dist/idle/IdleStore.js");
 const { PET_FOODS, feedPetPurchase } = require("../dist/pets/petFood.js");
 
@@ -33,6 +33,17 @@ test("Max e Nix têm cuidado independente, inclusive no PET DEV, e o servidor li
   assert.equal(store.getPetCare("nix", "dev").revision, 0);
 });
 
+test("carinho real acrescenta 9 pontos por swipe aceito, mantém limite e cooldown por pet", () => {
+  const store = new PersistentDuoStore(false);
+  assert.equal(PET_STROKE_GAIN, 9);
+  store.setPetCare("max", "dev", { affection: 50 });
+  store.setPetCare("nix", "dev", { affection: 96 });
+  assert.equal(store.strokePet("max", "dev", "andre").affection, 59);
+  assert.equal(store.strokePet("max", "dev", "andre"), null);
+  assert.equal(store.strokePet("nix", "dev", "andre").affection, 100);
+  assert.equal(store.getPetCare("max", "real").affection, 100);
+});
+
 test("PET DEV pode forçar carinho e saciedade sem alterar o estado real", () => {
   const store = new PersistentDuoStore(false);
   const realBefore = store.getPetCare("max", "real");
@@ -48,6 +59,25 @@ test("PET DEV pode forçar carinho e saciedade sem alterar o estado real", () =>
   assert.equal(realAfter.revision, realBefore.revision);
   assert.equal(realAfter.affection, realBefore.affection);
   assert.equal(realAfter.satiety, realBefore.satiety);
+});
+
+test("PET DEV mantém as faixas 0/25/50/75/100 independentes para os dois pets", () => {
+  const store = new PersistentDuoStore(false);
+  for (const pet of ["max", "nix"]) {
+    for (const value of [0, 25, 50, 75, 100]) {
+      const affection = store.setPetCare(pet, "dev", { affection: value, satiety: 100 });
+      assert.equal(affection.mood, value < 30 ? "sad" : value < 65 ? "neutral" : "happy");
+      assert.equal(affection.affection, value);
+      const satiety = store.setPetCare(pet, "dev", { affection: 100, satiety: value });
+      assert.equal(satiety.mood, value < 30 ? "sad" : value < 65 ? "neutral" : "happy");
+      assert.equal(satiety.satiety, value);
+    }
+    assert.equal(store.setPetCare(pet, "dev", { affection: 100, satiety: 100 }).mood, "happy");
+    assert.equal(store.setPetCare(pet, "dev", { affection: 20, satiety: 100 }).mood, "sad");
+    assert.equal(store.setPetCare(pet, "dev", { affection: 100, satiety: 20 }).mood, "sad");
+    assert.equal(store.setPetCare(pet, "dev", { affection: 50, satiety: 50 }).mood, "neutral");
+    assert.equal(store.getPetCare(pet, "real").mood, "happy");
+  }
 });
 
 test("cuidado sobrevive à gravação e recarga do estado sem tocar nas decorações", async () => {
@@ -103,3 +133,4 @@ test("drop validado não cobra quando cheio ou sem moedas, e limita saciedade em
   assert.equal(values.nix, 50);
   assert.equal(values.max, 100);
 });
+

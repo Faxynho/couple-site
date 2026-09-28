@@ -54,6 +54,7 @@ test("soltar comida fora cancela; somente soltar no pet solicita alimentação",
   fireEvent.pointerMove(window, { pointerId: 1, clientX: 50, clientY: 220 });
   fireEvent.pointerUp(window, { pointerId: 1, clientX: 50, clientY: 220 });
   expect(onFeed).not.toHaveBeenCalled();
+  await waitFor(() => expect(document.querySelector("[data-food-ghost]")).toBeNull());
   for (const [index, food] of PET_FOODS.entries()) {
     const button = container.querySelectorAll("button")[index];
     fireEvent.pointerDown(button, { pointerId: index + 2, clientX: 30, clientY: 250 });
@@ -61,8 +62,34 @@ test("soltar comida fora cancela; somente soltar no pet solicita alimentação",
     expect(hover).toHaveBeenCalledWith(true);
     fireEvent.pointerUp(window, { pointerId: index + 2, clientX: 150, clientY: 150 });
     await waitFor(() => expect(onFeed).toHaveBeenCalledWith(food));
+    await waitFor(() => expect(document.querySelector("[data-food-ghost]")).toBeNull());
   }
   expect(onFeed).toHaveBeenCalledTimes(5);
+});
+
+test.each(PET_FOODS)("$name mantém o ghost no drop e usa seu próprio sprite até as partículas sumirem", async (food) => {
+  class MockPointerEvent extends MouseEvent { pointerId: number; constructor(type: string, init: MouseEventInit & { pointerId?: number }) { super(type, init); this.pointerId = init.pointerId ?? 0; } }
+  Object.defineProperty(window, "PointerEvent", { configurable: true, value: MockPointerEvent });
+  let accept: (value: boolean) => void = () => {};
+  const onFeed = vi.fn(() => new Promise<boolean>((resolve) => { accept = resolve; }));
+  const onArrive = vi.fn();
+  const { container } = render(<><span data-pet-drop-target="" /><PetFoodShelf onFeed={onFeed} onHover={vi.fn()} onArrive={onArrive} ready /></>);
+  const target = container.querySelector("[data-pet-drop-target]") as HTMLElement;
+  target.getBoundingClientRect = () => ({ left: 100, top: 100, width: 100, height: 100, right: 200, bottom: 200, x: 100, y: 100, toJSON: () => ({}) });
+  const button = Array.from(container.querySelectorAll("button")).find((item) => item.getAttribute("aria-label")?.startsWith(food.name))!;
+  fireEvent.pointerDown(button, { pointerId: 1, clientX: 30, clientY: 250 });
+  fireEvent.pointerUp(window, { pointerId: 1, clientX: 150, clientY: 150 });
+  const ghost = document.querySelector(`[data-food-ghost='${food.id}']`) as HTMLElement;
+  expect(ghost.style.left).toBe("150px");
+  expect(ghost.style.top).toBe("150px");
+  expect(onArrive).not.toHaveBeenCalled();
+  accept(true);
+  await waitFor(() => expect(onArrive).toHaveBeenCalledTimes(1), { timeout: 1500 });
+  const particles = document.querySelectorAll(`[data-food-burst='${food.id}'] img`);
+  expect(particles).toHaveLength(7);
+  expect(Array.from(particles).every((particle) => particle.getAttribute("src") === `/pets/food/${food.id}.webp`)).toBe(true);
+  await waitFor(() => expect(document.querySelector("[data-food-burst]")).toBeNull(), { timeout: 1500 });
+  expect(document.querySelector("[data-food-ghost]")).toBeNull();
 });
 
 test.each(PETS)("$name permite forçar carinho e saciedade somente no PET DEV", (pet) => {
@@ -87,3 +114,4 @@ test.each(PETS)("$name abre Carinho primeiro, mostra seu humor e deixa Comida em
   fireEvent.click(container.querySelectorAll("[role=tab]")[1]);
   expect(container.querySelectorAll("button[aria-label*='Arraste até o pet']")).toHaveLength(5);
 });
+

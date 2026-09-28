@@ -93,7 +93,7 @@ function FilterStrip({
 
 function CareMeter({ label, value, icon: Icon, tone }: { label: string; value: number | undefined; icon: LucideIcon; tone: "heart" | "meal" }) {
   return <div className={`${styles.careMeter} ${tone === "meal" ? styles.careMeal : styles.careHeart}`}>
-    <span className={styles.careIcon}><Icon size={18} strokeWidth={1.8} /></span>
+    <span className={styles.careIcon}><Icon size={26} strokeWidth={1.8} aria-hidden="true" /></span>
     <div className={styles.careMeasure}>
       <span className={styles.careMeasureText}><strong>{label}</strong><span>{value === undefined ? "—" : `${Math.round(value)}%`}</span></span>
       <span className={styles.careTrack} role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value === undefined ? 0 : Math.round(value)}>
@@ -103,7 +103,7 @@ function CareMeter({ label, value, icon: Icon, tone }: { label: string; value: n
   </div>;
 }
 
-export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBuy, coins: _coins, purchased, environment, onDevAction, care = null, onFeed = async () => false, onFoodHover = () => {}, feedback = "" }: {
+export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBuy, coins: _coins, purchased, environment, onDevAction, care = null, onFeed = async () => false, onFoodArrive = () => {}, onFoodHover = () => {}, feedback = "" }: {
   pet: PetDefinition;
   slots: PetRoomSlots;
   ready: boolean;
@@ -116,6 +116,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
   onDevAction: (payload: Record<string, unknown>) => void;
   care?: PetCareSnapshot | null;
   onFeed?: (food: PetFood) => Promise<boolean>;
+  onFoodArrive?: () => void;
   onFoodHover?: (value: boolean) => void;
   feedback?: string;
 }) {
@@ -181,7 +182,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
       >
         {activeTab === "care" ? (
           <div className={styles.carePanel}>
-            <div className={styles.careHeading}><span className={styles.careHeadingMark} aria-hidden="true"><PawPrint size={17} /></span><h2>Faça carinho {pet.id === "nix" ? "na" : "no"} {pet.name}</h2><span className={styles.careMood} data-mood={care?.mood}>{care?.mood === "sad" ? "Triste" : care?.mood === "neutral" ? "Sério" : care ? "Feliz" : "—"}</span></div>
+            <div className={styles.careHeading}><span className={styles.careHeadingMark} aria-hidden="true"><PawPrint size={22} /></span><h2>Faça carinho {pet.id === "nix" ? "na" : "no"} {pet.name}</h2><span className={styles.careTitleHeart} aria-hidden="true">♥</span><span className={styles.careMood} data-mood={care?.mood}>{care?.mood === "sad" ? "Triste" : care?.mood === "neutral" ? "Sério" : care ? "Feliz" : "—"}</span></div>
             <div className={styles.careMeters}><CareMeter label="Carinho" value={care?.affection} icon={Heart} tone="heart" /><CareMeter label="Saciedade" value={care?.satiety} icon={Utensils} tone="meal" /></div>
             {environment === "dev" && (
               <details className={styles.petDevCareTools}>
@@ -259,7 +260,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
                     );
                   })}
                 </div>
-              ) : activeTab === "food" ? <PetFoodShelf onFeed={onFeed} onHover={onFoodHover} ready={ready && Boolean(care)} /> : <PetItemGrid items={items} />}
+              ) : activeTab === "food" ? <PetFoodShelf onFeed={onFeed} onArrive={onFoodArrive} onHover={onFoodHover} ready={ready && Boolean(care)} /> : <PetItemGrid items={items} />}
             </div>
             {activeTab === "food" && feedback && <p className={styles.foodFeedback} role="status">{feedback}</p>}
             {activeTab === "room" && (error || !ready) && <p className={styles.decorStatus} role="status">{error || "Carregando decorações..."}</p>}
@@ -288,3 +289,4 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
     </div>
   );
 }
+

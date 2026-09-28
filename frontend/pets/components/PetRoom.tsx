@@ -26,6 +26,7 @@ export default function PetRoom({ pet, environment = "real" }: { pet: PetDefinit
   const [action, setAction] = useState<PetAnimation>("idle");
   const busy = useRef(false);
   const actionTimer = useRef<number | null>(null);
+  const actionToken = useRef(0);
   const feedbackTimer = useRef<number | null>(null);
   const { care, setCare, stroke } = usePetCare(pet.id, environment);
   const accountId = getActiveAccountId();
@@ -50,15 +51,19 @@ export default function PetRoom({ pet, environment = "real" }: { pet: PetDefinit
       setCare((old) => !old || result.care.revision >= old.revision ? result.care : old);
       setCoins(result.globalCoins);
       setFeedback("");
-      setAction("eating");
-      if (actionTimer.current) window.clearTimeout(actionTimer.current);
-      actionTimer.current = window.setTimeout(() => setAction("idle"), 900);
       return true;
     } catch (reason) {
       showFeedback(reason instanceof Error ? reason.message : "Não foi possível alimentar agora.");
       return false;
     } finally { busy.current = false; }
   }, [accountId, care, environment, pet.id, setCare, showFeedback]);
+
+  const onFoodArrive = useCallback(() => {
+    const token = ++actionToken.current;
+    if (actionTimer.current) window.clearTimeout(actionTimer.current);
+    setAction("eating");
+    actionTimer.current = window.setTimeout(() => { if (actionToken.current === token) setAction("idle"); }, 850);
+  }, []);
 
   useEffect(() => {
     setSnapshot(null);
@@ -132,7 +137,8 @@ export default function PetRoom({ pet, environment = "real" }: { pet: PetDefinit
   return (
     <div className={styles.roomLayout}>
       <PetRoomScene pet={pet} decorations={selected} coins={coins} environment={environment} mood={care?.mood ?? "happy"} action={action} onStroke={stroke} dropActive={dropActive} />
-      <PetRoomDrawer pet={pet} slots={snapshot?.slots ?? {}} ready={Boolean(snapshot)} error={error} onToggle={toggleDecoration} onBuy={buyDecoration} coins={coins} purchased={purchased} environment={environment} onDevAction={runDevAction} care={care} onFeed={onFeed} onFoodHover={setDropActive} feedback={feedback} />
+      <PetRoomDrawer pet={pet} slots={snapshot?.slots ?? {}} ready={Boolean(snapshot)} error={error} onToggle={toggleDecoration} onBuy={buyDecoration} coins={coins} purchased={purchased} environment={environment} onDevAction={runDevAction} care={care} onFeed={onFeed} onFoodArrive={onFoodArrive} onFoodHover={setDropActive} feedback={feedback} />
     </div>
   );
 }
+

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { PetAnimation, PetDefinition, PetMood } from "../config";
 import PetBlink from "./PetBlink";
 import styles from "../pets.module.css";
@@ -36,6 +36,45 @@ function renderPart(part: RigPart, canvasSize: number) {
   );
 }
 
+// Keep a decoded head on screen while its successor loads and fades in. The rig
+// element and its neck pivot never remount when mood or action changes.
+function PetHead({ part, canvasSize, src }: { part: RigPart; canvasSize: number; src: string }) {
+  const [visible, setVisible] = useState(part.src);
+  const [previous, setPrevious] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState(true);
+  const visibleRef = useRef(part.src);
+  useEffect(() => {
+    if (src === visibleRef.current) return;
+    let active = true;
+    let frame = 0;
+    let scheduled = false;
+    const image = new Image();
+    const reveal = () => {
+      if (!active || !image.naturalWidth || scheduled) return;
+      scheduled = true;
+      void image.decode().catch(() => {}).then(() => {
+      if (!active) return;
+      setPrevious(visibleRef.current);
+      visibleRef.current = src;
+      setVisible(src);
+      setRevealed(false);
+      frame = requestAnimationFrame(() => { if (active) setRevealed(true); });
+      });
+    };
+    image.onload = reveal;
+    image.src = src;
+    if (image.complete && image.naturalWidth) reveal();
+    return () => { active = false; image.onload = null; cancelAnimationFrame(frame); };
+  }, [src]);
+  return <span className={styles.rigPart} data-rig-part="head" style={{
+    left: `${part.x / canvasSize * 100}%`, top: `${part.y / canvasSize * 100}%`,
+    width: `${part.width / canvasSize * 100}%`, height: `${part.height / canvasSize * 100}%`,
+  }} aria-hidden="true">
+    {previous && <span className={`${styles.rigHeadImage} ${styles.rigHeadPrevious}`} onTransitionEnd={() => { if (revealed) setPrevious(null); }} style={{ backgroundImage: `url("${previous}")`, opacity: revealed ? 0 : 1 }} />}
+    <span className={styles.rigHeadImage} style={{ backgroundImage: `url("${visible}")`, opacity: revealed ? 1 : 0 }} />
+  </span>;
+}
+
 function randomBetween(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
@@ -67,6 +106,12 @@ export default function PetRig({
   const groundedParts = parts.filter(
     (part) => part.motion !== "head" && part.motion !== "earLeft" && part.motion !== "earRight",
   );
+  const headSource = animation !== "idle" ? `/pets/${pet.id}/head-${animation}.webp`
+    : mood === "happy" ? headParts[0].src : `/pets/${pet.id}/head-${mood}.webp`;
+  useEffect(() => {
+    const preload = ["neutral", "sad", "petting", "eating"].map((state) => new Image());
+    preload.forEach((image, index) => { image.src = `/pets/${pet.id}/head-${["neutral", "sad", "petting", "eating"][index]}.webp`; });
+  }, [pet.id]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -329,9 +374,7 @@ export default function PetRig({
       {groundedParts.map((part) => renderPart(part, canvasSize))}
       <span className={styles.rigHeadGroup} data-rig-part="headBreath" aria-hidden="true">
         <span className={styles.rigHeadLife} data-rig-part="headLife">
-          {headParts.map((part) => renderPart({ ...part, src: animation !== "idle"
-            ? `/pets/${pet.id}/head-${animation}.webp`
-            : mood !== "happy" ? `/pets/${pet.id}/head-${mood}.webp` : part.src }, canvasSize))}
+          {headParts.map((part) => <PetHead key={part.src} part={part} canvasSize={canvasSize} src={headSource} />)}
           {blink && animation === "idle" && mood === "happy" && <PetBlink artwork={blink} canvasSize={canvasSize} />}
           {earParts.map((part) => renderPart(part, canvasSize))}
         </span>
@@ -339,3 +382,4 @@ export default function PetRig({
     </span>
   );
 }
+
