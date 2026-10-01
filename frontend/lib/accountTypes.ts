@@ -7,6 +7,9 @@ export interface PublicAccountProfile {
   id: AccountId;
   name: string;
   photo: string | null;
+  /** Id da borda de avatar equipada (catálogo em lib/profileBorders.ts), ou
+   *  `null`/ausente para o avatar sem moldura. */
+  border?: string | null;
 }
 
 export type RecordScoreType = "time" | "points";
@@ -59,7 +62,19 @@ export interface AccountProfile {
   id: AccountId;
   name: string;
   photo: string | null;
+  border?: string | null;
+  /** Bordas já compradas por esta conta. */
+  ownedBorders?: string[];
   updatedAt: number;
+}
+
+/** Resposta de `GET /api/accounts/:id/borders` e da compra de uma borda. */
+export interface ProfileBorderState {
+  equipped: string | null;
+  owned: string[];
+  /** Preços em moedas globais, vindos do servidor (fonte da verdade). */
+  prices: Record<string, number>;
+  globalCoins: number;
 }
 
 export interface AccountsOverview {

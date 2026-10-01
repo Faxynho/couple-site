@@ -19,6 +19,11 @@ export interface AccountProfile {
   /** Data URL (base64) já redimensionada/comprimida no navegador, ou `null`
    *  para usar o avatar de iniciais padrão. */
   photo: string | null;
+  /** Borda de avatar equipada (id do catálogo em profileBorders.ts), ou
+   *  `null` para o avatar sem moldura. Sempre é uma borda que a conta possui. */
+  border: string | null;
+  /** Bordas já compradas com as moedas globais (cada conta tem as suas). */
+  ownedBorders: string[];
   updatedAt: number;
 }
 
@@ -103,4 +108,6 @@ export interface PublicAccountProfile {
   id: AccountId;
   name: string;
   photo: string | null;
+  /** Borda equipada — pública porque aparece no avatar em todas as telas. */
+  border: string | null;
 }

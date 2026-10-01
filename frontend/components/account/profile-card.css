@@ -1,0 +1,488 @@
+/*
+ * Visual do cartão de perfil (AccountPanel / ProfileTab).
+ *
+ * Tudo é controlado por variáveis `--pc-*` definidas em `.profile-shell`, uma
+ * combinação para cada par tema × modo — os mesmos seletores que o restante do
+ * site já usa (globals.css):
+ *   padrão + claro      .profile-shell
+ *   padrão + escuro     .dark .profile-shell
+ *   Corações + claro    :root[data-theme="romance"] .profile-shell
+ *   Corações + escuro   :root.dark[data-theme="romance"] .profile-shell
+ * Para mudar cores, mexa só nas variáveis — as regras abaixo só as consomem.
+ */
+
+/* ── padrão + claro ─────────────────────────────────────────────────────── */
+.profile-shell {
+  --pc-bg-a: #fffaf4;
+  --pc-bg-b: #fbe8ee;
+  --pc-bg-c: #e3edf8;
+  --pc-top-glow: rgba(255, 255, 255, 0.9);
+  --pc-edge-a: #e893aa;
+  --pc-edge-b: #8fb0de;
+  --pc-inner-line: rgba(232, 147, 170, 0.32);
+  --pc-glow: rgba(232, 147, 170, 0.34);
+  --pc-shadow: rgba(120, 70, 95, 0.38);
+  --pc-accent: #ec87a5;
+  --pc-accent-deep: #d9758f;
+  --pc-accent-2: #8fb0de;
+  --pc-on-accent: #ffffff;
+  --pc-text: rgb(74 63 69);
+  --pc-text-soft: rgb(122 108 114);
+  --pc-number: #d9587f;
+  --pc-panel-bg: rgba(255, 255, 255, 0.66);
+  --pc-panel-border: rgba(232, 147, 170, 0.38);
+  --pc-cloud-fill: rgba(255, 255, 255, 0.55);
+  --pc-cloud-stroke: rgba(232, 147, 170, 0.42);
+  --pc-spark: #f3a4bb;
+  --pc-halo: rgba(255, 255, 255, 0.85);
+  --pc-ring-gap: #ffffff;
+  --pc-ear-hi: #ffd3df;
+  --pc-ear-lo: #ec87a5;
+  --pc-ear-icon: #ffffff;
+  --pc-btn-bg: rgba(255, 255, 255, 0.72);
+  --pc-btn-border: rgba(232, 147, 170, 0.5);
+  --pc-btn-text: rgb(122 108 114);
+  --pc-tab-bg: rgba(255, 255, 255, 0.6);
+  --pc-tab-border: rgba(232, 147, 170, 0.34);
+  --pc-tab-text: rgb(122 108 114);
+  --pc-wing: #b9cdf0;
+  --pc-shield-a: #f6a4bb;
+  --pc-shield-b: #d9758f;
+  --pc-track: rgba(232, 147, 170, 0.2);
+}
+
+/* ── padrão + escuro ────────────────────────────────────────────────────── */
+.dark .profile-shell {
+  --pc-bg-a: #3d2d3b;
+  --pc-bg-b: #2d212a;
+  --pc-bg-c: #241a27;
+  --pc-top-glow: rgba(235, 150, 175, 0.16);
+  --pc-edge-a: #eb96af;
+  --pc-edge-b: #8fb0de;
+  --pc-inner-line: rgba(235, 150, 175, 0.26);
+  --pc-glow: rgba(235, 150, 175, 0.24);
+  --pc-shadow: rgba(0, 0, 0, 0.7);
+  --pc-accent: #eb8fac;
+  --pc-accent-deep: #d9758f;
+  --pc-accent-2: #8fb0de;
+  --pc-text: rgb(240 232 230);
+  --pc-text-soft: rgb(191 178 183);
+  --pc-number: #f4a2bb;
+  --pc-panel-bg: rgba(255, 255, 255, 0.06);
+  --pc-panel-border: rgba(235, 150, 175, 0.3);
+  --pc-cloud-fill: rgba(255, 255, 255, 0.06);
+  --pc-cloud-stroke: rgba(235, 150, 175, 0.28);
+  --pc-spark: #f7c2d2;
+  --pc-halo: rgba(235, 150, 175, 0.3);
+  --pc-ring-gap: #f7eaee;
+  --pc-ear-hi: #f3a9bf;
+  --pc-ear-lo: #b95a78;
+  --pc-btn-bg: rgba(255, 255, 255, 0.07);
+  --pc-btn-border: rgba(235, 150, 175, 0.42);
+  --pc-btn-text: rgb(240 214 222);
+  --pc-tab-bg: rgba(255, 255, 255, 0.05);
+  --pc-tab-border: rgba(235, 150, 175, 0.26);
+  --pc-tab-text: rgb(232 205 214);
+  --pc-wing: #8fb0de;
+  --pc-shield-a: #ef9db5;
+  --pc-shield-b: #c4607f;
+  --pc-track: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Corações + claro ───────────────────────────────────────────────────── */
+:root[data-theme="romance"] .profile-shell {
+  --pc-bg-a: #fffafa;
+  --pc-bg-b: #ffe4ed;
+  --pc-bg-c: #ffd2e2;
+  --pc-top-glow: rgba(255, 255, 255, 0.95);
+  --pc-edge-a: #ff80b2;
+  --pc-edge-b: #c790ff;
+  --pc-inner-line: rgba(255, 105, 151, 0.3);
+  --pc-glow: rgba(255, 105, 151, 0.32);
+  --pc-shadow: rgba(155, 49, 90, 0.42);
+  --pc-accent: #ff5c97;
+  --pc-accent-deep: #e7417b;
+  --pc-accent-2: #b07cf0;
+  --pc-text: rgb(143 50 84);
+  --pc-text-soft: rgb(154 70 101);
+  --pc-number: #e7417b;
+  --pc-panel-bg: rgba(255, 255, 255, 0.68);
+  --pc-panel-border: rgba(255, 105, 151, 0.34);
+  --pc-cloud-fill: rgba(255, 255, 255, 0.55);
+  --pc-cloud-stroke: rgba(255, 128, 178, 0.4);
+  --pc-spark: #ff8fbd;
+  --pc-halo: rgba(255, 255, 255, 0.9);
+  --pc-ear-hi: #ffc2da;
+  --pc-ear-lo: #ff5c97;
+  --pc-btn-bg: rgba(255, 255, 255, 0.75);
+  --pc-btn-border: rgba(255, 105, 151, 0.5);
+  --pc-btn-text: rgb(154 70 101);
+  --pc-tab-bg: rgba(255, 255, 255, 0.62);
+  --pc-tab-border: rgba(255, 105, 151, 0.3);
+  --pc-tab-text: rgb(154 70 101);
+  --pc-wing: #c6a5f5;
+  --pc-shield-a: #ff8db7;
+  --pc-shield-b: #e7417b;
+  --pc-track: rgba(255, 105, 151, 0.16);
+}
+
+/* ── Corações + escuro (visual da imagem de referência) ─────────────────── */
+:root.dark[data-theme="romance"] .profile-shell {
+  --pc-bg-a: #4d2471;
+  --pc-bg-b: #3b1c5c;
+  --pc-bg-c: #2c1447;
+  --pc-top-glow: rgba(255, 130, 200, 0.2);
+  --pc-edge-a: #ff9bd0;
+  --pc-edge-b: #b77bff;
+  --pc-inner-line: rgba(255, 150, 210, 0.3);
+  --pc-glow: rgba(255, 92, 170, 0.36);
+  --pc-shadow: rgba(8, 2, 20, 0.78);
+  --pc-accent: #ff5fa5;
+  --pc-accent-deep: #e0338a;
+  --pc-accent-2: #b37bff;
+  --pc-text: #ffffff;
+  --pc-text-soft: #dcbff3;
+  --pc-number: #ff6eb0;
+  --pc-panel-bg: rgba(255, 255, 255, 0.06);
+  --pc-panel-border: rgba(255, 150, 210, 0.3);
+  --pc-cloud-fill: rgba(255, 255, 255, 0.07);
+  --pc-cloud-stroke: rgba(255, 160, 215, 0.3);
+  --pc-spark: #ffd1ec;
+  --pc-halo: rgba(255, 110, 190, 0.34);
+  --pc-ring-gap: #fff3fa;
+  --pc-ear-hi: #ff9ccb;
+  --pc-ear-lo: #c83f93;
+  --pc-btn-bg: rgba(255, 255, 255, 0.07);
+  --pc-btn-border: rgba(255, 140, 200, 0.5);
+  --pc-btn-text: #f3d7ff;
+  --pc-tab-bg: rgba(255, 255, 255, 0.05);
+  --pc-tab-border: rgba(255, 150, 210, 0.26);
+  --pc-tab-text: #e9cffa;
+  --pc-wing: #b37bff;
+  --pc-shield-a: #ff7fbd;
+  --pc-shield-b: #c4318a;
+  --pc-track: rgba(255, 255, 255, 0.08);
+}
+
+/* ── estrutura ──────────────────────────────────────────────────────────── */
+.profile-shell {
+  color: var(--pc-text);
+}
+
+.profile-shell-btn {
+  display: flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1.5px solid var(--pc-btn-border);
+  background: color-mix(in srgb, var(--pc-bg-b) 90%, transparent);
+  color: var(--pc-btn-text);
+  box-shadow: 0 0 14px -4px var(--pc-glow);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+.profile-shell-btn:hover {
+  transform: scale(1.06);
+}
+
+.profile-shell-pill {
+  display: flex;
+  height: 2.5rem;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1.5px solid var(--pc-btn-border);
+  background: color-mix(in srgb, var(--pc-bg-b) 90%, transparent);
+  padding: 0 1.1rem 0 0.8rem;
+  box-shadow: 0 0 14px -4px var(--pc-glow);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.profile-card {
+  position: relative;
+  border-radius: 2rem;
+  background:
+    radial-gradient(120% 55% at 50% 0%, var(--pc-top-glow), transparent 62%),
+    linear-gradient(180deg, var(--pc-bg-a) 0%, var(--pc-bg-b) 52%, var(--pc-bg-c) 100%);
+  box-shadow:
+    0 26px 56px -24px var(--pc-shadow),
+    0 0 38px -6px var(--pc-glow),
+    inset 0 0 46px -12px var(--pc-glow);
+}
+
+/* moldura com degradê (borda de 2px) */
+.profile-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(180deg, var(--pc-edge-a), var(--pc-edge-b));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+/* contorno fino interno (segunda moldura da referência) */
+.profile-card::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: 1;
+  border-radius: calc(2rem - 8px);
+  border: 1px solid var(--pc-inner-line);
+  pointer-events: none;
+}
+
+.profile-ear {
+  position: absolute;
+  top: -15px;
+  z-index: 4;
+  display: grid;
+  height: 3.25rem;
+  width: 3.25rem;
+  place-items: center;
+  border-radius: 9999px;
+  color: var(--pc-ear-icon, #fff);
+  background: radial-gradient(circle at 35% 28%, var(--pc-ear-hi), var(--pc-ear-lo));
+  border: 2px solid var(--pc-edge-a);
+  box-shadow: 0 0 18px -2px var(--pc-glow), inset 0 0 10px rgba(255, 255, 255, 0.3);
+}
+.profile-ear-left {
+  left: 0.85rem;
+}
+.profile-ear-right {
+  right: 0.85rem;
+}
+
+.profile-avatar-ring {
+  border-radius: 9999px;
+  padding: 5px;
+  background: linear-gradient(135deg, var(--pc-accent), var(--pc-accent-2));
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1), 0 0 30px -2px var(--pc-glow);
+}
+.profile-avatar-gap {
+  border-radius: 9999px;
+  padding: 3px;
+  background: var(--pc-ring-gap);
+}
+
+.profile-avatar-halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 250px;
+  width: 250px;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: radial-gradient(circle, var(--pc-halo), transparent 66%);
+  pointer-events: none;
+}
+
+.profile-edit-fab {
+  display: flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1.5px solid var(--pc-btn-border);
+  background: linear-gradient(145deg, var(--pc-bg-b), var(--pc-bg-c));
+  color: var(--pc-text);
+  box-shadow: 0 6px 16px -6px var(--pc-shadow), 0 0 14px -4px var(--pc-glow);
+  transition: transform 0.15s ease;
+}
+.profile-edit-fab:hover {
+  transform: scale(1.08);
+}
+
+.profile-title-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1.5px solid var(--pc-edge-a);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pc-accent) 26%, transparent), color-mix(in srgb, var(--pc-accent-2) 22%, transparent));
+  padding: 0.5rem 1.35rem;
+  font-weight: 700;
+  color: var(--pc-text);
+  box-shadow: 0 0 20px -6px var(--pc-glow), inset 0 0 12px -4px var(--pc-glow);
+}
+.profile-title-pill-muted {
+  border-color: var(--pc-panel-border);
+  background: var(--pc-panel-bg);
+  color: var(--pc-text-soft);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.profile-stat {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 1rem;
+  border-radius: 1.25rem;
+  border: 1.5px solid var(--pc-panel-border);
+  background: var(--pc-panel-bg);
+  padding: 0.85rem 1.25rem;
+  box-shadow: inset 0 0 18px -10px var(--pc-glow);
+}
+.profile-stat-icon {
+  display: grid;
+  height: 3.25rem;
+  width: 3.25rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 1rem;
+  color: #fff;
+  background: linear-gradient(145deg, var(--pc-accent-2), var(--pc-accent));
+  box-shadow: 0 6px 14px -6px var(--pc-glow);
+}
+.profile-stat-number {
+  font-family: var(--font-display), ui-rounded, system-ui, sans-serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--pc-number);
+}
+
+.profile-xp-track {
+  height: 1.25rem;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9999px;
+  border: 1.5px solid var(--pc-panel-border);
+  background: var(--pc-track);
+  padding: 2px;
+}
+.profile-xp-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--pc-accent-deep), var(--pc-accent));
+  box-shadow: 0 0 12px -2px var(--pc-glow);
+  transition: width 0.6s ease;
+}
+
+.profile-tabs {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0 0.75rem 1.15rem;
+}
+.profile-tab {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 1.1rem;
+  border: 1.5px solid var(--pc-tab-border);
+  background: var(--pc-tab-bg);
+  padding: 0.7rem 0.15rem;
+  font-size: clamp(0.6rem, 2.6vw, 0.72rem);
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--pc-tab-text);
+  transition: transform 0.15s ease, background-color 0.2s ease;
+  flex-direction: column;
+}
+.profile-tab:hover {
+  transform: translateY(-1px);
+}
+.profile-tab[data-active="true"] {
+  border-color: transparent;
+  color: var(--pc-on-accent, #fff);
+  background: linear-gradient(135deg, var(--pc-accent), var(--pc-accent-deep));
+  box-shadow: 0 8px 18px -8px var(--pc-glow), 0 0 16px -4px var(--pc-glow);
+}
+.profile-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+/* Com 3 abas (perfil do par, sem Configurações) cabe o ícone ao lado do rótulo,
+   como na referência; com 4 abas o ícone fica em cima do rótulo em qualquer
+   largura, para "Configurações" nunca ser cortado. */
+@media (min-width: 540px) {
+  .profile-tab {
+    font-size: 0.76rem;
+  }
+  .profile-tabs[data-count="3"] .profile-tab {
+    flex-direction: row;
+    gap: 0.45rem;
+    padding: 0.8rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* loja de bordas */
+.border-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 1.1rem;
+  border: 1.5px solid var(--pc-panel-border);
+  background: var(--pc-panel-bg);
+  padding: 1.35rem 0.5rem 0.65rem;
+  text-align: center;
+  transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+button.border-tile:hover,
+.border-tile-owned:hover {
+  transform: translateY(-2px);
+}
+.border-tile[data-selected="true"] {
+  border-color: var(--pc-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pc-accent) 45%, transparent), 0 10px 22px -12px var(--pc-glow);
+}
+.border-tile-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--pc-accent) 16%, transparent);
+  padding: 0.15rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--pc-text);
+}
+.border-tile-buy {
+  width: 100%;
+  border-radius: 9999px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--pc-accent), var(--pc-accent-deep));
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+.border-tile-buy:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.border-tile-buy-ghost {
+  background: var(--pc-panel-bg);
+  color: var(--pc-text-soft);
+  border: 1.5px solid var(--pc-panel-border);
+}
+
+@keyframes pc-twinkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+.pc-twinkle {
+  animation: pc-twinkle 3.2s ease-in-out infinite;
+  color: var(--pc-spark);
+}
