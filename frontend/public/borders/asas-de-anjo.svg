@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="w1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9ecff"/></linearGradient>
+    <linearGradient id="w2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ead9ff"/></linearGradient>
+    <linearGradient id="w3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffdff0"/></linearGradient>
+    <linearGradient id="w4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9ecff"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset="0.5" stop-color="#ffd04a"/><stop offset="1" stop-color="#d49a22"/></linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3"/></filter>
+  </defs>
+  <circle cx="128" cy="128" r="80" fill="none" stroke="#fff3b0" stroke-opacity="0.9" stroke-width="9" filter="url(#soft)"/>
+  <g>
+    <path d="M178 122 C204 62 240 52 252 74 C256 92 246 112 226 126 Z" fill="url(#w1)" stroke="#bda6f5" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M178 128 C210 92 244 90 252 110 C252 128 238 144 214 150 Z" fill="url(#w2)" stroke="#bda6f5" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M178 134 C206 116 238 122 244 140 C242 158 226 168 202 168 Z" fill="url(#w3)" stroke="#bda6f5" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M176 140 C198 140 222 150 226 166 C222 180 208 186 190 182 Z" fill="url(#w4)" stroke="#bda6f5" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M196 88 C214 76 230 72 244 78" fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="3" stroke-linecap="round"/>
+    <path d="M200 112 C218 104 232 104 244 110" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="2.6" stroke-linecap="round"/>
+    </g>
+  <g transform="translate(256 0) scale(-1 1)">
+    <path d="M178 122 C204 62 240 52 252 74 C256 92 246 112 226 126 Z" fill="url(#w1)" stroke="#bda6f5" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M178 128 C210 92 244 90 252 110 C252 128 238 144 214 150 Z" fill="url(#w2)" stroke="#bda6f5" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M178 134 C206 116 238 122 244 140 C242 158 226 168 202 168 Z" fill="url(#w3)" stroke="#bda6f5" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M176 140 C198 140 222 150 226 166 C222 180 208 186 190 182 Z" fill="url(#w4)" stroke="#bda6f5" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M196 88 C214 76 230 72 244 78" fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="3" stroke-linecap="round"/>
+    <path d="M200 112 C218 104 232 104 244 110" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="2.6" stroke-linecap="round"/>
+    </g>
+  <circle cx="128" cy="128" r="75" fill="none" stroke="url(#gold)" stroke-width="7"/>
+  <circle cx="128" cy="128" r="71.6" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="1.2"/>
+  <circle cx="128" cy="128" r="78.8" fill="none" stroke="#a8741a" stroke-opacity="0.5" stroke-width="1.1"/>
+  <polygon points="79.2,30.2 80.4,35.0 85.2,36.2 80.4,37.4 79.2,42.2 78.0,37.4 73.2,36.2 78.0,35.0" fill="#fff" stroke="#e0a52b" stroke-width="0.8"/>
+  <polygon points="164.3,222.6 165.2,226.6 169.3,227.6 165.2,228.6 164.3,232.6 163.3,228.6 159.3,227.6 163.3,226.6" fill="#fff" stroke="#bda6f5" stroke-width="0.8"/>
+</svg>

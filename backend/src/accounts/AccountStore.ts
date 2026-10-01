@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { GameId } from "../types";
+import { isProfileBorderId } from "./profileBorders";
 import {
   ACCOUNT_IDS,
   AccountDuoParticipation,
@@ -38,7 +39,7 @@ const DEFAULT_NAMES: Record<AccountId, string> = {
 };
 
 function defaultProfile(id: AccountId): AccountProfile {
-  return { id, name: DEFAULT_NAMES[id], photo: null, updatedAt: Date.now() };
+  return { id, name: DEFAULT_NAMES[id], photo: null, border: null, ownedBorders: [], updatedAt: Date.now() };
 }
 
 function defaultSoloStats(): AccountSoloStats {
@@ -82,7 +83,16 @@ function mergeWithDefaults(loaded: Partial<AccountsData> | null): AccountsData {
   if (!loaded || typeof loaded !== "object") return base;
 
   for (const id of ACCOUNT_IDS) {
-    if (loaded.profiles?.[id]) base.profiles[id] = { ...base.profiles[id], ...loaded.profiles[id] };
+    if (loaded.profiles?.[id]) {
+      base.profiles[id] = { ...base.profiles[id], ...loaded.profiles[id] };
+      // Arquivos salvos antes das bordas existirem não têm esses campos; e uma
+      // borda removida do catálogo não pode continuar equipada/possuída.
+      const loadedOwned = Array.isArray(loaded.profiles[id].ownedBorders) ? loaded.profiles[id].ownedBorders : [];
+      const owned = [...new Set(loadedOwned.filter(isProfileBorderId))];
+      const equipped = loaded.profiles[id].border;
+      base.profiles[id].ownedBorders = owned;
+      base.profiles[id].border = isProfileBorderId(equipped) && owned.includes(equipped) ? equipped : null;
+    }
     if (loaded.solo?.[id]) {
       base.solo[id] = {
         ...base.solo[id],
@@ -128,12 +138,16 @@ function isBetter(candidate: number, current: RecordEntry | undefined, scoreType
   return scoreType === "time" ? candidate < current.value : candidate > current.value;
 }
 
-class AccountStore {
+export class AccountStore {
   private data: AccountsData = emptyData();
   private loadPromise: Promise<void> | null = null;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private savingNow = false;
   private saveAgainAfter = false;
+
+  /** `dataFile` é injetável só para os testes usarem um arquivo temporário em
+   *  vez de `backend/data/accounts.json`. */
+  constructor(private readonly dataFile: string = DATA_FILE) {}
 
   /** Chamado uma vez, na subida do servidor (ver src/index.ts) — garante que
    *  os dados salvos já estejam em memória antes do primeiro request. */
@@ -144,8 +158,8 @@ class AccountStore {
 
   private async load() {
     try {
-      await fs.mkdir(DATA_DIR, { recursive: true });
-      const raw = await fs.readFile(DATA_FILE, "utf-8");
+      await fs.mkdir(path.dirname(this.dataFile), { recursive: true });
+      const raw = await fs.readFile(this.dataFile, "utf-8");
       this.data = mergeWithDefaults(JSON.parse(raw));
     } catch {
       // Arquivo ainda não existe (primeira vez) ou está corrompido — segue
@@ -162,6 +176,15 @@ class AccountStore {
     }, SAVE_DEBOUNCE_MS);
   }
 
+  /** Grava em disco agora, sem esperar o debounce (usado pelos testes). */
+  async flushNow(): Promise<void> {
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    await this.flush();
+  }
+
   private async flush() {
     if (this.savingNow) {
       this.saveAgainAfter = true;
@@ -169,10 +192,10 @@ class AccountStore {
     }
     this.savingNow = true;
     try {
-      await fs.mkdir(DATA_DIR, { recursive: true });
-      const tmpFile = `${DATA_FILE}.tmp`;
+      await fs.mkdir(path.dirname(this.dataFile), { recursive: true });
+      const tmpFile = `${this.dataFile}.tmp`;
       await fs.writeFile(tmpFile, JSON.stringify(this.data, null, 2), "utf-8");
-      await fs.rename(tmpFile, DATA_FILE);
+      await fs.rename(tmpFile, this.dataFile);
     } catch (err) {
       console.error("Não foi possível salvar backend/data/accounts.json:", err);
     } finally {
@@ -187,21 +210,48 @@ class AccountStore {
   getPublicProfiles(): PublicAccountProfile[] {
     return ACCOUNT_IDS.map((id) => {
       const p = this.data.profiles[id];
-      return { id: p.id, name: p.name, photo: p.photo };
+      return { id: p.id, name: p.name, photo: p.photo, border: p.border };
     });
   }
 
-  updateProfile(id: AccountId, patch: { name?: string; photo?: string | null }): AccountProfile {
+  updateProfile(id: AccountId, patch: { name?: string; photo?: string | null; border?: string | null }): AccountProfile {
     const current = this.data.profiles[id];
+    // Defesa em profundidade: a rota já responde 403 para borda não desbloqueada,
+    // mas o store também nunca equipa uma borda que a conta não possui.
+    const borderAllowed = patch.border === null || (patch.border !== undefined && this.ownsBorder(id, patch.border));
     const next: AccountProfile = {
       ...current,
       name: patch.name !== undefined ? patch.name : current.name,
       photo: patch.photo !== undefined ? patch.photo : current.photo,
+      border: borderAllowed ? (patch.border as string | null) : current.border,
       updatedAt: Date.now(),
     };
     this.data.profiles[id] = next;
     this.scheduleSave();
     return next;
+  }
+
+  // --- Bordas de perfil ---------------------------------------------------
+  // O catálogo e os preços ficam em profileBorders.ts; aqui só a posse e a
+  // borda equipada de cada conta.
+
+  getBorderState(id: AccountId): { equipped: string | null; owned: string[] } {
+    const profile = this.data.profiles[id];
+    return { equipped: profile.border, owned: [...profile.ownedBorders] };
+  }
+
+  ownsBorder(id: AccountId, borderId: string): boolean {
+    return this.data.profiles[id].ownedBorders.includes(borderId);
+  }
+
+  /** Registra a posse de uma borda (idempotente). Devolve `true` só quando a
+   *  borda era nova para a conta; id fora do catálogo é ignorado. */
+  grantBorder(id: AccountId, borderId: string): boolean {
+    if (!isProfileBorderId(borderId) || this.ownsBorder(id, borderId)) return false;
+    const profile = this.data.profiles[id];
+    this.data.profiles[id] = { ...profile, ownedBorders: [...profile.ownedBorders, borderId], updatedAt: Date.now() };
+    this.scheduleSave();
+    return true;
   }
 
   /** Payload completo para as abas de Estatísticas e Recordes — os perfis

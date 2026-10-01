@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, Settings, Trophy, User, X } from "lucide-react";
+import { BarChart3, ChevronLeft, Settings, Trophy, User } from "lucide-react";
+import Logo from "@/components/Logo";
 import { AccountId } from "@/lib/accountSession";
 import { fetchAccountsOverview } from "@/lib/accountApi";
 import { AccountsOverview, PublicAccountProfile } from "@/lib/accountTypes";
@@ -10,6 +11,8 @@ import ProfileTab from "./ProfileTab";
 import StatsTab from "./StatsTab";
 import RecordsTab from "./RecordsTab";
 import SettingsTab from "./SettingsTab";
+import { ProfileEars, ProfileFootClouds, ProfileSparkles } from "./ProfileCardDecor";
+import "./profile-card.css";
 
 type TabId = "perfil" | "estatisticas" | "recordes" | "configuracoes";
 
@@ -31,11 +34,14 @@ interface AccountPanelProps {
 
 /**
  * Painel aberto pelo botão de conta (canto superior esquerdo, fora das telas
- * de jogo) — abas: editar nome/foto, estatísticas da dupla e de cada um, os
- * recordes por jogo/dificuldade e as preferências locais. Dentro de
+ * de jogo) — abas: perfil (nome, foto, borda, vitórias em duelo e nível),
+ * estatísticas da dupla e de cada um, os recordes por jogo/dificuldade e as
+ * preferências locais. As abas ficam embaixo, como um app. Dentro de
  * Configurações, apenas o ID estável "andre" recebe o acesso adicional ao
  * reset de estatísticas/recordes. Os painéis de dados compartilham o mesmo
  * resumo (`GET /api/accounts/overview`).
+ *
+ * O visual (cores por tema e modo claro/escuro) está em ./profile-card.css.
  */
 export default function AccountPanel({ accountId, profile, onClose, onProfileUpdated, onSwitchAccount, readOnly = false }: AccountPanelProps) {
   const [tab, setTab] = useState<TabId>("perfil");
@@ -59,65 +65,73 @@ export default function AccountPanel({ accountId, profile, onClose, onProfileUpd
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 py-8 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-3 py-3 backdrop-blur-sm sm:px-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
       >
         <motion.div
-          className="account-panel glass-panel relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl3"
+          className="profile-shell flex max-h-full w-full max-w-[32rem] flex-col gap-3"
           initial={{ opacity: 0, scale: 0.92, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94 }}
           transition={{ type: "spring", stiffness: 280, damping: 24 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={onClose}
-            aria-label="Fechar"
-            className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface/60 hover:text-ink"
-          >
-            <X size={18} />
-          </button>
+          <header className="flex shrink-0 items-center justify-between px-1">
+            <button type="button" onClick={onClose} aria-label="Fechar" title="Fechar" className="profile-shell-btn">
+              <ChevronLeft size={22} />
+            </button>
+            <div className="profile-shell-pill">
+              <Logo size={30} />
+            </div>
+            <span className="h-10 w-10 shrink-0" aria-hidden="true" />
+          </header>
 
-          <div className="account-tabs flex items-center gap-1.5 overflow-x-auto border-b border-ink/10 px-5 pb-3 pt-5 no-scrollbar sm:px-7">
-            {tabs.map((t) => {
-              const Icon = t.icon;
-              const active = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTab(t.id)}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-colors sm:px-4 ${
-                    active ? "bg-rose text-white shadow-glow" : "text-ink-soft hover:bg-surface/60 hover:text-ink"
-                  }`}
-                >
-                  <Icon size={15} />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
+          <section className="profile-card mt-3 flex min-h-0 flex-1 flex-col" aria-label="Perfil do jogador">
+            <ProfileEars />
+            <ProfileSparkles />
+            <ProfileFootClouds />
 
-          <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-7">
-            {tab === "perfil" && (
-              <ProfileTab
-                accountId={accountId}
-                profile={profile}
-                overview={overview}
-                onProfileUpdated={onProfileUpdated}
-                onSwitchAccount={onSwitchAccount}
-                readOnly={readOnly}
-              />
-            )}
-            {tab === "estatisticas" && <StatsTab overview={overview} error={overviewError} />}
-            {tab === "recordes" && <RecordsTab overview={overview} error={overviewError} />}
-            {tab === "configuracoes" && !readOnly && (
-              <SettingsTab accountId={accountId} overview={overview} onChanged={loadOverview} />
-            )}
-          </div>
+            <div className="relative z-[1] min-h-0 flex-1 overflow-y-auto px-5 pb-4 pt-9 sm:px-7">
+              {tab === "perfil" && (
+                <ProfileTab
+                  accountId={accountId}
+                  profile={profile}
+                  overview={overview}
+                  onProfileUpdated={onProfileUpdated}
+                  onSwitchAccount={onSwitchAccount}
+                  readOnly={readOnly}
+                />
+              )}
+              {tab === "estatisticas" && <StatsTab overview={overview} error={overviewError} />}
+              {tab === "recordes" && <RecordsTab overview={overview} error={overviewError} />}
+              {tab === "configuracoes" && !readOnly && (
+                <SettingsTab accountId={accountId} overview={overview} onChanged={loadOverview} />
+              )}
+            </div>
+
+            <nav className="profile-tabs shrink-0" aria-label="Seções do perfil" data-count={tabs.length}>
+              {tabs.map((t) => {
+                const Icon = t.icon;
+                const active = tab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTab(t.id)}
+                    data-active={active}
+                    aria-current={active ? "page" : undefined}
+                    className="profile-tab"
+                  >
+                    <Icon size={17} />
+                    <span className="profile-tab-label">{t.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </section>
         </motion.div>
       </motion.div>
     </AnimatePresence>

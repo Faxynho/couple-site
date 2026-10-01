@@ -1,5 +1,7 @@
 import { Router } from "express";
+import { idleStore } from "../idle/IdleStore";
 import { accountStore } from "./AccountStore";
+import { getProfileBorderState, isProfileBorderId, purchaseProfileBorder } from "./profileBorders";
 import { isAccountId } from "./types";
 
 /** Payload de foto em base64 — o navegador já redimensiona/comprime para
@@ -41,7 +43,7 @@ accountsRouter.get("/overview", (_req, res) => {
   res.json(accountStore.getOverview());
 });
 
-/** Atualiza nome e/ou foto de uma conta fixa. */
+/** Atualiza nome, foto e/ou borda equipada de uma conta fixa. */
 accountsRouter.put("/:id/profile", (req, res) => {
   const { id } = req.params;
   if (!isAccountId(id)) {
@@ -49,8 +51,8 @@ accountsRouter.put("/:id/profile", (req, res) => {
     return;
   }
 
-  const body = req.body as { name?: unknown; photo?: unknown };
-  const patch: { name?: string; photo?: string | null } = {};
+  const body = req.body as { name?: unknown; photo?: unknown; border?: unknown };
+  const patch: { name?: string; photo?: string | null; border?: string | null } = {};
 
   if (body.name !== undefined) {
     if (typeof body.name !== "string" || !body.name.trim()) {
@@ -75,8 +77,54 @@ accountsRouter.put("/:id/profile", (req, res) => {
     }
   }
 
+  // `border: null` remove a moldura; um id só é aceito se a conta já comprou
+  // aquela borda (a compra é feita em POST /:id/borders/purchase).
+  if (body.border !== undefined) {
+    if (body.border === null) {
+      patch.border = null;
+    } else if (!isProfileBorderId(body.border)) {
+      res.status(400).json({ error: "Borda inválida." });
+      return;
+    } else if (!accountStore.ownsBorder(id, body.border)) {
+      res.status(403).json({ error: "Você ainda não desbloqueou essa borda." });
+      return;
+    } else {
+      patch.border = body.border;
+    }
+  }
+
   const profile = accountStore.updateProfile(id, patch);
   res.json({ profile });
+});
+
+// --- Bordas de perfil (loja com as moedas globais) --------------------------
+
+/** Borda equipada, bordas possuídas, preços e saldo de moedas globais. */
+accountsRouter.get("/:id/borders", (req, res) => {
+  const { id } = req.params;
+  if (!isAccountId(id)) {
+    res.status(404).json({ error: "Conta não encontrada." });
+    return;
+  }
+  res.json(getProfileBorderState(accountStore, idleStore, id));
+});
+
+/** Compra uma borda para a própria conta. `by` (conta ativa no navegador) precisa
+ *  ser o mesmo `:id`: cada pessoa só compra para si, com o mesmo modelo de
+ *  confiança das demais rotas (não há autenticação de verdade no site). */
+accountsRouter.post("/:id/borders/purchase", (req, res) => {
+  const { id } = req.params;
+  if (!isAccountId(id)) {
+    res.status(404).json({ error: "Conta não encontrada." });
+    return;
+  }
+  const body = (req.body ?? {}) as { by?: unknown; borderId?: unknown };
+  if (body.by !== id) {
+    res.status(403).json({ error: "Você só pode comprar bordas para a própria conta." });
+    return;
+  }
+  const result = purchaseProfileBorder(accountStore, idleStore, id, body.borderId);
+  res.status(result.status).json(result.body);
 });
 
 // --- Reset de estatísticas/recordes (aba Configurações, só a conta André) --

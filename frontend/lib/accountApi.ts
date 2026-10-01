@@ -1,5 +1,5 @@
 import { AccountId } from "@/lib/accountSession";
-import { AccountProfile, AccountsOverview, PublicAccountProfile } from "@/lib/accountTypes";
+import { AccountProfile, AccountsOverview, ProfileBorderState, PublicAccountProfile } from "@/lib/accountTypes";
 
 // Remove uma barra "/" no final por engano (ex.: NEXT_PUBLIC_SOCKET_URL=http://localhost:4000/)
 // — sem isso, toda chamada aqui embaixo viraria "http://localhost:4000//api/accounts" (barra dupla).
@@ -26,7 +26,7 @@ export async function fetchAccountsOverview(): Promise<AccountsOverview> {
 
 export async function updateAccountProfile(
   id: AccountId,
-  patch: { name?: string; photo?: string | null }
+  patch: { name?: string; photo?: string | null; border?: string | null }
 ): Promise<AccountProfile> {
   const res = await fetch(`${API_BASE}/api/accounts/${id}/profile`, {
     method: "PUT",
@@ -35,6 +35,37 @@ export async function updateAccountProfile(
   });
   const data = await parseOrThrow<{ profile: AccountProfile }>(res);
   return data.profile;
+}
+
+/** Borda equipada, bordas possuídas, preços e saldo de moedas globais. */
+export async function fetchBorderState(id: AccountId): Promise<ProfileBorderState> {
+  const res = await fetch(`${API_BASE}/api/accounts/${id}/borders`, { cache: "no-store" });
+  return parseOrThrow<ProfileBorderState>(res);
+}
+
+export class BorderPurchaseError extends Error {
+  /** Estado atual devolvido pelo servidor (saldo correto) quando a compra falha. */
+  state: Partial<ProfileBorderState> | null;
+  constructor(message: string, state: Partial<ProfileBorderState> | null) {
+    super(message);
+    this.name = "BorderPurchaseError";
+    this.state = state;
+  }
+}
+
+/** Compra uma borda com as moedas globais. Comprar não equipa: a borda só
+ *  aparece depois de salvar o perfil escolhendo-a. */
+export async function purchaseBorder(id: AccountId, borderId: string): Promise<ProfileBorderState & { alreadyOwned: boolean }> {
+  const res = await fetch(`${API_BASE}/api/accounts/${id}/borders/purchase`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ by: id, borderId }),
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new BorderPurchaseError(body?.error || "Não foi possível comprar agora.", body);
+  }
+  return body as ProfileBorderState & { alreadyOwned: boolean };
 }
 
 /** As quatro categorias resetáveis na aba Configurações — cada uma some
