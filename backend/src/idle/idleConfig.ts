@@ -119,19 +119,34 @@ export const KITTY_CHARACTER_SEQUENCE = [
   { id: "little-twin-stars", name: "Little Twin Stars: Kiki e Lala", asset: "/idle/characters/v2/p24.webp", scene: 6 }, // P24: cena final exclusiva
  ] as const;
 
+// P1–P17 mantêm os preços atuais para preservar o ritmo já vivido pelos jogadores.
+  // A partir de P18, a progressão passa a ter marcos explícitos de late game.
+  // Isso altera apenas compras futuras: IDs, níveis, produção e moedas já salvas não são resetados.
+  const KITTY_LATE_GAME_COSTS: Record<number, number> = {
+    17: 400_000_000_000_000, // P18 Charmmy Kitty: 400 trilhões
+    18: 1_000_000_000_000_000, // P19 Hello Kitty anjo: 1 quadrilhão
+    19: 20_000_000_000_000_000, // P20 Kuromi anjo: 20 quadrilhões
+    20: 400_000_000_000_000_000, // P21 My Melody anjo noturno: 400 quadrilhões
+    21: 8_000_000_000_000_000_000, // P22 Hello Kitty de gala: 8 quintilhões
+    22: 160_000_000_000_000_000_000, // P23 Kuromi celestial: 160 quintilhões
+    23: 3_200_000_000_000_000_000_000, // P24 Little Twin Stars: 3,2 sextilhões
+  };
+
 function kittyCharacter(index: number): IdleItemDefinition {
   const character = KITTY_CHARACTER_SEQUENCE[index];
   const previousProduction = 2 * Math.pow(2.7, index - 1);
   const lateGameFactor = 1 + .4 * Math.min(1, Math.max(0, (index - 3) / 2));
-  // Os novos multiplicadores de relíquias exigem uma curva acumulativa após P5;
-  // os quatro primeiros personagens conservam o ritmo acessível da abertura.
+  // A curva original permanece intacta até P17.
   const relicCurve = Math.pow(1.13, Math.max(0, index - 4));
-  const baseCost = index === 0 ? 60 : Math.ceil(previousProduction * (1.5 * index * lateGameFactor * 3600) * relicCurve);
+  const generatedCost = index === 0 ? 60 : Math.ceil(previousProduction * (1.5 * index * lateGameFactor * 3600) * relicCurve);
+  const baseCost = KITTY_LATE_GAME_COSTS[index] ?? generatedCost;
   return {
     ...character, unlockOrder: index, baseCost,
     upgradeBaseCost: index === 0 ? 105 : Math.ceil(baseCost * .11),
     baseProduction: 2 * Math.pow(2.7, index),
-    costGrowth: 1.52, productionGrowth: 1.27, clickShare: .75,
+    // Aumenta gradualmente o preço das melhorias no fim sem alterar níveis existentes.
+    costGrowth: index >= 17 ? 1.68 : 1.52,
+    productionGrowth: 1.27, clickShare: .75,
   };
 }
 
