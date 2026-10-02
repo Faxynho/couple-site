@@ -19,8 +19,8 @@ import { PERSISTENT_DUO_DEFAULT_NAMES } from "@/lib/persistentDuo";
 import { PersistentDuoPresence } from "@/lib/types";
 import "./lobby-player-card.css";
 
-/** Diâmetro da foto nos cards do topo, em px (era 32–42 antes). */
-const LOBBY_AVATAR_SIZE = 54;
+/** Diâmetro da foto nos cards do topo, em px. */
+const LOBBY_AVATAR_SIZE = 78;
 
 interface PersistentDuoStatusProps {
   /** Conta de quem está olhando a tela: o card dela fica à esquerda. */
