@@ -34,7 +34,7 @@ export default function DuoTogetherTimeBadge() {
       aria-label={"Tempo de jogo juntos: " + value}
     >
       <div
-        className="relative flex aspect-[3.5/1] w-[140%] max-w-none items-center justify-center bg-contain bg-center bg-no-repeat"
+        className="relative flex aspect-[3.5/1] w-[180%] max-w-none shrink-0 items-center justify-center bg-contain bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/images/tempo-juntos-lobby.webp')" }}
         role="img"
         aria-label="Tempo juntos"
