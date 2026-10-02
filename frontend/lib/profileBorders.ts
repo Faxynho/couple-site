@@ -83,6 +83,34 @@ export const PROFILE_BORDERS: readonly ProfileBorderDefinition[] = [
     image: "/borders/coroa-real.svg",
     holeRatio: 0.72,
   },
+  {
+    id: "zelda",
+    name: "Lenda de Zelda",
+    description: "Uma moldura inspirada no universo de Zelda.",
+    image: "/borders/zelda.webp",
+    holeRatio: 0.70,
+  },
+  {
+    id: "kuromi",
+    name: "Kuromi",
+    description: "Uma moldura inspirada na Kuromi.",
+    image: "/borders/kuromi.webp",
+    holeRatio: 0.70,
+  },
+  {
+    id: "kuromi-head",
+    name: "Orelhas Kuromi",
+    description: "Uma moldura no formato da cabeça da Kuromi.",
+    image: "/borders/kuromi-head.webp",
+    holeRatio: 0.70,
+  },
+  {
+    id: "hello-kitty",
+    name: "Hello Kitty",
+    description: "Uma moldura inspirada na Hello Kitty.",
+    image: "/borders/hello-kitty.webp",
+    holeRatio: 0.70,
+  },
 ];
 
 const BY_ID = new Map(PROFILE_BORDERS.map((border) => [border.id, border]));
