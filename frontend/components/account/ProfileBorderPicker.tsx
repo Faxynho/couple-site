@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Coins, Loader2, Lock } from "lucide-react";
+import { Check, Loader2, Lock } from "lucide-react";
 import AccountAvatar from "./AccountAvatar";
+import GlobalCoinIcon from "@/components/GlobalCoinIcon";
 import { fetchBorderState, purchaseBorder } from "@/lib/accountApi";
 import { AccountId } from "@/lib/accountSession";
 import { ProfileBorderState } from "@/lib/accountTypes";
@@ -24,14 +25,13 @@ function formatCoins(value: number): string {
 
 /**
  * Lista de bordas dentro da edição do perfil. Mostra o saldo de moedas globais,
- * deixa escolher qualquer borda já desbloqueada e comprar as demais. A compra é
- * em dois toques (Desbloquear → Confirmar) porque as moedas globais são do
- * casal. Comprar NÃO equipa: a borda só é aplicada ao salvar o perfil.
+ * deixa escolher qualquer borda já desbloqueada e comprar as demais com um
+ * único toque (sem confirmação). Comprar NÃO equipa: a borda só é aplicada ao
+ * salvar o perfil — embora a borda recém-comprada já fique selecionada.
  */
 export default function ProfileBorderPicker({ accountId, name, photo, selected, onSelect }: ProfileBorderPickerProps) {
   const [state, setState] = useState<ProfileBorderState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState<string | null>(null);
   const [buying, setBuying] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -58,13 +58,11 @@ export default function ProfileBorderPicker({ accountId, name, photo, selected, 
     try {
       const next = await purchaseBorder(accountId, borderId);
       setState(next);
-      setConfirming(null);
       onSelect(borderId);
     } catch (err) {
       // Em falha de saldo o servidor devolve o estado atual — usa para corrigir o saldo na tela.
       const serverState = (err as { state?: Partial<ProfileBorderState> | null }).state;
       if (serverState) setState((prev) => (prev ? { ...prev, ...serverState } : prev));
-      setConfirming(null);
       setMessage(err instanceof Error ? err.message : "Não foi possível comprar agora.");
     } finally {
       setBuying(null);
@@ -84,7 +82,7 @@ export default function ProfileBorderPicker({ accountId, name, photo, selected, 
             className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--pc-panel-border)] bg-[color:var(--pc-panel-bg)] px-3 py-1 text-xs font-bold text-[color:var(--pc-text)]"
             aria-label={`Moedas globais: ${formatCoins(coins)}`}
           >
-            <Coins size={14} aria-hidden="true" style={{ color: "var(--pc-accent)" }} />
+            <GlobalCoinIcon size={18} />
             {formatCoins(coins)}
           </span>
         )}
@@ -136,7 +134,7 @@ export default function ProfileBorderPicker({ accountId, name, photo, selected, 
             const price = state.prices[border.id];
             const isOwned = owned.has(border.id);
             const isSelected = selected === border.id;
-            const missing = Math.max(0, price - coins);
+            const affordable = coins >= price;
             const preview = (
               <AccountAvatar name={name} photo={photo} accountId={accountId} size={52} border={border.id} />
             );
@@ -176,48 +174,18 @@ export default function ProfileBorderPicker({ accountId, name, photo, selected, 
                   <span className="text-xs font-bold leading-tight text-[color:var(--pc-text)]">{border.name}</span>
                   <span className="border-tile-price">
                     <Lock size={10} aria-hidden="true" />
-                    <Coins size={11} aria-hidden="true" />
+                    <GlobalCoinIcon size={15} />
                     {formatCoins(price)}
                   </span>
-                  {confirming === border.id ? (
-                    <div className="flex w-full gap-1.5">
-                      <button
-                        type="button"
-                        className="border-tile-buy"
-                        disabled={buying !== null}
-                        aria-label={`Confirmar compra de ${border.name}`}
-                        onClick={() => void handleBuy(border.id)}
-                      >
-                        {buying === border.id ? <Loader2 size={12} className="mx-auto animate-spin" aria-hidden="true" /> : "Confirmar"}
-                      </button>
-                      <button
-                        type="button"
-                        className="border-tile-buy border-tile-buy-ghost"
-                        disabled={buying !== null}
-                        aria-label={`Cancelar compra de ${border.name}`}
-                        onClick={() => setConfirming(null)}
-                      >
-                        Não
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="border-tile-buy"
-                      disabled={missing > 0 || buying !== null}
-                      aria-label={
-                        missing > 0
-                          ? `${border.name}: faltam ${formatCoins(missing)} moedas`
-                          : `Desbloquear ${border.name} por ${formatCoins(price)} moedas`
-                      }
-                      onClick={() => {
-                        setMessage(null);
-                        setConfirming(border.id);
-                      }}
-                    >
-                      {missing > 0 ? `Faltam ${formatCoins(missing)}` : "Desbloquear"}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="border-tile-buy"
+                    disabled={!affordable || buying !== null}
+                    aria-label={`Desbloquear ${border.name} por ${formatCoins(price)} moedas`}
+                    onClick={() => void handleBuy(border.id)}
+                  >
+                    {buying === border.id ? <Loader2 size={12} className="mx-auto animate-spin" aria-hidden="true" /> : "Desbloquear"}
+                  </button>
                 </div>
               </li>
             );

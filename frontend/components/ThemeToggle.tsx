@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
-import { applyTheme, setStoredTheme, Theme } from "@/lib/theme";
+import { applyTheme, getCurrentTheme, setStoredTheme, subscribeTheme, Theme } from "@/lib/theme";
 
 export default function ThemeToggle() {
   // Começa como `null` (nada renderizado) até montar no navegador — a classe
@@ -13,8 +13,10 @@ export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
-    const current = document.documentElement.classList.contains("dark") ? "dark" : "light";
-    setTheme(current);
+    // Também acompanha mudanças feitas em outro lugar (aba Configurações do perfil).
+    const sync = () => setTheme(getCurrentTheme());
+    sync();
+    return subscribeTheme(sync);
   }, []);
 
   const toggle = () => {

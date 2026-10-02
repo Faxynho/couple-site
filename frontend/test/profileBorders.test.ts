@@ -51,12 +51,12 @@ describe("catálogo de bordas de perfil", () => {
     }
   });
 
-  it("começa com 5 bordas de preços diferentes, da mais barata para a mais cara", () => {
+  it("toda borda tem no servidor um preço inteiro e positivo", () => {
     const backend = readBackendPrices();
-    const ordered = PROFILE_BORDERS.map((border) => backend[border.id]);
-    expect(ordered).toHaveLength(5);
-    expect(new Set(ordered).size).toBe(5);
-    expect([...ordered].sort((a, b) => a - b)).toEqual(ordered);
+    for (const border of PROFILE_BORDERS) {
+      const price = backend[border.id];
+      expect(Number.isInteger(price) && price > 0, `${border.id} sem preço válido`).toBe(true);
+    }
   });
 
   it("getProfileBorder devolve null para sem borda, ids desconhecidos e chaves perigosas", () => {

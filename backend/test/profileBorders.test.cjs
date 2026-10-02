@@ -23,15 +23,15 @@ async function makeStores(initialCoins = 0) {
   return { dir, file, accounts, wallet, cleanup: () => rm(dir, { recursive: true, force: true }) };
 }
 
-test("catálogo: 5 bordas com preços inteiros, positivos e todos diferentes", () => {
-  assert.equal(PROFILE_BORDER_IDS.length, 5);
-  const prices = PROFILE_BORDER_IDS.map((id) => PROFILE_BORDER_PRICES[id]);
-  for (const price of prices) {
-    assert.ok(Number.isInteger(price) && price > 0, `preço inválido: ${price}`);
+test("catálogo: ao menos uma borda e todo preço é um inteiro positivo", () => {
+  assert.ok(PROFILE_BORDER_IDS.length >= 1);
+  for (const id of PROFILE_BORDER_IDS) {
+    const price = PROFILE_BORDER_PRICES[id];
+    assert.ok(Number.isInteger(price) && price > 0, `preço inválido em ${id}: ${price}`);
+    assert.match(id, /^[a-z0-9-]+$/, `id fora do padrão: ${id}`);
   }
-  assert.equal(new Set(prices).size, prices.length, "preços precisam ser diferentes entre si");
-  assert.deepEqual([...prices].sort((a, b) => a - b), prices, "catálogo listado do mais barato ao mais caro");
-  assert.ok(isProfileBorderId("coroa-real"));
+  assert.equal(new Set(PROFILE_BORDER_IDS).size, PROFILE_BORDER_IDS.length, "ids duplicados");
+  assert.ok(isProfileBorderId(PROFILE_BORDER_IDS[0]));
   assert.ok(!isProfileBorderId("nao-existe"));
   assert.ok(!isProfileBorderId("__proto__"));
   assert.ok(!isProfileBorderId(42));

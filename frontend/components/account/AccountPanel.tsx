@@ -30,6 +30,9 @@ interface AccountPanelProps {
   onSwitchAccount?: () => void;
   /** Remove os controles de edição quando o painel mostra outra conta. */
   readOnly?: boolean;
+  /** Mostra somente o perfil: sem a barra de abas, então sem Estatísticas,
+   *  Recordes nem Configurações (usado ao abrir o perfil do outro jogador no lobby). */
+  profileOnly?: boolean;
 }
 
 /**
@@ -43,7 +46,7 @@ interface AccountPanelProps {
  *
  * O visual (cores por tema e modo claro/escuro) está em ./profile-card.css.
  */
-export default function AccountPanel({ accountId, profile, onClose, onProfileUpdated, onSwitchAccount, readOnly = false }: AccountPanelProps) {
+export default function AccountPanel({ accountId, profile, onClose, onProfileUpdated, onSwitchAccount, readOnly = false, profileOnly = false }: AccountPanelProps) {
   const [tab, setTab] = useState<TabId>("perfil");
   const [overview, setOverview] = useState<AccountsOverview | null>(null);
   const [overviewError, setOverviewError] = useState<string | null>(null);
@@ -60,7 +63,13 @@ export default function AccountPanel({ accountId, profile, onClose, onProfileUpd
 
   // Contas fixas podem personalizar a interface. A autorização do reset
   // continua sendo decidida dentro de Configurações pelo ID estável "andre".
-  const tabs = !readOnly ? [...BASE_TABS, { id: "configuracoes" as const, label: "Configurações", icon: Settings }] : BASE_TABS;
+  const tabs = profileOnly
+    ? []
+    : !readOnly
+      ? [...BASE_TABS, { id: "configuracoes" as const, label: "Configurações", icon: Settings }]
+      : BASE_TABS;
+  // Com `profileOnly` a única tela possível é o perfil, mesmo que `tab` tenha ficado em outra.
+  const activeTab: TabId = profileOnly ? "perfil" : tab;
 
   return (
     <AnimatePresence>
@@ -94,8 +103,8 @@ export default function AccountPanel({ accountId, profile, onClose, onProfileUpd
             <ProfileSparkles />
             <ProfileFootClouds />
 
-            <div className="relative z-[1] min-h-0 flex-1 overflow-y-auto px-5 pb-4 pt-9 sm:px-7">
-              {tab === "perfil" && (
+            <div className={`relative z-[1] min-h-0 flex-1 overflow-y-auto px-5 pt-9 sm:px-7 ${profileOnly ? "pb-8" : "pb-4"}`}>
+              {activeTab === "perfil" && (
                 <ProfileTab
                   accountId={accountId}
                   profile={profile}
@@ -105,32 +114,34 @@ export default function AccountPanel({ accountId, profile, onClose, onProfileUpd
                   readOnly={readOnly}
                 />
               )}
-              {tab === "estatisticas" && <StatsTab overview={overview} error={overviewError} />}
-              {tab === "recordes" && <RecordsTab overview={overview} error={overviewError} />}
-              {tab === "configuracoes" && !readOnly && (
+              {activeTab === "estatisticas" && <StatsTab overview={overview} error={overviewError} />}
+              {activeTab === "recordes" && <RecordsTab overview={overview} error={overviewError} />}
+              {activeTab === "configuracoes" && !readOnly && (
                 <SettingsTab accountId={accountId} overview={overview} onChanged={loadOverview} />
               )}
             </div>
 
-            <nav className="profile-tabs shrink-0" aria-label="Seções do perfil" data-count={tabs.length}>
-              {tabs.map((t) => {
-                const Icon = t.icon;
-                const active = tab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTab(t.id)}
-                    data-active={active}
-                    aria-current={active ? "page" : undefined}
-                    className="profile-tab"
-                  >
-                    <Icon size={17} />
-                    <span className="profile-tab-label">{t.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
+            {!profileOnly && (
+              <nav className="profile-tabs shrink-0" aria-label="Seções do perfil" data-count={tabs.length}>
+                {tabs.map((t) => {
+                  const Icon = t.icon;
+                  const active = activeTab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTab(t.id)}
+                      data-active={active}
+                      aria-current={active ? "page" : undefined}
+                      className="profile-tab"
+                    >
+                      <Icon size={17} />
+                      <span className="profile-tab-label">{t.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            )}
           </section>
         </motion.div>
       </motion.div>

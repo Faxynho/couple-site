@@ -44,6 +44,19 @@ export function isPersistentDuoRoomCode(code: string): boolean {
   return code.toUpperCase() === PERSISTENT_DUO_ROOM_CODE;
 }
 
+/** `true` quando a URL atual é a do lobby persistente (/sala/PERSISTENT_DUO).
+ *  Nessa tela o HUD próprio do lobby (cards dos jogadores no topo) substitui o
+ *  botão flutuante da conta e os botões de tema e som. */
+export function isPersistentDuoPath(pathname: string | null | undefined): boolean {
+  const match = pathname?.match(/^\/sala\/([^/]+)\/?$/);
+  if (!match) return false;
+  try {
+    return isPersistentDuoRoomCode(decodeURIComponent(match[1]));
+  } catch {
+    return false;
+  }
+}
+
 export function getPersistentDuoAvailabilityMessage(
   presence: Record<AccountId, PersistentDuoPresence>,
   selfId: AccountId
