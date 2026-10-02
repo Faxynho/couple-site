@@ -364,7 +364,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
 
                 </div>
 
-                <div className="relative z-20 mx-auto w-full max-w-md px-4 pt-2 sm:max-w-2xl">
+                <div className="relative z-20 mx-auto w-full max-w-md px-4 pt-0 sm:max-w-2xl">
                   <IdleLobbyEntry onClick={() => router.push("/cantinho")} />
                   <DuoTogetherTimeBadge />
                   <DuoGlobalCoinsBadge />
