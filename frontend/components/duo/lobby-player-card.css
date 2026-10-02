@@ -5,51 +5,34 @@
  */
 .lobby-player-card {
   position: relative;
-  display: flex;
+  display: block;
   width: calc(50% - 0.25rem);
   max-width: 17.5rem;
   min-width: 0;
-  align-items: center;
-  gap: 0.6rem;
+  height: 5.25rem;
+  padding: 0;
+  border: 0;
   border-radius: 1.6rem;
-  padding: 0.5rem 0.95rem 0.5rem 0.5rem;
-  text-align: left;
+  background: transparent;
   color: #fff;
-  background:
-    radial-gradient(120% 150% at 0% 0%, rgba(255, 125, 190, 0.28), transparent 58%),
-    linear-gradient(135deg, rgba(62, 25, 90, 0.94), rgba(116, 36, 106, 0.86));
-  box-shadow:
-    0 14px 30px -14px rgba(8, 2, 20, 0.9),
-    0 0 24px -6px rgba(255, 92, 170, 0.42),
-    inset 0 0 20px -8px rgba(255, 150, 210, 0.55);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  text-align: left;
+  transition: transform 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 .lobby-player-card:hover {
-  box-shadow:
-    0 16px 34px -14px rgba(8, 2, 20, 0.9),
-    0 0 30px -4px rgba(255, 92, 170, 0.6),
-    inset 0 0 22px -8px rgba(255, 150, 210, 0.7);
+  transform: translateY(-1px);
 }
 .lobby-player-card:focus-visible {
   outline: 2px solid #ffb3d6;
   outline-offset: 2px;
 }
 
-/* o card da direita é o espelho do da esquerda: foto na ponta, texto alinhado à direita */
 .lobby-player-card[data-side="right"] {
-  flex-direction: row-reverse;
-  padding: 0.5rem 0.5rem 0.5rem 0.95rem;
   text-align: right;
-  background:
-    radial-gradient(120% 150% at 100% 0%, rgba(180, 130, 255, 0.28), transparent 58%),
-    linear-gradient(225deg, rgba(62, 25, 90, 0.94), rgba(96, 40, 120, 0.86));
 }
 
-/* moldura com degradê (borda de 1.5px) */
-.lobby-player-card::before {
+/* Moldura decorativa aplicada somente ao painel de nome e status. */
+.lobby-player-text::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -65,39 +48,72 @@
 
 /* reserva sempre o mesmo espaço (com ou sem borda) para os cards não "pularem" ao equipar uma borda */
 .lobby-player-avatar {
-  position: relative;
-  z-index: 3;
+  position: absolute;
+  top: 50%;
+  left: -0.2rem;
+  z-index: 4;
   display: grid;
-  height: 4rem;
-  width: 4rem;
+  width: 5.25rem;
+  height: 5.25rem;
   flex-shrink: 0;
   place-items: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.lobby-player-card[data-side="right"] .lobby-player-avatar {
+  left: auto;
+  right: -0.2rem;
 }
 .lobby-player-ring {
   display: block;
   border-radius: 9999px;
-  padding: 3px;
+  padding: 2px;
   background: linear-gradient(135deg, #ff5fa5, #b37bff);
-  box-shadow: 0 0 18px -2px rgba(255, 92, 170, 0.6);
+  box-shadow: 0 0 22px -2px rgba(255, 92, 170, 0.7);
 }
 .lobby-player-ring-gap {
   display: block;
   border-radius: 9999px;
-  padding: 2px;
+  padding: 1px;
   background: #fff3fa;
 }
 
 .lobby-player-text {
-  position: relative;
-  z-index: 3;
+  position: absolute;
+  top: 50%;
+  left: 2.15rem;
+  right: 0;
+  z-index: 2;
   display: flex;
   min-width: 0;
-  flex: 1 1 auto;
+  height: 3.6rem;
   flex-direction: column;
+  justify-content: center;
   gap: 0.2rem;
+  padding: 0.4rem 0.65rem 0.4rem 3.15rem;
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 155, 208, 0.55);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(120% 150% at 0% 0%, rgba(255, 125, 190, 0.28), transparent 58%),
+    linear-gradient(135deg, rgba(62, 25, 90, 0.96), rgba(116, 36, 106, 0.92));
+  box-shadow:
+    0 14px 30px -14px rgba(8, 2, 20, 0.9),
+    0 0 24px -6px rgba(255, 92, 170, 0.42),
+    inset 0 0 20px -8px rgba(255, 150, 210, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 .lobby-player-card[data-side="right"] .lobby-player-text {
+  left: 0;
+  right: 2.15rem;
   align-items: flex-end;
+  padding-left: 0.65rem;
+  padding-right: 3.15rem;
+  text-align: right;
+  background:
+    radial-gradient(120% 150% at 100% 0%, rgba(180, 130, 255, 0.28), transparent 58%),
+    linear-gradient(225deg, rgba(62, 25, 90, 0.96), rgba(96, 40, 120, 0.92));
 }
 .lobby-player-name {
   max-width: 100%;
@@ -162,14 +178,20 @@
 
 @media (max-width: 380px) {
   .lobby-player-name {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
   }
-  .lobby-player-card {
-    gap: 0.45rem;
-    padding-right: 0.7rem;
+  .lobby-player-status {
+    font-size: 0.64rem;
   }
-  .lobby-player-card[data-side="right"] {
-    padding-left: 0.7rem;
-    padding-right: 0.5rem;
+  .lobby-player-avatar {
+    width: 4.9rem;
+    height: 4.9rem;
+  }
+  .lobby-player-text {
+    padding-left: 2.9rem;
+  }
+  .lobby-player-card[data-side="right"] .lobby-player-text {
+    padding-left: 0.65rem;
+    padding-right: 2.9rem;
   }
 }
