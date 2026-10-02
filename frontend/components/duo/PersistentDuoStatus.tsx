@@ -20,7 +20,7 @@ import { PersistentDuoPresence } from "@/lib/types";
 import "./lobby-player-card.css";
 
 /** Diâmetro da foto nos cards do topo, em px. */
-const LOBBY_AVATAR_SIZE = 78;
+const LOBBY_AVATAR_SIZE = 72;
 
 interface PersistentDuoStatusProps {
   /** Conta de quem está olhando a tela: o card dela fica à esquerda. */
@@ -51,7 +51,7 @@ export default function PersistentDuoStatus({ selfId, presence }: PersistentDuoS
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex items-start justify-between gap-2 px-3 pt-[max(0.6rem,env(safe-area-inset-top))] sm:px-4" aria-label="Jogadores do lobby">
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex items-start justify-between gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-4" aria-label="Jogadores do lobby">
         <LobbyPlayerCard
           side="left"
           profile={selfProfile}
