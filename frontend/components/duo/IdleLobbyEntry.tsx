@@ -7,7 +7,7 @@ export default function IdleLobbyEntry({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="group relative mx-auto mb-3 block w-[min(92%,32rem)] overflow-hidden p-0 transition-transform active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff72aa]/80 focus-visible:ring-offset-2"
+      className="group relative mx-auto mb-0 block w-[min(92%,32rem)] overflow-hidden p-0 transition-transform active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff72aa]/80 focus-visible:ring-offset-2"
       aria-label="Entrar nas Fazendinhas"
     >
       <Image
