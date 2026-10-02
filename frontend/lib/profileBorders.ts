@@ -95,7 +95,8 @@ export const PROFILE_BORDERS: readonly ProfileBorderDefinition[] = [
     name: "Kuromi",
     description: "Uma moldura inspirada na Kuromi.",
     image: "/borders/kuromi.webp",
-    holeRatio: 0.70,
+    holeRatio: 0.66,
+    offsetY: -0.03,
   },
   {
     id: "kuromi-head",
@@ -103,6 +104,7 @@ export const PROFILE_BORDERS: readonly ProfileBorderDefinition[] = [
     description: "Uma moldura no formato da cabeça da Kuromi.",
     image: "/borders/kuromi-head.webp",
     holeRatio: 0.70,
+    offsetY: -0.06,
   },
   {
     id: "hello-kitty",
