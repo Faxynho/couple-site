@@ -34,12 +34,12 @@ export default function DuoTogetherTimeBadge() {
       aria-label={"Tempo de jogo juntos: " + value}
     >
       <div
-        className="relative flex h-[4.4rem] w-[13.5rem] max-w-[92vw] items-end justify-center bg-contain bg-center bg-no-repeat pb-[0.48rem]"
+        className="relative flex aspect-[3.5/1] w-[82vw] max-w-[32rem] items-center justify-center bg-contain bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/images/tempo-juntos-lobby.webp')" }}
         role="img"
         aria-label="Tempo juntos"
       >
-        <span className="max-w-[78%] overflow-hidden text-ellipsis whitespace-nowrap text-center font-display text-[clamp(0.78rem,3.5vw,1.05rem)] font-extrabold leading-none tracking-wide text-white [text-shadow:0_1px_2px_rgba(80,35,48,.95),0_0_5px_rgba(80,35,48,.75)]">
+        <span className="absolute left-1/2 top-[68%] max-w-[58%] -translate-x-1/2 -translate-y-1/2 overflow-hidden text-ellipsis whitespace-nowrap text-center font-display text-[clamp(0.82rem,4vw,1.15rem)] font-extrabold leading-none tracking-wide text-white [text-shadow:0_1px_2px_rgba(80,35,48,.98),0_0_6px_rgba(80,35,48,.9)]">
           {value}
         </span>
       </div>
