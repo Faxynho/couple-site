@@ -21,10 +21,14 @@ import type { IdleStore } from "../idle/IdleStore";
  */
 export const PROFILE_BORDER_PRICES: Readonly<Record<string, number>> = {
   "laco-rosa": 150,
-  "ciranda-coracoes": 400,
-  "ceu-estrelado": 900,
-  "asas-de-anjo": 1600,
-  "coroa-real": 2800,
+  "ciranda-coracoes": 200,
+  "ceu-estrelado": 400,
+  "asas-de-anjo": 600,
+  "coroa-real": 1000,
+  "zelda": 1500,
+  "kuromi": 1500,
+  "kuromi-head": 1500,
+  "hello-kitty": 1200,
 };
 
 export const PROFILE_BORDER_IDS: readonly string[] = Object.keys(PROFILE_BORDER_PRICES);
