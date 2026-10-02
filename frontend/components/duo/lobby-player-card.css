@@ -1,0 +1,175 @@
+/*
+ * Cards dos jogadores no topo do lobby persistente (PersistentDuoStatus).
+ * O lobby sempre tem fundo escuro (vídeo/ilustração), então a paleta é fixa e
+ * não depende do modo claro/escuro — o mesmo rosa/lilás do cartão de perfil.
+ */
+.lobby-player-card {
+  position: relative;
+  display: flex;
+  width: calc(50% - 0.25rem);
+  max-width: 17.5rem;
+  min-width: 0;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 1.6rem;
+  padding: 0.5rem 0.95rem 0.5rem 0.5rem;
+  text-align: left;
+  color: #fff;
+  background:
+    radial-gradient(120% 150% at 0% 0%, rgba(255, 125, 190, 0.28), transparent 58%),
+    linear-gradient(135deg, rgba(62, 25, 90, 0.94), rgba(116, 36, 106, 0.86));
+  box-shadow:
+    0 14px 30px -14px rgba(8, 2, 20, 0.9),
+    0 0 24px -6px rgba(255, 92, 170, 0.42),
+    inset 0 0 20px -8px rgba(255, 150, 210, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.lobby-player-card:hover {
+  box-shadow:
+    0 16px 34px -14px rgba(8, 2, 20, 0.9),
+    0 0 30px -4px rgba(255, 92, 170, 0.6),
+    inset 0 0 22px -8px rgba(255, 150, 210, 0.7);
+}
+.lobby-player-card:focus-visible {
+  outline: 2px solid #ffb3d6;
+  outline-offset: 2px;
+}
+
+/* o card da direita é o espelho do da esquerda: foto na ponta, texto alinhado à direita */
+.lobby-player-card[data-side="right"] {
+  flex-direction: row-reverse;
+  padding: 0.5rem 0.5rem 0.5rem 0.95rem;
+  text-align: right;
+  background:
+    radial-gradient(120% 150% at 100% 0%, rgba(180, 130, 255, 0.28), transparent 58%),
+    linear-gradient(225deg, rgba(62, 25, 90, 0.94), rgba(96, 40, 120, 0.86));
+}
+
+/* moldura com degradê (borda de 1.5px) */
+.lobby-player-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(135deg, #ff9bd0, #b77bff 55%, #ff9bd0);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+/* reserva sempre o mesmo espaço (com ou sem borda) para os cards não "pularem" ao equipar uma borda */
+.lobby-player-avatar {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  height: 4rem;
+  width: 4rem;
+  flex-shrink: 0;
+  place-items: center;
+}
+.lobby-player-ring {
+  display: block;
+  border-radius: 9999px;
+  padding: 3px;
+  background: linear-gradient(135deg, #ff5fa5, #b37bff);
+  box-shadow: 0 0 18px -2px rgba(255, 92, 170, 0.6);
+}
+.lobby-player-ring-gap {
+  display: block;
+  border-radius: 9999px;
+  padding: 2px;
+  background: #fff3fa;
+}
+
+.lobby-player-text {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.lobby-player-card[data-side="right"] .lobby-player-text {
+  align-items: flex-end;
+}
+.lobby-player-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display), ui-rounded, system-ui, sans-serif;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-shadow: 0 0 14px rgba(255, 110, 180, 0.55);
+}
+.lobby-player-status {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  background: rgba(10, 4, 24, 0.38);
+  padding: 0.12rem 0.55rem 0.12rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.82);
+}
+.lobby-player-dot {
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.4);
+}
+.lobby-player-status[data-online="true"] {
+  color: #d9ffe9;
+}
+.lobby-player-status[data-online="true"] .lobby-player-dot {
+  background: #34d399;
+  box-shadow: 0 0 8px 1px rgba(52, 211, 153, 0.85);
+}
+.lobby-player-card[data-online="false"] .lobby-player-avatar {
+  filter: saturate(0.65);
+}
+
+.lobby-player-spark {
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  z-index: 3;
+  color: #ffd1ec;
+  opacity: 0.85;
+  animation: lobby-player-twinkle 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+.lobby-player-card[data-side="right"] .lobby-player-spark {
+  right: auto;
+  left: 1rem;
+  animation-delay: 1.4s;
+}
+@keyframes lobby-player-twinkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@media (max-width: 380px) {
+  .lobby-player-name {
+    font-size: 0.92rem;
+  }
+  .lobby-player-card {
+    gap: 0.45rem;
+    padding-right: 0.7rem;
+  }
+  .lobby-player-card[data-side="right"] {
+    padding-left: 0.7rem;
+    padding-right: 0.5rem;
+  }
+}

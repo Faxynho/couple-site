@@ -3,8 +3,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Dices, LayoutGrid } from "lucide-react";
-import PersistentDuoStatus from "@/components/duo/PersistentDuoStatus";
-import { GameId, PersistentDuoPresence } from "@/lib/types";
+import { GameId } from "@/lib/types";
 
 export interface MinigameHotspot {
   gameId: GameId;
@@ -43,14 +42,12 @@ export const MINIGAME_HOTSPOTS: readonly MinigameHotspot[] = [
 ] as const;
 
 interface PersistentDuoMinigamesSceneProps {
-  presence: Record<"andre" | "flavia", PersistentDuoPresence>;
   onSelectGame: (gameId: GameId) => void;
   onRandomGame: () => void;
   onShowClassic: () => void;
 }
 
 export default function PersistentDuoMinigamesScene({
-  presence,
   onSelectGame,
   onRandomGame,
   onShowClassic,
@@ -73,8 +70,7 @@ export default function PersistentDuoMinigamesScene({
       />
 
       <div className="pointer-events-none absolute inset-x-[4%] top-[13.5%] z-30">
-        <PersistentDuoStatus presence={presence} variant="minigames" />
-        <div className="mt-1.5 flex justify-center">
+        <div className="flex justify-center">
           <button
             type="button"
             onClick={onRandomGame}

@@ -214,7 +214,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
           }}
           aria-label="Voltar ao lobby"
           title="Voltar ao lobby"
-          className="fixed left-4 top-[5.25rem] z-50 inline-flex h-10 items-center gap-1.5 rounded-full border border-[#ff86b8]/45 bg-[#211228]/75 px-3 font-display text-xs font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.35),0_0_16px_rgba(255,94,160,0.16)] backdrop-blur-md transition-transform active:scale-95"
+          className="fixed left-4 top-[6.4rem] z-50 inline-flex h-10 items-center gap-1.5 rounded-full border border-[#ff86b8]/45 bg-[#211228]/75 px-3 font-display text-xs font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.35),0_0_16px_rgba(255,94,160,0.16)] backdrop-blur-md transition-transform active:scale-95"
         >
           <ArrowLeft size={15} />
           Lobby
@@ -272,7 +272,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                   />
 
                   <section
-                    className="pointer-events-none absolute inset-x-0 top-[5.5rem] z-30 px-4 text-center"
+                    className="pointer-events-none absolute inset-x-0 top-[6.6rem] z-30 px-4 text-center"
                     aria-label="Informações do lobby"
                   >
                     <div className="pointer-events-auto mx-auto w-full max-w-sm">
@@ -368,9 +368,6 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                   <IdleLobbyEntry onClick={() => router.push("/cantinho")} />
                   <DuoTogetherTimeBadge />
                   <DuoGlobalCoinsBadge />
-                  <div className="mt-3">
-                    <PersistentDuoStatus presence={persistentPresence} />
-                  </div>
                 </div>
 
                 <PetLobbyArea roomCode={room.code} />
@@ -385,24 +382,18 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                   isPersistentDuo && minigamesLayout === "visual"
                     ? "w-full"
                     : isPersistentDuo
-                      ? "mx-auto w-full max-w-md px-4 pb-12 pt-28 sm:max-w-3xl"
+                      ? "mx-auto w-full max-w-md px-4 pb-12 pt-32 sm:max-w-3xl"
                       : "w-full"
                 }
               >
                 {isPersistentDuo && minigamesLayout === "visual" ? (
                   <PersistentDuoMinigamesScene
-                    presence={persistentPresence}
                     onSelectGame={selectGame}
                     onRandomGame={handleRandomGame}
                     onShowClassic={() => setMinigamesLayout("classic")}
                   />
                 ) : (
                   <>
-                    {isPersistentDuo && (
-                      <div className="mb-5 w-full">
-                        <PersistentDuoStatus presence={persistentPresence} />
-                      </div>
-                    )}
                     <GameSearch value={search} onChange={setSearch} />
                     <GameCatalogActions
                       onRandom={handleRandomGame}
@@ -487,7 +478,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
             <motion.section
               layoutId={game ? "minigame-config-" + game.id : undefined}
               transition={{ type: "spring", stiffness: 340, damping: 36, mass: 0.72 }}
-              className="fixed bottom-3 left-3 right-3 top-20 z-[45] mx-auto max-w-[640px] overflow-hidden rounded-[30px] border border-rose/30 bg-surface text-center shadow-[0_18px_46px_rgba(0,0,0,0.38)] transform-gpu will-change-transform [contain:layout_paint]"
+              className="fixed bottom-3 left-3 right-3 top-[6.4rem] z-[45] mx-auto max-w-[640px] overflow-hidden rounded-[30px] border border-rose/30 bg-surface text-center shadow-[0_18px_46px_rgba(0,0,0,0.38)] transform-gpu will-change-transform [contain:layout_paint]"
               aria-label={game ? `Configuração de ${game.name}` : "Configuração do jogo"}
             >
               <motion.div
@@ -514,10 +505,6 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
                 </p>
 
                 <div className="mt-5">
-                  <PersistentDuoStatus presence={persistentPresence} />
-                </div>
-
-                <div className="mt-3">
                   <GameConfigPanel
                     room={room}
                     isHost={isHost}
@@ -607,6 +594,10 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
           readOnly
           onClose={() => setViewedProfile(null)}
         />
+      )}
+
+      {isPersistentDuo && (selfId === "andre" || selfId === "flavia") && (
+        <PersistentDuoStatus selfId={selfId} presence={persistentPresence} />
       )}
     </main>
   );

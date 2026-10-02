@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { AlertTriangle, ArrowLeft, Check, ChevronRight, Palette, RotateCcw } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronRight, Moon, Palette, RotateCcw, ShieldAlert, Sparkles, Sun, Volume2, VolumeX } from "lucide-react";
 import {
   resetDuoParticipation,
   resetDuoSharedStats,
@@ -13,12 +13,19 @@ import { resetIdle } from "@/lib/idleApi";
 import { resetRealPetRooms } from "@/lib/petApi";
 import { AccountsOverview } from "@/lib/accountTypes";
 import { AccountId } from "@/lib/accountSession";
+import { useSoundEnabled } from "@/hooks/useSoundEnabled";
 import {
+  applyTheme,
   applyVisualTheme,
+  getCurrentTheme,
   getStoredVisualTheme,
+  setStoredTheme,
   setStoredVisualTheme,
+  subscribeTheme,
+  Theme,
   VisualTheme,
 } from "@/lib/theme";
+import "./profile-card.css";
 
 interface SettingsTabProps {
   accountId: AccountId;
@@ -37,11 +44,18 @@ const THEME_OPTIONS: { id: VisualTheme; name: string; description: string; swatc
 ];
 
 /**
- * Menu de preferências das contas fixas. A seleção visual é local ao aparelho;
- * o reset existente segue exclusivo do ID estável "andre".
+ * Menu de preferências das contas fixas, organizado em grupos: Aparência (modo
+ * claro/escuro e temas), Som e — só para o ID estável "andre" — Administração
+ * (reset). Tudo aqui é local ao aparelho, exceto o reset, que apaga dados salvos.
  */
 export default function SettingsTab({ accountId, overview, onChanged }: SettingsTabProps) {
   const [view, setView] = useState<SettingsView>("menu");
+  const [visualTheme, setVisualTheme] = useState<VisualTheme>("default");
+
+  // Relê o tema ao voltar da tela de Temas, para o resumo da linha estar certo.
+  useEffect(() => {
+    if (view === "menu") setVisualTheme(getStoredVisualTheme());
+  }, [view]);
 
   if (view === "themes") {
     return <SettingsPage title="Temas" onBack={() => setView("menu")}><ThemeSelector /></SettingsPage>;
@@ -51,23 +65,40 @@ export default function SettingsTab({ accountId, overview, onChanged }: Settings
     return <SettingsPage title="Resetar estatísticas e recordes" onBack={() => setView("menu")}><ResetSettings overview={overview} onChanged={onChanged} /></SettingsPage>;
   }
 
+  const currentThemeName = THEME_OPTIONS.find((theme) => theme.id === visualTheme)?.name ?? "";
+
   return (
-    <div className="flex flex-col gap-3">
-      <p className="mb-1 text-sm text-ink-soft">Personalize sua experiência neste aparelho.</p>
-      <SettingsOption
-        icon={Palette}
-        title="Temas"
-        description="Escolha a identidade visual do site."
-        onClick={() => setView("themes")}
-      />
-      {accountId === "andre" && (
-        <SettingsOption
-          icon={RotateCcw}
-          title="Resetar estatísticas e recordes"
-          description="Acesse os controles de correção dos dados salvos."
-          onClick={() => setView("reset")}
-          danger
+    <div className="flex flex-col gap-4">
+      <div className="text-center">
+        <h2 className="font-display text-2xl font-bold text-[color:var(--pc-text)]">Configurações</h2>
+        <p className="mt-1 text-sm text-[color:var(--pc-text-soft)]">Personalize sua experiência neste aparelho.</p>
+      </div>
+
+      <SettingsGroup icon={Palette} title="Aparência">
+        <ThemeModeRow />
+        <SettingsLinkRow
+          icon={Sparkles}
+          title="Temas"
+          description="Escolha a identidade visual do site."
+          value={currentThemeName}
+          onClick={() => setView("themes")}
         />
+      </SettingsGroup>
+
+      <SettingsGroup icon={Volume2} title="Som">
+        <SoundRow />
+      </SettingsGroup>
+
+      {accountId === "andre" && (
+        <SettingsGroup icon={ShieldAlert} title="Administração" danger>
+          <SettingsLinkRow
+            icon={RotateCcw}
+            title="Resetar estatísticas e recordes"
+            description="Acesse os controles de correção dos dados salvos."
+            onClick={() => setView("reset")}
+            danger
+          />
+        </SettingsGroup>
       )}
     </div>
   );
@@ -76,37 +107,120 @@ export default function SettingsTab({ accountId, overview, onChanged }: Settings
 function SettingsPage({ title, onBack, children }: { title: string; onBack: () => void; children: ReactNode }) {
   return (
     <div>
-      <button type="button" onClick={onBack} className="mb-5 flex items-center gap-2 text-sm font-semibold text-ink-soft transition-colors hover:text-ink">
+      <button type="button" onClick={onBack} className="mb-5 flex items-center gap-2 text-sm font-semibold text-[color:var(--pc-text-soft)] transition-colors hover:text-[color:var(--pc-text)]">
         <ArrowLeft size={16} /> Configurações
       </button>
-      <h2 className="mb-4 font-display text-xl font-semibold text-ink">{title}</h2>
+      <h2 className="mb-4 font-display text-xl font-bold text-[color:var(--pc-text)]">{title}</h2>
       {children}
     </div>
   );
 }
 
-function SettingsOption({ icon: Icon, title, description, onClick, danger = false }: {
+function SettingsGroup({ icon: Icon, title, danger = false, children }: {
+  icon: typeof Palette;
+  title: string;
+  danger?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section className="settings-group" data-tone={danger ? "danger" : undefined} aria-label={title}>
+      <header className="settings-group-header">
+        <span className="settings-group-icon" aria-hidden="true"><Icon size={15} /></span>
+        {title}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function RowIcon({ icon: Icon, danger = false }: { icon: typeof Palette; danger?: boolean }) {
+  return (
+    <span className="settings-row-icon" data-tone={danger ? "danger" : undefined} aria-hidden="true">
+      <Icon size={18} />
+    </span>
+  );
+}
+
+/** Linha que abre uma subtela (Temas, Reset). */
+function SettingsLinkRow({ icon, title, description, value, onClick, danger = false }: {
   icon: typeof Palette;
   title: string;
   description: string;
+  value?: string;
   onClick: () => void;
   danger?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="settings-option flex w-full items-center gap-3 rounded-xl2 border border-surface/70 bg-surface/55 p-4 text-left transition hover:border-rose/35 hover:bg-surface/75"
-    >
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${danger ? "bg-rose/15 text-rose-deep" : "bg-surface text-ink"}`}>
-        <Icon size={18} />
-      </span>
+    <button type="button" onClick={onClick} className="settings-row">
+      <RowIcon icon={icon} danger={danger} />
       <span className="min-w-0 flex-1">
-        <span className="block font-display text-sm font-semibold text-ink">{title}</span>
-        <span className="mt-0.5 block text-xs text-ink-soft">{description}</span>
+        <span className="block font-display text-sm font-bold">{title}</span>
+        <span className="mt-0.5 block text-xs text-[color:var(--pc-text-soft)]">{description}</span>
       </span>
-      <ChevronRight size={17} className="shrink-0 text-ink-soft" />
+      {value && <span className="settings-row-value">{value}</span>}
+      <ChevronRight size={17} className="shrink-0 text-[color:var(--pc-text-soft)]" aria-hidden="true" />
     </button>
+  );
+}
+
+/** Claro / escuro: antes era o botão flutuante no canto superior direito. */
+function ThemeModeRow() {
+  const [theme, setTheme] = useState<Theme>("light");
+
+  useEffect(() => {
+    const sync = () => setTheme(getCurrentTheme());
+    sync();
+    return subscribeTheme(sync);
+  }, []);
+
+  const choose = (next: Theme) => {
+    applyTheme(next);
+    setStoredTheme(next);
+  };
+
+  return (
+    <div className="settings-row settings-row-wrap">
+      <RowIcon icon={theme === "dark" ? Moon : Sun} />
+      <div className="min-w-0 flex-1 basis-40">
+        <p className="font-display text-sm font-bold">Modo de cor</p>
+        <p className="mt-0.5 text-xs text-[color:var(--pc-text-soft)]">Claro ou escuro, independente do tema.</p>
+      </div>
+      <div className="settings-segment" role="group" aria-label="Modo de cor">
+        <button type="button" aria-pressed={theme === "light"} aria-label="Modo claro" onClick={() => choose("light")}>
+          <Sun size={14} aria-hidden="true" /> Claro
+        </button>
+        <button type="button" aria-pressed={theme === "dark"} aria-label="Modo escuro" onClick={() => choose("dark")}>
+          <Moon size={14} aria-hidden="true" /> Escuro
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Liga/desliga os sons: antes era o botão de volume flutuante. */
+function SoundRow() {
+  const { enabled, toggle } = useSoundEnabled();
+  return (
+    <div className="settings-row">
+      <RowIcon icon={enabled ? Volume2 : VolumeX} />
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-sm font-bold">Sons do site</p>
+        <p className="mt-0.5 text-xs text-[color:var(--pc-text-soft)]">
+          {enabled ? "Ligados: efeitos dos jogos e do Cantinho." : "Desligados: o site fica em silêncio."}
+        </p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label="Sons do site"
+        data-on={enabled}
+        onClick={toggle}
+        className="settings-switch"
+      >
+        <span className="settings-switch-knob" />
+      </button>
+    </div>
   );
 }
 

@@ -8,6 +8,7 @@ import AccountPanel from "./AccountPanel";
 import { fetchAccounts } from "@/lib/accountApi";
 import { AccountId, clearActiveAccount, getActiveAccount, subscribeToActiveAccountChange } from "@/lib/accountSession";
 import { PublicAccountProfile } from "@/lib/accountTypes";
+import { isPersistentDuoPath } from "@/lib/persistentDuo";
 
 /**
  * Espelha o ThemeToggleGate: fica fixo no canto superior ESQUERDO (o direito
@@ -19,6 +20,8 @@ export default function AccountPanelGate() {
   const pathname = usePathname();
   const router = useRouter();
   const isGameScreen = pathname?.startsWith("/game/") || pathname === "/mundo" || pathname?.startsWith("/pets") || pathname?.startsWith("/cantinho");
+  // O lobby persistente tem o próprio card do jogador no topo (PersistentDuoStatus).
+  const hasOwnPlayerCard = isPersistentDuoPath(pathname);
 
   const [accountId, setAccountId] = useState<AccountId | null>(null);
   const [profile, setProfile] = useState<PublicAccountProfile | null>(null);
@@ -49,7 +52,7 @@ export default function AccountPanelGate() {
     return subscribeToActiveAccountChange(refresh);
   }, [refresh]);
 
-  if (isGameScreen || !accountId || !profile) return null;
+  if (isGameScreen || hasOwnPlayerCard || !accountId || !profile) return null;
 
   return (
     <>

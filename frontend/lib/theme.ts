@@ -20,9 +20,25 @@ export function getSystemTheme(): Theme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+const THEME_CHANGE_EVENT = "couple-site:theme-change";
+
+/** Tema (claro/escuro) realmente aplicado na página agora. */
+export function getCurrentTheme(): Theme {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+}
+
 export function applyTheme(theme: Theme) {
   if (typeof document === "undefined") return;
   document.documentElement.classList.toggle("dark", theme === "dark");
+  // Avisa os outros controles de tema abertos (botão flutuante, Configurações)
+  // para não ficarem mostrando o estado antigo.
+  window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
+}
+
+export function subscribeTheme(listener: () => void): () => void {
+  window.addEventListener(THEME_CHANGE_EVENT, listener);
+  return () => window.removeEventListener(THEME_CHANGE_EVENT, listener);
 }
 
 export function getStoredVisualTheme(): VisualTheme {

@@ -129,10 +129,12 @@ describe("ProfileTab — edição e loja de bordas", () => {
     // bloqueadas: com preço e botão de compra coerente com o saldo
     expect(screen.getByRole("button", { name: "Desbloquear Ciranda de Corações por 400 moedas" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Desbloquear Céu Estrelado por 900 moedas" })).toBeEnabled();
-    const broke = screen.getByRole("button", { name: "Asas de Anjo: faltam 600 moedas" });
+    // sem saldo: o botão só fica desabilitado, sem dizer quantas moedas faltam
+    const broke = screen.getByRole("button", { name: "Desbloquear Asas de Anjo por 1.600 moedas" });
     expect(broke).toBeDisabled();
-    expect(broke).toHaveTextContent("Faltam 600");
-    expect(screen.getByRole("button", { name: "Coroa Real: faltam 1.800 moedas" })).toBeDisabled();
+    expect(broke).toHaveTextContent("Desbloquear");
+    expect(screen.getByRole("button", { name: "Desbloquear Coroa Real por 2.800 moedas" })).toBeDisabled();
+    expect(screen.queryByText(/faltam/i)).not.toBeInTheDocument();
     expect(fetchBorderState).toHaveBeenCalledWith("andre");
   });
 
@@ -185,30 +187,45 @@ describe("ProfileTab — edição e loja de bordas", () => {
     expect(screen.getByRole("button", { name: "Salvar alterações" })).toBeDisabled();
   });
 
-  it("comprar exige confirmação, desconta o saldo, seleciona a borda e ainda NÃO salva o perfil", async () => {
+  it("comprar é com UM toque (sem confirmação), desconta o saldo, seleciona a borda e ainda NÃO salva o perfil", async () => {
     vi.mocked(purchaseBorder).mockResolvedValue({ ...state({ owned: ["laco-rosa", "ceu-estrelado"], globalCoins: 100 }), alreadyOwned: false });
     await openEditor();
 
     fireEvent.click(screen.getByRole("button", { name: "Desbloquear Céu Estrelado por 900 moedas" }));
-    // 1º toque só pede confirmação: nada é cobrado
-    expect(purchaseBorder).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Cancelar compra de Céu Estrelado" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar compra de Céu Estrelado" }));
     await waitFor(() => expect(purchaseBorder).toHaveBeenCalledWith("andre", "ceu-estrelado"));
+    expect(purchaseBorder).toHaveBeenCalledTimes(1);
+    // nenhuma etapa de confirmação apareceu
+    expect(screen.queryByRole("button", { name: /Confirmar compra/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Cancelar compra/ })).not.toBeInTheDocument();
+
     await screen.findByLabelText("Moedas globais: 100");
     expect(screen.getByRole("button", { name: "Borda Céu Estrelado" })).toHaveAttribute("aria-pressed", "true");
     expect(updateAccountProfile).not.toHaveBeenCalled();
-    // com o saldo novo, as outras ficam fora do alcance
-    expect(screen.getByRole("button", { name: /Ciranda de Corações: faltam 300 moedas/ })).toBeDisabled();
+    // com o saldo novo, as outras ficam fora do alcance (desabilitadas, sem texto de "faltam")
+    expect(screen.getByRole("button", { name: "Desbloquear Ciranda de Corações por 400 moedas" })).toBeDisabled();
+    expect(screen.queryByText(/faltam/i)).not.toBeInTheDocument();
   });
 
-  it("cancelar a confirmação não compra nada", async () => {
+  it("clicar de novo enquanto a compra está em andamento não cobra duas vezes", async () => {
+    let finish: (value: ProfileBorderState & { alreadyOwned: boolean }) => void = () => {};
+    vi.mocked(purchaseBorder).mockReturnValue(new Promise((resolve) => { finish = resolve; }));
     await openEditor();
-    fireEvent.click(screen.getByRole("button", { name: "Desbloquear Ciranda de Corações por 400 moedas" }));
-    fireEvent.click(screen.getByRole("button", { name: "Cancelar compra de Ciranda de Corações" }));
-    expect(purchaseBorder).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Desbloquear Ciranda de Corações por 400 moedas" })).toBeInTheDocument();
+    const buy = screen.getByRole("button", { name: "Desbloquear Ciranda de Corações por 400 moedas" });
+    fireEvent.click(buy);
+    fireEvent.click(buy);
+    fireEvent.click(screen.getByRole("button", { name: "Desbloquear Céu Estrelado por 900 moedas" }));
+    expect(purchaseBorder).toHaveBeenCalledTimes(1);
+    await act(async () => finish({ ...state({ owned: ["laco-rosa", "ciranda-coracoes"], globalCoins: 600 }), alreadyOwned: false }));
+    await screen.findByLabelText("Moedas globais: 600");
+  });
+
+  it("o saldo e os preços usam o sprite da moeda global (não um ícone genérico)", async () => {
+    const { container } = await openEditor();
+    const shop = container.querySelector("section[aria-label='Bordas do perfil']")!;
+    const sprites = shop.querySelectorAll("img[src='/idle/icons/global-coin.webp']");
+    // 1 no saldo + 1 em cada borda ainda bloqueada (Ciranda, Céu, Asas, Coroa)
+    expect(sprites.length).toBe(5);
+    sprites.forEach((sprite) => expect(sprite).toHaveAttribute("aria-hidden", "true"));
   });
 
   it("falha na compra mostra o motivo e corrige o saldo com o valor do servidor", async () => {
@@ -216,7 +233,6 @@ describe("ProfileTab — edição e loja de bordas", () => {
     vi.mocked(purchaseBorder).mockRejectedValue(error);
     await openEditor();
     fireEvent.click(screen.getByRole("button", { name: "Desbloquear Ciranda de Corações por 400 moedas" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar compra de Ciranda de Corações" }));
     await screen.findByText("Moedas globais insuficientes.");
     expect(screen.getByLabelText("Moedas globais: 120")).toBeInTheDocument();
     // não ficou nada selecionado nem comprado
