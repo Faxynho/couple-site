@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock3, Heart, Sparkles } from "lucide-react";
 import { fetchAccountsOverview } from "@/lib/accountApi";
 import { formatDuration } from "@/lib/accountFormat";
 
@@ -22,7 +21,14 @@ export default function DuoTogetherTimeBadge() {
 
     void load();
 
-    return (
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const value = timeMs === null ? "—" : formatDuration(timeMs);
+
+  return (
     <div
       className="mx-auto flex w-fit max-w-[92vw] items-center justify-center"
       aria-label={"Tempo de jogo juntos: " + value}
