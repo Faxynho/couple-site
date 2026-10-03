@@ -50,6 +50,8 @@ export interface IdleModeSnapshot {
 export interface RenewableObjectiveSnapshot {
   id: string; period: "daily" | "weekly"; title: string; description: string; metric: string;
   target: number; reward: number; progress: number; completedAt: number | null; periodKey: string;
+  /** Quando o período termina e a missão renova (ms). Ausente em respostas de servidores antigos. */
+  periodEndsAt?: number;
 }
 export interface IdleSnapshot {
   revision: number; environment: GameEnvironment; areaName: string; globalCoins: number; globalLifetimeEarned: number;
@@ -57,4 +59,6 @@ export interface IdleSnapshot {
   offlineReward: { mode: IdleModeId; amount: number; elapsedMs: number } | null;
   modes: Record<IdleModeId, IdleModeSnapshot>;
   objectives: { daily: RenewableObjectiveSnapshot[]; weekly: RenewableObjectiveSnapshot[] };
+  /** Missões sorteadas do Mundo da Hello Kitty (4 diárias e 3 semanais). Ausente em servidores antigos. */
+  kittyObjectives?: { daily: RenewableObjectiveSnapshot[]; weekly: RenewableObjectiveSnapshot[] };
 }

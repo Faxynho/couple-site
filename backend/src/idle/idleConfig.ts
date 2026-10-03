@@ -43,14 +43,34 @@ export interface AchievementDefinition {
     | { type: "ownAll" };
 }
 
+export type RenewableObjectiveMetric =
+  | "farmEntries" | "kittyEntries" | "upgrades" | "earnings" | "minigames"
+  // Métricas exclusivas do Mundo da Hello Kitty (missões sorteadas).
+  | "kittyUpgrades" | "kittyEarnings" | "kittyClicks" | "kittyEvents"
+  | "kittyBoosts" | "kittyBestCombo" | "kittyMilestones" | "kittyDays";
+
 export interface RenewableObjectiveDefinition {
   id: string;
   period: "daily" | "weekly";
   title: string;
   description: string;
-  metric: "farmEntries" | "kittyEntries" | "upgrades" | "earnings" | "minigames";
+  metric: RenewableObjectiveMetric;
   target: number;
   reward: number;
+}
+
+/** Missão do sorteio do Mundo da Hello Kitty. */
+export interface KittyObjectiveDefinition extends RenewableObjectiveDefinition {
+  /** Missões do mesmo grupo nunca aparecem juntas no mesmo período (garante variedade). */
+  group: string;
+  /**
+   * Meta proporcional à produção da Hello Kitty no início do período:
+   * produção/s × segundos, arredondada para cima em 2 algarismos significativos.
+   * `target` vale como piso para quem ainda produz pouco (ou nada).
+   */
+  scaled?: { seconds: number; floor: number };
+  /** Só entra no sorteio se restarem ao menos N dias (contando hoje) no período. */
+  minDaysLeft?: number;
 }
 
 export const IDLE_AREA_NAME = "Fazendinhas";
@@ -272,6 +292,76 @@ export const RENEWABLE_OBJECTIVES: RenewableObjectiveDefinition[] = [
   { id: "weekly-earnings", period: "weekly", title: "Cofrinho da semana", description: "Ganhe 500K de dinheiro interno", metric: "earnings", target: 500_000, reward: 60 },
   { id: "weekly-minigames", period: "weekly", title: "Dupla em ação", description: "Conclua 5 minigames", metric: "minigames", target: 5, reward: 50 },
 ];
+
+// ---------------------------------------------------------------------------
+// Missões sorteadas do Mundo da Hello Kitty
+// ---------------------------------------------------------------------------
+// A Fazendinha continua usando RENEWABLE_OBJECTIVES (lista fixa). A Hello Kitty
+// sorteia KITTY_*_OBJECTIVE_COUNT missões por período a partir do pool abaixo.
+// Nenhuma missão depende de algo finito (como "desbloquear personagem"), então
+// todas podem ser repetidas indefinidamente, mesmo com o jogo zerado.
+export const KITTY_DAILY_OBJECTIVE_COUNT = 4;
+export const KITTY_WEEKLY_OBJECTIVE_COUNT = 3;
+/** Quanto tempo de produção atual a meta de dinheiro interno equivale. */
+export const KITTY_EARNINGS_DAILY_SECONDS = 20 * 60; // diária: ~20 min de produção
+export const KITTY_EARNINGS_WEEKLY_SECONDS = 36 * 60 * 60; // semanal: ~36 h de produção
+
+function legacyObjective(id: string, group: string): KittyObjectiveDefinition {
+  const found = RENEWABLE_OBJECTIVES.find((item) => item.id === id);
+  if (!found) throw new Error(`Objetivo legado não encontrado: ${id}`);
+  return { ...found, group };
+}
+
+export const KITTY_OBJECTIVE_POOL: KittyObjectiveDefinition[] = [
+  // ----- Diárias: rápidas, dá para concluir no mesmo dia -----
+  legacyObjective("daily-farm-entry", "entry"),
+  legacyObjective("daily-kitty-entry", "entry"),
+  legacyObjective("daily-upgrades", "upgrade"),
+  legacyObjective("daily-minigame", "minigame"),
+  { id: "kitty-daily-earnings", group: "earnings", period: "daily", title: "Rendendo juntinhos", description: "Ganhe dinheiro interno", metric: "kittyEarnings", target: 600, reward: 15, scaled: { seconds: KITTY_EARNINGS_DAILY_SECONDS, floor: 600 } },
+  { id: "kitty-daily-clicks", group: "clicks", period: "daily", title: "Mãozinha carinhosa", description: "Toque nos personagens 60 vezes", metric: "kittyClicks", target: 60, reward: 8 },
+  { id: "kitty-daily-events", group: "events", period: "daily", title: "Caça-tesouros", description: "Colete 2 eventos especiais", metric: "kittyEvents", target: 2, reward: 10 },
+  { id: "kitty-daily-combo", group: "combo", period: "daily", title: "Combo fofinho", description: "Faça um combo de 15 toques", metric: "kittyBestCombo", target: 15, reward: 8 },
+  { id: "kitty-daily-upgrades", group: "upgrade", period: "daily", title: "Mimos de evolução", description: "Faça 8 melhorias", metric: "kittyUpgrades", target: 8, reward: 12 },
+  { id: "kitty-daily-boost", group: "boost", period: "daily", title: "Hora do turbo", description: "Colete 1 bônus de turbo", metric: "kittyBoosts", target: 1, reward: 10 },
+  // ----- Semanais: um pouco mais difíceis, mas justas -----
+  legacyObjective("weekly-upgrades", "upgrade"),
+  legacyObjective("weekly-minigames", "minigame"),
+  { id: "kitty-weekly-earnings", group: "earnings", period: "weekly", title: "Cofrinho da semana", description: "Ganhe dinheiro interno", metric: "kittyEarnings", target: 20_000, reward: 60, scaled: { seconds: KITTY_EARNINGS_WEEKLY_SECONDS, floor: 20_000 } },
+  { id: "kitty-weekly-clicks", group: "clicks", period: "weekly", title: "Semana carinhosa", description: "Toque nos personagens 800 vezes", metric: "kittyClicks", target: 800, reward: 45 },
+  { id: "kitty-weekly-events", group: "events", period: "weekly", title: "Caçadores de tesouros", description: "Colete 15 eventos especiais", metric: "kittyEvents", target: 15, reward: 50 },
+  { id: "kitty-weekly-boosts", group: "boost", period: "weekly", title: "Mestres do turbo", description: "Colete 8 bônus de turbo", metric: "kittyBoosts", target: 8, reward: 50 },
+  { id: "kitty-weekly-milestones", group: "combo", period: "weekly", title: "Sequência dourada", description: "Chegue a 3 marcos de 50 toques seguidos", metric: "kittyMilestones", target: 3, reward: 45 },
+  { id: "kitty-weekly-days", group: "days", period: "weekly", title: "Amizade constante", description: "Visite o Mundo da Hello Kitty em 3 dias diferentes", metric: "kittyDays", target: 3, reward: 40, minDaysLeft: 3 },
+  { id: "kitty-weekly-upgrades", group: "upgrade", period: "weekly", title: "Evolução turbo", description: "Faça 40 melhorias", metric: "kittyUpgrades", target: 40, reward: 55 },
+  { id: "kitty-weekly-minigames", group: "minigame", period: "weekly", title: "Maratona de jogos", description: "Conclua 8 minigames", metric: "minigames", target: 8, reward: 60 },
+];
+
+export function kittyObjectiveById(id: string): KittyObjectiveDefinition | undefined {
+  return KITTY_OBJECTIVE_POOL.find((item) => item.id === id);
+}
+
+/** Meta de dinheiro interno proporcional à produção atual (arredonda para cima em 2 algarismos significativos). */
+export function scaledObjectiveTarget(definition: KittyObjectiveDefinition, productionPerSecond: number): number {
+  if (!definition.scaled) return definition.target;
+  const raw = Math.max(0, productionPerSecond) * definition.scaled.seconds;
+  if (!Number.isFinite(raw) || raw <= definition.scaled.floor) return definition.scaled.floor;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
+  return Math.min(MAX_IDLE_MONEY, Math.ceil(raw / magnitude) * magnitude);
+}
+
+const COMPACT_SUFFIXES = ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
+
+/** Mesmo formato curto do frontend (formatIdleNumber), usado nas descrições das missões. */
+export function formatCompactNumber(value: number): string {
+  if (!Number.isFinite(value)) return "∞";
+  const absolute = Math.abs(value);
+  if (absolute < 1_000) return absolute.toLocaleString("pt-BR", { maximumFractionDigits: absolute < 10 && absolute % 1 !== 0 ? 1 : 0 });
+  const index = Math.min(COMPACT_SUFFIXES.length - 1, Math.floor(Math.log10(absolute) / 3));
+  if (index >= COMPACT_SUFFIXES.length - 1 && absolute >= 1e36) return absolute.toExponential(2).replace(".", ",");
+  const scaled = absolute / Math.pow(1_000, index);
+  return scaled.toLocaleString("pt-BR", { maximumFractionDigits: scaled < 10 ? 1 : 0 }) + COMPACT_SUFFIXES[index];
+}
 
 export const MINIGAME_GLOBAL_REWARDS: Record<GameId, Record<string, number>> = {
   colors: { easy: 8, hard: 13 },

@@ -102,12 +102,25 @@ export type ObjectiveMetric =
   | "kittyUpgrades"
   | "farmEarnings"
   | "kittyEarnings"
-  | "minigames";
+  | "minigames"
+  | "kittyClicks"
+  | "kittyEvents"
+  | "kittyBoosts"
+  | "kittyBestCombo"
+  | "kittyMilestones"
+  | "kittyDays";
+
+/** Missões sorteadas do Mundo da Hello Kitty para o período (e metas calculadas na hora do sorteio). */
+export interface KittyPeriodSelection {
+  ids: string[];
+  targets: Record<string, number>;
+}
 
 export interface ObjectivePeriodState {
   key: string;
   progress: Record<ObjectiveMetric, number>;
   completed: Record<string, number>;
+  kitty?: KittyPeriodSelection;
 }
 
 export interface IdleStoredData {
@@ -162,6 +175,8 @@ export interface RenewableObjectiveSnapshot extends RenewableObjectiveDefinition
   progress: number;
   completedAt: number | null;
   periodKey: string;
+  /** Instante (ms) em que o período termina e a missão renova (meia-noite de Brasília / segunda-feira). */
+  periodEndsAt: number;
 }
 
 export interface IdleSnapshot {
@@ -175,4 +190,6 @@ export interface IdleSnapshot {
   offlineReward: { mode: IdleModeId; amount: number; elapsedMs: number } | null;
   modes: Record<IdleModeId, IdleModeSnapshot>;
   objectives: { daily: RenewableObjectiveSnapshot[]; weekly: RenewableObjectiveSnapshot[] };
+  /** Missões sorteadas exibidas no Mundo da Hello Kitty (4 diárias e 3 semanais). */
+  kittyObjectives: { daily: RenewableObjectiveSnapshot[]; weekly: RenewableObjectiveSnapshot[] };
 }

@@ -11,18 +11,26 @@ import {
   IDLE_EVENT_VISIBLE_MS,
   IDLE_EVENT_WEIGHTS,
   IDLE_SCENES,
+  KITTY_DAILY_OBJECTIVE_COUNT,
+  KITTY_OBJECTIVE_POOL,
   KITTY_RELICS,
+  KITTY_WEEKLY_OBJECTIVE_COUNT,
   IdleEventType,
   IdleModeId,
   MAX_IDLE_MONEY,
   OFFLINE_CAP_MS,
   PRODUCTION_BOOST_MS,
   RENEWABLE_OBJECTIVES,
+  RenewableObjectiveDefinition,
+  formatCompactNumber,
   itemClickReward,
   itemProduction,
   itemUpgradeCost,
+  kittyObjectiveById,
   kittyRelicCost,
+  scaledObjectiveTarget,
 } from "./idleConfig";
+import { ObjectivePeriodName, pickKittyObjectives } from "./kittyObjectives";
 import {
   GameEnvironment,
   IdleActiveEvent,
@@ -34,8 +42,10 @@ import {
   IdleOwnedItem,
   IdleSnapshot,
   IdleStoredData,
+  KittyPeriodSelection,
   ObjectiveMetric,
   ObjectivePeriodState,
+  RenewableObjectiveSnapshot,
 } from "./types";
 import { LEGACY_PET_DECORATION_IDS, PET_DECORATION_IDS, PET_DECORATION_PRICES, PetDecorationId, isPetDecorationId } from "../pets/petEconomy";
 
@@ -54,6 +64,7 @@ const INITIAL_BALANCE: Record<IdleModeId, number> = {
 const ALL_METRICS: ObjectiveMetric[] = [
   "farmEntries", "kittyEntries", "farmUpgrades", "kittyUpgrades",
   "farmEarnings", "kittyEarnings", "minigames",
+  "kittyClicks", "kittyEvents", "kittyBoosts", "kittyBestCombo", "kittyMilestones", "kittyDays",
 ];
 
 function safeMoney(value: number): number {
@@ -67,7 +78,10 @@ function safeCount(value: unknown): number {
 }
 
 function emptyProgress(): Record<ObjectiveMetric, number> {
-  return { farmEntries: 0, kittyEntries: 0, farmUpgrades: 0, kittyUpgrades: 0, farmEarnings: 0, kittyEarnings: 0, minigames: 0 };
+  return {
+    farmEntries: 0, kittyEntries: 0, farmUpgrades: 0, kittyUpgrades: 0, farmEarnings: 0, kittyEarnings: 0, minigames: 0,
+    kittyClicks: 0, kittyEvents: 0, kittyBoosts: 0, kittyBestCombo: 0, kittyMilestones: 0, kittyDays: 0,
+  };
 }
 
 function zonedDateParts(now: number): { year: number; month: number; day: number } {
@@ -92,6 +106,26 @@ function weeklyKey(now: number): string {
   const yearStart = new Date(Date.UTC(weekYear, 0, 1));
   const week = Math.ceil((((date.getTime() - yearStart.getTime()) / 86_400_000) + 1) / 7);
   return `${weekYear}-W${String(week).padStart(2, "0")}`;
+}
+
+const DAY_MS = 86_400_000;
+
+/**
+ * Fim do período atual (meia-noite de Brasília para a diária; segunda-feira 00:00 para a semanal)
+ * e quantos dias ainda restam nele, contando hoje. O Brasil não usa horário de verão, então todo dia tem 24 h.
+ */
+function periodWindow(now: number, period: ObjectivePeriodName): { endsAt: number; daysLeft: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date(now));
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const sinceMidnight = ((get("hour") * 60 + get("minute")) * 60 + get("second")) * 1_000 + (((now % 1_000) + 1_000) % 1_000);
+  const dayEndsAt = now - sinceMidnight + DAY_MS;
+  if (period === "daily") return { endsAt: dayEndsAt, daysLeft: 1 };
+  const weekDay = new Date(Date.UTC(get("year"), get("month") - 1, get("day"))).getUTCDay() || 7; // segunda = 1 … domingo = 7
+  const daysLeft = 8 - weekDay;
+  return { endsAt: dayEndsAt + (daysLeft - 1) * DAY_MS, daysLeft };
 }
 
 function nextEventDelay(): number {
@@ -301,7 +335,28 @@ function sanitizeMode(mode: IdleModeId, value: unknown, now: number): IdleModeSt
   return base;
 }
 
-function sanitizePeriod(value: unknown, fallback: ObjectivePeriodState): ObjectivePeriodState {
+function sanitizeKittySelection(value: unknown, period: ObjectivePeriodName): KittyPeriodSelection | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const input = value as Partial<KittyPeriodSelection>;
+  const expected = period === "daily" ? KITTY_DAILY_OBJECTIVE_COUNT : KITTY_WEEKLY_OBJECTIVE_COUNT;
+  if (!Array.isArray(input.ids)) return undefined;
+  const ids = input.ids.filter((id): id is string => typeof id === "string");
+  const valid = ids.length === expected
+    && new Set(ids).size === ids.length
+    && ids.every((id) => kittyObjectiveById(id)?.period === period);
+  if (!valid) return undefined;
+  const targets: Record<string, number> = {};
+  for (const id of ids) {
+    const definition = kittyObjectiveById(id)!;
+    const stored = Number(input.targets?.[id]);
+    targets[id] = definition.scaled
+      ? (Number.isFinite(stored) && stored >= definition.scaled.floor ? safeMoney(stored) : definition.scaled.floor)
+      : definition.target;
+  }
+  return { ids, targets };
+}
+
+function sanitizePeriod(value: unknown, fallback: ObjectivePeriodState, period: ObjectivePeriodName): ObjectivePeriodState {
   if (!value || typeof value !== "object") return fallback;
   const input = value as Partial<ObjectivePeriodState>;
   if (input.key !== fallback.key) return fallback;
@@ -309,12 +364,14 @@ function sanitizePeriod(value: unknown, fallback: ObjectivePeriodState): Objecti
   for (const metric of ALL_METRICS) progress[metric] = safeMoney(Number(input.progress?.[metric] ?? 0));
   const completed: Record<string, number> = {};
   if (input.completed && typeof input.completed === "object") {
-    for (const objective of RENEWABLE_OBJECTIVES) {
-      const at = Number(input.completed[objective.id]);
-      if (Number.isFinite(at) && at > 0) completed[objective.id] = at;
+    const knownIds = new Set([...RENEWABLE_OBJECTIVES, ...KITTY_OBJECTIVE_POOL].map((objective) => objective.id));
+    for (const id of knownIds) {
+      const at = Number(input.completed[id]);
+      if (Number.isFinite(at) && at > 0) completed[id] = at;
     }
   }
-  return { key: fallback.key, progress, completed };
+  const kitty = sanitizeKittySelection(input.kitty, period);
+  return { key: fallback.key, progress, completed, ...(kitty ? { kitty } : {}) };
 }
 
 function chooseEventType(): IdleEventType {
@@ -341,8 +398,10 @@ export class IdleStore {
     private readonly now: () => number = Date.now,
     private readonly dataFile = DEFAULT_DATA_FILE,
     readonly environment: GameEnvironment = "real",
+    private readonly random: () => number = Math.random,
   ) {
     this.data = emptyData(this.now());
+    this.ensureKittySelections(this.now());
   }
 
   ready(): Promise<void> {
@@ -373,8 +432,8 @@ export class IdleStore {
           kitty: sanitizeMode("kitty", parsed.modes?.kitty, now),
         },
         objectives: {
-          daily: sanitizePeriod(parsed.objectives?.daily, base.objectives.daily),
-          weekly: sanitizePeriod(parsed.objectives?.weekly, base.objectives.weekly),
+          daily: sanitizePeriod(parsed.objectives?.daily, base.objectives.daily, "daily"),
+          weekly: sanitizePeriod(parsed.objectives?.weekly, base.objectives.weekly, "weekly"),
         },
         rewardedMatches: Array.isArray(parsed.rewardedMatches)
           ? parsed.rewardedMatches.filter((id): id is string => typeof id === "string").slice(-MAX_REWARDED_MATCHES)
@@ -388,9 +447,10 @@ export class IdleStore {
             : [],
         updatedAt: Number.isFinite(parsed.updatedAt) ? Number(parsed.updatedAt) : now,
       };
-      if (schemaVersion < CURRENT_SCHEMA_VERSION) this.scheduleSave();
+      if (this.ensureKittySelections(now) || schemaVersion < CURRENT_SCHEMA_VERSION) this.scheduleSave();
     } catch {
       this.data = emptyData(this.now());
+      this.ensureKittySelections(this.now());
     }
   }
 
@@ -419,11 +479,38 @@ export class IdleStore {
     let changed = false;
     const nextDaily = dailyKey(now);
     const nextWeekly = weeklyKey(now);
+    const previous = { daily: this.data.objectives.daily.kitty?.ids, weekly: this.data.objectives.weekly.kitty?.ids };
     if (this.data.objectives.daily.key !== nextDaily) { this.data.objectives.daily = newPeriod(nextDaily); changed = true; }
     if (this.data.objectives.weekly.key !== nextWeekly) { this.data.objectives.weekly = newPeriod(nextWeekly); changed = true; }
+    if (this.ensureKittySelections(now, previous)) changed = true;
     for (const mode of ["farm", "kitty"] as const) {
       const stats = this.data.modes[mode].statistics;
       if (stats.todayKey !== nextDaily) { stats.todayKey = nextDaily; stats.earnedToday = 0; changed = true; }
+    }
+    return changed;
+  }
+
+  /**
+   * Garante que cada período tenha suas missões sorteadas do Mundo da Hello Kitty.
+   * O sorteio e as metas proporcionais à produção são gravados na hora e ficam fixos até o período renovar.
+   */
+  private ensureKittySelections(now: number, previous: { daily?: string[]; weekly?: string[] } = {}): boolean {
+    let changed = false;
+    for (const name of ["daily", "weekly"] as const) {
+      const period = this.data.objectives[name];
+      if (period.kitty) continue;
+      const ids = pickKittyObjectives(name, name === "daily" ? KITTY_DAILY_OBJECTIVE_COUNT : KITTY_WEEKLY_OBJECTIVE_COUNT, {
+        random: this.random, previousIds: previous[name], daysLeft: periodWindow(now, name).daysLeft,
+      });
+      const production = this.totalProduction("kitty");
+      period.kitty = {
+        ids,
+        targets: Object.fromEntries(ids.map((id) => {
+          const definition = kittyObjectiveById(id)!;
+          return [id, scaledObjectiveTarget(definition, production)];
+        })),
+      };
+      changed = true;
     }
     return changed;
   }
@@ -458,7 +545,8 @@ export class IdleStore {
 
   private objectiveValue(period: ObjectivePeriodState, metric: string): number {
     if (metric === "upgrades") return period.progress.farmUpgrades + period.progress.kittyUpgrades;
-    if (metric === "earnings") return period.progress.farmEarnings + period.progress.kittyEarnings;
+    // A meta fixa de dinheiro interno (5K/500K) agora vale só para a Fazendinha; a Hello Kitty tem a sua, proporcional à produção.
+    if (metric === "earnings") return period.progress.farmEarnings;
     return period.progress[metric as ObjectiveMetric] ?? 0;
   }
 
@@ -467,10 +555,24 @@ export class IdleStore {
     this.data.globalLifetimeEarned = safeMoney(this.data.globalLifetimeEarned + amount);
   }
 
+  /** Missões ativas do Mundo da Hello Kitty no período, já com a meta sorteada/calculada. */
+  private kittyObjectiveList(periodName: ObjectivePeriodName): RenewableObjectiveDefinition[] {
+    const period = this.data.objectives[periodName];
+    return (period.kitty?.ids ?? []).flatMap((id) => {
+      const definition = kittyObjectiveById(id);
+      if (!definition) return [];
+      const target = period.kitty?.targets[id] ?? definition.target;
+      const description = definition.scaled ? `Ganhe ${formatCompactNumber(target)} de dinheiro interno` : definition.description;
+      return [{ id: definition.id, period: definition.period, title: definition.title, description, metric: definition.metric, target, reward: definition.reward }];
+    });
+  }
+
   private evaluateObjectives(now: number) {
     for (const periodName of ["daily", "weekly"] as const) {
       const period = this.data.objectives[periodName];
-      for (const objective of RENEWABLE_OBJECTIVES.filter((item) => item.period === periodName)) {
+      const objectives = [...RENEWABLE_OBJECTIVES.filter((item) => item.period === periodName), ...this.kittyObjectiveList(periodName)];
+      for (const objective of objectives) {
+        // Missões antigas aparecem nas duas listas com o mesmo id: o prêmio sai uma única vez.
         if (period.completed[objective.id] || this.objectiveValue(period, objective.metric) < objective.target) continue;
         period.completed[objective.id] = now;
         this.awardGlobal(objective.reward);
@@ -478,12 +580,24 @@ export class IdleStore {
     }
   }
 
-  private addMetric(metric: ObjectiveMetric, amount: number, now: number) {
+  private addMetric(metric: ObjectiveMetric, amount: number, now: number, only?: ObjectivePeriodName) {
     if (!(amount > 0)) return;
-    for (const period of [this.data.objectives.daily, this.data.objectives.weekly]) {
+    for (const name of ["daily", "weekly"] as const) {
+      if (only && only !== name) continue;
+      const period = this.data.objectives[name];
       period.progress[metric] = safeMoney(period.progress[metric] + amount);
     }
     this.evaluateObjectives(now);
+  }
+
+  /** Para metas de "maior valor alcançado" (ex.: combo): guarda o recorde do período em vez de somar. */
+  private recordPeak(metric: ObjectiveMetric, value: number, now: number) {
+    if (!(value > 0)) return;
+    let raised = false;
+    for (const period of [this.data.objectives.daily, this.data.objectives.weekly]) {
+      if (value > period.progress[metric]) { period.progress[metric] = safeMoney(value); raised = true; }
+    }
+    if (raised) this.evaluateObjectives(now);
   }
 
   private achievementProgress(mode: IdleModeId, achievementId: string): { progress: number; target: number } {
@@ -664,12 +778,16 @@ export class IdleStore {
 
   private buildSnapshot(offlineReward: IdleSnapshot["offlineReward"]): IdleSnapshot {
     const now = this.now();
-    const objectiveSnapshots = (periodName: "daily" | "weekly") => {
+    this.ensureKittySelections(now);
+    const toSnapshots = (periodName: ObjectivePeriodName, objectives: RenewableObjectiveDefinition[]): RenewableObjectiveSnapshot[] => {
       const period = this.data.objectives[periodName];
-      return RENEWABLE_OBJECTIVES.filter((item) => item.period === periodName).map((objective) => ({
-        ...objective, progress: this.objectiveValue(period, objective.metric), completedAt: period.completed[objective.id] ?? null, periodKey: period.key,
+      const { endsAt } = periodWindow(now, periodName);
+      return objectives.map((objective) => ({
+        ...objective, progress: this.objectiveValue(period, objective.metric), completedAt: period.completed[objective.id] ?? null, periodKey: period.key, periodEndsAt: endsAt,
       }));
     };
+    const objectiveSnapshots = (periodName: ObjectivePeriodName) => toSnapshots(periodName, RENEWABLE_OBJECTIVES.filter((item) => item.period === periodName));
+    const kittyObjectiveSnapshots = (periodName: ObjectivePeriodName) => toSnapshots(periodName, this.kittyObjectiveList(periodName));
     return {
       revision: this.data.revision,
       environment: this.environment,
@@ -681,6 +799,7 @@ export class IdleStore {
       offlineReward,
       modes: { farm: this.modeSnapshot("farm", now), kitty: this.modeSnapshot("kitty", now) },
       objectives: { daily: objectiveSnapshots("daily"), weekly: objectiveSnapshots("weekly") },
+      kittyObjectives: { daily: kittyObjectiveSnapshots("daily"), weekly: kittyObjectiveSnapshots("weekly") },
     };
   }
 
@@ -701,6 +820,8 @@ export class IdleStore {
     const settled = this.settle(mode, now);
     const state = this.data.modes[mode];
     state.visits += 1;
+    // Primeira entrada do dia no Mundo da Hello Kitty conta como "um dia diferente" para a missão semanal.
+    if (mode === "kitty" && this.data.objectives.daily.progress.kittyEntries === 0) this.addMetric("kittyDays", 1, now, "weekly");
     this.addMetric(mode === "farm" ? "farmEntries" : "kittyEntries", 1, now);
     this.evaluateAchievements(mode, now);
     this.touch(now);
@@ -807,10 +928,11 @@ export class IdleStore {
     let milestone = 0;
     let bonus = 0;
     let comboMultiplier = 1;
+    let comboClicks = 0;
     if (mode === "kitty") {
       const previous = state.clickActivity?.[accountId];
       const streak = now - (previous?.lastClickAt ?? -Infinity) < 5_000 ? (previous?.streak ?? 0) + 1 : 1;
-      const comboClicks = now - (previous?.lastClickAt ?? -Infinity) < 2_000 ? Math.min(40, (previous?.comboClicks ?? 0) + 1) : 1;
+      comboClicks = now - (previous?.lastClickAt ?? -Infinity) < 2_000 ? Math.min(40, (previous?.comboClicks ?? 0) + 1) : 1;
       comboMultiplier = 1 + Math.min(1.2, (comboClicks - 1) * .03);
       milestone = streak % 50 === 0 ? streak : 0;
       if (milestone) bonus = safeMoney(this.totalProduction(mode) * (35 + Math.min(65, streak / 10)));
@@ -824,6 +946,11 @@ export class IdleStore {
     state.statistics.items[itemId].clicks += 1;
     state.statistics.items[itemId].largestClick = Math.max(state.statistics.items[itemId].largestClick, reward);
     state.statistics.largestClick = Math.max(state.statistics.largestClick, reward);
+    if (mode === "kitty") {
+      this.addMetric("kittyClicks", 1, now);
+      this.recordPeak("kittyBestCombo", comboClicks, now);
+      if (milestone) this.addMetric("kittyMilestones", 1, now);
+    }
     this.addModeEarning(mode, reward, "click", now, itemId);
     if (bonus > 0) this.addModeEarning(mode, bonus, "click", now);
     this.touch(now);
@@ -865,6 +992,10 @@ export class IdleStore {
     const stats = state.statistics;
     stats.eventsCollected += 1;
     stats.eventCounters[event.type] += 1;
+    if (mode === "kitty") {
+      this.addMetric("kittyEvents", 1, now);
+      if (event.type !== "money") this.addMetric("kittyBoosts", 1, now);
+    }
     let reward = 0;
     if (event.type === "money") {
       const production = this.totalProduction(mode);
