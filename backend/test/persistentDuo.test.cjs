@@ -341,8 +341,8 @@ test("galeria aplica um teto de pontos acumulados além do teto de itens", () =>
         color: "#111827",
         size: 0.006,
         points: Array.from({ length: pointsPerStroke }, (_, pointIndex) => ({
-          x: (pointIndex % 100) / 100,
-          y: Math.floor(pointIndex / 100) / 5,
+          x: (pointIndex % 100) / 99,
+          y: Math.floor(pointIndex / 100) / 4,
         })),
       });
     }
