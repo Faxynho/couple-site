@@ -83,13 +83,11 @@ describe("apresentação visual e celebrações do idle", () => {
     render(<IdleModeScreen mode="kitty" />);
     fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
 
-    const header = screen.getByRole("banner");
-    expect(header).toHaveAttribute("aria-label", expect.any(String));
-    expect(screen.getByText("1.000.000.000.000")).toBeInTheDocument();
+    expect(screen.getByText("1 T")).toBeInTheDocument();
     expect(document.querySelector('.coinPill') ?? document.querySelector('[class*="coinPill"]')).toBeTruthy();
     expect(document.querySelector('[class*="moneyResource"]')).toBeTruthy();
+    expect(document.querySelector('[class*="summary"]')).toBeNull();
     expect(screen.queryByText(/^Saldo$/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^Produção$/)).toBeInTheDocument();
 
     expect(screen.getByText("Hello Kitty")).toBeInTheDocument();
     expect(screen.getByText("Nível 1")).toBeInTheDocument();
