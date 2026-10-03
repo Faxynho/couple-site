@@ -443,6 +443,19 @@ test("eventos usam atividade real, mantêm somente um visível e expiram sem rec
   assert.equal(collectedMoney.snapshot.modes.farm.statistics.passiveEarned, 0);
 });
 
+test("sacola de dinheiro rende 180 segundos da produção atual", () => {
+  const now = Date.parse("2026-09-26T12:00:00-03:00");
+  const store = new IdleStore(false, () => now);
+  store.addTestFunds("farm", 1_000_000);
+  store.act("farm", "garden", "buy");
+  const before = store.getSnapshot().modes.farm.balance;
+  const forced = store.forceEvent("farm", "money");
+  const production = store.getSnapshot().modes.farm.effectiveProduction;
+  const collected = store.collectEvent("farm", forced.modes.farm.activeEvent.id);
+  assert.ok(production > 0);
+  assert.equal(collected.snapshot.modes.farm.balance - before, Math.round(production * 180 * 1_000) / 1_000);
+});
+
 test("estatísticas novas separam clique, passivo, offline, hoje e dados por item", () => {
   let now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
