@@ -868,7 +868,7 @@ export class IdleStore {
     let reward = 0;
     if (event.type === "money") {
       const production = this.totalProduction(mode);
-      reward = safeMoney(Math.max(INITIAL_BALANCE[mode], production * 45));
+      reward = safeMoney(Math.max(INITIAL_BALANCE[mode], production * 180));
       this.addModeEarning(mode, reward, "event", now);
     } else if (event.type === "production2") {
       state.productionBoost = { startedAt: now, expiresAt: now + PRODUCTION_BOOST_MS, multiplier: 2 };
