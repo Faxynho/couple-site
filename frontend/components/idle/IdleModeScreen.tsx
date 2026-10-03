@@ -2,17 +2,18 @@
 
 import Image from "next/image";
 import { CSSProperties, MouseEvent, TouchEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, LockKeyhole, Sparkles, WandSparkles } from "lucide-react";
+import { ArrowUp, Check, ChevronLeft, ChevronRight, Clock3, LockKeyhole, Sparkles, Star, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIdleGame } from "@/hooks/useIdleGame";
 import { formatIdleNumber } from "@/lib/formatIdleNumber";
 import { playSoundEffect } from "@/lib/sound";
-import { GameEnvironment, IdleAchievementSnapshot, IdleItemSnapshot, IdleModeId, IdleModeSnapshot, IdleSnapshot } from "@/lib/idleTypes";
+import { GameEnvironment, IdleAchievementSnapshot, IdleItemSnapshot, IdleModeId, IdleModeSnapshot, IdleSnapshot, RenewableObjectiveSnapshot } from "@/lib/idleTypes";
 import IdleBottomNav, { IdleTab } from "./IdleBottomNav";
 import IdleHeader from "./IdleHeader";
 import IdleStatistics from "./IdleStatistics";
 import IdleEventLayer from "./IdleEventLayer";
 import IdleDevPanel from "./IdleDevPanel";
+import { BowIcon, CalendarCheckIcon, CalendarHeartIcon, CalendarStarIcon, ControllerIcon, SparkleIcon, TrophyIcon } from "./KittyIcons";
 import styles from "./IdleGame.module.css";
 
 const SCENE_BACKGROUNDS: Record<IdleModeId, string[]> = {
@@ -109,6 +110,7 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
   const router = useRouter();
   const [tab, setTab] = useState<IdleTab>("home");
   const [scene, setScene] = useState(0);
+  const [kittyIndex, setKittyIndex] = useState(0);
   const [showOfflineReward, setShowOfflineReward] = useState(false);
   const [celebrations, setCelebrations] = useState<Celebration[]>([]);
   const [purchaseMode, setPurchaseMode] = useState<PurchaseMode>(1);
@@ -173,15 +175,17 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
     <main className={`${styles.page} ${farm ? styles.farmTheme : styles.kittyTheme} ${environment === "dev" ? styles.devEnvironment : ""} ${data.productionBoost && data.productionBoost.expiresAt > Date.now() ? styles.productionBoostActive : ""} ${click10HomeActive ? styles.click10Active : ""}`}>
       <div className={styles.background} key={background} style={{ backgroundImage: `url(${background})` }} aria-hidden="true" />
       <div className={styles.sceneShade} aria-hidden="true" />
-      <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "relics" ? "Relíquias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "relics" ? "Pequenos encantos, grandes descobertas" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
+      {!farm && tab === "upgrades" && data.items[kittyIndex]
+        ? <IdleHeader title={data.items[kittyIndex].definition.name} subtitle="" coins={snapshot.globalCoins} balance={displayedBalance} badge={<KittyLevelBadge item={data.items[kittyIndex]} />} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
+        : <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "relics" ? "Relíquias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "relics" ? "Pequenos encantos, grandes descobertas" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />}
       {activeSceneRelic && <span className={styles.sceneRelicBadge} title={activeSceneRelic.definition.name} aria-label={`Relíquia ${activeSceneRelic.definition.name} · nível ${activeSceneRelic.level}`}><Image src={activeSceneRelic.definition.asset} alt="" width={60} height={60} sizes="58px" /></span>}
       {environment === "dev" && <span className={styles.devBadge}>MODO DEV</span>}
 
       {tab === "home" && <HomeScene mode={mode} data={data} balance={displayedBalance} scene={scene} onSceneChange={setScene} onClickItem={clickItem} accountId={accountId} />}
       {tab === "upgrades" && (farm
         ? <FarmUpgrades data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} onPurchaseModeChange={setPurchaseMode} />
-        : <KittyCarousel data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} onPurchaseModeChange={setPurchaseMode} />)}
-      {tab === "achievements" && <Achievements data={data} snapshot={snapshot} />}
+        : <KittyCarousel data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} onPurchaseModeChange={setPurchaseMode} index={kittyIndex} onIndexChange={setKittyIndex} />)}
+      {tab === "achievements" && (farm ? <Achievements data={data} snapshot={snapshot} /> : <KittyAchievements data={data} snapshot={snapshot} />)}
       {tab === "relics" && !farm && <RelicGallery data={data} balance={displayedBalance} busyItemId={busyItemId} onUpgrade={upgradeRelic} />}
       {tab === "statistics" && <IdleStatistics data={data} />}
       {tab === "dev" && environment === "dev" && <IdleDevPanel mode={mode} data={data} onSnapshot={applySnapshot} />}
@@ -358,8 +362,12 @@ function ItemCard({ item, busy, pending, onAction, onUpgrade, purchaseMode }: { 
   </article>;
 }
 
-function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode, onPurchaseModeChange }: ActionProps) {
-  const [index, setIndex] = useState(0);
+function KittyLevelBadge({ item }: { item: IdleItemSnapshot }) {
+  return <span className={styles.levelBadge}>{item.purchased ? <><Star size={13} fill="currentColor" strokeWidth={0} aria-hidden="true" />Nível {item.level}</> : item.unlocked ? <><Sparkles size={13} aria-hidden="true" />Disponível</> : <><LockKeyhole size={12} aria-hidden="true" />Bloqueado</>}</span>;
+}
+
+function KittyCarousel({ data, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode, onPurchaseModeChange, index, onIndexChange }: ActionProps & { index: number; onIndexChange: (index: number) => void }) {
+  const setIndex = (update: number | ((current: number) => number)) => onIndexChange(typeof update === "function" ? update(index) : update);
   const carouselRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const dragXRef = useRef(0);
@@ -457,7 +465,7 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const onTouchEnd = () => resetDrag(true);
   const onTouchCancel = () => resetDrag(false);
   return <section className={`${styles.content} ${styles.kittyContent}`}>
-    <Summary balance={balance} production={data.effectiveProduction} /><PurchaseModePicker value={purchaseMode} onChange={onPurchaseModeChange} />
+    <PurchaseModePicker value={purchaseMode} onChange={onPurchaseModeChange} />
     <div ref={carouselRef} className={styles.carousel} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} data-dragging="no" style={{ "--prestige": RARITY_COLORS[tier - 1][0], "--prestige-soft": RARITY_COLORS[tier - 1][1] } as CSSProperties} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchCancel}>
       <div className={styles.prestigeBackdrop} />
       {data.items.map((item, itemIndex) => {
@@ -484,20 +492,128 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
         if (!visible) return null;
         return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} data-upgrade-character={offset === 0 ? item.definition.id : undefined} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}{offset === 0 && <span ref={upgradeFlashRef} className={styles.upgradeFlash} aria-hidden="true" />}</div>;
       })}
-      <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
-      <div className={styles.characterPanel} data-tier={tier}>
-        <div className={styles.characterTitleRow}><span className={styles.prestigeMark}>{"✦".repeat(Math.min(3, Math.ceil(tier / 2)))}</span><h2>{selected.definition.name}</h2><span className={styles.characterOrder}>{index + 1}/{data.items.length}</span></div>
-        <div className={styles.characterStats}><span>{selected.purchased ? `Nível ${selected.level}` : selected.unlocked ? "Disponível" : "Bloqueado"}</span><span><GameStatIcon type="production" />{formatIdleNumber(selected.production)}/s</span></div>
-        <button type="button" className={`${styles.actionButton} ${!selected.purchased ? styles.buyButton : ""}`} disabled={!selected.unlocked || busyItemId === selected.definition.id || (selected.purchased && !quoteFor(selected, purchaseMode))} onClick={() => {
-          if (selected.purchased) {
-            triggerUpgradeFeedback();
-            void buyUpgrades(selected.definition.id, purchaseMode);
-            return;
-          }
-          void act(selected.definition.id, "buy");
-        }}>{selected.purchased ? quoteFor(selected, purchaseMode) ? <>Melhorar x{quoteFor(selected, purchaseMode)!.count} <GameStatIcon type="money" /> {formatIdleNumber(quoteFor(selected, purchaseMode)!.totalCost)}{(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}</> : "Saldo insuficiente" : busyItemId === selected.definition.id ? "Comprando…" : selected.unlocked ? <>Comprar <GameStatIcon type="money" /> {formatIdleNumber(selected.nextCost)}</> : "Compre a personagem anterior"}</button>
+      <div className={styles.panelStack}>
+        <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
+        <div className={styles.characterPanel} data-tier={tier}>
+          <span className={styles.characterOrder}>{index + 1}/{data.items.length}</span>
+          <div className={styles.productionBox}>
+            <span className={styles.productionLabel}><ArrowUp size={12} strokeWidth={3.4} aria-hidden="true" />Produção</span>
+            <div className={styles.productionRow}>
+              <Image className={styles.productionSprite} src="/idle/icons/production.webp" alt="" width={96} height={96} />
+              <strong className={styles.productionValue} aria-label={`Produção de ${formatIdleNumber(selected.production)} por segundo`}>{formatIdleNumber(selected.production)}/s</strong>
+            </div>
+          </div>
+          <button type="button" className={`${styles.actionButton} ${styles.kittyUpgradeButton} ${!selected.purchased ? styles.buyButton : ""}`} disabled={!selected.unlocked || busyItemId === selected.definition.id || (selected.purchased && !quoteFor(selected, purchaseMode))} onClick={() => {
+            if (selected.purchased) {
+              triggerUpgradeFeedback();
+              void buyUpgrades(selected.definition.id, purchaseMode);
+              return;
+            }
+            void act(selected.definition.id, "buy");
+          }}>{selected.purchased ? quoteFor(selected, purchaseMode) ? <><SparkleIcon className={styles.btnSparkle} /><span className={styles.btnLabel}>Melhorar x{quoteFor(selected, purchaseMode)!.count}<small><GameStatIcon type="money" /> {formatIdleNumber(quoteFor(selected, purchaseMode)!.totalCost)}</small></span><SparkleIcon className={styles.btnSparkle} />{(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}</> : "Saldo insuficiente" : busyItemId === selected.definition.id ? "Comprando…" : selected.unlocked ? <span className={styles.btnLabel}>Comprar<small><GameStatIcon type="money" /> {formatIdleNumber(selected.nextCost)}</small></span> : "Compre a personagem anterior"}</button>
+        </div>
       </div>
     </div>
+  </section>;
+}
+
+const OBJECTIVE_ART: Record<string, string> = {
+  farmEntries: "/idle/farm/garden.webp",
+  kittyEntries: "/idle/characters/v2/p01.webp",
+  kittyEarnings: "/idle/icons/game-money.webp",
+  earnings: "/idle/icons/game-money.webp",
+  kittyClicks: "/idle/relics/clique.webp",
+  kittyEvents: "/idle/events/money.webp",
+  kittyBoosts: "/idle/events/production2.webp",
+  kittyBestCombo: "/idle/events/click2.webp",
+  kittyMilestones: "/idle/events/click5.webp",
+};
+
+function ObjectiveArt({ metric }: { metric: string }) {
+  if (metric === "upgrades" || metric === "kittyUpgrades") return <BowIcon className={styles.missionSvg} />;
+  if (metric === "minigames") return <ControllerIcon className={styles.missionSvg} />;
+  if (metric === "kittyDays") return <CalendarCheckIcon className={styles.missionSvg} />;
+  const src = OBJECTIVE_ART[metric];
+  return src ? <Image src={src} alt="" fill sizes="56px" /> : <GameStatIcon type="global" />;
+}
+
+function formatRenewal(endsAt: number | undefined, now: number): string | null {
+  if (!endsAt) return null;
+  const minutes = Math.max(0, Math.ceil((endsAt - now) / 60_000));
+  const days = Math.floor(minutes / 1_440);
+  const hours = Math.floor((minutes % 1_440) / 60);
+  const rest = minutes % 60;
+  return days > 0 ? `${days}d ${hours}h` : `${hours}h ${String(rest).padStart(2, "0")}m`;
+}
+
+function MissionRow({ objective }: { objective: RenewableObjectiveSnapshot }) {
+  const done = Boolean(objective.completedAt);
+  const shown = Math.min(objective.progress, objective.target);
+  const percent = Math.min(100, objective.target > 0 ? objective.progress / objective.target * 100 : 0);
+  return <article className={`${styles.mission} ${done ? styles.missionDone : ""}`} data-objective-id={objective.id}>
+    <div className={styles.missionIcon}><ObjectiveArt metric={objective.metric} /></div>
+    <div className={styles.missionBody}>
+      <h3>{objective.title}</h3>
+      <p>{objective.description}</p>
+      <div className={styles.missionProgress} role="progressbar" aria-label={`Progresso de ${objective.title}`} aria-valuemin={0} aria-valuemax={objective.target} aria-valuenow={shown}>
+        <div className={styles.missionTrack}><div className={styles.missionFill} style={{ width: `${done ? 100 : percent}%` }} /></div>
+        <span>{done ? `${formatIdleNumber(objective.target)}/${formatIdleNumber(objective.target)}` : `${formatIdleNumber(shown)}/${formatIdleNumber(objective.target)}`}</span>
+      </div>
+    </div>
+    <div className={styles.missionSide}>
+      <span className={styles.missionReward}><GameStatIcon type="global" />+{objective.reward}</span>
+      {done ? <span className={`${styles.missionStatus} ${styles.missionStatusDone}`}><Check size={15} strokeWidth={3.4} aria-hidden="true" />Feita</span> : <span className={styles.missionStatus}><Clock3 size={14} strokeWidth={2.8} aria-hidden="true" />Em progresso</span>}
+    </div>
+  </article>;
+}
+
+function MissionSection({ variant, title, subtitle, objectives }: { variant: "daily" | "weekly"; title: string; subtitle: string; objectives: RenewableObjectiveSnapshot[] }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const renewal = formatRenewal(objectives[0]?.periodEndsAt, now);
+  return <section className={`${styles.missionSection} ${variant === "weekly" ? styles.missionWeekly : ""}`} aria-label={title}>
+    <div className={styles.missionBanner}>
+      <span className={styles.missionBannerIcon}>{variant === "daily" ? <CalendarHeartIcon /> : <CalendarStarIcon />}</span>
+      <div><h2>{title}</h2><p>{subtitle}</p></div>
+      {renewal && <span className={styles.missionTimer}><Clock3 size={15} strokeWidth={2.8} aria-hidden="true" /><span><small>Renova em</small><strong>{renewal}</strong></span></span>}
+    </div>
+    <div className={styles.missionList}>{objectives.map((objective) => <MissionRow key={objective.id} objective={objective} />)}</div>
+  </section>;
+}
+
+function PermanentCard({ achievement, asset }: { achievement: IdleAchievementSnapshot; asset?: string }) {
+  const done = Boolean(achievement.completedAt);
+  const percent = Math.min(100, achievement.target > 0 ? achievement.progress / achievement.target * 100 : 0);
+  return <article className={`${styles.permanentCard} ${done ? styles.permanentDone : ""}`} data-achievement-id={achievement.id}>
+    <div className={`${styles.permanentArt} ${asset && !done ? styles.achievementIconLocked : ""}`}>
+      {asset ? <Image src={asset} alt="" fill sizes="96px" /> : <TrophyIcon className={styles.missionSvg} />}
+      {asset && !done && <LockKeyhole size={16} className={styles.achievementLock} aria-hidden="true" />}
+    </div>
+    <h3>{achievement.title}</h3>
+    <p>{achievement.description}</p>
+    {!done && <div className={styles.permanentTrack} aria-hidden="true"><div style={{ width: `${percent}%` }} /></div>}
+    {done ? <span className={`${styles.permanentButton} ${styles.permanentButtonDone}`}><Check size={15} strokeWidth={3.4} aria-hidden="true" />Feita</span> : <span className={styles.permanentButton}><GameStatIcon type="global" />+{achievement.reward}</span>}
+  </article>;
+}
+
+function KittyAchievements({ data, snapshot }: { data: IdleModeSnapshot; snapshot: IdleSnapshot }) {
+  const itemById = useMemo(() => new Map(data.items.map((item) => [item.definition.id, item])), [data.items]);
+  const objectives = snapshot.kittyObjectives ?? snapshot.objectives;
+  const complete = data.achievements.filter((item) => item.completedAt).length;
+  return <section className={`${styles.content} ${styles.missionPage}`} aria-label="Conquistas da Hello Kitty">
+    <MissionSection variant="daily" title="Missões Diárias" subtitle="Conclua hoje e ganhe recompensas especiais!" objectives={objectives.daily} />
+    <MissionSection variant="weekly" title="Missões Semanais" subtitle="Desafios maiores, recompensas incríveis!" objectives={objectives.weekly} />
+    <section className={`${styles.missionSection} ${styles.permanentSection}`} aria-label="Conquistas permanentes">
+      <div className={styles.missionBanner}>
+        <span className={styles.missionBannerIcon}><TrophyIcon /></span>
+        <div><h2>Conquistas Permanentes</h2><p>Complete uma única vez e ganhe para sempre!</p></div>
+        <span className={styles.permanentCount}>{complete}/{data.achievements.length}</span>
+      </div>
+      <div className={styles.permanentGrid}>{data.achievements.map((achievement) => <PermanentCard key={achievement.id} achievement={achievement} asset={achievement.iconItemId ? itemById.get(achievement.iconItemId)?.definition.asset : undefined} />)}</div>
+    </section>
   </section>;
 }
 
