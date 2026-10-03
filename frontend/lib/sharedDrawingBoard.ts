@@ -32,6 +32,13 @@ export interface SharedDrawingBoardSnapshot {
   updatedAt: number;
 }
 
+export interface SharedDrawingGalleryItem {
+  id: string;
+  strokes: SharedDrawingStroke[];
+  savedAt: number;
+  savedBy: "andre" | "flavia";
+}
+
 export const SHARED_DRAWING_COLORS = [
   { value: "#111827", label: "Preto" },
   { value: "#ffffff", label: "Branco" },

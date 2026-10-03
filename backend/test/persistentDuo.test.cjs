@@ -10,6 +10,7 @@ const {
   PERSISTENT_DUO_DISPLAY_NAME_MAX_LENGTH,
   PersistentDuoStore,
   SHARED_DRAWING_MAX_POINTS_PER_STROKE,
+  SHARED_DRAWING_GALLERY_MAX_ITEMS,
   normalizeSharedDrawingStroke,
   normalizePersistentDuoDisplayName,
 } = require("../dist/rooms/persistentDuo.js");
@@ -243,4 +244,53 @@ test("payloads gigantes do quadro são rejeitados", () => {
     size: 0.006,
     points,
   }), null);
+});
+
+function galleryStroke(id) {
+  return { id, tool: "brush", color: "#ef4444", size: 0.014, points: [{ x: 0.1, y: 0.1 }, { x: 0.5, y: 0.5 }] };
+}
+
+test("galeria do quadro salva cópia do desenho atual sem alterar o quadro", () => {
+  const store = new PersistentDuoStore(false);
+  assert.match(store.saveDrawingToGallery("andre").error, /vazio/);
+
+  assert.ok(store.addDrawingStroke(galleryStroke("stroke_aaaaaaaa")).stroke);
+  assert.ok(store.addDrawingStroke(galleryStroke("stroke_bbbbbbbb")).stroke);
+  const saved = store.saveDrawingToGallery("flavia");
+
+  assert.equal(saved.count, 1);
+  assert.equal(saved.item.savedBy, "flavia");
+  assert.equal(saved.item.strokes.length, 2);
+  assert.equal(store.getDrawingBoard().strokes.length, 2);
+
+  // Alterar o quadro depois não muda o desenho já guardado.
+  store.clearDrawingBoard();
+  assert.equal(store.getGallery()[0].strokes.length, 2);
+  assert.equal(store.getDrawingBoard().strokes.length, 0);
+});
+
+test("galeria recusa duplicata, lista do mais novo ao mais antigo e permite apagar", () => {
+  const store = new PersistentDuoStore(false);
+  store.addDrawingStroke(galleryStroke("stroke_aaaaaaaa"));
+  assert.ok(store.saveDrawingToGallery("andre").item);
+  assert.match(store.saveDrawingToGallery("andre").error, /já está salvo/);
+
+  store.addDrawingStroke(galleryStroke("stroke_bbbbbbbb"));
+  const second = store.saveDrawingToGallery("flavia");
+  assert.equal(store.getGalleryCount(), 2);
+  assert.equal(store.getGallery()[0].id, second.item.id);
+
+  assert.equal(store.deleteGalleryItem(second.item.id).count, 1);
+  assert.match(store.deleteGalleryItem(second.item.id).error, /não está mais/);
+  assert.equal(store.getGallery().length, 1);
+});
+
+test("galeria respeita o limite máximo de desenhos", () => {
+  const store = new PersistentDuoStore(false);
+  for (let index = 0; index < SHARED_DRAWING_GALLERY_MAX_ITEMS; index += 1) {
+    store.addDrawingStroke(galleryStroke(`stroke_${String(index).padStart(8, "0")}`));
+    assert.ok(store.saveDrawingToGallery("andre").item);
+  }
+  store.addDrawingStroke(galleryStroke("stroke_extra_000"));
+  assert.match(store.saveDrawingToGallery("andre").error, /limite/);
 });

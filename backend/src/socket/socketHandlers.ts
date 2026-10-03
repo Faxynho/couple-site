@@ -1110,6 +1110,66 @@ export function registerSocketHandlers(io: Server, roomManager: RoomManager) {
       io.to(room.code).emit("duoBoard:cleared", cleared);
     });
 
+    /** Galeria do quadro: salvar o desenho atual, listar e apagar desenhos salvos.
+     *  Os desenhos da galeria são cópias imutáveis; o quadro ao vivo não é alterado. */
+    const galleryMember = () => {
+      const code = socket.data.roomCode;
+      const playerId = socket.data.playerId;
+      const room = code ? roomManager.getRoom(code) : undefined;
+      const isMember = room?.roomKind === "persistent-duo"
+        && code === PERSISTENT_DUO_ROOM_CODE
+        && Boolean(playerId)
+        && socket.data.accountId === playerId
+        && room.canManage(playerId!);
+      return isMember && room && playerId && isPersistentDuoAccountId(playerId)
+        ? { room, accountId: playerId }
+        : null;
+    };
+
+    socket.on("duoBoard:gallerySync", (payload: { metaOnly?: boolean } | AckCallback | undefined, maybeCallback?: AckCallback) => {
+      const callback = typeof payload === "function" ? payload : maybeCallback;
+      const metaOnly = typeof payload === "object" && payload !== null && payload.metaOnly === true;
+      if (!galleryMember()) {
+        callback?.({ ok: false, error: "Você não pode acessar a galeria." });
+        return;
+      }
+      callback?.({
+        ok: true,
+        count: persistentDuoStore.getGalleryCount(),
+        ...(metaOnly ? {} : { items: persistentDuoStore.getGallery() }),
+      });
+    });
+
+    socket.on("duoBoard:saveToGallery", (callback?: AckCallback) => {
+      const member = galleryMember();
+      if (!member) {
+        callback?.({ ok: false, error: "Você não pode salvar na galeria." });
+        return;
+      }
+      const result = persistentDuoStore.saveDrawingToGallery(member.accountId);
+      if (!result.item) {
+        callback?.({ ok: false, error: result.error ?? "Não foi possível salvar o desenho." });
+        return;
+      }
+      callback?.({ ok: true, count: result.count });
+      io.to(member.room.code).emit("duoBoard:galleryChanged", { count: result.count });
+    });
+
+    socket.on("duoBoard:galleryDelete", (payload: { id?: unknown } | undefined, callback?: AckCallback) => {
+      const member = galleryMember();
+      if (!member) {
+        callback?.({ ok: false, error: "Você não pode alterar a galeria." });
+        return;
+      }
+      const result = persistentDuoStore.deleteGalleryItem(payload?.id);
+      if (result.count === undefined) {
+        callback?.({ ok: false, error: result.error ?? "Não foi possível apagar o desenho." });
+        return;
+      }
+      callback?.({ ok: true, count: result.count });
+      io.to(member.room.code).emit("duoBoard:galleryChanged", { count: result.count });
+    });
+
     // Só o host pode mudar a configuração da partida (imagem/dificuldade/modo)
     // enquanto os dois estão na sala de espera — o outro jogador só acompanha,
     // recebendo a atualização em tempo real via room:update.

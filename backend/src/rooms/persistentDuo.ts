@@ -54,8 +54,17 @@ export interface SharedDrawingBoardSnapshot {
   updatedAt: number;
 }
 
+/** Desenho guardado na galeria do quadro: cópia imutável dos traços no momento do "Salvar". */
+export interface SharedDrawingGalleryItem {
+  id: string;
+  strokes: SharedDrawingStroke[];
+  savedAt: number;
+  savedBy: AccountId;
+}
+
 interface PersistentDuoStoredData extends PersistentDuoLobbyData {
   drawing: SharedDrawingBoard;
+  gallery?: SharedDrawingGalleryItem[];
   petRooms: Record<PetRoomId, PetRoomState>;
   petRoomsDev: Record<PetRoomId, PetRoomState>;
   petCare?: Record<PetRoomId, PetCareState>;
@@ -159,6 +168,7 @@ export const SHARED_DRAWING_DEFAULT_SIZE = 0.014;
 export const SHARED_DRAWING_MAX_STROKES = 1_000;
 export const SHARED_DRAWING_MAX_POINTS_PER_STROKE = 500;
 export const SHARED_DRAWING_MAX_TOTAL_POINTS = 100_000;
+export const SHARED_DRAWING_GALLERY_MAX_ITEMS = 40;
 
 const DATA_DIR = path.join(__dirname, "..", "..", "data");
 const DATA_FILE = path.join(DATA_DIR, "persistent-duo-lobby.json");
@@ -264,6 +274,43 @@ function sanitizeDrawingBoard(value: unknown): SharedDrawingBoard {
     redoStrokes,
     updatedAt: Number.isFinite(input.updatedAt) ? Number(input.updatedAt) : empty.updatedAt,
   };
+}
+
+function cloneGalleryItem(item: SharedDrawingGalleryItem): SharedDrawingGalleryItem {
+  return { ...item, strokes: item.strokes.map(cloneStroke) };
+}
+
+function drawingSignature(strokes: SharedDrawingStroke[]): string {
+  return strokes.map((stroke) => stroke.id).join("|");
+}
+
+function sanitizeGallery(value: unknown): SharedDrawingGalleryItem[] {
+  if (!Array.isArray(value)) return [];
+  const items: SharedDrawingGalleryItem[] = [];
+  for (const raw of value) {
+    if (items.length >= SHARED_DRAWING_GALLERY_MAX_ITEMS) break;
+    if (!raw || typeof raw !== "object") continue;
+    const input = raw as Partial<SharedDrawingGalleryItem>;
+    if (typeof input.id !== "string" || !/^[A-Za-z0-9_-]{8,80}$/.test(input.id)) continue;
+    if (!isAccountId(input.savedBy) || !Array.isArray(input.strokes)) continue;
+    const strokes: SharedDrawingStroke[] = [];
+    let pointCount = 0;
+    for (const rawStroke of input.strokes) {
+      if (strokes.length >= SHARED_DRAWING_MAX_STROKES) break;
+      const stroke = normalizeSharedDrawingStroke(rawStroke);
+      if (!stroke || pointCount + stroke.points.length > SHARED_DRAWING_MAX_TOTAL_POINTS) continue;
+      strokes.push(stroke);
+      pointCount += stroke.points.length;
+    }
+    if (strokes.length === 0) continue;
+    items.push({
+      id: input.id,
+      strokes,
+      savedBy: input.savedBy,
+      savedAt: Number.isFinite(input.savedAt) ? Number(input.savedAt) : Date.now(),
+    });
+  }
+  return items;
 }
 
 export function normalizePersistentDuoDisplayName(value: unknown): string | null {
@@ -466,6 +513,47 @@ export class PersistentDuoStore {
     return { revision: this.data.drawing.revision, updatedAt: this.data.drawing.updatedAt };
   }
 
+  /** Lista a galeria, do desenho mais recente para o mais antigo. */
+  getGallery(): SharedDrawingGalleryItem[] {
+    return (this.data.gallery ?? []).map(cloneGalleryItem);
+  }
+
+  getGalleryCount(): number {
+    return (this.data.gallery ?? []).length;
+  }
+
+  /** Copia o desenho atual do quadro para a galeria sem alterar o quadro. */
+  saveDrawingToGallery(savedBy: AccountId): { item?: SharedDrawingGalleryItem; count?: number; error?: string } {
+    const strokes = this.data.drawing.strokes;
+    if (strokes.length === 0) return { error: "O quadro está vazio. Desenhe algo antes de salvar." };
+    const gallery = this.data.gallery ?? (this.data.gallery = []);
+    const signature = drawingSignature(strokes);
+    if (gallery.some((item) => drawingSignature(item.strokes) === signature)) {
+      return { error: "Esse desenho já está salvo na galeria." };
+    }
+    if (gallery.length >= SHARED_DRAWING_GALLERY_MAX_ITEMS) {
+      return { error: `A galeria chegou ao limite de ${SHARED_DRAWING_GALLERY_MAX_ITEMS} desenhos. Apague algum para salvar outro.` };
+    }
+    const item: SharedDrawingGalleryItem = {
+      id: `gallery_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`,
+      strokes: strokes.map(cloneStroke),
+      savedAt: Date.now(),
+      savedBy,
+    };
+    gallery.unshift(item);
+    this.scheduleSave();
+    return { item: cloneGalleryItem(item), count: gallery.length };
+  }
+
+  deleteGalleryItem(id: unknown): { count?: number; error?: string } {
+    const gallery = this.data.gallery ?? [];
+    const index = typeof id === "string" ? gallery.findIndex((item) => item.id === id) : -1;
+    if (index < 0) return { error: "Esse desenho não está mais na galeria." };
+    gallery.splice(index, 1);
+    this.scheduleSave();
+    return { count: gallery.length };
+  }
+
   private async load() {
     try {
       if (!this.shouldPersist) return;
@@ -475,6 +563,7 @@ export class PersistentDuoStore {
       const displayName = normalizePersistentDuoDisplayName(parsed.displayName);
       if (displayName) this.data.displayName = displayName;
       this.data.drawing = sanitizeDrawingBoard(parsed.drawing);
+      this.data.gallery = sanitizeGallery(parsed.gallery);
       this.data.petRooms = {
         nix: sanitizePetRoomState(parsed.petRooms?.nix, true),
         max: sanitizePetRoomState(parsed.petRooms?.max, true),

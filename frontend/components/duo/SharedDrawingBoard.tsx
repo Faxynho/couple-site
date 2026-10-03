@@ -3,23 +3,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
+  Check,
   Circle,
   Diamond,
   Eraser,
   Heart,
+  Images,
   Minus,
   PaintBucket,
   Paintbrush,
   Pipette,
   Redo2,
+  Save,
   Shapes,
   Square,
+  Sparkles,
   Star,
   Trash2,
   Triangle,
   Undo2,
 } from "lucide-react";
 import { getSocket } from "@/lib/socket";
+import { drawStroke, rgbaToHex } from "@/lib/sharedDrawingRenderer";
+import SharedDrawingGallery from "@/components/duo/SharedDrawingGallery";
 import {
   clampDrawingSize,
   downsampleDrawingPoints,
@@ -47,6 +53,12 @@ interface StrokeAck {
   error?: string;
 }
 
+interface GalleryAck {
+  ok: boolean;
+  count?: number;
+  error?: string;
+}
+
 type UiTool = SharedDrawingTool | "eyedropper";
 
 const SHAPES: Array<{ id: SharedDrawingShape; label: string; icon: typeof Square }> = [
@@ -65,190 +77,6 @@ function newStrokeId() {
   return `stroke_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
 }
 
-function hexToRgba(hex: string): [number, number, number, number] {
-  return [
-    Number.parseInt(hex.slice(1, 3), 16),
-    Number.parseInt(hex.slice(3, 5), 16),
-    Number.parseInt(hex.slice(5, 7), 16),
-    255,
-  ];
-}
-
-function rgbaToHex(red: number, green: number, blue: number) {
-  return `#${[red, green, blue].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
-}
-
-function floodFill(
-  context: CanvasRenderingContext2D,
-  point: SharedDrawingPoint,
-  color: string,
-  width: number,
-  height: number
-) {
-  const pixelWidth = context.canvas.width;
-  const pixelHeight = context.canvas.height;
-  if (pixelWidth <= 0 || pixelHeight <= 0) return;
-
-  const scaleX = pixelWidth / width;
-  const scaleY = pixelHeight / height;
-  const startX = Math.max(0, Math.min(pixelWidth - 1, Math.floor(point.x * width * scaleX)));
-  const startY = Math.max(0, Math.min(pixelHeight - 1, Math.floor(point.y * height * scaleY)));
-  const image = context.getImageData(0, 0, pixelWidth, pixelHeight);
-  const data = image.data;
-  const startIndex = (startY * pixelWidth + startX) * 4;
-  const target = [
-    data[startIndex],
-    data[startIndex + 1],
-    data[startIndex + 2],
-    data[startIndex + 3],
-  ];
-  const replacement = hexToRgba(color);
-  if (target.every((value, index) => value === replacement[index])) return;
-
-  const matches = (index: number) =>
-    data[index] === target[0]
-    && data[index + 1] === target[1]
-    && data[index + 2] === target[2]
-    && data[index + 3] === target[3];
-
-  const stack: Array<[number, number]> = [[startX, startY]];
-  const visited = new Uint8Array(pixelWidth * pixelHeight);
-
-  while (stack.length > 0) {
-    const [x, y] = stack.pop()!;
-    const pixelIndex = y * pixelWidth + x;
-    if (visited[pixelIndex]) continue;
-    visited[pixelIndex] = 1;
-    const index = pixelIndex * 4;
-    if (!matches(index)) continue;
-
-    data[index] = replacement[0];
-    data[index + 1] = replacement[1];
-    data[index + 2] = replacement[2];
-    data[index + 3] = replacement[3];
-
-    if (x > 0) stack.push([x - 1, y]);
-    if (x + 1 < pixelWidth) stack.push([x + 1, y]);
-    if (y > 0) stack.push([x, y - 1]);
-    if (y + 1 < pixelHeight) stack.push([x, y + 1]);
-  }
-
-  context.putImageData(image, 0, 0);
-}
-
-function shapeBounds(start: SharedDrawingPoint, end: SharedDrawingPoint, width: number, height: number) {
-  return {
-    x1: start.x * width,
-    y1: start.y * height,
-    x2: end.x * width,
-    y2: end.y * height,
-  };
-}
-
-function drawShape(
-  context: CanvasRenderingContext2D,
-  stroke: SharedDrawingStroke,
-  width: number,
-  height: number
-) {
-  if (!stroke.shape || stroke.points.length < 2) return;
-  const { x1, y1, x2, y2 } = shapeBounds(stroke.points[0], stroke.points[1], width, height);
-  context.beginPath();
-
-  if (stroke.shape === "line") {
-    context.moveTo(x1, y1);
-    context.lineTo(x2, y2);
-  } else if (stroke.shape === "rectangle") {
-    context.rect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
-  } else if (stroke.shape === "square") {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const side = Math.max(Math.abs(dx), Math.abs(dy));
-    context.rect(x1, y1, Math.sign(dx || 1) * side, Math.sign(dy || 1) * side);
-  } else if (stroke.shape === "circle") {
-    const cx = (x1 + x2) / 2;
-    const cy = (y1 + y2) / 2;
-    context.ellipse(cx, cy, Math.abs(x2 - x1) / 2, Math.abs(y2 - y1) / 2, 0, 0, Math.PI * 2);
-  } else if (stroke.shape === "triangle") {
-    context.moveTo((x1 + x2) / 2, y1);
-    context.lineTo(x2, y2);
-    context.lineTo(x1, y2);
-    context.closePath();
-  } else if (stroke.shape === "diamond") {
-    const cx = (x1 + x2) / 2;
-    const cy = (y1 + y2) / 2;
-    context.moveTo(cx, y1);
-    context.lineTo(x2, cy);
-    context.lineTo(cx, y2);
-    context.lineTo(x1, cy);
-    context.closePath();
-  } else if (stroke.shape === "star") {
-    const cx = (x1 + x2) / 2;
-    const cy = (y1 + y2) / 2;
-    const outer = Math.max(2, Math.min(Math.abs(x2 - x1), Math.abs(y2 - y1)) / 2);
-    const inner = outer * 0.45;
-    for (let index = 0; index < 10; index += 1) {
-      const radius = index % 2 === 0 ? outer : inner;
-      const angle = -Math.PI / 2 + index * Math.PI / 5;
-      const x = cx + Math.cos(angle) * radius;
-      const y = cy + Math.sin(angle) * radius;
-      if (index === 0) context.moveTo(x, y);
-      else context.lineTo(x, y);
-    }
-    context.closePath();
-  } else if (stroke.shape === "arrow") {
-    const angle = Math.atan2(y2 - y1, x2 - x1);
-    const head = Math.max(10, context.lineWidth * 3);
-    context.moveTo(x1, y1);
-    context.lineTo(x2, y2);
-    context.moveTo(x2, y2);
-    context.lineTo(x2 - Math.cos(angle - Math.PI / 6) * head, y2 - Math.sin(angle - Math.PI / 6) * head);
-    context.moveTo(x2, y2);
-    context.lineTo(x2 - Math.cos(angle + Math.PI / 6) * head, y2 - Math.sin(angle + Math.PI / 6) * head);
-  }
-
-  context.stroke();
-}
-
-function drawStroke(
-  context: CanvasRenderingContext2D,
-  stroke: SharedDrawingStroke,
-  width: number,
-  height: number,
-  fromPoint = 0
-) {
-  const points = stroke.points;
-  if (points.length === 0) return;
-
-  context.save();
-  context.globalCompositeOperation = stroke.tool === "eraser" ? "destination-out" : "source-over";
-  context.strokeStyle = stroke.color;
-  context.fillStyle = stroke.color;
-  context.lineCap = "round";
-  context.lineJoin = "round";
-  context.lineWidth = Math.max(1, stroke.size * width * (stroke.tool === "eraser" ? 1.8 : 1));
-
-  if (stroke.tool === "fill") {
-    floodFill(context, points[0], stroke.color, width, height);
-  } else if (stroke.tool === "shape") {
-    drawShape(context, stroke, width, height);
-  } else if (points.length === 1) {
-    context.beginPath();
-    context.arc(points[0].x * width, points[0].y * height, context.lineWidth / 2, 0, Math.PI * 2);
-    context.fill();
-  } else {
-    const start = Math.max(0, Math.min(fromPoint, points.length - 2));
-    context.beginPath();
-    context.moveTo(points[start].x * width, points[start].y * height);
-    for (let index = start + 1; index < points.length; index += 1) {
-      context.lineTo(points[index].x * width, points[index].y * height);
-    }
-    context.stroke();
-  }
-
-  context.restore();
-}
-
 export default function SharedDrawingBoard() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const strokesRef = useRef<SharedDrawingStroke[]>([]);
@@ -263,6 +91,11 @@ export default function SharedDrawingBoard() {
   const [canRedo, setCanRedo] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "saving" | "error">("loading");
   const [message, setMessage] = useState("Carregando desenho...");
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryCount, setGalleryCount] = useState(0);
+  const [savedToGallery, setSavedToGallery] = useState(false);
+  const [savingToGallery, setSavingToGallery] = useState(false);
+  const savedFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const renderBoard = useCallback((preview?: SharedDrawingStroke | null) => {
     const canvas = canvasRef.current;
@@ -340,12 +173,19 @@ export default function SharedDrawingBoard() {
       applyBoard(board, "Quadro atualizado e salvo");
     };
     const handleConnect = () => requestSync();
+    const handleGalleryChanged = (payload?: { count?: number }) => {
+      if (typeof payload?.count === "number") setGalleryCount(payload.count);
+    };
 
+    socket.on("duoBoard:galleryChanged", handleGalleryChanged);
     socket.on("duoBoard:strokeAdded", handleStroke);
     socket.on("duoBoard:changed", handleBoardChanged);
     socket.on("duoBoard:cleared", handleClear);
     socket.on("connect", handleConnect);
     requestSync();
+    socket.emit("duoBoard:gallerySync", { metaOnly: true }, (response: GalleryAck) => {
+      if (response?.ok && typeof response.count === "number") setGalleryCount(response.count);
+    });
 
     const canvas = canvasRef.current;
     const observer = typeof ResizeObserver !== "undefined" && canvas
@@ -354,6 +194,7 @@ export default function SharedDrawingBoard() {
     if (canvas) observer?.observe(canvas);
 
     return () => {
+      socket.off("duoBoard:galleryChanged", handleGalleryChanged);
       socket.off("duoBoard:strokeAdded", handleStroke);
       socket.off("duoBoard:changed", handleBoardChanged);
       socket.off("duoBoard:cleared", handleClear);
@@ -523,6 +364,29 @@ export default function SharedDrawingBoard() {
     });
   };
 
+  useEffect(() => () => {
+    if (savedFlashTimerRef.current) clearTimeout(savedFlashTimerRef.current);
+  }, []);
+
+  const saveToGallery = () => {
+    if (savingToGallery) return;
+    setSavingToGallery(true);
+    getSocket().emit("duoBoard:saveToGallery", (response: GalleryAck) => {
+      setSavingToGallery(false);
+      if (response?.ok) {
+        if (typeof response.count === "number") setGalleryCount(response.count);
+        setSavedToGallery(true);
+        setStatus("ready");
+        setMessage("Desenho guardado na galeria");
+        if (savedFlashTimerRef.current) clearTimeout(savedFlashTimerRef.current);
+        savedFlashTimerRef.current = setTimeout(() => setSavedToGallery(false), 1800);
+        return;
+      }
+      // Erro da galeria não afeta o quadro ao vivo: só informa a mensagem.
+      setMessage(response?.error ?? "Não foi possível salvar na galeria.");
+    });
+  };
+
   const toolButtonClass = (active = false, danger = false) =>
     `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl2 transition-colors sm:h-10 sm:w-10 sm:rounded-full ${
       active
@@ -534,12 +398,20 @@ export default function SharedDrawingBoard() {
 
   return (
     <section className="mx-auto w-full max-w-2xl py-1" aria-labelledby="shared-drawing-title">
-      <div className="mb-4 flex items-center justify-center gap-2 text-center">
-        <Heart size={17} className="text-rose-deep drop-shadow-[0_0_8px_rgba(232,80,140,0.4)]" fill="currentColor" aria-hidden="true" />
-        <h2 id="shared-drawing-title" className="font-display text-xl font-extrabold tracking-tight text-rose-deep drop-shadow-[0_2px_8px_rgba(232,80,140,0.28)] sm:text-2xl">
-          Nosso Quadro
-        </h2>
-        <Heart size={17} className="text-rose-deep drop-shadow-[0_0_8px_rgba(232,80,140,0.4)]" fill="currentColor" aria-hidden="true" />
+      <div className="mb-5 flex flex-col items-center text-center">
+        <div className="flex items-center justify-center gap-2.5 sm:gap-3">
+          <Sparkles size={20} className="animate-floaty text-rose drop-shadow-[0_0_8px_rgba(232,80,140,0.45)]" aria-hidden="true" />
+          <Heart size={22} className="text-rose-deep drop-shadow-[0_0_10px_rgba(232,80,140,0.5)]" fill="currentColor" aria-hidden="true" />
+          <h2
+            id="shared-drawing-title"
+            className="bg-gradient-to-r from-rose-deep via-rose to-[#a56bd8] bg-clip-text font-display text-3xl font-extrabold tracking-tight text-transparent drop-shadow-[0_3px_10px_rgba(232,80,140,0.3)] sm:text-5xl"
+          >
+            Nosso Quadro
+          </h2>
+          <Heart size={22} className="text-rose-deep drop-shadow-[0_0_10px_rgba(232,80,140,0.5)]" fill="currentColor" aria-hidden="true" />
+          <Sparkles size={20} className="animate-floaty text-rose drop-shadow-[0_0_8px_rgba(232,80,140,0.45)]" aria-hidden="true" />
+        </div>
+        <span className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-transparent via-rose-deep to-transparent opacity-80 sm:w-36" aria-hidden="true" />
       </div>
 
       <canvas
@@ -607,6 +479,16 @@ export default function SharedDrawingBoard() {
           <button type="button" onClick={clearBoard} className={toolButtonClass(false, true)} aria-label="Apagar tudo" title="Apagar tudo">
             <Trash2 size={18} />
           </button>
+          <button
+            type="button"
+            onClick={saveToGallery}
+            disabled={!canUndo || status === "loading" || savingToGallery}
+            className={`${toolButtonClass(savedToGallery)} disabled:cursor-not-allowed disabled:opacity-35`}
+            aria-label="Salvar na galeria"
+            title="Salvar na galeria"
+          >
+            {savedToGallery ? <Check size={18} /> : <Save size={18} />}
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-2" aria-label="Cores do pincel">
@@ -656,11 +538,32 @@ export default function SharedDrawingBoard() {
             {Math.round(size * 1000)}
           </span>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setGalleryOpen(true)}
+          className="group mx-auto inline-flex h-12 items-center gap-2.5 rounded-full border border-white/70 bg-surface/70 px-6 font-display text-base font-extrabold text-rose-deep shadow-soft transition-all hover:-translate-y-0.5 hover:bg-surface/90 hover:shadow-[0_12px_26px_-14px_rgba(232,80,140,0.6)]"
+          aria-label="Abrir galeria de desenhos"
+        >
+          <Images size={20} className="transition-transform group-hover:scale-110" aria-hidden="true" />
+          Galeria
+          {galleryCount > 0 && (
+            <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-rose px-2 py-0.5 text-xs font-bold text-white" aria-label={`${galleryCount} desenhos salvos`}>
+              {galleryCount}
+            </span>
+          )}
+        </button>
       </div>
 
       <p className={`mt-3 text-center text-[11px] ${status === "error" ? "text-red-600" : "text-ink-soft/80"}`} role="status">
         {message}
       </p>
+
+      <SharedDrawingGallery
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        onCountChange={setGalleryCount}
+      />
     </section>
   );
 }
