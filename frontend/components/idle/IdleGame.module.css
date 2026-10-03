@@ -195,10 +195,10 @@
 .carouselSelected { animation: characterBreath 3.1s ease-in-out infinite; }
 .carouselLocked { filter: drop-shadow(0 12px 11px rgba(44,33,41,.3)); }
 .carouselLocked img { filter: grayscale(.9) saturate(.15) brightness(.28) contrast(.96); opacity: .72; transition: filter .35s ease,opacity .35s ease; }
-.upgradeFlash { position: absolute; z-index: 6; top: 50%; left: 50%; width: 72%; height: 72%; border-radius: 50%; background: radial-gradient(circle,rgba(255,240,174,.42) 0,rgba(255,205,236,.22) 34%,transparent 70%); opacity: 0; pointer-events: none; }
-.upgradeFlash::before,.upgradeFlash::after { content: "✦"; position: absolute; color: #f2b45b; font-size: 1.2rem; line-height: 1; text-shadow: 0 0 8px rgba(255,219,137,.72); opacity: .9; }
-.upgradeFlash::before { top: 2%; left: 8%; transform: rotate(-16deg); }
-.upgradeFlash::after { right: 8%; bottom: 3%; color: #ef83bc; transform: rotate(15deg); }
+.upgradeFlash { position: absolute; z-index: 6; top: 50%; left: 50%; width: 102%; height: 102%; border-radius: 50%; background: radial-gradient(circle,rgba(255,252,205,.92) 0,rgba(255,225,243,.66) 28%,rgba(231,207,255,.28) 50%,transparent 73%); box-shadow: 0 0 24px rgba(255,238,181,.78),0 0 46px rgba(248,154,214,.52); opacity: 0; pointer-events: none; mix-blend-mode: screen; }
+.upgradeFlash::before,.upgradeFlash::after { content: "✦"; position: absolute; color: #ffe7a0; font-size: 2rem; line-height: 1; text-shadow: 0 0 10px #fff,0 0 20px rgba(255,214,124,.95); opacity: .98; }
+.upgradeFlash::before { top: -2%; left: 4%; transform: rotate(-16deg) scale(1.12); }
+.upgradeFlash::after { right: 4%; bottom: -2%; color: #ffb7dc; text-shadow: 0 0 10px #fff,0 0 20px rgba(247,126,197,.92); transform: rotate(15deg) scale(1.08); }
 .carouselDots { position: absolute; z-index: 10; right: 0; bottom: 14.65rem; left: 0; display: flex; justify-content: center; gap: .29rem; }
 .carouselDots button { width: .42rem; height: .42rem; border-radius: 999px; background: rgba(109,74,79,.34); transition: width .2s ease,background .2s ease; }
 .carouselDots .carouselDotActive { width: 1rem; background: var(--prestige); }

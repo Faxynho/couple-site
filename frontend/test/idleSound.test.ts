@@ -34,8 +34,9 @@ describe("feedback sonoro do idle", () => {
     Object.defineProperty(window, "AudioContext", { configurable: true, value: MockAudioContext });
 
     expect(() => playSoundEffect("idlePop")).not.toThrow();
+    expect(() => playSoundEffect("idleUpgrade")).not.toThrow();
     expect(() => playSoundEffect("idleUnlock")).not.toThrow();
-    expect(oscillators).toHaveLength(6);
+    expect(oscillators).toHaveLength(9);
     expect(oscillators.every((oscillator) => oscillator.start.mock.calls.length === 1 && oscillator.stop.mock.calls.length === 1)).toBe(true);
   });
 });

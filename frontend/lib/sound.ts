@@ -32,6 +32,7 @@ export type SoundEffect =
   | "chessPromotion"
   | "chessDefeat"
   | "idlePop"
+  | "idleUpgrade"
   | "idleUnlock"
   | "idleAchievement";
 
@@ -154,6 +155,11 @@ export function playSoundEffect(effect: SoundEffect) {
       case "idlePop":
         sweepTone(context, 360, 680, 0.11, 0.045);
         tone(context, 940, 0.045, 0.045, 0.025, "triangle");
+        break;
+      case "idleUpgrade":
+        tone(context, 740, 0.075, 0, 0.048, "sine");
+        tone(context, 1047, 0.09, 0.045, 0.052, "triangle");
+        tone(context, 1480, 0.14, 0.095, 0.045, "sine");
         break;
       case "idleAchievement":
         tone(context, 523, 0.08, 0, 0.045);
