@@ -120,16 +120,20 @@ export const KITTY_CHARACTER_SEQUENCE = [
  ] as const;
 
 // P1–P17 mantêm os preços atuais para preservar o ritmo já vivido pelos jogadores.
-  // A partir de P18, a progressão passa a ter marcos explícitos de late game.
-  // Isso altera apenas compras futuras: IDs, níveis, produção e moedas já salvas não são resetados.
+  // A partir de P18, a campanha entra no late game com marcos explícitos e
+  // intervalos maiores entre personagens. Isso altera somente compras futuras:
+  // IDs, níveis, produção e moedas já salvas não são resetados.
+  //
+  // Curva de teste planejada:
+  // P18 114T → P19 650T → P20 2Q → P21 6Q → P22 15Q → P23 35Q → P24 75Q.
   const KITTY_LATE_GAME_COSTS: Record<number, number> = {
-    17: 400_000_000_000_000, // P18 Charmmy Kitty: 400 trilhões
-    18: 1_000_000_000_000_000, // P19 Hello Kitty anjo: 1 quadrilhão
-    19: 20_000_000_000_000_000, // P20 Kuromi anjo: 20 quadrilhões
-    20: 400_000_000_000_000_000, // P21 My Melody anjo noturno: 400 quadrilhões
-    21: 8_000_000_000_000_000_000, // P22 Hello Kitty de gala: 8 quintilhões
-    22: 160_000_000_000_000_000_000, // P23 Kuromi celestial: 160 quintilhões
-    23: 3_200_000_000_000_000_000_000, // P24 Little Twin Stars: 3,2 sextilhões
+    17: 114_000_000_000_000, // P18 Charmmy Kitty: 114 trilhões
+    18: 650_000_000_000_000, // P19 Hello Kitty anjo: 650 trilhões
+    19: 2_000_000_000_000_000, // P20 Kuromi anjo: 2 quadrilhões
+    20: 6_000_000_000_000_000, // P21 My Melody anjo noturno: 6 quadrilhões
+    21: 15_000_000_000_000_000, // P22 Hello Kitty de gala: 15 quadrilhões
+    22: 35_000_000_000_000_000, // P23 Kuromi celestial: 35 quadrilhões
+    23: 75_000_000_000_000_000, // P24 Little Twin Stars: 75 quadrilhões
   };
 
 function kittyCharacter(index: number): IdleItemDefinition {
@@ -166,19 +170,21 @@ export const IDLE_CATALOG: Record<IdleModeId, IdleItemDefinition[]> = {
   kitty: KITTY_CHARACTER_SEQUENCE.map((_, index) => kittyCharacter(index)),
 };
 
-// Relíquias afetam apenas as sete cenas da Hello Kitty. Os preços são uma
-// alternativa de investimento na faixa do personagem que abre cada cena.
+// Relíquias afetam apenas as sete cenas da Hello Kitty. A partir da cena 5,
+// o preço inicial acompanha o próximo marco de personagem para que a escolha
+// "personagem × melhoria × relíquia" continue relevante no late game.
 const RELIC_NAMES = [
   "Laço dos Abraços", "Morango dos Sonhos", "Patinha do Prado",
   "Varinha do Refúgio", "Doçura Estelar", "Chá das Nuvens", "Coração Celestial",
 ] as const;
-// A relíquia global usa marcos econômicos próprios: chegada ao mundo 3 (P9),
-// chegada ao mundo 5 (P17) e reta final antes do P23. Ela deve ser uma decisão
-// grande, não uma melhoria barata que atropela os personagens.
+
+// A relíquia global permanece desbloqueada no P9, mas os níveis seguintes viram
+// investimentos de peso: o nível 2 compete diretamente com P18 e o nível 3
+// permanece como uma compra de fim de campanha, próxima de P23.
 const GLOBAL_RELIC_COSTS = [
   Math.ceil(IDLE_CATALOG.kitty[8].baseCost * 6),
-  Math.ceil(IDLE_CATALOG.kitty[16].baseCost * .9),
-  Math.ceil(IDLE_CATALOG.kitty[22].baseCost * .85),
+  Math.ceil(IDLE_CATALOG.kitty[17].baseCost),
+  Math.ceil(IDLE_CATALOG.kitty[22].baseCost * .7),
 ] as const;
 
 // As demais relíquias preservam o preço de entrada, mas abrem mais distância
@@ -190,7 +196,15 @@ export const KITTY_RELICS: KittyRelicDefinition[] = [
   ...RELIC_NAMES.map((name, scene) => ({
     id: `kitty-scene-${scene + 1}`, name, asset: `/idle/relics/mundo${scene + 1}.webp`,
     kind: "scene" as const, scene, unlockOrder: Math.min(scene * 4, 23),
-    baseCost: scene === 0 ? 180 : Math.ceil(IDLE_CATALOG.kitty[Math.min(scene * 4, 23)].baseCost * .55),
+    baseCost: scene === 0
+      ? 180
+      : scene <= 3
+        ? Math.ceil(IDLE_CATALOG.kitty[scene * 4].baseCost * .55)
+        : scene === 4
+          ? Math.ceil(IDLE_CATALOG.kitty[17].baseCost * .55) // cena 5: P18
+          : scene === 5
+            ? Math.ceil(IDLE_CATALOG.kitty[21].baseCost * .55) // cena 6: P22
+            : Math.ceil(IDLE_CATALOG.kitty[23].baseCost * .55), // cena 7: P24
     maxLevel: 4,
     description: `Multiplica a produção de ${IDLE_SCENES.kitty[scene].name}.`,
   })),
