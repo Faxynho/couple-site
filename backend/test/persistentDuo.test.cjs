@@ -11,6 +11,7 @@ const {
   PersistentDuoStore,
   SHARED_DRAWING_MAX_POINTS_PER_STROKE,
   SHARED_DRAWING_GALLERY_MAX_ITEMS,
+  SHARED_DRAWING_GALLERY_MAX_TOTAL_POINTS,
   normalizeSharedDrawingStroke,
   normalizePersistentDuoDisplayName,
 } = require("../dist/rooms/persistentDuo.js");
@@ -246,10 +247,31 @@ test("payloads gigantes do quadro são rejeitados", () => {
   }), null);
 });
 
-function galleryStroke(id) {
-  return { id, tool: "brush", color: "#ef4444", size: 0.014, points: [{ x: 0.1, y: 0.1 }, { x: 0.5, y: 0.5 }] };
+function galleryStroke(id, color = "#ef4444", x = 0.1) {
+  return { id, tool: "brush", color, size: 0.014, points: [{ x, y: 0.1 }, { x: 0.5, y: 0.5 }] };
 }
 
+test("alimentar ou fazer carinho reinicia o relógio de decaimento do pet", () => {
+  const originalNow = Date.now;
+  let now = 1_000_000;
+  Date.now = () => now;
+  try {
+    const store = new PersistentDuoStore(false);
+    store.setPetCare("nix", "real", { affection: 50, satiety: 50 });
+
+    now += 3_600_000;
+    const before = store.getPetCare("nix");
+    assert.equal(before.affection, 47);
+    assert.equal(before.satiety, 47.5);
+
+    const fed = store.feedPet("nix", "real", 20);
+    assert.equal(fed.affection, 47);
+    assert.equal(fed.satiety, 67.5);
+    assert.deepEqual(store.getPetCare("nix"), fed);
+  } finally {
+    Date.now = originalNow;
+  }
+});
 test("galeria do quadro salva cópia do desenho atual sem alterar o quadro", () => {
   const store = new PersistentDuoStore(false);
   assert.match(store.saveDrawingToGallery("andre").error, /vazio/);
@@ -293,4 +315,45 @@ test("galeria respeita o limite máximo de desenhos", () => {
   }
   store.addDrawingStroke(galleryStroke("stroke_extra_000"));
   assert.match(store.saveDrawingToGallery("andre").error, /limite/);
+});
+
+test("galeria compara o conteúdo do desenho, não apenas o ID dos traços", () => {
+  const store = new PersistentDuoStore(false);
+  store.addDrawingStroke(galleryStroke("stroke_reused"));
+  assert.ok(store.saveDrawingToGallery("andre").item);
+
+  store.clearDrawingBoard();
+  store.addDrawingStroke(galleryStroke("stroke_reused", "#3b82f6", 0.2));
+  assert.ok(store.saveDrawingToGallery("flavia").item);
+  assert.equal(store.getGalleryCount(), 2);
+});
+
+test("galeria aplica um teto de pontos acumulados além do teto de itens", () => {
+  const store = new PersistentDuoStore(false);
+  const pointsPerStroke = SHARED_DRAWING_MAX_POINTS_PER_STROKE;
+  const strokesPerDrawing = Math.floor(SHARED_DRAWING_GALLERY_MAX_TOTAL_POINTS / pointsPerStroke / 2);
+  const addLargeDrawing = (prefix) => {
+    for (let index = 0; index < strokesPerDrawing; index += 1) {
+      const strokeId = prefix + "_" + String(index).padStart(8, "0");
+      store.addDrawingStroke({
+        id: strokeId,
+        tool: "brush",
+        color: "#111827",
+        size: 0.006,
+        points: Array.from({ length: pointsPerStroke }, (_, pointIndex) => ({
+          x: (pointIndex % 100) / 99,
+          y: Math.floor(pointIndex / 100) / 4,
+        })),
+      });
+    }
+  };
+
+  addLargeDrawing("large_a");
+  assert.ok(store.saveDrawingToGallery("andre").item);
+  store.clearDrawingBoard();
+  addLargeDrawing("large_b");
+  assert.ok(store.saveDrawingToGallery("flavia").item);
+  store.clearDrawingBoard();
+  addLargeDrawing("large_c");
+  assert.match(store.saveDrawingToGallery("andre").error, /limite total de detalhes/);
 });

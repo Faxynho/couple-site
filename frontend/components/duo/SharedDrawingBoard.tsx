@@ -371,6 +371,8 @@ export default function SharedDrawingBoard() {
   const saveToGallery = () => {
     if (savingToGallery) return;
     setSavingToGallery(true);
+    setStatus("saving");
+    setMessage("Salvando na galeria...");
     getSocket().emit("duoBoard:saveToGallery", (response: GalleryAck) => {
       setSavingToGallery(false);
       if (response?.ok) {
@@ -382,7 +384,9 @@ export default function SharedDrawingBoard() {
         savedFlashTimerRef.current = setTimeout(() => setSavedToGallery(false), 1800);
         return;
       }
-      // Erro da galeria não afeta o quadro ao vivo: só informa a mensagem.
+      // Erro da galeria não afeta o quadro ao vivo, mas o estado visual
+      // precisa refletir que o salvamento falhou e não ficou pendente.
+      setStatus("error");
       setMessage(response?.error ?? "Não foi possível salvar na galeria.");
     });
   };
