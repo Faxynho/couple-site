@@ -365,6 +365,9 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const dragXRef = useRef(0);
   const pendingDragX = useRef(0);
   const dragFrame = useRef<number | null>(null);
+  const upgradeCharacterAnimation = useRef<Animation | null>(null);
+  const upgradeFlashAnimation = useRef<Animation | null>(null);
+  const upgradeFlashRef = useRef<HTMLSpanElement>(null);
   const selected = data.items[index];
   const prestige = selected.definition.unlockOrder;
   const tier = rarityTier(prestige);
@@ -407,8 +410,33 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
     if (distance < -45) move(1);
     else if (distance > 45) move(-1);
   };
+  const triggerUpgradeFeedback = () => {
+    const character = carouselRef.current?.querySelector<HTMLElement>("[data-upgrade-character]");
+    upgradeCharacterAnimation.current?.cancel();
+    upgradeFlashAnimation.current?.cancel();
+
+    if (character) {
+      upgradeCharacterAnimation.current = character.animate([
+        { transform: "translate3d(calc(-50% + var(--drag-main, 0px)), 0, 0) scale(1)", filter: "brightness(1) drop-shadow(0 10px 10px rgba(125,55,91,.12))" },
+        { transform: "translate3d(calc(-50% + var(--drag-main, 0px)), -6px, 0) scale(1.055)", filter: "brightness(1.18) drop-shadow(0 8px 18px rgba(255,182,224,.45))", offset: .32 },
+        { transform: "translate3d(calc(-50% + var(--drag-main, 0px)), 1px, 0) scale(.98)", filter: "brightness(1.08) drop-shadow(0 5px 14px rgba(243,170,215,.32))", offset: .62 },
+        { transform: "translate3d(calc(-50% + var(--drag-main, 0px)), 0, 0) scale(1)", filter: "brightness(1) drop-shadow(0 10px 10px rgba(125,55,91,.12))" },
+      ], { duration: 300, easing: "cubic-bezier(.2,.82,.24,1)" });
+    }
+
+    if (upgradeFlashRef.current) {
+      upgradeFlashAnimation.current = upgradeFlashRef.current.animate([
+        { opacity: 0, transform: "translate(-50%,-50%) scale(.68)" },
+        { opacity: .95, transform: "translate(-50%,-50%) scale(1.02)", offset: .28 },
+        { opacity: 0, transform: "translate(-50%,-50%) scale(1.25)" },
+      ], { duration: 320, easing: "ease-out" });
+    }
+  };
+
   useEffect(() => () => {
     if (dragFrame.current !== null) window.cancelAnimationFrame(dragFrame.current);
+    upgradeCharacterAnimation.current?.cancel();
+    upgradeFlashAnimation.current?.cancel();
   }, []);
   const onTouchStart = (event: TouchEvent) => {
     touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
@@ -453,13 +481,20 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
         const offset = itemIndex - index;
         const visible = Math.abs(offset) <= 1;
         if (!visible) return null;
-        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}</div>;
+        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} data-upgrade-character={offset === 0 ? item.definition.id : undefined} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}{offset === 0 && <span ref={upgradeFlashRef} className={styles.upgradeFlash} aria-hidden="true" />}</div>;
       })}
       <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
       <div className={styles.characterPanel} data-tier={tier}>
         <div className={styles.characterTitleRow}><span className={styles.prestigeMark}>{"✦".repeat(Math.min(3, Math.ceil(tier / 2)))}</span><h2>{selected.definition.name}</h2><span className={styles.characterOrder}>{index + 1}/{data.items.length}</span></div>
         <div className={styles.characterStats}><span>{selected.purchased ? `Nível ${selected.level}` : selected.unlocked ? "Disponível" : "Bloqueado"}</span><span><GameStatIcon type="production" />{formatIdleNumber(selected.production)}/s</span></div>
-        <button type="button" className={`${styles.actionButton} ${!selected.purchased ? styles.buyButton : ""}`} disabled={!selected.unlocked || busyItemId === selected.definition.id || (selected.purchased && !quoteFor(selected, purchaseMode))} onClick={() => void (selected.purchased ? buyUpgrades(selected.definition.id, purchaseMode) : act(selected.definition.id, "buy"))}>{selected.purchased ? quoteFor(selected, purchaseMode) ? <>Melhorar x{quoteFor(selected, purchaseMode)!.count} <GameStatIcon type="money" /> {formatIdleNumber(quoteFor(selected, purchaseMode)!.totalCost)}{(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}</> : "Saldo insuficiente" : busyItemId === selected.definition.id ? "Comprando…" : selected.unlocked ? <>Comprar <GameStatIcon type="money" /> {formatIdleNumber(selected.nextCost)}</> : "Compre a personagem anterior"}</button>
+        <button type="button" className={`${styles.actionButton} ${!selected.purchased ? styles.buyButton : ""}`} disabled={!selected.unlocked || busyItemId === selected.definition.id || (selected.purchased && !quoteFor(selected, purchaseMode))} onClick={() => {
+          if (selected.purchased) {
+            triggerUpgradeFeedback();
+            void buyUpgrades(selected.definition.id, purchaseMode);
+            return;
+          }
+          void act(selected.definition.id, "buy");
+        }}>{selected.purchased ? quoteFor(selected, purchaseMode) ? <>Melhorar x{quoteFor(selected, purchaseMode)!.count} <GameStatIcon type="money" /> {formatIdleNumber(quoteFor(selected, purchaseMode)!.totalCost)}{(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}</> : "Saldo insuficiente" : busyItemId === selected.definition.id ? "Comprando…" : selected.unlocked ? <>Comprar <GameStatIcon type="money" /> {formatIdleNumber(selected.nextCost)}</> : "Compre a personagem anterior"}</button>
       </div>
     </div>
   </section>;
