@@ -26,6 +26,7 @@ vi.mock("@/hooks/useIdleGame", () => ({
     act: vi.fn(async () => true),
     upgradeRelic: vi.fn(async () => true),
     clickItem: vi.fn(async () => null),
+    buyUpgrades: vi.fn(async () => true),
   }),
 }));
 
@@ -76,6 +77,42 @@ function makeSnapshot(purchasedFirst = false, completedFirst = false): IdleSnaps
 }
 
 describe("apresentação visual e celebrações do idle", () => {
+
+  it("usa o dinheiro interno no topo e concentra produção, quantidade e melhoria no painel do personagem", () => {
+    currentSnapshot = makeSnapshot(true);
+    render(<IdleModeScreen mode="kitty" />);
+    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
+
+    const header = screen.getByRole("banner");
+    expect(header).toHaveAttribute("aria-label", expect.any(String));
+    expect(screen.getByText("1.000.000.000.000")).toBeInTheDocument();
+    expect(document.querySelector('.coinPill') ?? document.querySelector('[class*="coinPill"]')).toBeTruthy();
+    expect(document.querySelector('[class*="moneyResource"]')).toBeTruthy();
+    expect(screen.queryByText(/^Saldo$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Produção$/)).toBeInTheDocument();
+
+    expect(screen.getByText("Hello Kitty")).toBeInTheDocument();
+    expect(screen.getByText("Nível 1")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Quantidade de níveis" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "x1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "x10" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Máx." })).toBeInTheDocument();
+    expect(screen.getByText("+1")).toBeInTheDocument();
+    expect(screen.queryByText("Hello Kitty", { selector: "h3" })).not.toBeInTheDocument();
+  });
+
+  it("mantém o destaque visual de raridade no nome e nível ao percorrer os 24 personagens", () => {
+    currentSnapshot = makeSnapshot(true);
+    render(<IdleModeScreen mode="kitty" />);
+    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
+    const identity = document.querySelector("[class*='characterIdentity']");
+    expect(identity).toHaveAttribute("data-tier", "1");
+    fireEvent.click(screen.getByRole("button", { name: "Ver Kuromi anjo" }));
+    expect(screen.getByText("Kuromi anjo")).toBeInTheDocument();
+    expect(screen.getByText("Nível 0")).toBeInTheDocument();
+    expect(identity).toHaveAttribute("data-tier", "5");
+  });
+
   afterEach(() => { cleanup(); currentAccountId = null; currentMilestone = null; });
 
   it("exibe nove relíquias, oculta artes futuras e mantém a Fazendinha com quatro abas", () => {
