@@ -9,6 +9,7 @@ const ids = ["hello-kitty", "dear-daniel", "my-melody", "mimmy", "cinnamoroll", 
 let currentSnapshot: IdleSnapshot;
 let currentAccountId: string | null = null;
 let currentMilestone: { count: number; bonus: number; key: number } | null = null;
+let currentBuyUpgrades = vi.fn(async () => true);
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("next/image", () => ({ default: ({ alt = "", src, className }: { alt?: string; src: string; className?: string }) => <span role={alt ? "img" : undefined} aria-label={alt || undefined} data-src={src} className={className} /> }));
@@ -26,6 +27,7 @@ vi.mock("@/hooks/useIdleGame", () => ({
     act: vi.fn(async () => true),
     upgradeRelic: vi.fn(async () => true),
     clickItem: vi.fn(async () => null),
+    buyUpgrades: currentBuyUpgrades,
   }),
 }));
 
@@ -181,5 +183,23 @@ describe("apresentação visual e celebrações do idle", () => {
     for (let tap = 0; tap < 12; tap += 1) fireEvent.click(character, { clientX: 180, clientY: 380 });
     expect(animate).toHaveBeenCalledTimes(12);
     expect(cancel).toHaveBeenCalledTimes(11);
+  });
+
+  it("mostra um feedback rápido ao melhorar o personagem sem bloquear melhorias sucessivas", async () => {
+    currentSnapshot = makeSnapshot(true, true);
+    currentBuyUpgrades = vi.fn(async () => true);
+    const cancel = vi.fn();
+    const animate = vi.fn(() => ({ cancel } as unknown as Animation));
+    Object.defineProperty(HTMLElement.prototype, "animate", { configurable: true, value: animate });
+    render(<IdleModeScreen mode="kitty" />);
+    const upgrade = screen.getByRole("button", { name: /Melhorar x1/ });
+    expect(upgrade).not.toBeDisabled();
+
+    for (let tap = 0; tap < 12; tap += 1) fireEvent.click(upgrade);
+
+    expect(currentBuyUpgrades).toHaveBeenCalledTimes(12);
+    expect(animate).toHaveBeenCalledTimes(24);
+    expect(cancel).toHaveBeenCalledTimes(22);
+    expect(upgrade).not.toBeDisabled();
   });
 });
