@@ -472,7 +472,7 @@ function KittyCarousel({ data, balance: _balance, busyItemId, pendingUpgrades, a
         <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
       </div>
 
-      <div className={styles.characterPanel} data-tier={tier}>
+      <div className={styles.characterPanel} data-tier={tier} style={{ "--prestige": RARITY_COLORS[tier - 1][0], "--prestige-soft": RARITY_COLORS[tier - 1][1] } as CSSProperties}>
         <div className={styles.productionSpotlight}>
           <span className={styles.productionEyebrow}>PRODUÇÃO</span>
           <div className={styles.productionValue}>
