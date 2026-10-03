@@ -169,6 +169,9 @@ export const SHARED_DRAWING_MAX_STROKES = 1_000;
 export const SHARED_DRAWING_MAX_POINTS_PER_STROKE = 500;
 export const SHARED_DRAWING_MAX_TOTAL_POINTS = 100_000;
 export const SHARED_DRAWING_GALLERY_MAX_ITEMS = 40;
+// Limite total evita que a galeria persistente cresça para milhões de pontos
+// mesmo que cada desenho individual esteja dentro do limite do quadro.
+export const SHARED_DRAWING_GALLERY_MAX_TOTAL_POINTS = 400_000;
 
 const DATA_DIR = path.join(__dirname, "..", "..", "data");
 const DATA_FILE = path.join(DATA_DIR, "persistent-duo-lobby.json");
@@ -281,7 +284,9 @@ function cloneGalleryItem(item: SharedDrawingGalleryItem): SharedDrawingGalleryI
 }
 
 function drawingSignature(strokes: SharedDrawingStroke[]): string {
-  return strokes.map((stroke) => stroke.id).join("|");
+  // A identidade visual do desenho depende do conteúdo, não apenas dos IDs.
+  // Isso evita falsos positivos caso um cliente reutilize um ID após limpar o quadro.
+  return JSON.stringify(strokes);
 }
 
 function sanitizeGallery(value: unknown): SharedDrawingGalleryItem[] {
@@ -307,7 +312,9 @@ function sanitizeGallery(value: unknown): SharedDrawingGalleryItem[] {
       id: input.id,
       strokes,
       savedBy: input.savedBy,
-      savedAt: Number.isFinite(input.savedAt) ? Number(input.savedAt) : Date.now(),
+      savedAt: Number.isFinite(input.savedAt)
+        ? Math.max(0, Math.min(Date.now(), Number(input.savedAt)))
+        : Date.now(),
     });
   }
   return items;
@@ -397,7 +404,9 @@ export class PersistentDuoStore {
     const current = projectPetCare(state, petId, environment);
     state.affection = Math.min(100, current.affection + affectionGain);
     state.satiety = Math.min(100, current.satiety + satietyGain);
-    state.lastUpdatedAt = current.lastUpdatedAt;
+    // O ganho acabou de ser aplicado agora; reinicia o relógio de decaimento
+    // para não cobrar novamente o tempo já projetado em "current".
+    state.lastUpdatedAt = Date.now();
     state.revision += 1;
     this.scheduleSave();
     const updated = this.getPetCare(petId, environment);
@@ -525,14 +534,23 @@ export class PersistentDuoStore {
   /** Copia o desenho atual do quadro para a galeria sem alterar o quadro. */
   saveDrawingToGallery(savedBy: AccountId): { item?: SharedDrawingGalleryItem; count?: number; error?: string } {
     const strokes = this.data.drawing.strokes;
+    if (!isAccountId(savedBy)) return { error: "Conta inválida para salvar na galeria." };
     if (strokes.length === 0) return { error: "O quadro está vazio. Desenhe algo antes de salvar." };
     const gallery = this.data.gallery ?? (this.data.gallery = []);
     const signature = drawingSignature(strokes);
+    const currentPointCount = gallery.reduce(
+      (sum, item) => sum + item.strokes.reduce((itemSum, stroke) => itemSum + stroke.points.length, 0),
+      0
+    );
+    const drawingPointCount = strokes.reduce((sum, stroke) => sum + stroke.points.length, 0);
     if (gallery.some((item) => drawingSignature(item.strokes) === signature)) {
       return { error: "Esse desenho já está salvo na galeria." };
     }
     if (gallery.length >= SHARED_DRAWING_GALLERY_MAX_ITEMS) {
       return { error: `A galeria chegou ao limite de ${SHARED_DRAWING_GALLERY_MAX_ITEMS} desenhos. Apague algum para salvar outro.` };
+    }
+    if (currentPointCount + drawingPointCount > SHARED_DRAWING_GALLERY_MAX_TOTAL_POINTS) {
+      return { error: "A galeria atingiu o limite total de detalhes. Apague algum desenho antes de salvar outro." };
     }
     const item: SharedDrawingGalleryItem = {
       id: `gallery_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`,
