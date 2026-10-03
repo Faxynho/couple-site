@@ -415,13 +415,14 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
     upgradeCharacterAnimation.current?.cancel();
     upgradeFlashAnimation.current?.cancel();
 
+    playSoundEffect("idleUpgrade");
     if (character) {
       upgradeCharacterAnimation.current = character.animate([
         { transform: "translate3d(calc(-50% + var(--drag-main, 0px)), 0, 0) scale(1)", filter: "brightness(1) drop-shadow(0 10px 10px rgba(125,55,91,.12))" },
-        { transform: "translate3d(calc(-50% + var(--drag-main, 0px)), -6px, 0) scale(1.055)", filter: "brightness(1.18) drop-shadow(0 8px 18px rgba(255,182,224,.45))", offset: .32 },
-        { transform: "translate3d(calc(-50% + var(--drag-main, 0px)), 1px, 0) scale(.98)", filter: "brightness(1.08) drop-shadow(0 5px 14px rgba(243,170,215,.32))", offset: .62 },
+        { transform: "translate3d(calc(-50% + var(--drag-main, 0px)), -10px, 0) scale(1.12)", filter: "brightness(1.34) drop-shadow(0 8px 25px rgba(255,182,224,.7))", offset: .28 },
+        { transform: "translate3d(calc(-50% + var(--drag-main, 0px)), 3px, 0) scale(.965)", filter: "brightness(1.16) drop-shadow(0 6px 20px rgba(243,170,215,.48))", offset: .58 },
         { transform: "translate3d(calc(-50% + var(--drag-main, 0px)), 0, 0) scale(1)", filter: "brightness(1) drop-shadow(0 10px 10px rgba(125,55,91,.12))" },
-      ], { duration: 300, easing: "cubic-bezier(.2,.82,.24,1)" });
+      ], { duration: 340, easing: "cubic-bezier(.18,.88,.22,1)" });
     }
 
     if (upgradeFlashRef.current) {
