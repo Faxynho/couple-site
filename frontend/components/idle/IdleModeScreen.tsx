@@ -173,7 +173,7 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
     <main className={`${styles.page} ${farm ? styles.farmTheme : styles.kittyTheme} ${environment === "dev" ? styles.devEnvironment : ""} ${data.productionBoost && data.productionBoost.expiresAt > Date.now() ? styles.productionBoostActive : ""} ${click10HomeActive ? styles.click10Active : ""}`}>
       <div className={styles.background} key={background} style={{ backgroundImage: `url(${background})` }} aria-hidden="true" />
       <div className={styles.sceneShade} aria-hidden="true" />
-      <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "relics" ? "Relíquias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "relics" ? "Pequenos encantos, grandes descobertas" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
+      <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "relics" ? "Relíquias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "relics" ? "Pequenos encantos, grandes descobertas" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={tab === "upgrades" ? displayedBalance : snapshot.globalCoins} resourceType={tab === "upgrades" ? "money" : "global"} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
       {activeSceneRelic && <span className={styles.sceneRelicBadge} title={activeSceneRelic.definition.name} aria-label={`Relíquia ${activeSceneRelic.definition.name} · nível ${activeSceneRelic.level}`}><Image src={activeSceneRelic.definition.asset} alt="" width={60} height={60} sizes="58px" /></span>}
       {environment === "dev" && <span className={styles.devBadge}>MODO DEV</span>}
 
@@ -358,7 +358,7 @@ function ItemCard({ item, busy, pending, onAction, onUpgrade, purchaseMode }: { 
   </article>;
 }
 
-function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode, onPurchaseModeChange }: ActionProps) {
+function KittyCarousel({ data, balance: _balance, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode, onPurchaseModeChange }: ActionProps) {
   const [index, setIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -377,6 +377,8 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const particleSpread = [1, 1.08, 1.24, 1.43, 1.68, 1.95][tier - 1];
   const particleLift = [34, 38, 44, 52, 61, 70][tier - 1];
   const furthestPurchased = data.items.reduce((order, item) => item.purchased ? Math.max(order, item.definition.unlockOrder) : order, -1);
+  const quote = selected.purchased ? quoteFor(selected, purchaseMode) : null;
+
   const move = (direction: -1 | 1) => setIndex((current) => Math.max(0, Math.min(data.items.length - 1, current + direction)));
   const paintDrag = (value: number) => {
     const carousel = carouselRef.current;
@@ -427,44 +429,76 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   };
   const onTouchEnd = () => resetDrag(true);
   const onTouchCancel = () => resetDrag(false);
+
   return <section className={`${styles.content} ${styles.kittyContent}`}>
-    <Summary balance={balance} production={data.effectiveProduction} /><PurchaseModePicker value={purchaseMode} onChange={onPurchaseModeChange} />
-    <div ref={carouselRef} className={styles.carousel} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} data-dragging="no" style={{ "--prestige": RARITY_COLORS[tier - 1][0], "--prestige-soft": RARITY_COLORS[tier - 1][1] } as CSSProperties} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchCancel}>
-      <div className={styles.prestigeBackdrop} />
-      {data.items.map((item, itemIndex) => {
-        const offset = itemIndex - index;
-        if (Math.abs(offset) > 1) return null;
-        const itemTier = rarityTier(item.definition.unlockOrder);
-        const dragVariable = offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)";
-        return <span
-          key={`rarity-${item.definition.id}`}
-          className={`${styles.raritySlide} ${!item.purchased ? styles.raritySlideLocked : ""}`}
-          data-tier={itemTier}
-          aria-hidden="true"
-          style={{
-            left: `${50 + offset * 104}%`,
-            transform: `translate3d(calc(-50% + ${dragVariable}), 0, 0) scale(${offset === 0 ? 1 : .59})`,
-            backgroundImage: `url(${RARITY_ASSETS[itemTier - 1]})`,
-          } as CSSProperties}
-        />;
-      })}
-      <div className={styles.prestigeParticles} aria-hidden="true">{UPGRADE_PARTICLES.slice(0, particleCount).map(([x, y, size, delay, duration, drift], particle) => <i key={particle} className={styles[["particleStar", "particleHeart", "particleOrb"][particle % 3]]} style={{ "--x": `${x}%`, "--y": `${y}%`, "--size": `${Math.round(size * (1 + Math.max(0, tier - 2) * .055))}px`, "--delay": `${delay}s`, "--duration": `${Math.max(1.65, duration * particleSpeed).toFixed(2)}s`, "--drift": `${Math.round(drift * particleSpread)}px`, "--lift-mid": `${-Math.round(particleLift * .55)}px`, "--lift": `${-particleLift}px` } as CSSProperties} />)}</div>
-      {data.items.map((item, itemIndex) => {
-        const offset = itemIndex - index;
-        const visible = Math.abs(offset) <= 1;
-        if (!visible) return null;
-        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}</div>;
-      })}
-      <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
+    <div className={styles.carouselShell}>
+      <div className={styles.characterIdentity} data-tier={tier}>
+        <div className={styles.characterIdentityMain}>
+          <span className={styles.characterIdentityRarity}>{"✦".repeat(Math.min(3, Math.ceil(tier / 2)))}</span>
+          <h2>{selected.definition.name}</h2>
+        </div>
+        <div className={styles.characterIdentityMeta}>
+          <span className={styles.characterLevel}>Nível {selected.level}</span>
+          <span className={styles.characterOrder}>{index + 1}/{data.items.length}</span>
+        </div>
+      </div>
+
+      <div ref={carouselRef} className={styles.carousel} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} data-dragging="no" style={{ "--prestige": RARITY_COLORS[tier - 1][0], "--prestige-soft": RARITY_COLORS[tier - 1][1] } as CSSProperties} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchCancel}>
+        <div className={styles.prestigeBackdrop} />
+        {data.items.map((item, itemIndex) => {
+          const offset = itemIndex - index;
+          if (Math.abs(offset) > 1) return null;
+          const itemTier = rarityTier(item.definition.unlockOrder);
+          const dragVariable = offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)";
+          return <span
+            key={`rarity-${item.definition.id}`}
+            className={`${styles.raritySlide} ${!item.purchased ? styles.raritySlideLocked : ""}`}
+            data-tier={itemTier}
+            aria-hidden="true"
+            style={{
+              left: `${50 + offset * 104}%`,
+              transform: `translate3d(calc(-50% + ${dragVariable}), 0, 0) scale(${offset === 0 ? 1 : .59})`,
+              backgroundImage: `url(${RARITY_ASSETS[itemTier - 1]})`,
+            } as CSSProperties}
+          />;
+        })}
+        <div className={styles.prestigeParticles} aria-hidden="true">{UPGRADE_PARTICLES.slice(0, particleCount).map(([x, y, size, delay, duration, drift], particle) => <i key={particle} className={styles[["particleStar", "particleHeart", "particleOrb"][particle % 3]]} style={{ "--x": `${x}%`, "--y": `${y}%`, "--size": `${Math.round(size * (1 + Math.max(0, tier - 2) * .055))}px`, "--delay": `${delay}s`, "--duration": `${Math.max(1.65, duration * particleSpeed).toFixed(2)}s`, "--drift": `${Math.round(drift * particleSpread)}px`, "--lift-mid": `${-Math.round(particleLift * .55)}px`, "--lift": `${-particleLift}px` } as CSSProperties} />)}</div>
+        {data.items.map((item, itemIndex) => {
+          const offset = itemIndex - index;
+          const visible = Math.abs(offset) <= 1;
+          if (!visible) return null;
+          return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}</div>;
+        })}
+        <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
+      </div>
+
       <div className={styles.characterPanel} data-tier={tier}>
-        <div className={styles.characterTitleRow}><span className={styles.prestigeMark}>{"✦".repeat(Math.min(3, Math.ceil(tier / 2)))}</span><h2>{selected.definition.name}</h2><span className={styles.characterOrder}>{index + 1}/{data.items.length}</span></div>
-        <div className={styles.characterStats}><span>{selected.purchased ? `Nível ${selected.level}` : selected.unlocked ? "Disponível" : "Bloqueado"}</span><span><GameStatIcon type="production" />{formatIdleNumber(selected.production)}/s</span></div>
-        <button type="button" className={`${styles.actionButton} ${!selected.purchased ? styles.buyButton : ""}`} disabled={!selected.unlocked || busyItemId === selected.definition.id || (selected.purchased && !quoteFor(selected, purchaseMode))} onClick={() => void (selected.purchased ? buyUpgrades(selected.definition.id, purchaseMode) : act(selected.definition.id, "buy"))}>{selected.purchased ? quoteFor(selected, purchaseMode) ? <>Melhorar x{quoteFor(selected, purchaseMode)!.count} <GameStatIcon type="money" /> {formatIdleNumber(quoteFor(selected, purchaseMode)!.totalCost)}{(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}</> : "Saldo insuficiente" : busyItemId === selected.definition.id ? "Comprando…" : selected.unlocked ? <>Comprar <GameStatIcon type="money" /> {formatIdleNumber(selected.nextCost)}</> : "Compre a personagem anterior"}</button>
+        <div className={styles.productionSpotlight}>
+          <span className={styles.productionEyebrow}>PRODUÇÃO</span>
+          <div className={styles.productionValue}>
+            <GameStatIcon type="production" />
+            <strong>+{formatIdleNumber(selected.production)}</strong>
+            <small>/s</small>
+          </div>
+        </div>
+
+        {selected.purchased && <PurchaseModePicker value={purchaseMode} onChange={onPurchaseModeChange} />}
+
+        <button type="button" className={`${styles.actionButton} ${!selected.purchased ? styles.buyButton : ""}`} disabled={!selected.unlocked || busyItemId === selected.definition.id || (selected.purchased && !quote)} onClick={() => void (selected.purchased ? buyUpgrades(selected.definition.id, purchaseMode) : act(selected.definition.id, "buy"))}>
+          {selected.purchased
+            ? quote
+              ? <>Melhorar x{quote.count}<span className={styles.actionCost}><GameStatIcon type="money" />{formatIdleNumber(quote.totalCost)}</span>{(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}</>
+              : "Saldo insuficiente"
+            : busyItemId === selected.definition.id
+              ? "Comprando…"
+              : selected.unlocked
+                ? <>Comprar <GameStatIcon type="money" />{formatIdleNumber(selected.nextCost)}</>
+                : "Compre a personagem anterior"}
+        </button>
       </div>
     </div>
   </section>;
 }
-
 function Achievements({ data, snapshot }: { data: IdleModeSnapshot; snapshot: IdleSnapshot }) {
   const complete = data.achievements.filter((item) => item.completedAt).length;
   const earned = data.achievements.filter((item) => item.completedAt).reduce((sum, item) => sum + item.reward, 0);
