@@ -171,7 +171,7 @@ export const SHARED_DRAWING_MAX_TOTAL_POINTS = 100_000;
 export const SHARED_DRAWING_GALLERY_MAX_ITEMS = 40;
 // Limite total evita que a galeria persistente cresça para milhões de pontos
 // mesmo que cada desenho individual esteja dentro do limite do quadro.
-export const SHARED_DRAWING_GALLERY_MAX_TOTAL_POINTS = 400_000;
+export const SHARED_DRAWING_GALLERY_MAX_TOTAL_POINTS = 100_000;
 
 const DATA_DIR = path.join(__dirname, "..", "..", "data");
 const DATA_FILE = path.join(DATA_DIR, "persistent-duo-lobby.json");
