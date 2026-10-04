@@ -36,14 +36,16 @@ const WORLD_BUTTON: LobbyButtonSpec = {
   src: "/images/botao-lobby-nosso-mundo.webp",
   label: "Entrar no Nosso Mundo",
   art: { left: 92, top: 38, width: 833, height: 1464 },
-  box: { left: 13, top: 22.45, width: 35 },
+  // Posicionado abaixo do título, deixando uma folga curta e responsiva até o botão de Fazendinhas.
+  box: { left: 13, top: 49, width: 35 },
 };
 
 const MINIGAMES_BUTTON: LobbyButtonSpec = {
   src: "/images/botao-lobby-minijogos.webp",
   label: "Abrir Minijogos",
   art: { left: 53, top: 112, width: 921, height: 1335 },
-  box: { left: 51.2, top: 24.3, width: 39.3 },
+  // Mantém os dois novos botões alinhados na mesma faixa vertical.
+  box: { left: 51.2, top: 49, width: 39.3 },
 };
 
 function LobbyArtButton({ spec, onClick }: { spec: LobbyButtonSpec; onClick: () => void }) {
