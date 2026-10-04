@@ -72,7 +72,7 @@ test("cada produtor e personagem possui e conclui sua conquista de desbloqueio",
   const now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
   store.addTestFunds("farm", 1e13);
-  store.addTestFunds("kitty", 2e16);
+  store.addTestFunds("kitty", 2e17); // comprar os 24 personagens custa ~1,34e17
   let snapshot = store.getSnapshot();
   for (const item of snapshot.modes.farm.items) assert.equal(store.act("farm", item.definition.id, "buy").ok, true);
   for (const item of snapshot.modes.kitty.items) assert.equal(store.act("kitty", item.definition.id, "buy").ok, true);
@@ -234,10 +234,11 @@ test("Castelo desbloqueia com P9 e cobra uma curva exclusiva alinhada aos mundos
   const global = KITTY_RELICS.find((relic) => relic.id === "kitty-all");
   const scene3 = KITTY_RELICS.find((relic) => relic.id === "kitty-scene-3");
   assert.equal(global.unlockOrder, 8);
+  // A relíquia global usa uma tabela fixa de custos (GLOBAL_RELIC_COSTS), não mais múltiplos do custo dos personagens.
   const expectedGlobalCosts = [
     Math.ceil(IDLE_CATALOG.kitty[8].baseCost * 6),
-    Math.ceil(IDLE_CATALOG.kitty[16].baseCost * .9),
-    Math.ceil(IDLE_CATALOG.kitty[22].baseCost * .85),
+    114_000_000_000_000,
+    24_500_000_000_000_000,
   ];
   assert.equal(global.baseCost, expectedGlobalCosts[0]);
   assert.deepEqual([0, 1, 2].map((level) => kittyRelicCost(global, level)), expectedGlobalCosts);
@@ -571,7 +572,7 @@ test("24 personagens, sete cenas e raridades oficiais preservam a Fazendinha", (
 
 test("desbloquear P24 ativa a cena final, a conquista individual e a final", () => {
   const store = new IdleStore(false, () => Date.parse("2026-09-27T12:00:00-03:00"));
-  store.addTestFunds("kitty", 2e16);
+  store.addTestFunds("kitty", 2e17); // comprar os 24 personagens custa ~1,34e17
   for (const item of store.getSnapshot().modes.kitty.items) assert.equal(store.act("kitty", item.definition.id, "buy").ok, true);
   const kitty = store.getSnapshot().modes.kitty;
   assert.ok(kitty.scenes.every((scene) => scene.unlocked));

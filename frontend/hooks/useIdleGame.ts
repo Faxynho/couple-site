@@ -184,13 +184,13 @@ export function useIdleGame(mode?: IdleModeId, environment: GameEnvironment = "r
     }
   }, [accountId, applySnapshot, busyItemId, environment, mode, queueUpgrade]);
 
-  const clickItem = useCallback(async (itemId: string): Promise<number | null> => {
+  const clickItem = useCallback(async (itemId: string, source: "home" | "upgrades" = "home"): Promise<number | null> => {
     if (!mode || !accountId) return null;
     const clickedAt = Date.now();
     if (clickedAt - lastClickRef.current < 125) return null;
     lastClickRef.current = clickedAt;
     try {
-      const result = await idleClick(accountId, mode, itemId, environment);
+      const result = await idleClick(accountId, mode, itemId, environment, source);
       applySnapshot(result.snapshot);
       if (result.milestone) setMilestone({ count: result.milestone, bonus: result.bonus, key: Date.now() });
       setNow(Date.now());

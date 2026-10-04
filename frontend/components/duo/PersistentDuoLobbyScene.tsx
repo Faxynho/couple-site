@@ -8,6 +8,11 @@ interface PersistentDuoLobbySceneProps {
 }
 
 const LOBBY_ASPECT = 941 / 1672;
+/** Em celulares altos e estreitos o vídeo é cortado nas laterais; os botões podem passar da largura da tela em no máximo 18%
+ *  (as posições abaixo garantem que nenhum botão sai da tela até esse limite). */
+const MAX_WIDTH_OVER_SCREEN = 1.18;
+/** Em telas largas (PC / tablet deitado) a largura do quadro não passa de 75% da altura da tela. */
+const MAX_WIDTH_OVER_HEIGHT = 0.75;
 
 /**
  * Os botões ilustrados ficam em porcentagem sobre a mesma caixa do vídeo de fundo
@@ -51,7 +56,7 @@ function LobbyArtButton({ spec, onClick }: { spec: LobbyButtonSpec; onClick: () 
       onClick={onClick}
       aria-label={spec.label}
       title={spec.label}
-      className="group absolute z-10 block rounded-[22%] bg-transparent p-0 outline-none transition-transform duration-150 [-webkit-tap-highlight-color:transparent] active:scale-[.96] focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+      className="group pointer-events-auto absolute z-10 block rounded-[22%] bg-transparent p-0 outline-none transition-transform duration-150 [-webkit-tap-highlight-color:transparent] active:scale-[.96] focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
       style={{ left: `${box.left}%`, top: `${box.top}%`, width: `${box.width}%`, height: `${heightPercent}%` }}
     >
       <Image
@@ -79,12 +84,20 @@ export default function PersistentDuoLobbyScene({
   onWorldClick,
   onMinigamesClick,
 }: PersistentDuoLobbySceneProps) {
+  // Mesmo referencial do vídeo de fundo (`fixed inset-0 object-cover object-top`): a camada ocupa a
+  // tela inteira e o "quadro" do lobby tem a largura que o vídeo teria com `cover`
+  // (max(largura, altura × proporção)), alinhado ao topo e centralizado, mas com os dois limites acima
+  // para que os botões se adaptem a qualquer tela (celular alto, tablet, PC) sem cortar nem ficar gigantes.
   return (
-    <section className="absolute inset-0 overflow-x-clip" aria-label="Áreas interativas do lobby">
+    <section
+      className="pointer-events-none fixed inset-0 z-10 overflow-hidden"
+      style={{ containerType: "size" }}
+      aria-label="Áreas interativas do lobby"
+    >
       <div
         className="absolute left-1/2 top-0 -translate-x-1/2"
         style={{
-          width: `max(100vw, calc(100dvh * ${LOBBY_ASPECT}))`,
+          width: `min(max(100cqw, calc(100cqh * ${LOBBY_ASPECT})), calc(100cqw * ${MAX_WIDTH_OVER_SCREEN}), calc(100cqh * ${MAX_WIDTH_OVER_HEIGHT}))`,
           aspectRatio: "941 / 1672",
         }}
       >

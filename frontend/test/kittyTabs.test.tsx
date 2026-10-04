@@ -6,6 +6,7 @@ import { IdleSnapshot, RenewableObjectiveSnapshot } from "@/lib/idleTypes";
 
 const names = ["Hello Kitty", "Dear Daniel", "My Melody", "Mimmy", "Cinnamoroll", "Pompompurin"];
 let currentSnapshot: IdleSnapshot;
+let currentClickItem = vi.fn<[string, ("home" | "upgrades")?], Promise<number | null>>(async () => null);
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("next/image", () => ({ default: ({ alt = "", src, className }: { alt?: string; src: string; className?: string }) => <span role={alt ? "img" : undefined} aria-label={alt || undefined} data-src={src} className={className} /> }));
@@ -14,7 +15,7 @@ vi.mock("@/hooks/useIdleGame", () => ({
   useIdleGame: () => ({
     snapshot: currentSnapshot, accountId: null, milestone: null, error: null, loading: false, displayedBalance: 2_400_000_000_000,
     busyItemId: null, pendingUpgrades: {}, act: vi.fn(async () => true), upgradeRelic: vi.fn(async () => true),
-    clickItem: vi.fn(async () => null), buyUpgrades: vi.fn(async () => true),
+    clickItem: (itemId: string, source?: "home" | "upgrades") => currentClickItem(itemId, source), buyUpgrades: vi.fn(async () => true),
   }),
 }));
 
@@ -66,7 +67,67 @@ function makeSnapshot(): IdleSnapshot {
 }
 
 describe("abas Melhorias e Conquistas do Mundo da Hello Kitty", () => {
-  afterEach(() => cleanup());
+  afterEach(() => { cleanup(); currentClickItem = vi.fn<[string, ("home" | "upgrades")?], Promise<number | null>>(async () => null); });
+
+  it("Melhorias: tocar no personagem coleta o dinheiro do clique (origem 'upgrades'), com som, animação e +dinheiro", async () => {
+    currentSnapshot = makeSnapshot();
+    currentClickItem = vi.fn<[string, ("home" | "upgrades")?], Promise<number | null>>(async () => 1234);
+    const animate = vi.fn(() => ({ cancel: vi.fn() } as unknown as Animation));
+    Object.defineProperty(HTMLElement.prototype, "animate", { configurable: true, value: animate });
+    render(<IdleModeScreen mode="kitty" />);
+    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
+    const character = screen.getByRole("button", { name: "Coletar com Hello Kitty" });
+    fireEvent.click(character, { clientX: 180, clientY: 300 });
+    expect(currentClickItem).toHaveBeenCalledWith("c0", "upgrades");
+    expect(animate).toHaveBeenCalled();
+    expect(await screen.findByText("+1,2K")).toBeInTheDocument();
+  });
+
+  it("Melhorias: cliques rápidos reiniciam a animação sem acumular e o botão Melhorar continua funcionando", async () => {
+    currentSnapshot = makeSnapshot();
+    currentClickItem = vi.fn<[string, ("home" | "upgrades")?], Promise<number | null>>(async () => 10);
+    const cancel = vi.fn();
+    const animate = vi.fn(() => ({ cancel } as unknown as Animation));
+    Object.defineProperty(HTMLElement.prototype, "animate", { configurable: true, value: animate });
+    render(<IdleModeScreen mode="kitty" />);
+    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
+    const character = screen.getByRole("button", { name: "Coletar com Hello Kitty" });
+    for (let tap = 0; tap < 12; tap += 1) fireEvent.click(character, { clientX: 180, clientY: 300 });
+    expect(currentClickItem).toHaveBeenCalledTimes(12);
+    expect(animate).toHaveBeenCalledTimes(12);
+    expect(cancel).toHaveBeenCalledTimes(11);
+    expect(screen.getByRole("button", { name: /Melhorar x1/ })).not.toBeDisabled();
+    expect((await screen.findAllByText("+10")).length).toBeGreaterThan(0);
+  });
+
+  it("Melhorias: personagem não comprado não é clicável; ao trocar de personagem o toque vale para o selecionado", () => {
+    currentSnapshot = makeSnapshot();
+    currentClickItem = vi.fn<[string, ("home" | "upgrades")?], Promise<number | null>>(async () => 5);
+    render(<IdleModeScreen mode="kitty" />);
+    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver Dear Daniel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Coletar com Dear Daniel" }));
+    expect(currentClickItem).toHaveBeenCalledWith("c1", "upgrades");
+    fireEvent.click(screen.getByRole("button", { name: "Ver My Melody" }));
+    expect(screen.queryByRole("button", { name: /Coletar com/ })).not.toBeInTheDocument();
+  });
+
+  it("Relíquias: cartão no nível máximo ganha o visual especial; os demais não", () => {
+    currentSnapshot = makeSnapshot();
+    const mk = (id: string, level: number, maxLevel: number) => ({ definition: { id, name: `Rel ${id}`, asset: "/x.webp", kind: "click" as const, unlockOrder: 0, baseCost: 1, maxLevel, description: "d" }, level, unlocked: true, nextCost: level >= maxLevel ? null : 100, multiplier: level + 1 });
+    (currentSnapshot.modes.kitty as unknown as { relics: unknown[] }).relics = [mk("r-max", 4, 4), mk("r-mid", 2, 4), mk("r-new", 0, 3)];
+    render(<IdleModeScreen mode="kitty" />);
+    fireEvent.click(screen.getByRole("button", { name: "Relíquias" }));
+    const max = document.querySelector('[data-relic-id="r-max"]') as HTMLElement;
+    expect(max).toHaveAttribute("data-relic-max", "yes");
+    expect(within(max).getByText("Nível máximo")).toBeInTheDocument();
+    expect(max.querySelectorAll('span[aria-hidden="true"] svg').length).toBeGreaterThanOrEqual(4);
+    for (const id of ["r-mid", "r-new"]) {
+      const card = document.querySelector(`[data-relic-id="${id}"]`) as HTMLElement;
+      expect(card).not.toHaveAttribute("data-relic-max");
+      expect(within(card).queryByText("Nível máximo")).not.toBeInTheDocument();
+    }
+  });
 
   it("Melhorias: nome e nível no topo, dinheiro interno no lugar da moeda global, produção em destaque embaixo", () => {
     currentSnapshot = makeSnapshot();

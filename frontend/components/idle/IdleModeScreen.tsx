@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { CSSProperties, MouseEvent, TouchEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowBigUp, ArrowUp, Check, ChevronLeft, ChevronRight, Clock3, LockKeyhole, Sparkles, Star, WandSparkles } from "lucide-react";
+import { CSSProperties, KeyboardEvent, MouseEvent, TouchEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowBigUp, ArrowUp, Check, ChevronLeft, Crown, ChevronRight, Clock3, LockKeyhole, Sparkles, Star, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIdleGame } from "@/hooks/useIdleGame";
 import { formatIdleNumber } from "@/lib/formatIdleNumber";
@@ -184,7 +184,7 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
       {tab === "home" && <HomeScene mode={mode} data={data} balance={displayedBalance} scene={scene} onSceneChange={setScene} onClickItem={clickItem} accountId={accountId} />}
       {tab === "upgrades" && (farm
         ? <FarmUpgrades data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} onPurchaseModeChange={setPurchaseMode} />
-        : <KittyCarousel data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} onPurchaseModeChange={setPurchaseMode} index={kittyIndex} onIndexChange={setKittyIndex} />)}
+        : <KittyCarousel data={data} balance={displayedBalance} busyItemId={busyItemId} pendingUpgrades={pendingUpgrades} act={act} buyUpgrades={buyUpgrades} purchaseMode={purchaseMode} onPurchaseModeChange={setPurchaseMode} index={kittyIndex} onIndexChange={setKittyIndex} onClickItem={(itemId) => clickItem(itemId, "upgrades")} />)}
       {tab === "achievements" && (farm ? <Achievements data={data} snapshot={snapshot} /> : <KittyAchievements data={data} snapshot={snapshot} />)}
       {tab === "relics" && !farm && <RelicGallery data={data} balance={displayedBalance} busyItemId={busyItemId} onUpgrade={upgradeRelic} />}
       {tab === "statistics" && <IdleStatistics data={data} />}
@@ -315,8 +315,9 @@ function RelicGallery({ data, balance, busyItemId, onUpgrade }: { data: IdleMode
       const target = data.items[definition.unlockOrder]?.definition.name ?? "personagem";
       const kind = definition.kind === "scene" ? `CENA ${(definition.scene ?? 0) + 1}` : definition.kind === "click" ? "JOGO ATIVO" : "TODAS AS CENAS";
       const effect = celebration?.id === definition.id ? celebration : null;
-      return <article key={definition.id} data-relic-id={definition.id} data-relic-phase={effect?.kind} className={`${styles.relicCard} ${!unlocked ? styles.relicCardLocked : ""} ${definition.kind === "global" ? styles.relicCardGlobal : ""} ${effect ? effect.kind === "unlock" ? styles.relicCelebrateUnlock : styles.relicCelebrateUpgrade : ""}`}>
-        <div className={styles.relicArt}><span className={styles.relicArtHalo} /><Image src={definition.asset} alt={unlocked ? definition.name : "Relíquia misteriosa"} fill sizes="(max-width: 600px) 42vw, 180px" />{!unlocked && <span className={styles.relicLock}><LockKeyhole size={23} /></span>}</div>
+      const maxed = unlocked && level >= definition.maxLevel;
+      return <article key={definition.id} data-relic-id={definition.id} data-relic-phase={effect?.kind} data-relic-max={maxed ? "yes" : undefined} className={`${styles.relicCard} ${maxed ? styles.relicCardMax : ""} ${!unlocked ? styles.relicCardLocked : ""} ${definition.kind === "global" ? styles.relicCardGlobal : ""} ${effect ? effect.kind === "unlock" ? styles.relicCelebrateUnlock : styles.relicCelebrateUpgrade : ""}`}>
+        <div className={styles.relicArt}><span className={styles.relicArtHalo} /><Image src={definition.asset} alt={unlocked ? definition.name : "Relíquia misteriosa"} fill sizes="(max-width: 600px) 42vw, 180px" />{!unlocked && <span className={styles.relicLock}><LockKeyhole size={23} /></span>}{maxed && <span className={styles.relicMaxFx} aria-hidden="true"><SparkleIcon className={`${styles.maxSpark} ${styles.maxSparkA}`} /><SparkleIcon className={`${styles.maxSpark} ${styles.maxSparkB}`} /><SparkleIcon className={`${styles.maxSpark} ${styles.maxSparkC}`} /><HeartIcon className={`${styles.maxHeart} ${styles.maxHeartA}`} /><HeartIcon className={`${styles.maxHeart} ${styles.maxHeartB}`} /></span>}{maxed && <span className={styles.relicMaxBadge}><Crown size={12} strokeWidth={2.6} aria-hidden="true" />Nível máximo</span>}</div>
         {effect && <span key={effect.key} className={styles.relicCelebration} role="status"><Sparkles size={17} />{effect.kind === "unlock" ? "Relíquia despertada!" : `Nível ${effect.level} encantado!`}</span>}
         <div className={styles.relicBody}><span className={styles.relicKind}>{kind}</span><h3>{unlocked ? definition.name : "Tesouro misterioso"}</h3><p>{unlocked ? definition.description : `Desbloqueie ${target} para revelar.`}</p>
           <div className={styles.relicLevels} aria-label={`Nível ${level} de ${definition.maxLevel}`}>{Array.from({ length: definition.maxLevel }, (_, index) => <span key={index} className={index < level ? styles.relicLevelFilled : ""} />)}</div>
@@ -372,7 +373,7 @@ function KittyLevelBadge({ item }: { item: IdleItemSnapshot }) {
   return <span className={styles.levelBadge}>{item.purchased ? <><Star size={13} fill="currentColor" strokeWidth={0} aria-hidden="true" />Nível {item.level}</> : item.unlocked ? <><Sparkles size={13} aria-hidden="true" />Disponível</> : <><LockKeyhole size={12} aria-hidden="true" />Bloqueado</>}</span>;
 }
 
-function KittyCarousel({ data, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode, onPurchaseModeChange, index, onIndexChange }: ActionProps & { index: number; onIndexChange: (index: number) => void }) {
+function KittyCarousel({ data, busyItemId, pendingUpgrades, act, buyUpgrades, purchaseMode, onPurchaseModeChange, index, onIndexChange, onClickItem }: ActionProps & { index: number; onIndexChange: (index: number) => void; onClickItem: (itemId: string) => Promise<number | null> }) {
   const setIndex = (update: number | ((current: number) => number)) => onIndexChange(typeof update === "function" ? update(index) : update);
   const carouselRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -382,6 +383,10 @@ function KittyCarousel({ data, busyItemId, pendingUpgrades, act, buyUpgrades, pu
   const upgradeCharacterAnimation = useRef<Animation | null>(null);
   const upgradeFlashAnimation = useRef<Animation | null>(null);
   const upgradeFlashRef = useRef<HTMLSpanElement>(null);
+  const tapAnimation = useRef<Animation | null>(null);
+  const tapTimers = useRef(new Set<number>());
+  const lastDragDistance = useRef(0);
+  const [bursts, setBursts] = useState<ClickBurst[]>([]);
   const selected = data.items[index];
   const prestige = selected.definition.unlockOrder;
   const tier = rarityTier(prestige);
@@ -411,6 +416,7 @@ function KittyCarousel({ data, busyItemId, pendingUpgrades, act, buyUpgrades, pu
   };
   const resetDrag = (commitSwipe: boolean) => {
     const distance = dragXRef.current;
+    lastDragDistance.current = Math.abs(distance);
     if (dragFrame.current !== null) {
       window.cancelAnimationFrame(dragFrame.current);
       dragFrame.current = null;
@@ -452,8 +458,42 @@ function KittyCarousel({ data, busyItemId, pendingUpgrades, act, buyUpgrades, pu
     if (dragFrame.current !== null) window.cancelAnimationFrame(dragFrame.current);
     upgradeCharacterAnimation.current?.cancel();
     upgradeFlashAnimation.current?.cancel();
+    tapAnimation.current?.cancel();
+    tapTimers.current.forEach((timer) => window.clearTimeout(timer));
   }, []);
+
+  /** Toque no personagem da aba Melhorias: mesmo som, animação e "+dinheiro" da tela inicial, mas só o clique simples
+   *  (o servidor ignora combo, marcos de 50 e eventos quando a origem é "upgrades"). */
+  const tapCharacter = async (clientX: number, clientY: number, target: HTMLElement) => {
+    if (!selected.purchased) return;
+    if (lastDragDistance.current > 12) { lastDragDistance.current = 0; return; } // foi um arrasto para trocar de personagem
+    const carousel = carouselRef.current;
+    const rect = carousel?.getBoundingClientRect();
+    const sprite = target.firstElementChild as HTMLElement | null; // a própria imagem do personagem (primeiro filho)
+    tapAnimation.current?.cancel();
+    // anima só a imagem: o contêiner já tem a respiração e as animações de melhoria rodando em `transform`
+    tapAnimation.current = sprite?.animate?.([
+      { transform: "translateY(0) scale(1) rotate(0deg)", filter: "brightness(1)" },
+      { transform: "translateY(5px) scale(.9) rotate(-1.5deg)", filter: "brightness(1.12)", offset: .34 },
+      { transform: "translateY(-7px) scale(1.08) rotate(1deg)", filter: "brightness(1.16)", offset: .68 },
+      { transform: "translateY(0) scale(1) rotate(0deg)", filter: "brightness(1)" },
+    ], { duration: 310, easing: "cubic-bezier(.2,.9,.25,1)" }) ?? null;
+    playSoundEffect("idlePop");
+    const reward = await onClickItem(selected.definition.id);
+    if (!reward || !rect) return;
+    const id = Date.now() + Math.random();
+    const keyboard = clientX === 0 && clientY === 0;
+    const left = keyboard ? rect.width / 2 : Math.max(24, Math.min(rect.width - 24, clientX - rect.left));
+    const top = keyboard ? rect.height * .32 : Math.max(24, clientY - rect.top);
+    setBursts((current) => [...current.slice(-9), { id, left, top, reward, multiplier: data.clickMultiplier, rushMultiplier: data.clickBoost?.visualMultiplier ?? data.clickBoost?.multiplier ?? 1 }]);
+    const timer = window.setTimeout(() => {
+      tapTimers.current.delete(timer);
+      setBursts((current) => current.filter((burst) => burst.id !== id));
+    }, 1_150);
+    tapTimers.current.add(timer);
+  };
   const onTouchStart = (event: TouchEvent) => {
+    lastDragDistance.current = 0;
     touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
     dragXRef.current = 0;
     pendingDragX.current = 0;
@@ -496,7 +536,7 @@ function KittyCarousel({ data, busyItemId, pendingUpgrades, act, buyUpgrades, pu
         const offset = itemIndex - index;
         const visible = Math.abs(offset) <= 1;
         if (!visible) return null;
-        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} data-upgrade-character={offset === 0 ? item.definition.id : undefined} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}{offset === 0 && <span ref={upgradeFlashRef} className={styles.upgradeFlash} aria-hidden="true" />}</div>;
+        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} data-upgrade-character={offset === 0 ? item.definition.id : undefined} {...(offset === 0 && item.purchased ? { role: "button", tabIndex: 0, "aria-label": `Coletar com ${item.definition.name}`, onClick: (event: MouseEvent<HTMLDivElement>) => void tapCharacter(event.clientX, event.clientY, event.currentTarget), onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); void tapCharacter(0, 0, event.currentTarget); } } } : {})} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}><Image src={item.definition.asset} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}{offset === 0 && <span ref={upgradeFlashRef} className={styles.upgradeFlash} aria-hidden="true" />}</div>;
       })}
       <div className={styles.panelStack}>
         <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
@@ -543,6 +583,7 @@ function KittyCarousel({ data, busyItemId, pendingUpgrades, act, buyUpgrades, pu
           </> : <span className={styles.btnText}>Compre a personagem anterior</span>}</button>
         </div>
       </div>
+      {bursts.map((burst) => <span key={burst.id} className={`${styles.clickBurst} ${styles.carouselBurst}`} data-rush={burst.rushMultiplier} style={{ left: burst.left, top: burst.top }}><GameStatIcon type="money" />+{formatIdleNumber(burst.reward)}{burst.multiplier > 1 && <small>x{burst.multiplier}</small>}</span>)}
     </div>
   </section>;
 }

@@ -66,7 +66,7 @@ test('relíquias das cenas finais competem com personagens em vez de atropelá-l
   // Cena 5: primeiro nível abaixo de P18; níveis seguintes atravessam P19/P20.
   assert.equal(scene5.baseCost, Math.ceil(items[17].baseCost * 0.55));
   assert.equal(kittyRelicCost(scene5, 0), Math.ceil(114 * T * 0.55));
-  assert.equal(kittyRelicCost(scene5, 1), Math.ceil(114 * T * 0.55 * 7));
+  assert.equal(kittyRelicCost(scene5, 1), Math.ceil(scene5.baseCost * 7)); // o multiplicador incide sobre o custo base já arredondado
   assert.ok(kittyRelicCost(scene5, 1) < items[18].baseCost);
   assert.ok(kittyRelicCost(scene5, 2) > items[19].baseCost);
 
