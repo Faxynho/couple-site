@@ -46,9 +46,9 @@ describe("botões ilustrados do lobby", () => {
     expect(world.left + world.width).toBeLessThanOrEqual(minigames.left);
     // arte do mundo à esquerda, do minijogos à direita, ambos na metade de cima do lobby
     expect(world.left).toBeLessThan(minigames.left);
-    expect(world.top).toBe(49);
-    expect(minigames.top).toBe(49);
-    expect(Math.max(world.top + world.height, minigames.top + minigames.height)).toBeLessThan(90);
+    expect(world.top).toBe(22.45);
+    expect(minigames.top).toBe(24.3);
+    expect(Math.max(world.top + world.height, minigames.top + minigames.height)).toBeLessThan(65);
   });
 
   it("a arte é recortada pela parte visível (sem margens transparentes) mantendo a proporção", () => {
