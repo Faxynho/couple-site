@@ -88,8 +88,8 @@ describe("cards dos jogadores no topo do lobby persistente", () => {
     const { container } = renderHud();
     const self = screen.getByTestId("lobby-card-andre");
     await waitFor(() => expect(self.querySelector("[data-avatar-border='ceu-estrelado']")).toBeInTheDocument());
-    // antes era 32–42px; agora 54px
-    expect(self.querySelector("[data-avatar-border]")).toHaveStyle({ width: "54px", height: "54px" });
+    // antes era 32–42px; agora 72px (LOBBY_AVATAR_SIZE)
+    expect(self.querySelector("[data-avatar-border]")).toHaveStyle({ width: "72px", height: "72px" });
     // flavia não tem borda: anel padrão, sem moldura
     const partner = screen.getByTestId("lobby-card-flavia");
     expect(partner.querySelector("[data-avatar-border]")).toBeNull();

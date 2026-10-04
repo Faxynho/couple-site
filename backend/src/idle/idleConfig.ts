@@ -81,6 +81,12 @@ export const MAX_IDLE_MONEY = 1e300;
 export const IDLE_EVENT_MIN_ACTIVITY_MS = 50_000;
 export const IDLE_EVENT_MAX_ACTIVITY_MS = 110_000;
 export const IDLE_EVENT_VISIBLE_MS = 60_000;
+/**
+ * A sacola de dinheiro paga N segundos da produção atual (mínimo: saldo inicial do mundo).
+ * Hello Kitty: 270 s (antes 45 s). Com uma sacola a cada ~4 min de jogo ativo isso é um bônus grande,
+ * mas ainda proporcional à produção, então não explode a economia. A Fazendinha continua com 45 s.
+ */
+export const MONEY_EVENT_PRODUCTION_SECONDS: Record<IdleModeId, number> = { farm: 45, kitty: 270 };
 export const PRODUCTION_BOOST_MS = 90_000;
 export const CLICK_BOOST_DURATIONS = { click2: 60_000, click3: 45_000, click5: 30_000, click10: 20_000 } as const;
 export type IdleEventType = "money" | "production2" | keyof typeof CLICK_BOOST_DURATIONS;

@@ -48,11 +48,11 @@ export async function idleUpgradeBatch(accountId: AccountId, mode: IdleModeId, i
   return parse<{ ok: boolean; applied: number; requested: number; totalCost: number; error?: string; snapshot: IdleSnapshot }>(response);
 }
 
-export async function idleClick(accountId: AccountId, mode: IdleModeId, itemId: string, environment: GameEnvironment = "real"): Promise<{ reward: number; multiplier: number; milestone: number; bonus: number; snapshot: IdleSnapshot }> {
+export async function idleClick(accountId: AccountId, mode: IdleModeId, itemId: string, environment: GameEnvironment = "real", source: "home" | "upgrades" = "home"): Promise<{ reward: number; multiplier: number; milestone: number; bonus: number; snapshot: IdleSnapshot }> {
   const response = await fetch(`${API_BASE}/api/idle/click`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ by: accountId, mode, itemId, environment }),
+    body: JSON.stringify({ by: accountId, mode, itemId, environment, source }),
   });
   return parse<{ reward: number; multiplier: number; milestone: number; bonus: number; snapshot: IdleSnapshot }>(response);
 }

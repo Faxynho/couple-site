@@ -930,3 +930,32 @@
   .kittyContent { padding-top: calc(env(safe-area-inset-top) + 6.2rem); }
 }
 @media (prefers-reduced-motion: reduce) { .fxSpark,.fxHeart,.productionGlow,.spriteSpark { animation: none; } }
+
+/* Toque no personagem da aba Melhorias (mesmo "+dinheiro" da tela inicial) */
+.carouselSelected[role="button"] { cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; touch-action: pan-y; }
+.carouselSelected[role="button"]:focus-visible { box-shadow: 0 0 0 3px rgba(255,255,255,.85),0 0 0 6px var(--prestige); border-radius: 2rem; }
+.carouselBurst { z-index: 30; pointer-events: none; }
+
+/* Relíquia no nível máximo: moldura dourada em degradê, brilho que passeia, selo e efeitos */
+.relicCardMax { border: 3px solid transparent; background: linear-gradient(162deg,#fffef2,#fff1c8 52%,#ffe4f1) padding-box,linear-gradient(135deg,#ffe27a 0%,#ff9fc8 36%,#c79bff 68%,#ffd36a 100%) border-box; box-shadow: 0 0 0 2px rgba(255,255,255,.85),0 10px 26px rgba(222,160,40,.38),0 0 24px rgba(255,205,96,.45); }
+.relicCardMax::before { content: ""; position: absolute; z-index: 3; top: -20%; bottom: -20%; left: -60%; width: 38%; transform: rotate(18deg); background: linear-gradient(90deg,transparent,rgba(255,255,255,.62),transparent); pointer-events: none; animation: relicMaxShine 4.2s ease-in-out infinite; }
+.relicCardMax .relicArtHalo { background: radial-gradient(circle,#fffbe0,#ffe08a 48%,#ffc4e3 66%,transparent 74%); animation: relicMaxHalo 3.2s ease-in-out infinite; }
+.relicCardMax .relicArt img { filter: drop-shadow(0 6px 10px rgba(214,150,30,.45)) drop-shadow(0 0 10px rgba(255,214,110,.55)); }
+.relicCardMax .relicKind { color: #8a5a00; background: linear-gradient(145deg,#fff0a8,#ffd56a); }
+.relicCardMax .relicBody h3 { color: #6a3a14; }
+.relicCardMax .relicLevels .relicLevelFilled { background: linear-gradient(90deg,#ffd54f,#ff9ec8); box-shadow: 0 0 6px rgba(255,200,80,.8); }
+.relicCardMax .relicEffect { background: linear-gradient(145deg,rgba(255,250,214,.95),rgba(255,236,246,.9)); box-shadow: inset 0 0 0 1.5px rgba(255,214,110,.8); }
+.relicCardMax .relicEffect strong { color: #c9780a; text-shadow: 0 1px 0 rgba(255,255,255,.9); }
+.relicCardMax .relicBuy:disabled { color: #7a4d00; background: linear-gradient(145deg,#fff3b8,#ffd25f); box-shadow: 0 3px 0 #d6a021; }
+.relicMaxBadge { position: absolute; z-index: 4; top: .5rem; left: .5rem; display: inline-flex; align-items: center; gap: .22rem; padding: .22rem .55rem .24rem .42rem; border: 1.5px solid #fff; border-radius: 999px; color: #6e4300; background: linear-gradient(180deg,#fff0a0,#ffc93f); box-shadow: 0 2px 0 #c98f12,0 4px 10px rgba(201,143,18,.35); font-family: var(--font-display),sans-serif; font-size: .55rem; font-weight: 950; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.relicMaxFx { position: absolute; z-index: 2; inset: 0; pointer-events: none; }
+.maxSpark { position: absolute; color: #ffd75e; filter: drop-shadow(0 0 4px rgba(255,200,80,.9)); animation: fxTwinkle 3s ease-in-out infinite; }
+.maxSparkA { top: 14%; right: 12%; width: 1.05rem; height: 1.05rem; }
+.maxSparkB { top: 52%; left: 8%; width: .78rem; height: .78rem; color: #fff; animation-delay: 1s; }
+.maxSparkC { bottom: 10%; right: 22%; width: .62rem; height: .62rem; color: #ff9fc4; animation-delay: 1.8s; }
+.maxHeart { position: absolute; color: #ff7aa9; filter: drop-shadow(0 1px 1px rgba(200,50,100,.3)); animation: fxFloat 4s ease-in-out infinite; }
+.maxHeartA { top: 30%; left: 15%; width: .7rem; height: .7rem; }
+.maxHeartB { bottom: 22%; right: 10%; width: .58rem; height: .58rem; animation-delay: 1.6s; }
+@keyframes relicMaxShine { 0%,55% { left: -60%; } 100% { left: 130%; } }
+@keyframes relicMaxHalo { 0%,100% { opacity: .85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.07); } }
+@media (prefers-reduced-motion: reduce) { .relicCardMax::before,.relicCardMax .relicArtHalo,.maxSpark,.maxHeart { animation: none; } }

@@ -15,6 +15,7 @@ import {
   KITTY_OBJECTIVE_POOL,
   KITTY_RELICS,
   KITTY_WEEKLY_OBJECTIVE_COUNT,
+  MONEY_EVENT_PRODUCTION_SECONDS,
   IdleEventType,
   IdleModeId,
   MAX_IDLE_MONEY,
@@ -913,7 +914,11 @@ export class IdleStore {
       : { ok: true as const, applied, requested, totalCost, snapshot };
   }
 
-  click(mode: IdleModeId, itemId: string, accountId: string) {
+  /**
+   * `plain` = clique simples feito na aba Melhorias: paga o dinheiro do clique (com relíquia de clique e
+   * bônus de evento já ativo), mas NÃO usa nem altera combo, sequência de 50 em 50 ou marcos.
+   */
+  click(mode: IdleModeId, itemId: string, accountId: string, options: { plain?: boolean } = {}) {
     const now = this.now();
     this.ensurePeriods(now);
     const settled = this.settle(mode, now);
@@ -932,7 +937,7 @@ export class IdleStore {
     let bonus = 0;
     let comboMultiplier = 1;
     let comboClicks = 0;
-    if (mode === "kitty") {
+    if (mode === "kitty" && !options.plain) {
       const previous = state.clickActivity?.[accountId];
       const streak = now - (previous?.lastClickAt ?? -Infinity) < 5_000 ? (previous?.streak ?? 0) + 1 : 1;
       comboClicks = now - (previous?.lastClickAt ?? -Infinity) < 2_000 ? Math.min(40, (previous?.comboClicks ?? 0) + 1) : 1;
@@ -951,7 +956,7 @@ export class IdleStore {
     state.statistics.largestClick = Math.max(state.statistics.largestClick, reward);
     if (mode === "kitty") {
       this.addMetric("kittyClicks", 1, now);
-      this.recordPeak("kittyBestCombo", comboClicks, now);
+      if (!options.plain) this.recordPeak("kittyBestCombo", comboClicks, now);
       if (milestone) this.addMetric("kittyMilestones", 1, now);
     }
     this.addModeEarning(mode, reward, "click", now, itemId);
@@ -1003,7 +1008,7 @@ export class IdleStore {
     let reward = 0;
     if (event.type === "money") {
       const production = this.totalProduction(mode);
-      reward = safeMoney(Math.max(INITIAL_BALANCE[mode], production * 45));
+      reward = safeMoney(Math.max(INITIAL_BALANCE[mode], production * MONEY_EVENT_PRODUCTION_SECONDS[mode]));
       this.addModeEarning(mode, reward, "event", now);
     } else if (event.type === "production2") {
       state.productionBoost = { startedAt: now, expiresAt: now + PRODUCTION_BOOST_MS, multiplier: 2 };

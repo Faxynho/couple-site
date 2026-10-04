@@ -94,14 +94,14 @@ idleRouter.post("/upgrade-batch", (req, res) => {
 });
 
 idleRouter.post("/click", (req, res) => {
-  const body = req.body as { by?: unknown; mode?: unknown; itemId?: unknown; environment?: unknown };
+  const body = req.body as { by?: unknown; mode?: unknown; itemId?: unknown; environment?: unknown; source?: unknown };
   if (!requireAccount(body.by, res)) return;
   const environment = resolveEnvironment(body.environment, body.by, res);
   if (!environment) return;
   if (!isMode(body.mode) || typeof body.itemId !== "string") {
     res.status(400).json({ error: "Clique inválido." }); return;
   }
-  const result = storeFor(environment).click(body.mode, body.itemId, String(body.by));
+  const result = storeFor(environment).click(body.mode, body.itemId, String(body.by), { plain: body.source === "upgrades" });
   res.status(result.ok ? 200 : 429).json(result);
 });
 

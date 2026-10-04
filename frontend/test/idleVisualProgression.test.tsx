@@ -9,7 +9,7 @@ const ids = ["hello-kitty", "dear-daniel", "my-melody", "mimmy", "cinnamoroll", 
 let currentSnapshot: IdleSnapshot;
 let currentAccountId: string | null = null;
 let currentMilestone: { count: number; bonus: number; key: number } | null = null;
-let currentBuyUpgrades = vi.fn(async () => true);
+let currentBuyUpgrades = vi.fn<[], Promise<boolean>>(async () => true);
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("next/image", () => ({ default: ({ alt = "", src, className }: { alt?: string; src: string; className?: string }) => <span role={alt ? "img" : undefined} aria-label={alt || undefined} data-src={src} className={className} /> }));
@@ -187,11 +187,12 @@ describe("apresentação visual e celebrações do idle", () => {
 
   it("mostra um feedback rápido ao melhorar o personagem sem bloquear melhorias sucessivas", async () => {
     currentSnapshot = makeSnapshot(true, true);
-    currentBuyUpgrades = vi.fn(async () => true);
+    currentBuyUpgrades = vi.fn<[], Promise<boolean>>(async () => true);
     const cancel = vi.fn();
     const animate = vi.fn(() => ({ cancel } as unknown as Animation));
     Object.defineProperty(HTMLElement.prototype, "animate", { configurable: true, value: animate });
     render(<IdleModeScreen mode="kitty" />);
+    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
     const upgrade = screen.getByRole("button", { name: /Melhorar x1/ });
     expect(upgrade).not.toBeDisabled();
 
