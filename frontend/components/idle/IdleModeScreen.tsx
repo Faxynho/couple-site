@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { CSSProperties, MouseEvent, TouchEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, Check, ChevronLeft, ChevronRight, Clock3, LockKeyhole, Sparkles, Star, WandSparkles } from "lucide-react";
+import { ArrowBigUp, ArrowUp, Check, ChevronLeft, ChevronRight, Clock3, LockKeyhole, Sparkles, Star, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIdleGame } from "@/hooks/useIdleGame";
 import { formatIdleNumber } from "@/lib/formatIdleNumber";
@@ -13,7 +13,7 @@ import IdleHeader from "./IdleHeader";
 import IdleStatistics from "./IdleStatistics";
 import IdleEventLayer from "./IdleEventLayer";
 import IdleDevPanel from "./IdleDevPanel";
-import { BowIcon, CalendarCheckIcon, CalendarHeartIcon, CalendarStarIcon, ControllerIcon, SparkleIcon, TrophyIcon } from "./KittyIcons";
+import { BowIcon, CalendarCheckIcon, CalendarHeartIcon, CalendarStarIcon, ControllerIcon, HeartIcon, MedalIcon, SparkleIcon, TrophyIcon } from "./KittyIcons";
 import styles from "./IdleGame.module.css";
 
 const SCENE_BACKGROUNDS: Record<IdleModeId, string[]> = {
@@ -362,6 +362,12 @@ function ItemCard({ item, busy, pending, onAction, onUpgrade, purchaseMode }: { 
   </article>;
 }
 
+/** Reduz a fonte do valor de produção quando o número é longo (ex.: 123,4Qa/s), sem cortar nada. */
+function productionSize(text: string): "l" | "m" | "s" {
+  const length = text.length + 2; // + "/s"
+  return length <= 7 ? "l" : length <= 9 ? "m" : "s";
+}
+
 function KittyLevelBadge({ item }: { item: IdleItemSnapshot }) {
   return <span className={styles.levelBadge}>{item.purchased ? <><Star size={13} fill="currentColor" strokeWidth={0} aria-hidden="true" />Nível {item.level}</> : item.unlocked ? <><Sparkles size={13} aria-hidden="true" />Disponível</> : <><LockKeyhole size={12} aria-hidden="true" />Bloqueado</>}</span>;
 }
@@ -495,12 +501,26 @@ function KittyCarousel({ data, busyItemId, pendingUpgrades, act, buyUpgrades, pu
       <div className={styles.panelStack}>
         <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
         <div className={styles.characterPanel} data-tier={tier}>
+          <div className={styles.panelFx} aria-hidden="true">
+            <BowIcon className={styles.fxBow} />
+            <SparkleIcon className={`${styles.fxSpark} ${styles.fxSparkA}`} />
+            <SparkleIcon className={`${styles.fxSpark} ${styles.fxSparkB}`} />
+            <SparkleIcon className={`${styles.fxSpark} ${styles.fxSparkC}`} />
+            <HeartIcon className={`${styles.fxHeart} ${styles.fxHeartA}`} />
+            <HeartIcon className={`${styles.fxHeart} ${styles.fxHeartB}`} />
+            <HeartIcon className={`${styles.fxHeart} ${styles.fxHeartC}`} />
+          </div>
           <span className={styles.characterOrder}>{index + 1}/{data.items.length}</span>
           <div className={styles.productionBox}>
-            <span className={styles.productionLabel}><ArrowUp size={12} strokeWidth={3.4} aria-hidden="true" />Produção</span>
+            <span className={styles.productionLabel}><ArrowUp size={13} strokeWidth={3.6} aria-hidden="true" />Produção</span>
             <div className={styles.productionRow}>
-              <Image className={styles.productionSprite} src="/idle/icons/production.webp" alt="" width={96} height={96} />
-              <strong className={styles.productionValue} aria-label={`Produção de ${formatIdleNumber(selected.production)} por segundo`}>{formatIdleNumber(selected.production)}/s</strong>
+              <span className={styles.productionSpriteWrap} aria-hidden="true">
+                <span className={styles.productionGlow} />
+                <Image className={styles.productionSprite} src="/idle/icons/production.webp" alt="" width={160} height={160} />
+                <SparkleIcon className={`${styles.spriteSpark} ${styles.spriteSparkA}`} />
+                <SparkleIcon className={`${styles.spriteSpark} ${styles.spriteSparkB}`} />
+              </span>
+              <strong className={styles.productionValue} data-size={productionSize(formatIdleNumber(selected.production))} aria-label={`Produção de ${formatIdleNumber(selected.production)} por segundo`}>{formatIdleNumber(selected.production)}/s</strong>
             </div>
           </div>
           <button type="button" className={`${styles.actionButton} ${styles.kittyUpgradeButton} ${!selected.purchased ? styles.buyButton : ""}`} disabled={!selected.unlocked || busyItemId === selected.definition.id || (selected.purchased && !quoteFor(selected, purchaseMode))} onClick={() => {
@@ -510,7 +530,17 @@ function KittyCarousel({ data, busyItemId, pendingUpgrades, act, buyUpgrades, pu
               return;
             }
             void act(selected.definition.id, "buy");
-          }}>{selected.purchased ? quoteFor(selected, purchaseMode) ? <><SparkleIcon className={styles.btnSparkle} /><span className={styles.btnLabel}>Melhorar x{quoteFor(selected, purchaseMode)!.count}<small><GameStatIcon type="money" /> {formatIdleNumber(quoteFor(selected, purchaseMode)!.totalCost)}</small></span><SparkleIcon className={styles.btnSparkle} />{(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}</> : "Saldo insuficiente" : busyItemId === selected.definition.id ? "Comprando…" : selected.unlocked ? <span className={styles.btnLabel}>Comprar<small><GameStatIcon type="money" /> {formatIdleNumber(selected.nextCost)}</small></span> : "Compre a personagem anterior"}</button>
+          }}>{selected.purchased ? quoteFor(selected, purchaseMode) ? <>
+            <ArrowBigUp className={styles.btnArrow} size={22} fill="currentColor" strokeWidth={1.6} aria-hidden="true" />
+            <span className={styles.btnText}>Melhorar x{quoteFor(selected, purchaseMode)!.count}</span>
+            <span className={styles.btnDivider} aria-hidden="true" />
+            <span className={styles.btnCost}><GameStatIcon type="money" /><span>{formatIdleNumber(quoteFor(selected, purchaseMode)!.totalCost)}</span></span>
+            {(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}
+          </> : <span className={styles.btnText}>Saldo insuficiente</span> : busyItemId === selected.definition.id ? <span className={styles.btnText}>Comprando…</span> : selected.unlocked ? <>
+            <span className={styles.btnText}>Comprar</span>
+            <span className={styles.btnDivider} aria-hidden="true" />
+            <span className={styles.btnCost}><GameStatIcon type="money" /><span>{formatIdleNumber(selected.nextCost)}</span></span>
+          </> : <span className={styles.btnText}>Compre a personagem anterior</span>}</button>
         </div>
       </div>
     </div>
@@ -584,13 +614,24 @@ function MissionSection({ variant, title, subtitle, objectives }: { variant: "da
   </section>;
 }
 
+/** Arte das conquistas permanentes que não são de um personagem (as de personagem usam o próprio sprite). */
+function permanentArt(achievement: IdleAchievementSnapshot): { asset?: string; medal?: boolean } {
+  const { id } = achievement;
+  if (id.startsWith("kitty-level-")) return { medal: true };
+  if (id.startsWith("kitty-clicks-")) return { asset: "/idle/relics/clique.webp" };
+  if (id === "kitty-relics-all") return { asset: "/idle/relics/todososmundos.webp" };
+  if (/^kitty-(100|1k|10k|1m|1b|1t|1qa)$/.test(id)) return { asset: "/idle/icons/production.webp" };
+  return {};
+}
+
 function PermanentCard({ achievement, asset }: { achievement: IdleAchievementSnapshot; asset?: string }) {
+  const art = asset ? { asset } : permanentArt(achievement);
   const done = Boolean(achievement.completedAt);
   const percent = Math.min(100, achievement.target > 0 ? achievement.progress / achievement.target * 100 : 0);
   return <article className={`${styles.permanentCard} ${done ? styles.permanentDone : ""}`} data-achievement-id={achievement.id}>
-    <div className={`${styles.permanentArt} ${asset && !done ? styles.achievementIconLocked : ""}`}>
-      {asset ? <Image src={asset} alt="" fill sizes="96px" /> : <TrophyIcon className={styles.missionSvg} />}
-      {asset && !done && <LockKeyhole size={16} className={styles.achievementLock} aria-hidden="true" />}
+    <div className={`${styles.permanentArt} ${(art.asset || art.medal) && !done ? styles.achievementIconLocked : ""}`}>
+      {art.asset ? <Image src={art.asset} alt="" fill sizes="96px" /> : art.medal ? <MedalIcon className={styles.missionSvg} /> : <TrophyIcon className={styles.missionSvg} />}
+      {(art.asset || art.medal) && !done && <LockKeyhole size={16} className={styles.achievementLock} aria-hidden="true" />}
     </div>
     <h3>{achievement.title}</h3>
     <p>{achievement.description}</p>

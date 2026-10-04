@@ -259,7 +259,7 @@ export default function DuoRoomPage({ params }: { params: { code: string } }) {
 
             {isPersistentDuo && !showMinigames ? (
               <div className="w-full">
-                <div className="relative h-[clamp(30rem,62dvh,38rem)] w-full overflow-hidden md:h-[clamp(34rem,82dvh,46rem)]">
+                <div className="relative h-[clamp(30rem,62dvh,38rem)] w-full overflow-x-clip md:h-[clamp(34rem,82dvh,46rem)]">
                   <PersistentDuoLobbyScene
                     onWorldClick={() => {
                       setLobbyNotice(null);

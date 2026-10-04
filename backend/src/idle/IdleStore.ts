@@ -610,6 +610,9 @@ export class IdleStore {
       case "ownedCount": return { progress: owned.length, target: definition.condition.target };
       case "production": return { progress: this.totalProduction(mode), target: definition.condition.target };
       case "level": return { progress: Math.max(0, ...owned.map((item) => item.level)), target: definition.condition.target };
+      case "clicks": return { progress: state.totalClicks, target: definition.condition.target };
+      // "Desbloquear" uma relíquia = adquiri-la (nível 1 ou mais); a conquista pede as 9.
+      case "relicsOwned": return { progress: KITTY_RELICS.filter((relic) => (state.relicLevels?.[relic.id] ?? 0) > 0).length, target: KITTY_RELICS.length };
       case "ownAll": return { progress: owned.length, target: IDLE_CATALOG[mode].length };
     }
   }
@@ -953,6 +956,7 @@ export class IdleStore {
     }
     this.addModeEarning(mode, reward, "click", now, itemId);
     if (bonus > 0) this.addModeEarning(mode, bonus, "click", now);
+    this.evaluateAchievements(mode, now);
     this.touch(now);
     return { ok: true as const, reward, multiplier, milestone, bonus, snapshot: this.buildSnapshot(null) };
   }

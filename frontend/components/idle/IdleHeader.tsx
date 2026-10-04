@@ -21,7 +21,7 @@ export default function IdleHeader({ title, subtitle, coins, onBack, badge, bala
       <button type="button" className={styles.backButton} onClick={onBack} aria-label="Voltar">
         <ArrowLeft size={23} strokeWidth={3} />
       </button>
-      <div className={styles.heading}>
+      <div className={`${styles.heading} ${badge ? styles.headingKitty : ""}`}>
         <h1>{title} <span aria-hidden="true">♥</span></h1>
         {badge ? <div className={styles.headingBadge}>{badge}</div> : <p>{subtitle}</p>}
       </div>

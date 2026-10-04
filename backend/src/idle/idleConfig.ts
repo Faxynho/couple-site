@@ -40,6 +40,8 @@ export interface AchievementDefinition {
     | { type: "ownedCount"; target: number }
     | { type: "production"; target: number }
     | { type: "level"; target: number }
+    | { type: "clicks"; target: number }
+    | { type: "relicsOwned" }
     | { type: "ownAll" };
 }
 
@@ -272,14 +274,27 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   { id: "kitty-three", mode: "kitty", title: "Turminha cozy", description: "Tenha 3 personagens", reward: 20, condition: { type: "ownedCount", target: 3 } },
   { id: "kitty-five", mode: "kitty", title: "Casa cheia", description: "Tenha 5 personagens", reward: 35, condition: { type: "ownedCount", target: 5 } },
   { id: "kitty-twelve", mode: "kitty", title: "Metade do caminho", description: "Tenha 12 personagens", reward: 55, condition: { type: "ownedCount", target: 12 } },
-  { id: "kitty-twenty", mode: "kitty", title: "Constelação de amigos", description: "Tenha 20 personagens", reward: 75, condition: { type: "ownedCount", target: 20 } },
+  { id: "kitty-twenty", mode: "kitty", title: "Constelação de amigos", description: "Tenha 20 personagens", reward: 150, condition: { type: "ownedCount", target: 20 } },
   { id: "kitty-100", mode: "kitty", title: "Carinho que rende", description: "Alcance 100/s", reward: 20, condition: { type: "production", target: 100 } },
   { id: "kitty-1k", mode: "kitty", title: "Amizade valiosa", description: "Alcance 1K/s", reward: 35, condition: { type: "production", target: 1_000 } },
   { id: "kitty-10k", mode: "kitty", title: "Estrelas brilhantes", description: "Alcance 10K/s", reward: 60, condition: { type: "production", target: 10_000 } },
   { id: "kitty-1m", mode: "kitty", title: "Luz do santuário", description: "Alcance 1M/s", reward: 80, condition: { type: "production", target: 1_000_000 } },
   { id: "kitty-1b", mode: "kitty", title: "Brilho infinito", description: "Alcance 1B/s", reward: 100, condition: { type: "production", target: 1_000_000_000 } },
+  { id: "kitty-1t", mode: "kitty", title: "Tesouro das estrelas", description: "Alcance 1T/s", reward: 350, condition: { type: "production", target: 1e12 } },
+  { id: "kitty-1qa", mode: "kitty", title: "Universo encantado", description: "Alcance 1Qa/s", reward: 1_000, condition: { type: "production", target: 1e15 } },
   { id: "kitty-level-10", mode: "kitty", title: "Melhores amigos", description: "Leve um personagem ao nível 10", reward: 30, condition: { type: "level", target: 10 } },
-  { id: "kitty-all", mode: "kitty", title: "Turma completa", description: "Tenha os 24 personagens", reward: 100, condition: { type: "ownAll" } },
+  { id: "kitty-level-25", mode: "kitty", title: "Amizade fortalecida", description: "Leve um personagem ao nível 25", reward: 60, condition: { type: "level", target: 25 } },
+  { id: "kitty-level-50", mode: "kitty", title: "Laço inseparável", description: "Leve um personagem ao nível 50", reward: 200, condition: { type: "level", target: 50 } },
+  { id: "kitty-level-100", mode: "kitty", title: "Coração centenário", description: "Leve um personagem ao nível 100", reward: 750, condition: { type: "level", target: 100 } },
+  { id: "kitty-level-200", mode: "kitty", title: "Amizade lendária", description: "Leve um personagem ao nível 200", reward: 1_500, condition: { type: "level", target: 200 } },
+  { id: "kitty-clicks-1k", mode: "kitty", title: "Carinho constante", description: "Faça 1K de cliques em personagens", reward: 50, condition: { type: "clicks", target: 1_000 } },
+  { id: "kitty-clicks-5k", mode: "kitty", title: "Toque de ouro", description: "Faça 5K de cliques em personagens", reward: 100, condition: { type: "clicks", target: 5_000 } },
+  { id: "kitty-clicks-10k", mode: "kitty", title: "Mãos de fada", description: "Faça 10K de cliques em personagens", reward: 150, condition: { type: "clicks", target: 10_000 } },
+  { id: "kitty-clicks-25k", mode: "kitty", title: "Chuva de carinho", description: "Faça 25K de cliques em personagens", reward: 350, condition: { type: "clicks", target: 25_000 } },
+  { id: "kitty-clicks-50k", mode: "kitty", title: "Mestre dos mimos", description: "Faça 50K de cliques em personagens", reward: 700, condition: { type: "clicks", target: 50_000 } },
+  { id: "kitty-clicks-100k", mode: "kitty", title: "Carinho sem fim", description: "Faça 100K de cliques em personagens", reward: 1_500, condition: { type: "clicks", target: 100_000 } },
+  { id: "kitty-relics-all", mode: "kitty", title: "Colecionador de relíquias", description: "Desbloqueie todas as relíquias", reward: 500, condition: { type: "relicsOwned" } },
+  { id: "kitty-all", mode: "kitty", title: "Turma completa", description: "Tenha os 24 personagens", reward: 500, condition: { type: "ownAll" } },
 ];
 
 export const RENEWABLE_OBJECTIVES: RenewableObjectiveDefinition[] = [
