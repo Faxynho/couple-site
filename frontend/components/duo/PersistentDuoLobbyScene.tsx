@@ -37,7 +37,7 @@ const WORLD_BUTTON: LobbyButtonSpec = {
   label: "Entrar no Nosso Mundo",
   art: { left: 92, top: 38, width: 833, height: 1464 },
   // Posicionado abaixo do título, deixando uma folga curta e responsiva até o botão de Fazendinhas.
-  box: { left: 13, top: 49, width: 35 },
+  box: { left: 13, top: 31, width: 35 },
 };
 
 const MINIGAMES_BUTTON: LobbyButtonSpec = {
@@ -45,7 +45,7 @@ const MINIGAMES_BUTTON: LobbyButtonSpec = {
   label: "Abrir Minijogos",
   art: { left: 53, top: 112, width: 921, height: 1335 },
   // Mantém os dois novos botões alinhados na mesma faixa vertical.
-  box: { left: 51.2, top: 49, width: 39.3 },
+  box: { left: 51.2, top: 31, width: 39.3 },
 };
 
 function LobbyArtButton({ spec, onClick }: { spec: LobbyButtonSpec; onClick: () => void }) {
