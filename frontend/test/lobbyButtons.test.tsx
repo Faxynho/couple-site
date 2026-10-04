@@ -23,7 +23,10 @@ describe("botões ilustrados do lobby", () => {
     fireEvent.click(minigames);
     expect(onMinigames).toHaveBeenCalledTimes(1);
     // continua preso à mesma caixa do vídeo de fundo (cobertura por altura)
-    expect((container.firstElementChild?.firstElementChild as HTMLElement).style.width).toContain("cqh");
+    const scene = container.firstElementChild as HTMLElement;
+    expect(scene).toHaveClass("absolute", "inset-0");
+    expect(scene).not.toHaveClass("fixed");
+    expect((scene.firstElementChild as HTMLElement).style.width).toContain("cqh");
   });
 
   it("as áreas clicáveis usam porcentagem, ficam dentro do lobby e não se sobrepõem", () => {
