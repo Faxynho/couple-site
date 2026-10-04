@@ -97,3 +97,23 @@ export function SparkleIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function HeartIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden focusable={false} {...props}>
+      <path d="M12 21.5C3.5 15.6 2 10.9 4.2 7.6 6.1 4.9 9.9 5 12 8.2c2.1-3.2 5.9-3.3 7.8-.6 2.2 3.3.7 8-7.8 13.9z" fill="currentColor" />
+      <path d="M6.2 9.4c.5-1.3 1.6-1.9 2.7-1.7" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" opacity=".6" />
+    </svg>
+  );
+}
+
+export function MedalIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M20 4h10l4 18H24zM44 4H34l-4 18h10z" fill="#ff7aa9" stroke="#d93a7d" strokeWidth="2.5" strokeLinejoin="round" />
+      <circle cx="32" cy="38" r="19" fill={GOLD} stroke={GOLD_DARK} strokeWidth="3.5" />
+      <circle cx="32" cy="38" r="13.5" fill="#ffe89a" stroke="#f2b632" strokeWidth="2" />
+      <path d="M32 27.5l3 \1.\2 \1.\2.9-5 \1.\2 \1.\2 \1.\2-\1.\2-\1.\2-\1.\2 \1.\2 \1.\2-\1.\2-5-\1.\2 \1.\2-.9z" fill={PINK} stroke="#c92f6f" strokeWidth="\1.\2" strokeLinejoin="round" />
+    </svg>
+  );
+}
