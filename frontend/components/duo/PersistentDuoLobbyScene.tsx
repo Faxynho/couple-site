@@ -90,7 +90,7 @@ export default function PersistentDuoLobbyScene({
   // para que os botões se adaptem a qualquer tela (celular alto, tablet, PC) sem cortar nem ficar gigantes.
   return (
     <section
-      className="pointer-events-none fixed inset-0 z-10 overflow-hidden"
+      className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
       style={{ containerType: "size" }}
       aria-label="Áreas interativas do lobby"
     >
