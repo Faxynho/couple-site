@@ -98,3 +98,18 @@ export async function resetIdle(target: "global" | IdleModeId, by: AccountId): P
   const body = await parse<{ ok: true; snapshot: IdleSnapshot }>(response);
   return body.snapshot;
 }
+
+// ---------------------------------------------------------------------------
+// Mecânicas experimentais do Mundo da Hello Kitty (somente ambiente DEV / conta André)
+// ---------------------------------------------------------------------------
+async function kittyDevPost(path: string, payload: Record<string, unknown>): Promise<IdleSnapshot> {
+  return parse<IdleSnapshot>(await fetch(`${API_BASE}/api/idle/kitty-dev/${path}`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, by: "andre" }),
+  }));
+}
+
+export const kittyDevBuyConstellation = (characterId: string) => kittyDevPost("constellation", { characterId });
+export const kittyDevBuyItem = (characterId: string, kind: "click" | "stone") => kittyDevPost("item", { characterId, kind });
+export const kittyDevAwaken = (characterId: string) => kittyDevPost("awaken", { characterId });
+export const kittyDevSetWorld = (world: number | null) => kittyDevPost("world", { world });

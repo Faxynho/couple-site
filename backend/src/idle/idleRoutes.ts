@@ -159,12 +159,66 @@ idleRouter.post("/dev/action", (req, res) => {
     res.json({ ok: true, snapshot: store.simulateOffline(body.mode, Math.max(0, Number(body.elapsedMs) || 0)) });
     return;
   }
+  if (action === "kittyDev") {
+    const kittyAction = String(body.kittyAction);
+    const characterId = typeof body.characterId === "string" && body.characterId.length <= 80 ? body.characterId : "all";
+    if (["addStones", "setStones", "maxStars", "resetStars", "maxItems", "resetItems", "resetAll"].includes(kittyAction)) {
+      res.json({ ok: true, snapshot: store.devKittyAction(kittyAction as Parameters<typeof store.devKittyAction>[0], characterId, Number(body.amount) || 0) });
+      return;
+    }
+  }
   if (action === "resetMode" && isMode(body.mode)) {
     store.resetMode(body.mode);
     res.json({ ok: true, snapshot: store.getSnapshot() });
     return;
   }
   res.status(400).json({ error: "Ferramenta DEV inválida." });
+});
+
+// ---------------------------------------------------------------------------
+// Mecânicas experimentais do Mundo da Hello Kitty — SOMENTE ambiente DEV e conta André.
+// Estas rotas nunca tocam o save real: usam sempre o idleDevStore.
+// ---------------------------------------------------------------------------
+function kittyDevCharacterBody(req: import("express").Request, res: import("express").Response): string | null {
+  const body = req.body as { by?: unknown; characterId?: unknown };
+  if (!requireAndre(body.by, res)) return null;
+  if (typeof body.characterId !== "string" || body.characterId.length > 80) {
+    res.status(400).json({ error: "Personagem inválido." });
+    return null;
+  }
+  return body.characterId;
+}
+
+idleRouter.post("/kitty-dev/constellation", (req, res) => {
+  const characterId = kittyDevCharacterBody(req, res);
+  if (!characterId) return;
+  const result = idleDevStore.buyKittyConstellation(characterId);
+  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
+});
+
+idleRouter.post("/kitty-dev/item", (req, res) => {
+  const characterId = kittyDevCharacterBody(req, res);
+  if (!characterId) return;
+  const kind = (req.body as { kind?: unknown }).kind;
+  if (kind !== "click" && kind !== "stone") { res.status(400).json({ error: "Item inválido." }); return; }
+  const result = idleDevStore.buyKittyItem(characterId, kind);
+  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
+});
+
+idleRouter.post("/kitty-dev/awaken", (req, res) => {
+  const characterId = kittyDevCharacterBody(req, res);
+  if (!characterId) return;
+  const result = idleDevStore.awakenKittyCharacter(characterId);
+  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
+});
+
+idleRouter.post("/kitty-dev/world", (req, res) => {
+  const body = req.body as { by?: unknown; world?: unknown };
+  if (!requireAndre(body.by, res)) return;
+  const world = body.world === null ? null : Number(body.world);
+  if (world !== null && !Number.isInteger(world)) { res.status(400).json({ error: "Ilha inválida." }); return; }
+  const result = idleDevStore.setKittyLastWorld(world);
+  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
 });
 
 // Compatibilidade com os controles administrativos atuais: estes endpoints
