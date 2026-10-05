@@ -159,6 +159,11 @@ idleRouter.post("/dev/action", (req, res) => {
     res.json({ ok: true, snapshot: store.simulateOffline(body.mode, Math.max(0, Number(body.elapsedMs) || 0)) });
     return;
   }
+  if (action === "simulateDevOffline" && isMode(body.mode)) {
+    const elapsedMs = Number(body.elapsedMs);
+    res.json({ ok: true, snapshot: store.simulateDevOffline(body.mode, Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs) : 0) });
+    return;
+  }
   if (action === "kittyDev") {
     const kittyAction = String(body.kittyAction);
     const characterId = typeof body.characterId === "string" && body.characterId.length <= 80 ? body.characterId : "all";

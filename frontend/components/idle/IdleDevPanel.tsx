@@ -64,7 +64,11 @@ export default function IdleDevPanel({ mode, data, onSnapshot }: { mode: IdleMod
       <article className={styles.devSection}>
         <h3>Eventos e simulações</h3>
         <div className={styles.devButtonGrid}>{(["money", "production2", "click2", "click3", "click5", "click10"] as IdleEventType[]).map((eventType) => <button key={eventType} onClick={() => void run({ action: "forceEvent", mode, eventType })}>{eventType === "money" ? "Money event" : eventType === "production2" ? "Produção x2" : eventType.replace("click", "CLICK x")}</button>)}</div>
-        <button className={styles.devWideButton} onClick={() => void run({ action: "simulateOffline", mode, elapsedMs: 2 * 60 * 60 * 1000 })}>Simular 2h offline</button>
+        <div className={styles.devButtonGrid}>
+                  <button className={styles.devWideButton} onClick={() => void run({ action: "simulateOffline", mode, elapsedMs: 2 * 60 * 60 * 1000 })}>Simular 2h offline</button>
+          <button onClick={() => void run({ action: "simulateDevOffline", mode, elapsedMs: 8 * 60 * 60 * 1000 })}>Simular 8h offline</button>
+          <button onClick={() => void run({ action: "simulateDevOffline", mode, elapsedMs: 16 * 60 * 60 * 1000 })}>Simular 16h offline</button>
+        </div>
       </article>
       <button className={styles.devResetWorld} onClick={() => void run({ action: "resetMode", mode }, "Isso vai resetar completamente este mundo DEV. Continuar?")}><RotateCcw size={17} /> Resetar mundo DEV</button>
       {message && <p className={styles.developerMessage}>{message}</p>}
