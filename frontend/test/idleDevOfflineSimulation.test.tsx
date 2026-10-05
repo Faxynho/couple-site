@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import "@testing-library/jest-dom";
 import IdleDevPanel from "@/components/idle/IdleDevPanel";
 import { idleDevAction } from "@/lib/idleApi";
 import type { IdleModeSnapshot } from "@/lib/idleTypes";
