@@ -1124,7 +1124,7 @@ export class IdleStore {
     const elapsed = Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs) : 0;
     const state = this.data.modes[mode];
     state.lastSettledAt = Math.max(0, this.now() - elapsed);
-    return this.enterMode(mode, elapsed);
+    return this.enterModeWithOfflineCap(mode, elapsed);
   }
 
 
