@@ -37,6 +37,26 @@ test("produção offline é limitada a oito horas e só é liquidada uma vez", (
   assert.equal(second.modes.farm.balance, first.modes.farm.balance);
 });
 
+test("DEV simula 8h e 16h com a produção atual sem alterar o teto real", () => {
+  let now = Date.parse("2026-09-26T12:00:00-03:00");
+  const dev = new IdleStore(false, () => now, undefined, "dev");
+  dev.act("kitty", "hello-kitty", "buy");
+  const production = dev.getSnapshot().modes.kitty.totalProduction;
+
+  const eightHours = dev.simulateDevOffline("kitty", 8 * 60 * 60 * 1_000);
+  assert.equal(eightHours.offlineReward.elapsedMs, 8 * 60 * 60 * 1_000);
+  assert.equal(eightHours.offlineReward.amount, production * 8 * 60 * 60);
+
+  const sixteenHours = dev.simulateDevOffline("kitty", 16 * 60 * 60 * 1_000);
+  assert.equal(sixteenHours.offlineReward.elapsedMs, 16 * 60 * 60 * 1_000);
+  assert.equal(sixteenHours.offlineReward.amount, production * 16 * 60 * 60);
+
+  const real = new IdleStore(false, () => now, undefined, "real");
+  real.act("kitty", "hello-kitty", "buy");
+  now += 16 * 60 * 60 * 1_000;
+  assert.equal(real.enterMode("kitty").offlineReward.elapsedMs, 8 * 60 * 60 * 1_000);
+});
+
 test("duas melhorias concorrentes nunca gastam mais que o saldo", () => {
   const now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
