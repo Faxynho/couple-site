@@ -34,7 +34,10 @@ export type SoundEffect =
   | "idlePop"
   | "idleUpgrade"
   | "idleUnlock"
-  | "idleAchievement";
+  | "idleAchievement"
+  | "idleStar"
+  | "idleAwaken"
+  | "idleTravel";
 
 const SOUND_EVENT = "couple-site:sound-change";
 const SOUND_STORAGE_KEY = "couple-site:sound-enabled";
@@ -166,6 +169,23 @@ export function playSoundEffect(effect: SoundEffect) {
         tone(context, 659, 0.09, 0.07, 0.05);
         tone(context, 784, 0.11, 0.14, 0.052);
         tone(context, 1046, 0.18, 0.23, 0.055);
+        break;
+      case "idleStar":
+        tone(context, 880, 0.08, 0, 0.045, "sine");
+        tone(context, 1319, 0.1, 0.07, 0.05, "triangle");
+        tone(context, 1760, 0.24, 0.15, 0.045, "sine");
+        break;
+      case "idleAwaken":
+        sweepTone(context, 220, 1100, 0.7, 0.055);
+        tone(context, 523, 0.12, 0.18, 0.05);
+        tone(context, 659, 0.12, 0.3, 0.05);
+        tone(context, 784, 0.14, 0.42, 0.052);
+        tone(context, 1046, 0.16, 0.56, 0.055);
+        tone(context, 1568, 0.4, 0.72, 0.05, "triangle");
+        break;
+      case "idleTravel":
+        sweepTone(context, 260, 760, 0.55, 0.04);
+        tone(context, 988, 0.08, 0.34, 0.03, "triangle");
         break;
       case "idleUnlock":
         sweepTone(context, 360, 920, 0.3, 0.05);

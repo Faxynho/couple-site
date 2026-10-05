@@ -42,6 +42,20 @@ export default function IdleDevPanel({ mode, data, onSnapshot }: { mode: IdleMod
         <input aria-label="Nível DEV" value={level} onChange={(event) => setLevel(event.target.value)} type="number" min="1" max="10000" />
         <div className={styles.devButtonGrid}><button onClick={() => void run({ action: "item", mode, itemId, itemAction: "unlock" })}>Desbloquear</button><button onClick={() => void run({ action: "item", mode, itemId, itemAction: "setLevel", level: Number(level) })}>Definir nível</button><button onClick={() => void run({ action: "item", mode, itemId, itemAction: "resetLevels" }, "Resetar os níveis selecionados no DEV?")}>Resetar níveis</button><button className={styles.devDanger} onClick={() => void run({ action: "item", mode, itemId, itemAction: "lock" }, "Bloquear novamente os itens selecionados no DEV?")}>Bloquear</button></div>
       </article>
+      {mode === "kitty" && data.kittyDev && <article className={styles.devSection}>
+        <h3>Estrelas, itens e Pedras Estelares</h3>
+        <p>Pedras: <strong>{data.kittyDev.stones}</strong> · usa o personagem selecionado em Itens e níveis</p>
+        <div className={styles.devButtonGrid}>
+          <button onClick={() => void run({ action: "kittyDev", kittyAction: "addStones", characterId: "all", amount: 10 })}>+10 pedras</button>
+          <button onClick={() => void run({ action: "kittyDev", kittyAction: "addStones", characterId: "all", amount: 100 })}>+100 pedras</button>
+          <button onClick={() => void run({ action: "kittyDev", kittyAction: "setStones", characterId: "all", amount: Number(amount) || 0 })}>Definir pedras</button>
+          <button onClick={() => void run({ action: "kittyDev", kittyAction: "maxStars", characterId: itemId })}>5 estrelas</button>
+          <button onClick={() => void run({ action: "kittyDev", kittyAction: "maxItems", characterId: itemId })}>Itens no máx.</button>
+          <button className={styles.devDanger} onClick={() => void run({ action: "kittyDev", kittyAction: "resetStars", characterId: itemId }, "Zerar estrelas e despertar do personagem selecionado?")}>Zerar estrelas</button>
+          <button className={styles.devDanger} onClick={() => void run({ action: "kittyDev", kittyAction: "resetItems", characterId: itemId }, "Zerar os itens do personagem selecionado?")}>Zerar itens</button>
+          <button className={styles.devDanger} onClick={() => void run({ action: "kittyDev", kittyAction: "resetAll", characterId: "all" }, "Zerar TODAS as estrelas, itens, pedras e despertares do DEV?")}>Zerar tudo</button>
+        </div>
+      </article>}
       <article className={styles.devSection}>
         <h3>Conquistas e popups</h3>
         <select aria-label="Conquista DEV" value={achievementId} onChange={(event) => setAchievementId(event.target.value)}>{data.achievements.map((achievement) => <option key={achievement.id} value={achievement.id}>{achievement.title}</option>)}<option value="all">Todas</option></select>

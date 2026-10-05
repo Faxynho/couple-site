@@ -38,11 +38,29 @@ export interface IdleModeStatistics {
   eventCounters: IdleEventCounters; largestClick: number; highestProduction: number;
   items: Record<string, IdleItemStatistics>;
 }
+export interface KittyDevItemSnapshot {
+  name: string; level: number; maxLevel: number; nextCost: number | null; multiplier: number; nextMultiplier: number | null;
+}
+export interface KittyDevCharacterSnapshot {
+  id: string; index: number; world: number; owned: boolean; level: number; stars: number;
+  nextStarCost: number | null; starCosts: number[]; starRequirements: number[]; nextStarBonus: string | null; starBonuses: string[];
+  clickItem: KittyDevItemSnapshot; stoneItem: KittyDevItemSnapshot;
+  stoneYield: number; stoneYieldEffective: number; nextMilestoneLevel: number;
+  productionMultiplier: number; clickMultiplier: number;
+  awakening: { cost: number; multiplier: number; asset: string; awakened: boolean; unlocked: boolean } | null;
+}
+/** Mecânicas experimentais do Mundo da Hello Kitty. Só existe no ambiente DEV. */
+export interface KittyDevSnapshot {
+  stones: number; totalStones: number; lastWorld: number | null;
+  characters: Record<string, KittyDevCharacterSnapshot>;
+}
 export interface IdleModeSnapshot {
   id: IdleModeId; balance: number; totalEarned: number; totalProduction: number; effectiveProduction: number;
   clickMultiplier: number; totalUpgrades: number; visits: number; totalClicks: number; lastSettledAt: number;
   items: IdleItemSnapshot[]; achievements: IdleAchievementSnapshot[];
   relics?: KittyRelicSnapshot[]; clickActivity?: Record<string, KittyClickActivity>;
+  /** Presente somente no ambiente DEV do Mundo da Hello Kitty. */
+  kittyDev?: KittyDevSnapshot;
   scenes: Array<{ id: number; name: string; unlocked: boolean }>;
   statistics: IdleModeStatistics; activeEvent: IdleActiveEvent | null;
   productionBoost: IdleBoostState | null; clickBoost: IdleClickBoostState | null;

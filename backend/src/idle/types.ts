@@ -1,4 +1,5 @@
 import { AchievementDefinition, IdleEventType, IdleItemDefinition, IdleModeId, RenewableObjectiveDefinition } from "./idleConfig";
+import type { KittyDevState } from "./kittyDevConfig";
 
 export type GameEnvironment = "real" | "dev";
 
@@ -70,6 +71,8 @@ export interface IdleModeState {
   items: Record<string, IdleOwnedItem>;
   relicLevels?: Record<string, number>;
   clickActivity?: Record<string, KittyClickActivity>;
+  /** Mecânicas experimentais (estrelas, itens, despertar, pedras). Existe SOMENTE no save do ambiente DEV. */
+  dev?: KittyDevState;
   unlockedAchievements: Record<string, number>;
   statistics: IdleModeStatistics;
   activeEvent: IdleActiveEvent | null;
@@ -149,6 +152,53 @@ export interface IdleItemSnapshot extends IdleOwnedItem {
   statistics: IdleItemStatistics;
 }
 
+export interface KittyDevItemSnapshot {
+  name: string;
+  level: number;
+  maxLevel: number;
+  /** Preço da próxima compra/melhoria; null no nível máximo. */
+  nextCost: number | null;
+  /** Multiplicador atual (clique) ou das pedras por marco (estelar). */
+  multiplier: number;
+  /** Multiplicador no próximo nível; null no nível máximo. */
+  nextMultiplier: number | null;
+}
+
+export interface KittyDevCharacterSnapshot {
+  id: string;
+  index: number;
+  /** Mundo/ilha (0–6) onde o personagem mora. */
+  world: number;
+  owned: boolean;
+  level: number;
+  stars: number;
+  nextStarCost: number | null;
+  /** Custo de cada um dos 5 níveis da constelação. */
+  starCosts: number[];
+  /** Nível mínimo do personagem para cada um dos 5 níveis da constelação. */
+  starRequirements: number[];
+  nextStarBonus: string | null;
+  starBonuses: string[];
+  clickItem: KittyDevItemSnapshot;
+  stoneItem: KittyDevItemSnapshot;
+  /** Pedras base por marco de 10 níveis (antes do item). */
+  stoneYield: number;
+  /** Pedras por marco já com o item estelar. */
+  stoneYieldEffective: number;
+  nextMilestoneLevel: number;
+  /** Multiplicadores combinados (estrelas + despertar) já embutidos em `production` do item. */
+  productionMultiplier: number;
+  clickMultiplier: number;
+  awakening: { cost: number; multiplier: number; asset: string; awakened: boolean; unlocked: boolean } | null;
+}
+
+export interface KittyDevSnapshot {
+  stones: number;
+  totalStones: number;
+  lastWorld: number | null;
+  characters: Record<string, KittyDevCharacterSnapshot>;
+}
+
 export interface IdleModeSnapshot {
   id: IdleModeId;
   balance: number;
@@ -163,6 +213,8 @@ export interface IdleModeSnapshot {
   items: IdleItemSnapshot[];
   relics?: KittyRelicSnapshot[];
   clickActivity?: Record<string, KittyClickActivity>;
+  /** Presente somente no ambiente DEV do Mundo da Hello Kitty. */
+  kittyDev?: KittyDevSnapshot;
   achievements: Array<AchievementDefinition & { completedAt: number | null; progress: number; target: number }>;
   scenes: Array<{ id: number; name: string; unlocked: boolean }>;
   statistics: IdleModeStatistics;
