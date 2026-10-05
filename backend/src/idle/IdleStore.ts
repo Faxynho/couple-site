@@ -683,9 +683,9 @@ export class IdleStore {
     this.addMetric(mode === "farm" ? "farmEarnings" : "kittyEarnings", amount, now);
   }
 
-  private settle(mode: IdleModeId, now: number): { amount: number; elapsedMs: number } {
+  private settle(mode: IdleModeId, now: number, maxElapsedMs = OFFLINE_CAP_MS): { amount: number; elapsedMs: number } {
     const state = this.data.modes[mode];
-    const elapsedMs = Math.max(0, Math.min(OFFLINE_CAP_MS, now - state.lastSettledAt));
+    const elapsedMs = Math.max(0, Math.min(maxElapsedMs, now - state.lastSettledAt));
     const from = now - elapsedMs;
     state.lastSettledAt = now;
     if (elapsedMs <= 0) return { amount: 0, elapsedMs: 0 };
@@ -851,10 +851,10 @@ export class IdleStore {
     return this.buildSnapshot(null);
   }
 
-  enterMode(mode: IdleModeId): IdleSnapshot {
+  private enterModeWithOfflineCap(mode: IdleModeId, maxElapsedMs: number): IdleSnapshot {
     const now = this.now();
     this.ensurePeriods(now);
-    const settled = this.settle(mode, now);
+    const settled = this.settle(mode, now, maxElapsedMs);
     const state = this.data.modes[mode];
     state.visits += 1;
     // Primeira entrada do dia no Mundo da Hello Kitty conta como "um dia diferente" para a missão semanal.
@@ -863,6 +863,10 @@ export class IdleStore {
     this.evaluateAchievements(mode, now);
     this.touch(now);
     return this.buildSnapshot(settled.elapsedMs >= 60_000 && settled.amount > 0 ? { mode, amount: settled.amount, elapsedMs: settled.elapsedMs } : null);
+  }
+
+  enterMode(mode: IdleModeId): IdleSnapshot {
+    return this.enterModeWithOfflineCap(mode, OFFLINE_CAP_MS);
   }
 
   act(mode: IdleModeId, itemId: string, action: "buy" | "upgrade") {
@@ -1114,6 +1118,13 @@ export class IdleStore {
     const state = this.data.modes[mode];
     state.lastSettledAt = Math.max(0, this.now() - Math.min(OFFLINE_CAP_MS, Math.max(0, elapsedMs)));
     return this.enterMode(mode);
+  }
+  /** DEV-only: simula exatamente o período informado, sem alterar o teto de 8h do save real. */
+  simulateDevOffline(mode: IdleModeId, elapsedMs: number): IdleSnapshot {
+    const elapsed = Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs) : 0;
+    const state = this.data.modes[mode];
+    state.lastSettledAt = Math.max(0, this.now() - elapsed);
+    return this.enterMode(mode, elapsed);
   }
 
 
