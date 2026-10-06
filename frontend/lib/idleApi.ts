@@ -113,3 +113,4 @@ export const kittyDevBuyConstellation = (characterId: string) => kittyDevPost("c
 export const kittyDevBuyItem = (characterId: string, kind: "click" | "stone") => kittyDevPost("item", { characterId, kind });
 export const kittyDevAwaken = (characterId: string) => kittyDevPost("awaken", { characterId });
 export const kittyDevSetWorld = (world: number | null) => kittyDevPost("world", { world });
+export const kittyDevSetSkin = (characterId: string, awake: boolean) => kittyDevPost("skin", { characterId, awake });

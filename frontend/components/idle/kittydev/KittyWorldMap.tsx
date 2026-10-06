@@ -21,13 +21,15 @@ function Flower({ n }: { n: number }) {
 }
 
 /** Tela de seleção de ilhas: 7 ilhas em zigue-zague; as bloqueadas ficam pretas com cadeado. */
-export default function KittyWorldMap({ names, unlocked, current, lockedHint, onEnter }: {
+export default function KittyWorldMap({ names, unlocked, current, lockedHint, onEnter, mapArrive = false }: {
   names: string[];
   unlocked: boolean[];
   /** Última ilha visitada (destacada e usada para rolar até ela). */
   current: number | null;
   lockedHint: (world: number) => string;
   onEnter: (world: number) => void;
+  /** Toca a animação de chegada depois de sair de um mundo. */
+  mapArrive?: boolean;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -63,7 +65,7 @@ export default function KittyWorldMap({ names, unlocked, current, lockedHint, on
   };
 
   return <>
-    <div ref={scroller} className={styles.map} role="region" aria-label="Seleção de ilhas">
+    <div ref={scroller} className={`${styles.map} ${mapArrive ? styles.mapArrive : ""}`} role="region" aria-label="Seleção de ilhas">
       <div ref={stage} className={`${styles.mapStage} ${travel ? styles.travelZoom : ""}`} style={travel ? { "--ox": `${travel.ox}%`, "--oy": `${travel.oy}%` } as CSSProperties : undefined}>
         <svg className={styles.mapPaths} viewBox={`0 0 100 ${100 * RATIO}`} aria-hidden="true">
           {ISLAND_LAYOUT.slice(0, -1).map((from, index) => {

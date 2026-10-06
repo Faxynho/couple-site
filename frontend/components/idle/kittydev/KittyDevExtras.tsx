@@ -3,13 +3,13 @@
 import Image from "next/image";
 import { CSSProperties, ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Crown, LockKeyhole, Sparkles, Star, X } from "lucide-react";
+import { Crown, LockKeyhole, Shirt, Sparkles, X } from "lucide-react";
 import { formatIdleNumber } from "@/lib/formatIdleNumber";
-import { kittyDevAwaken, kittyDevBuyItem } from "@/lib/idleApi";
+import { kittyDevAwaken, kittyDevBuyItem, kittyDevSetSkin } from "@/lib/idleApi";
 import { IdleItemSnapshot, IdleSnapshot, KittyDevCharacterSnapshot, KittyDevItemSnapshot } from "@/lib/idleTypes";
 import { playSoundEffect } from "@/lib/sound";
-import { ClickItemIcon, GoldSparkle } from "./KittyDevIcons";
-import { AWAKE_AURA, STONE_ICON } from "./kittyDevHelpers";
+import { GoldSparkle, OrnateCorner, ShinyStar } from "./KittyDevIcons";
+import { AWAKE_AURA, CLICK_ICON, STAR_SLOT_OF_LEVEL, STONE_ICON } from "./kittyDevHelpers";
 import styles from "./KittyDev.module.css";
 
 /** Auras e brilhos que ficam atrás/ao redor do personagem despertado. */
@@ -21,22 +21,12 @@ export function AwakeEffects() {
   </>;
 }
 
-/** Cantos dourados ornamentados do painel desperto. */
-export function AwakePanelCorners() {
-  return <>{[0, 1, 2].map((index) => <GoldSparkle key={index} className={styles.awakePanelCorner} aria-hidden="true" />)}</>;
-}
-
-function ItemArt({ kind, locked }: { kind: "click" | "stone"; locked: boolean }) {
-  return <span className={styles.itemArt}>
-    {kind === "click" ? <ClickItemIcon /> : <Image src={STONE_ICON} alt="" width={64} height={64} />}
-    {locked && <span className={styles.itemLock}><LockKeyhole size={9} strokeWidth={3} aria-hidden="true" /></span>}
+/** Moldura ornamentada dourada (cantos desenhados + duas linhas), igual à da imagem de referência. */
+export function OrnateCorners({ compact = false }: { compact?: boolean }) {
+  return <span className={`${styles.ornateCorners} ${compact ? styles.ornateCornersCompact : ""}`} aria-hidden="true">
+    {[0, 90, 180, 270].map((rotate) => <OrnateCorner key={rotate} rotate={rotate} className={`${styles.ornateCorner} ${styles[`ornateCorner${rotate}` as keyof typeof styles]}`} />)}
+    <GoldSparkle className={`${styles.ornateGem} ${styles.ornateGemTop}`} />
   </span>;
-}
-
-function effectText(kind: "click" | "stone", item: KittyDevItemSnapshot, info: KittyDevCharacterSnapshot) {
-  if (kind === "click") return { now: `x${item.multiplier.toFixed(2)} no clique`, next: item.nextMultiplier ? `x${item.nextMultiplier.toFixed(2)}` : null };
-  const base = info.stoneYield;
-  return { now: `${(base * item.multiplier).toFixed(2).replace(/\.?0+$/, "")} pedras por marco`, next: item.nextMultiplier ? `${(base * item.nextMultiplier).toFixed(2).replace(/\.?0+$/, "")}` : null };
 }
 
 /** Os pop-ups saem do painel (que tem backdrop-filter e prenderia o position: fixed) e vão para o body. */
@@ -46,45 +36,124 @@ function Portal({ children }: { children: ReactNode }) {
   return mounted ? createPortal(children, document.body) : null;
 }
 
+/** Arco de estrelas do personagem: sem fundo, ordem esquerda→direita→esquerda→direita→meio (a última, maior). */
+export function KittyStarArc({ stars }: { stars: number }) {
+  return <div className={styles.starArc} role="img" aria-label={`${stars} de 5 estrelas`}>
+    {STAR_SLOT_OF_LEVEL.map((slot, levelIndex) => {
+      const lit = levelIndex < stars;
+      return <span key={levelIndex} className={`${styles.arcStar} ${lit ? styles.arcStarLit : ""}`} data-slot={slot} data-level={levelIndex + 1} style={{ "--delay": `${levelIndex * .35}s` } as CSSProperties}>
+        <ShinyStar lit={lit} id={`arc${levelIndex}`} />
+      </span>;
+    })}
+  </div>;
+}
+
+function ItemSprite({ kind }: { kind: "click" | "stone" }) {
+  return <Image src={kind === "click" ? CLICK_ICON : STONE_ICON} alt="" width={96} height={96} />;
+}
+
+function effectLine(kind: "click" | "stone", item: KittyDevItemSnapshot, info: KittyDevCharacterSnapshot) {
+  const format = (value: number) => (Math.round(value * 100) / 100).toString();
+  if (kind === "click") return { now: `×${format(item.multiplier)}`, next: item.nextMultiplier ? `×${format(item.nextMultiplier)}` : null, caption: "por clique" };
+  return { now: `+${format(info.stoneYield * item.multiplier)}`, next: item.nextMultiplier ? `+${format(info.stoneYield * item.nextMultiplier)}` : null, caption: "a cada 10 níveis" };
+}
+
 function ItemSheet({ kind, item, info, balance, onClose, onSnapshot }: {
   kind: "click" | "stone"; item: KittyDevItemSnapshot; info: KittyDevCharacterSnapshot; balance: number; onClose: () => void; onSnapshot: (snapshot: IdleSnapshot) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pulse, setPulse] = useState(0);
   const owned = item.level > 0;
   const maxed = item.nextCost === null;
-  const effect = effectText(kind, item, info);
-  const canBuy = !maxed && !busy && item.nextCost !== null && balance >= item.nextCost;
+  const effect = effectLine(kind, item, info);
+  const afford = !maxed && item.nextCost !== null && balance >= item.nextCost;
   const buy = async () => {
-    if (!canBuy) return;
+    if (!afford || busy) return;
     setBusy(true); setError(null);
     try {
       onSnapshot(await kittyDevBuyItem(info.id, kind));
       playSoundEffect(owned ? "idleUpgrade" : "idleUnlock");
+      setPulse((value) => value + 1);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível comprar agora.");
     } finally { setBusy(false); }
   };
   return <Portal><div className={styles.sheetOverlay} role="dialog" aria-label={item.name} onClick={onClose}>
-    <div className={styles.sheet} onClick={(event) => event.stopPropagation()}>
+    <div className={`${styles.sheet} ${styles.itemSheet}`} data-kind={kind} onClick={(event) => event.stopPropagation()}>
       <button type="button" className={styles.sheetClose} onClick={onClose} aria-label="Fechar"><X size={16} strokeWidth={3} /></button>
-      <div className={`${styles.sheetArt} ${owned ? "" : styles.sheetArtLocked}`}>{kind === "click" ? <ClickItemIcon /> : <Image src={STONE_ICON} alt="" width={160} height={160} />}</div>
-      <h3>{item.name}</h3>
-      <p>{kind === "click" ? "Item exclusivo: aumenta o valor de cada clique deste personagem." : "Item exclusivo: aumenta as Pedras Estelares que este personagem rende a cada 10 níveis."}</p>
-      <div className={styles.pips} aria-label={`Nível ${item.level} de ${item.maxLevel}`}>{Array.from({ length: item.maxLevel }, (_, index) => <i key={index} data-on={index < item.level ? "yes" : "no"} />)}</div>
-      <div className={styles.effectRow}>
-        <span>{owned ? "Atual" : "Bloqueado"}</span><b>{owned ? effect.now : "—"}</b>
-        {effect.next && <><span>→</span><em>{kind === "click" ? `x${effect.next.replace("x", "")}` : `${effect.next} por marco`}</em></>}
+      <div className={styles.itemHero}>
+        <span className={styles.itemRays} aria-hidden="true" />
+        <span key={pulse} className={`${styles.itemHeroArt} ${owned ? "" : styles.itemHeroArtLocked} ${pulse ? styles.itemHeroPop : ""}`}><ItemSprite kind={kind} /></span>
+        {!owned && <span className={styles.itemHeroLock}><LockKeyhole size={20} strokeWidth={3} aria-hidden="true" /></span>}
+        <GoldSparkle className={`${styles.itemSpark} ${styles.itemSparkA}`} /><GoldSparkle className={`${styles.itemSpark} ${styles.itemSparkB}`} />
       </div>
-      <button type="button" className={styles.buyBtn} disabled={!canBuy} onClick={() => void buy()}>
-        {maxed ? "Nível máximo" : <>
+      <h3 className={styles.itemTitle}>{item.name}</h3>
+      <div className={styles.pips} aria-label={`Nível ${item.level} de ${item.maxLevel}`}>{Array.from({ length: item.maxLevel }, (_, index) => <i key={index} data-on={index < item.level ? "yes" : "no"} />)}</div>
+      <div className={styles.itemEffect} aria-label={maxed ? `${effect.now} ${effect.caption}` : `${owned ? effect.now : "bloqueado"} para ${effect.next} ${effect.caption}`}>
+        {kind === "stone" && <Image src={STONE_ICON} alt="" width={40} height={40} className={styles.itemEffectIcon} />}
+        <b className={owned ? "" : styles.itemEffectOff}>{owned ? effect.now : "—"}</b>
+        {effect.next && <><span aria-hidden="true">➜</span><strong>{effect.next}</strong></>}
+        <small>{effect.caption}</small>
+      </div>
+      <button type="button" className={styles.buyBtn} disabled={!afford || busy} onClick={() => void buy()}>
+        {maxed ? <><Crown size={18} aria-hidden="true" /><span>Máximo</span></> : <>
           <span>{owned ? "Melhorar" : "Comprar"}</span>
           <Image src="/idle/icons/game-money.webp" alt="" width={48} height={48} /><span>{formatIdleNumber(item.nextCost!)}</span>
         </>}
       </button>
-      {error && <p role="alert" style={{ color: "#c0306a", marginTop: ".5rem" }}>{error}</p>}
+      {error && <p role="alert" className={styles.sheetError}>{error}</p>}
     </div>
   </div></Portal>;
+}
+
+/** Itens do personagem: só os ícones, empilhados à esquerda abaixo do título. Bloqueados até serem comprados. */
+export function KittyItemRail({ info, balance, onSnapshot }: { info: KittyDevCharacterSnapshot; balance: number; onSnapshot: (snapshot: IdleSnapshot) => void }) {
+  const [sheet, setSheet] = useState<"click" | "stone" | null>(null);
+  return <>
+    <div className={styles.itemRail}>
+      {(["click", "stone"] as const).map((kind) => {
+        const data = kind === "click" ? info.clickItem : info.stoneItem;
+        const locked = data.level === 0;
+        const canBuy = data.nextCost !== null && balance >= data.nextCost;
+        return <button key={kind} type="button" className={`${styles.railBtn} ${locked ? styles.railBtnLocked : ""} ${canBuy ? styles.railBtnReady : ""}`} onClick={() => setSheet(kind)}
+          aria-label={`${data.name}: ${locked ? "bloqueado" : `nível ${data.level}`}`}>
+          <span className={styles.railArt}><ItemSprite kind={kind} /></span>
+          {locked && <span className={styles.railLock}><LockKeyhole size={11} strokeWidth={3} aria-hidden="true" /></span>}
+        </button>;
+      })}
+    </div>
+    {sheet && <ItemSheet kind={sheet} item={sheet === "click" ? info.clickItem : info.stoneItem} info={info} balance={balance} onClose={() => setSheet(null)} onSnapshot={onSnapshot} />}
+  </>;
+}
+
+/** Botão pequeno (só ícone) que alterna entre a skin normal e a despertada. Só aparece depois de despertar. */
+export function KittySkinToggle({ info, onSnapshot }: { info: KittyDevCharacterSnapshot; onSnapshot: (snapshot: IdleSnapshot) => void }) {
+  const [busy, setBusy] = useState(false);
+  const awakening = info.awakening;
+  if (!awakening?.awakened) return null;
+  const toggle = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      onSnapshot(await kittyDevSetSkin(info.id, !awakening.skinAwake));
+      playSoundEffect("idlePop");
+    } catch { /* o botão simplesmente não troca */ } finally { setBusy(false); }
+  };
+  return <button type="button" className={`${styles.skinToggle} ${awakening.skinAwake ? styles.skinToggleOn : ""}`} onClick={() => void toggle()} aria-pressed={awakening.skinAwake}
+    aria-label={awakening.skinAwake ? "Usar a skin normal" : "Usar a skin despertada"} title={awakening.skinAwake ? "Skin normal" : "Skin despertada"}>
+    <Shirt size={20} strokeWidth={2.6} aria-hidden="true" />
+  </button>;
+}
+
+/** Pedras ganhas ao completar 10 níveis: sprite + quantidade saindo do botão Melhorar, com destaque maior que o clique. */
+export function StoneGainBurst({ amount }: { amount: number }) {
+  return <span className={styles.stoneGain} role="status" aria-label={`+${amount} Pedras Estelares`}>
+    <span className={styles.stoneGainGlow} aria-hidden="true" />
+    <Image src={STONE_ICON} alt="" width={96} height={96} />
+    <b>+{formatIdleNumber(amount)}</b>
+    {[0, 1, 2, 3, 4, 5].map((index) => <GoldSparkle key={index} className={styles.stoneGainSpark} style={{ "--a": `${index * 60}deg`, "--d": `${index * .04}s` } as CSSProperties} />)}
+  </span>;
 }
 
 function AwakenCelebration({ info, name, onClose }: { info: KittyDevCharacterSnapshot; name: string; onClose: () => void }) {
@@ -105,11 +174,10 @@ function AwakenCelebration({ info, name, onClose }: { info: KittyDevCharacterSna
   </div></Portal>;
 }
 
-/** Linha de estrelas, itens exclusivos e despertar dentro do painel do personagem (aba Melhorias). */
+/** Botão de despertar (dentro do painel do personagem) e a celebração. */
 export default function KittyDevExtras({ item, info, balance, onSnapshot }: {
   item: IdleItemSnapshot; info: KittyDevCharacterSnapshot; balance: number; onSnapshot: (snapshot: IdleSnapshot) => void;
 }) {
-  const [sheet, setSheet] = useState<"click" | "stone" | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,27 +197,12 @@ export default function KittyDevExtras({ item, info, balance, onSnapshot }: {
   };
 
   return <>
-    <div className={styles.extras}>
-      <div className={styles.starRow} role="img" aria-label={`${info.stars} de 5 estrelas`}>
-        {Array.from({ length: 5 }, (_, index) => <Star key={index} className={index < info.stars ? styles.starOn : styles.starOff} fill="currentColor" strokeWidth={0} aria-hidden="true" />)}
-      </div>
-      {(["click", "stone"] as const).map((kind) => {
-        const data = kind === "click" ? info.clickItem : info.stoneItem;
-        const locked = data.level === 0;
-        return <button key={kind} type="button" className={`${styles.itemChip} ${locked ? styles.itemChipLocked : ""}`} onClick={() => setSheet(kind)} aria-label={`${data.name}: ${locked ? "bloqueado" : `nível ${data.level}`}`}>
-          <ItemArt kind={kind} locked={locked} />
-          <span className={styles.itemText}><b>{data.name}</b><small>{locked ? "Bloqueado" : `Nv. ${data.level}/${data.maxLevel}`}</small></span>
-        </button>;
-      })}
-    </div>
     {canAwaken && awakening && <button type="button" className={styles.awakenBtn} disabled={busy || balance < awakening.cost} onClick={() => void awaken()}>
       <Sparkles size={18} aria-hidden="true" /><span>Despertar</span>
       <span className={styles.awakenCost}><Image src="/idle/icons/game-money.webp" alt="" width={48} height={48} />{formatIdleNumber(awakening.cost)}</span>
     </button>}
-    {awakening?.awakened && <span className={styles.awakenSoon} style={{ color: "#a8741a" }}><Crown size={12} style={{ display: "inline", verticalAlign: "-1px" }} aria-hidden="true" /> Despertada · produção x{awakening.multiplier}</span>}
     {info.stars >= 5 && !awakening && <span className={styles.awakenSoon}>Constelação completa · despertar em breve</span>}
     {error && <span className={styles.awakenSoon} role="alert" style={{ color: "#c0306a" }}>{error}</span>}
-    {sheet && <ItemSheet kind={sheet} item={sheet === "click" ? info.clickItem : info.stoneItem} info={info} balance={balance} onClose={() => setSheet(null)} onSnapshot={onSnapshot} />}
     {celebrate && awakening?.awakened && <AwakenCelebration info={info} name={item.definition.name} onClose={() => setCelebrate(false)} />}
   </>;
 }

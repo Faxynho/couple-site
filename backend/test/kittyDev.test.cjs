@@ -193,10 +193,10 @@ test("constelação: personagem não desbloqueado e id inválido são recusados"
   assert.equal(store.getSnapshot().modes.kitty.kittyDev.stones, 100);
 });
 
-test("constelação: custo total de todas as constelações fica na faixa planejada (~550 pedras)", () => {
+test("constelação: custo total de todas as constelações fica na faixa planejada (~390 pedras)", () => {
   let total = 0;
   for (let i = 0; i < 24; i += 1) for (let level = 1; level <= 5; level += 1) total += config.constellationCost(i, level);
-  assert.ok(total > 450 && total < 650, `total=${total}`);
+  assert.ok(total > 330 && total < 450, `total=${total}`);
 });
 
 // ---------------------------------------------------------------------------

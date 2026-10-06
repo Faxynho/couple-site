@@ -113,6 +113,9 @@ export type ObjectiveMetric =
   | "kittyMilestones"
   | "kittyDays";
 
+/** Métricas das missões experimentais; só aparecem no save do ambiente DEV. */
+export type DevObjectiveMetric = "kittyDevTravels" | "kittyDevItems" | "kittyDevStars";
+
 /** Missões sorteadas do Mundo da Hello Kitty para o período (e metas calculadas na hora do sorteio). */
 export interface KittyPeriodSelection {
   ids: string[];
@@ -121,7 +124,7 @@ export interface KittyPeriodSelection {
 
 export interface ObjectivePeriodState {
   key: string;
-  progress: Record<ObjectiveMetric, number>;
+  progress: Record<ObjectiveMetric, number> & Partial<Record<DevObjectiveMetric, number>>;
   completed: Record<string, number>;
   kitty?: KittyPeriodSelection;
 }
@@ -189,7 +192,7 @@ export interface KittyDevCharacterSnapshot {
   /** Multiplicadores combinados (estrelas + despertar) já embutidos em `production` do item. */
   productionMultiplier: number;
   clickMultiplier: number;
-  awakening: { cost: number; multiplier: number; asset: string; awakened: boolean; unlocked: boolean } | null;
+  awakening: { cost: number; multiplier: number; asset: string; awakened: boolean; unlocked: boolean; skinAwake: boolean } | null;
 }
 
 export interface KittyDevSnapshot {

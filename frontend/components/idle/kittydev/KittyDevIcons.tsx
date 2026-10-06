@@ -95,3 +95,34 @@ export function ClickItemIcon(props: IconProps) {
     <path d="M14 14 l2 4 4 2 -4 2 -2 4 -2 -4 -4 -2 4 -2z M50 12 l1.6 3 3 1.6 -3 1.6 -1.6 3 -1.6 -3 -3 -1.6 3 -1.6z" fill="#ffd45a" stroke="#d9971a" strokeWidth="1.2" strokeLinejoin="round" />
   </svg>;
 }
+
+/** Canto ornamentado dourado (moldura do personagem despertado). Use quatro, girando com `rotate`. */
+export function OrnateCorner(props: IconProps & { rotate?: number }) {
+  const { rotate = 0, style, ...rest } = props;
+  return <svg viewBox="0 0 48 48" aria-hidden focusable={false} style={{ transform: `rotate(${rotate}deg)`, ...style }} {...rest}>
+    <defs>
+      <linearGradient id={`og${rotate}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff2b8" /><stop offset=".5" stopColor="#e9b95c" /><stop offset="1" stopColor="#b9852a" /></linearGradient>
+    </defs>
+    <path d="M3 44 V16 C3 8 8 3 16 3 H44" fill="none" stroke={`url(#og${rotate})`} strokeWidth="2.6" strokeLinecap="round" />
+    <path d="M9 44 V19 C9 13 13 9 19 9 H44" fill="none" stroke={`url(#og${rotate})`} strokeWidth="1.1" strokeLinecap="round" opacity=".8" />
+    <path d="M15 15 C15 8 24 8 24 14 C24 19 17 19 17 14" fill="none" stroke={`url(#og${rotate})`} strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M24 3 C30 9 36 9 42 3" fill="none" stroke={`url(#og${rotate})`} strokeWidth="1.2" strokeLinecap="round" opacity=".9" />
+    <path d="M3 24 C9 30 9 36 3 42" fill="none" stroke={`url(#og${rotate})`} strokeWidth="1.2" strokeLinecap="round" opacity=".9" />
+    <path d="M7 7 l1.6 3.6 3.6 1.6 -3.6 1.6 -1.6 3.6 -1.6 -3.6 -3.6 -1.6 3.6 -1.6z" fill="#fff6c8" stroke="#c9921f" strokeWidth=".8" strokeLinejoin="round" />
+  </svg>;
+}
+
+/** Estrela brilhante usada no arco de estrelas do personagem (cristal dourado com brilho). */
+export function ShinyStar({ lit, id }: { lit: boolean; id: string }) {
+  const pts = Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? 11 : 24; const a = (-90 + i * 36) * Math.PI / 180; return `${(32 + r * Math.cos(a)).toFixed(1)},${(33 + r * Math.sin(a)).toFixed(1)}`; }).join(" ");
+  const inner = Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? 5.5 : 14; const a = (-90 + i * 36) * Math.PI / 180; return `${(32 + r * Math.cos(a)).toFixed(1)},${(33 + r * Math.sin(a)).toFixed(1)}`; }).join(" ");
+  return <svg viewBox="0 0 64 64" aria-hidden focusable={false} width="100%" height="100%">
+    <defs>
+      <linearGradient id={`sg${id}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff6c0" /><stop offset=".45" stopColor="#ffd24a" /><stop offset="1" stopColor="#f0901c" /></linearGradient>
+      <radialGradient id={`sh${id}`} cx=".5" cy=".5" r=".5"><stop offset="0" stopColor="#fff3b0" stopOpacity=".9" /><stop offset="1" stopColor="#ffd24a" stopOpacity="0" /></radialGradient>
+    </defs>
+    {lit && <circle cx="32" cy="33" r="31" fill={`url(#sh${id})`} />}
+    <polygon points={pts} fill={lit ? `url(#sg${id})` : "rgba(120,100,170,.28)"} stroke={lit ? "#b8691a" : "rgba(255,255,255,.55)"} strokeWidth={lit ? 3 : 2} strokeLinejoin="round" strokeDasharray={lit ? undefined : "3 3"} />
+    {lit && <><polygon points={inner} fill="#fff7cf" opacity=".6" /><ellipse cx="25" cy="21" rx="5.5" ry="2.8" fill="#fff" opacity=".9" transform="rotate(-35 25 21)" /><circle cx="42" cy="40" r="1.8" fill="#fff" opacity=".85" /></>}
+  </svg>;
+}

@@ -25,7 +25,7 @@ export interface KittyClickActivity {
   streak: number; comboClicks: number; lastClickAt: number; bestStreak: number; milestoneCount: number;
 }
 export interface IdleAchievementSnapshot {
-  id: string; mode: IdleModeId; title: string; description: string; iconItemId?: string; reward: number;
+  id: string; mode: IdleModeId; title: string; description: string; iconItemId?: string; iconAsset?: string; reward: number;
   completedAt: number | null; progress: number; target: number;
 }
 export interface IdleBoostState { startedAt: number; expiresAt: number; multiplier: number }
@@ -47,7 +47,7 @@ export interface KittyDevCharacterSnapshot {
   clickItem: KittyDevItemSnapshot; stoneItem: KittyDevItemSnapshot;
   stoneYield: number; stoneYieldEffective: number; nextMilestoneLevel: number;
   productionMultiplier: number; clickMultiplier: number;
-  awakening: { cost: number; multiplier: number; asset: string; awakened: boolean; unlocked: boolean } | null;
+  awakening: { cost: number; multiplier: number; asset: string; awakened: boolean; unlocked: boolean; skinAwake: boolean } | null;
 }
 /** Mecânicas experimentais do Mundo da Hello Kitty. Só existe no ambiente DEV. */
 export interface KittyDevSnapshot {

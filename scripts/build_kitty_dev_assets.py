@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Gera os assets do modo DEV do Mundo da Hello Kitty (além das ilhas, que vêm de build_kitty_islands.py):
-  frontend/public/idle/dev/stellar-stone.webp   ícone da Pedra Estelar (cristal em forma de estrela)
   frontend/public/idle/dev/constellation-bg.webp fundo do espaço da tela de constelações
   frontend/public/idle/dev/awake-aura.webp       halo dourado/rosa que fica atrás do personagem despertado
 Uso: python3 scripts/build_kitty_dev_assets.py     (requer cairosvg, pillow)
@@ -24,25 +23,6 @@ def star_pts(cx, cy, ro, ri, n=5, rot=-90):
         a = math.radians(rot + i * 180 / n)
         pts.append(f"{cx + r*math.cos(a):.1f},{cy + r*math.sin(a):.1f}")
     return " ".join(pts)
-
-# ------------------------------------------------------------------ pedra estelar
-stone = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-<defs>
-<radialGradient id="g" cx=".5" cy=".45" r=".6"><stop offset="0" stop-color="#fff6c8" stop-opacity=".95"/><stop offset=".5" stop-color="#ffd86a" stop-opacity=".35"/><stop offset="1" stop-color="#ffd86a" stop-opacity="0"/></radialGradient>
-<linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".55" stop-color="#ffb938"/><stop offset="1" stop-color="#f08a1c"/></linearGradient>
-<linearGradient id="b" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff4c4"/><stop offset="1" stop-color="#ffc94d"/></linearGradient>
-</defs>
-<circle cx="128" cy="130" r="120" fill="url(#g)"/>
-<polygon points="{star_pts(128,132,98,46)}" fill="url(#a)" stroke="#a85a14" stroke-width="7" stroke-linejoin="round"/>
-<polygon points="{star_pts(128,132,70,32)}" fill="url(#b)" opacity=".92"/>
-<polygon points="{star_pts(128,132,98,46)}" fill="none" stroke="#fff3c0" stroke-width="3" stroke-linejoin="round" opacity=".7" transform="translate(-2,-2)"/>
-<path d="M128,86 L146,128 L128,176 L110,128Z" fill="#ffffff" opacity=".28"/>
-<ellipse cx="108" cy="102" rx="13" ry="7" fill="#ffffff" opacity=".85" transform="rotate(-35 108 102)"/>
-<circle cx="168" cy="164" r="4.5" fill="#ffffff" opacity=".7"/>
-<polygon points="{star_pts(206,52,14,4,4,-90)}" fill="#fff6d0"/>
-<polygon points="{star_pts(48,184,10,3,4,-90)}" fill="#fff6d0" opacity=".9"/>
-</svg>'''
-save(stone, "stellar-stone.webp", 256, 256)
 
 # ------------------------------------------------------------------ fundo do espaço
 W, H = 940, 1672
