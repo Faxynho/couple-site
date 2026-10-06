@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { formatIdleNumber } from "@/lib/formatIdleNumber";
 import styles from "./IdleGame.module.css";
 
-export default function IdleHeader({ title, subtitle, coins, onBack, badge, balance }: {
+export default function IdleHeader({ title, subtitle, coins, onBack, badge, balance, className, decoration }: {
   title: string;
   subtitle: string;
   coins: number;
@@ -15,9 +15,13 @@ export default function IdleHeader({ title, subtitle, coins, onBack, badge, bala
   badge?: ReactNode;
   /** Quando informado, o canto direito mostra o dinheiro interno (com sprite) no lugar das moedas globais. */
   balance?: number;
+  /** Classe extra (usada só pelo ambiente DEV para a moldura do personagem despertado). */
+  className?: string;
+  decoration?: ReactNode;
 }) {
   return (
-    <header className={styles.header}>
+    <header className={`${styles.header}${className ? ` ${className}` : ""}`}>
+      {decoration}
       <button type="button" className={styles.backButton} onClick={onBack} aria-label="Voltar">
         <ArrowLeft size={23} strokeWidth={3} />
       </button>

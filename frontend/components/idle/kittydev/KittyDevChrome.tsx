@@ -8,6 +8,7 @@ import { KittyClickActivity } from "@/lib/idleTypes";
 import { IdleTab } from "../IdleBottomNav";
 import { NavConstellationIcon, NavHomeIcon, NavRelicIcon, NavStatsIcon, NavUpgradeIcon, PlaqueBow, WorldIcon } from "./KittyDevIcons";
 import { TrophyIcon } from "../KittyIcons";
+import { OrnateCorners } from "./KittyDevExtras";
 import styles from "./KittyDev.module.css";
 
 /** HUD superior do ambiente DEV (voltar, título do mundo, botão de ilhas, saldo/produção e combo). */
@@ -29,28 +30,30 @@ export function KittyDevHud({ variant, worldName, relicAsset, relicName, balance
   const energy = Math.max(0, Math.min(1, (combo - 1) / 1.2));
   const filled = Math.round(energy * 8);
   const comboStyle = { "--combo-duration": `${2.25 - energy * .95}s` } as CSSProperties;
+  const statsBlock = <div className={`${styles.stats} ${variant === "map" ? styles.statsInline : ""} ${rush ? styles.statsRush : ""}`}>
+    <div className={styles.stat}><Image className={styles.statIcon} src="/idle/icons/game-money.webp" alt="" width={48} height={48} /><span>Saldo</span><strong>{formatIdleNumber(balance)}</strong></div>
+    <div className={styles.statGap} aria-hidden="true" />
+    <div className={styles.stat}><Image className={styles.statIcon} src="/idle/icons/production.webp" alt="" width={48} height={48} /><span>Produção</span><strong>{formatIdleNumber(production)}/s</strong></div>
+  </div>;
+  if (variant === "map") {
+    return <header className={`${styles.hud} ${styles.hudMap}`}>
+      <button type="button" className={styles.roundBtn} onClick={onBack} aria-label="Voltar"><ArrowLeft size={24} strokeWidth={3.4} /></button>
+      {statsBlock}
+    </header>;
+  }
   return <>
     <header className={styles.hud}>
       <button type="button" className={styles.roundBtn} onClick={onBack} aria-label="Voltar"><ArrowLeft size={24} strokeWidth={3.4} /></button>
-      {variant === "world"
-        ? <div className={styles.plaque}>
-            <PlaqueBow className={styles.plaqueBow} />
-            <div className={styles.plaqueTop}><i>♥</i>Mundo da Hello Kitty<i>♥</i></div>
-            <h1 className={styles.plaqueTitle}>{worldName}</h1>
-          </div>
-        : <span />}
-      {variant === "world"
-        ? <button type="button" className={`${styles.roundBtn} ${styles.worldBtn}`} onClick={onWorlds} aria-label="Escolher outro mundo" title="Escolher outro mundo"><WorldIcon /></button>
-        : <span />}
+      <div className={styles.plaque}>
+        <PlaqueBow className={styles.plaqueBow} />
+        <h1 className={styles.plaqueTitle}>{worldName}</h1>
+      </div>
+      <button type="button" className={`${styles.roundBtn} ${styles.worldBtn}`} onClick={onWorlds} aria-label="Escolher outro mundo" title="Escolher outro mundo"><WorldIcon /></button>
     </header>
-    {relicAsset && variant === "world" && <span className={styles.relicSlot} title={relicName} aria-label={`Relíquia ${relicName ?? ""}`}><Image src={relicAsset} alt="" width={60} height={60} sizes="58px" /></span>}
-    <div className={`${styles.stats} ${rush ? styles.statsRush : ""}`}>
-      <div className={styles.stat}><Image className={styles.statIcon} src="/idle/icons/game-money.webp" alt="" width={48} height={48} /><span>Saldo</span><strong>{formatIdleNumber(balance)}</strong></div>
-      <div className={styles.statGap} aria-hidden="true" />
-      <div className={styles.stat}><Image className={styles.statIcon} src="/idle/icons/production.webp" alt="" width={48} height={48} /><span>Produção</span><strong>{formatIdleNumber(production)}/s</strong></div>
-    </div>
-    {variant === "world" && showCombo && <div className={`${styles.combo} ${energy > .6 ? styles.comboHot : ""}`} style={comboStyle} aria-live="off">
-      <span className={styles.comboHeart}><Heart size={14} fill="currentColor" strokeWidth={0} /></span>
+    {relicAsset && <span className={styles.relicSlot} title={relicName} aria-label={`Relíquia ${relicName ?? ""}`}><Image src={relicAsset} alt="" width={60} height={60} sizes="58px" /></span>}
+    {statsBlock}
+    {showCombo && <div className={`${styles.combo} ${energy > .6 ? styles.comboHot : ""}`} style={comboStyle} aria-live="off">
+      <span className={styles.comboHeart}><Heart size={12} fill="currentColor" strokeWidth={0} /></span>
       <span className={styles.comboLabel}>Combo</span>
       <span className={styles.comboBar} aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} data-on={index < filled ? "yes" : "no"} />)}</span>
       <span className={styles.comboValue}>x{combo.toFixed(1)}</span>
@@ -67,8 +70,9 @@ const TABS: Array<{ id: IdleTab; label: string; icon: typeof NavHomeIcon }> = [
 ];
 
 /** Menu inferior redesenhado (somente DEV). Mantém os mesmos IDs de aba do menu original. */
-export function KittyDevNav({ active, onChange, rush }: { active: IdleTab; onChange: (tab: IdleTab) => void; rush: boolean }) {
-  return <nav className={`${styles.nav} ${rush ? styles.navRush : ""}`} aria-label="Navegação do jogo idle">
+export function KittyDevNav({ active, onChange, rush, ornate = false }: { active: IdleTab; onChange: (tab: IdleTab) => void; rush: boolean; ornate?: boolean }) {
+  return <nav className={`${styles.nav} ${rush ? styles.navRush : ""} ${ornate ? styles.ornate : ""}`} aria-label="Navegação do jogo idle">
+    {ornate && <OrnateCorners compact />}
     {TABS.map((tab) => {
       const Icon = tab.icon;
       const on = active === tab.id;
@@ -90,4 +94,14 @@ export function KittyConstellationButton({ onOpen, available }: { onOpen: () => 
     <NavConstellationIcon />
     {available > 0 && <span className={styles.constBadge} aria-label={`${available} constelações com melhoria disponível`}>{available}</span>}
   </button>;
+}
+
+export type PurchaseModeValue = 1 | 10 | "max";
+const MODE_CYCLE: PurchaseModeValue[] = [1, 10, "max"];
+
+/** Seletor x1 / x10 / Máx. em forma de círculo pequeno na borda direita do painel (toque para alternar). */
+export function KittyModeBubble({ value, onChange, awake }: { value: PurchaseModeValue; onChange: (value: PurchaseModeValue) => void; awake: boolean }) {
+  const label = value === "max" ? "Máx" : `x${value}`;
+  return <button type="button" className={`${styles.modeBubble} ${awake ? styles.modeBubbleAwake : ""}`} onClick={() => onChange(MODE_CYCLE[(MODE_CYCLE.indexOf(value) + 1) % MODE_CYCLE.length])}
+    aria-label={`Quantidade de níveis: ${value === "max" ? "máximo" : value}. Toque para alternar`}>{label}</button>;
 }

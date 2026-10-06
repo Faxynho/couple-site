@@ -18,8 +18,8 @@ import styles from "./IdleGame.module.css";
 // Mecânicas experimentais — usadas SOMENTE quando environment === "dev" no Mundo da Hello Kitty.
 import devStyles from "./kittydev/KittyDev.module.css";
 import KittyConstellation from "./kittydev/KittyConstellation";
-import { KittyConstellationButton, KittyDevHud, KittyDevNav } from "./kittydev/KittyDevChrome";
-import KittyDevExtras, { AwakeEffects, AwakePanelCorners } from "./kittydev/KittyDevExtras";
+import { KittyConstellationButton, KittyDevHud, KittyDevNav, KittyModeBubble } from "./kittydev/KittyDevChrome";
+import KittyDevExtras, { AwakeEffects, KittyItemRail, KittySkinToggle, KittyStarArc, OrnateCorners, StoneGainBurst } from "./kittydev/KittyDevExtras";
 import KittyWorldMap from "./kittydev/KittyWorldMap";
 import { WORLDS_BG, spriteFor } from "./kittydev/kittyDevHelpers";
 import { kittyDevSetWorld } from "@/lib/idleApi";
@@ -142,6 +142,22 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
   const sceneName = data?.scenes.find((item) => item.id === sceneIndex)?.name ?? modeTitle;
   const background = dev && tab === "home" && activeWorld === null ? WORLDS_BG : tab === "home" ? SCENE_BACKGROUNDS[mode][sceneIndex] : SCENE_BACKGROUNDS[mode][0];
   const activeSceneRelic = !farm && tab === "home" ? data?.relics?.find((relic) => relic.definition.kind === "scene" && relic.definition.scene === sceneIndex && relic.level > 0) : undefined;
+  const [leaving, setLeaving] = useState(false);
+  const [mapArrive, setMapArrive] = useState(false);
+  const leaveTimer = useRef<number | null>(null);
+  /** Sai do mundo com animação (zoom-out + nuvens) e só então volta para a seleção de ilhas. */
+  const leaveWorld = () => {
+    if (leaving) return;
+    setLeaving(true);
+    playSoundEffect("idleTravel");
+    leaveTimer.current = window.setTimeout(() => {
+      setLeaving(false);
+      setMapArrive(true);
+      changeWorld(null);
+      leaveTimer.current = window.setTimeout(() => setMapArrive(false), 900);
+    }, 800);
+  };
+  useEffect(() => () => { if (leaveTimer.current) window.clearTimeout(leaveTimer.current); }, []);
   const changeWorld = (next: number | null) => {
     setWorld(next);
     setConstellationOpen(false);
@@ -205,18 +221,19 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
       <div className={styles.background} key={background} style={{ backgroundImage: `url(${background})` }} aria-hidden="true" />
       <div className={styles.sceneShade} aria-hidden="true" />
       {dev && tab === "home"
-        ? <KittyDevHud variant={activeWorld === null ? "map" : "world"} worldName={sceneName} relicAsset={activeSceneRelic?.definition.asset} relicName={activeSceneRelic?.definition.name} balance={displayedBalance} production={data.effectiveProduction} activity={accountId ? data.clickActivity?.[accountId] : undefined} showCombo={data.items.some((item) => item.purchased && item.definition.scene === sceneIndex)} rush={click10HomeActive} onBack={() => router.push("/cantinho/dev")} onWorlds={() => changeWorld(null)} />
+        ? <KittyDevHud variant={activeWorld === null ? "map" : "world"} worldName={sceneName} relicAsset={activeSceneRelic?.definition.asset} relicName={activeSceneRelic?.definition.name} balance={displayedBalance} production={data.effectiveProduction} activity={accountId ? data.clickActivity?.[accountId] : undefined} showCombo={data.items.some((item) => item.purchased && item.definition.scene === sceneIndex)} rush={click10HomeActive} onBack={() => router.push("/cantinho/dev")} onWorlds={leaveWorld} />
         : !farm && tab === "upgrades" && data.items[kittyIndex]
-        ? <IdleHeader title={data.items[kittyIndex].definition.name} subtitle="" coins={snapshot.globalCoins} balance={displayedBalance} badge={<KittyLevelBadge item={data.items[kittyIndex]} awake={selectedAwake} />} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
+        ? <IdleHeader className={selectedAwake ? `${devStyles.ornate}` : undefined} decoration={selectedAwake ? <OrnateCorners /> : undefined} title={data.items[kittyIndex].definition.name} subtitle="" coins={snapshot.globalCoins} balance={displayedBalance} badge={<KittyLevelBadge item={data.items[kittyIndex]} awake={selectedAwake} />} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
         : <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "relics" ? "Relíquias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "relics" ? "Pequenos encantos, grandes descobertas" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />}
       {activeSceneRelic && !dev && <span className={styles.sceneRelicBadge} title={activeSceneRelic.definition.name} aria-label={`Relíquia ${activeSceneRelic.definition.name} · nível ${activeSceneRelic.level}`}><Image src={activeSceneRelic.definition.asset} alt="" width={60} height={60} sizes="58px" /></span>}
       {environment === "dev" && <span className={`${styles.devBadge} ${dev && tab === "home" ? devStyles.devBadgeDock : ""}`}>MODO DEV</span>}
 
+      {leaving && <div className={devStyles.leaveVeil} aria-hidden="true" />}
       {tab === "home" && (dev && activeWorld === null
-        ? <KittyWorldMap names={data.scenes.map((item) => item.name)} unlocked={data.scenes.map((item) => item.unlocked)} current={typeof requestedWorld === "number" ? requestedWorld : null}
+        ? <KittyWorldMap mapArrive={mapArrive} names={data.scenes.map((item) => item.name)} unlocked={data.scenes.map((item) => item.unlocked)} current={typeof requestedWorld === "number" ? requestedWorld : null}
             lockedHint={(index) => `Compre ${data.items.find((item) => item.definition.scene === index)?.definition.name ?? "o personagem"} para liberar esta ilha`}
             onEnter={changeWorld} />
-        : <HomeScene mode={mode} data={data} balance={displayedBalance} scene={sceneIndex} onSceneChange={setScene} onClickItem={clickItem} accountId={accountId} dev={dev} kittyDev={kittyDev} arrive={arrive} />)}
+        : <HomeScene mode={mode} data={data} balance={displayedBalance} scene={sceneIndex} onSceneChange={setScene} onClickItem={clickItem} accountId={accountId} dev={dev} kittyDev={kittyDev} arrive={arrive} leaving={leaving} />)}
       {dev && tab === "home" && activeWorld !== null && !constellationOpen && <KittyConstellationButton onOpen={() => setConstellationOpen(true)} available={data.items.filter((item) => item.purchased && item.definition.scene === activeWorld && (kittyDev?.characters[item.definition.id]?.nextStarCost ?? Infinity) <= (kittyDev?.stones ?? 0)).length} />}
       {dev && constellationOpen && activeWorld !== null && kittyDev && <KittyConstellation data={data} world={activeWorld} worldName={sceneName} onClose={() => setConstellationOpen(false)} onSnapshot={applySnapshot} />}
       {tab === "upgrades" && (farm
@@ -232,7 +249,7 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
       {showOfflineReward && snapshot.offlineReward?.mode === mode && <div className={styles.toast}>Enquanto vocês estavam fora: +{formatIdleNumber(snapshot.offlineReward.amount)}</div>}
       {error && <p className={styles.error} role="alert"><span>!</span>{error}</p>}
       {activeCelebration && <CelebrationPopup celebration={activeCelebration} onClose={() => setCelebrations((current) => current.slice(1))} />}
-      {dev ? <KittyDevNav active={tab} onChange={setTab} rush={click10HomeActive} /> : <IdleBottomNav active={tab} onChange={setTab} dev={environment === "dev"} kitty={!farm} />}
+      {dev ? <KittyDevNav active={tab} onChange={setTab} rush={click10HomeActive} ornate={selectedAwake} /> : <IdleBottomNav active={tab} onChange={setTab} dev={environment === "dev"} kitty={!farm} />}
     </main>
   );
 }
@@ -246,7 +263,7 @@ function BalancePill({ balance, production }: { balance: number; production: num
   return <div className={styles.statsPill}><div className={styles.stat}><GameStatIcon type="money" /><span>Saldo</span><strong>{formatIdleNumber(balance)}</strong></div><div className={styles.statDivider} /><div className={styles.stat}><GameStatIcon type="production" /><span>Produção</span><strong>{formatIdleNumber(production)}/s</strong></div></div>;
 }
 
-function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem, accountId, dev = false, kittyDev, arrive = false }: { mode: IdleModeId; data: IdleModeSnapshot; balance: number; scene: number; onSceneChange: (scene: number) => void; onClickItem: (itemId: string) => Promise<number | null>; accountId: string | null; dev?: boolean; kittyDev?: KittyDevSnapshot; arrive?: boolean }) {
+function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem, accountId, dev = false, kittyDev, arrive = false, leaving = false }: { mode: IdleModeId; data: IdleModeSnapshot; balance: number; scene: number; onSceneChange: (scene: number) => void; onClickItem: (itemId: string) => Promise<number | null>; accountId: string | null; dev?: boolean; kittyDev?: KittyDevSnapshot; arrive?: boolean; leaving?: boolean }) {
   const [bursts, setBursts] = useState<ClickBurst[]>([]);
   const animations = useRef(new Map<string, Animation>());
   const burstTimers = useRef(new Set<number>());
@@ -296,7 +313,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem, acc
   };
 
   return (
-    <section className={`${styles.scene} ${arrive ? devStyles.worldArrive : ""}`} aria-label={mode === "farm" ? "Cenário da Fazendinha" : "Sala dos personagens"}>
+    <section className={`${styles.scene} ${arrive ? devStyles.worldArrive : ""} ${leaving ? devStyles.worldLeave : ""}`} aria-label={mode === "farm" ? "Cenário da Fazendinha" : "Sala dos personagens"}>
       {!dev && <BalancePill balance={balance} production={data.effectiveProduction} />}
       {mode === "kitty" && !dev && purchased.length > 0 && <div className={styles.activityPanel} style={comboMotion} aria-live="off"><span className={styles.comboLabel}>Combo x{combo.toFixed(1)}</span></div>}
       {purchased.length === 0 && <div className={styles.emptySceneHint}><Sparkles size={18} />{scene === 0 ? `Compre ${mode === "farm" ? "a Horta" : "Hello Kitty"} na aba Melhorias` : "Compre um item deste cenário para vê-lo aqui"}</div>}
@@ -426,6 +443,22 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const tapTimers = useRef(new Set<number>());
   const lastDragDistance = useRef(0);
   const [bursts, setBursts] = useState<ClickBurst[]>([]);
+  const [stoneGain, setStoneGain] = useState<{ id: number; amount: number } | null>(null);
+  const lastUpgradeAt = useRef(0);
+  const stoneTimer = useRef<number | null>(null);
+  const totalStones = dev?.kittyDev.totalStones ?? 0;
+  const previousStones = useRef(totalStones);
+  // DEV: ao completar 10 níveis ganhamos Pedras Estelares; mostramos o sprite com a quantidade saindo do botão Melhorar.
+  useEffect(() => {
+    const gained = totalStones - previousStones.current;
+    previousStones.current = totalStones;
+    if (gained <= 0 || Date.now() - lastUpgradeAt.current > 5_000) return;
+    if (stoneTimer.current) window.clearTimeout(stoneTimer.current);
+    setStoneGain({ id: Date.now(), amount: gained });
+    playSoundEffect("idleStar");
+    stoneTimer.current = window.setTimeout(() => setStoneGain(null), 2_000);
+  }, [totalStones]);
+  useEffect(() => () => { if (stoneTimer.current) window.clearTimeout(stoneTimer.current); }, []);
   const selected = data.items[index];
   const devInfo = dev ? dev.kittyDev.characters[selected.definition.id] : undefined;
   const selectedAwake = Boolean(devInfo?.awakening?.awakened);
@@ -552,7 +585,13 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const onTouchEnd = () => resetDrag(true);
   const onTouchCancel = () => resetDrag(false);
   return <section className={`${styles.content} ${styles.kittyContent}`}>
-    <PurchaseModePicker value={purchaseMode} onChange={onPurchaseModeChange} />
+    {dev && devInfo
+      ? <>
+          <div className={devStyles.arcSlot}>{selected.purchased ? <KittyStarArc stars={devInfo.stars} /> : null}</div>
+          {selected.purchased && <KittyItemRail info={devInfo} balance={balance} onSnapshot={dev.onSnapshot} />}
+          <KittySkinToggle info={devInfo} onSnapshot={dev.onSnapshot} />
+        </>
+      : <PurchaseModePicker value={purchaseMode} onChange={onPurchaseModeChange} />}
     <div ref={carouselRef} className={`${styles.carousel} ${selectedAwake ? devStyles.awakeCarousel : ""}`} data-prestige={prestige} data-tier={tier} data-purchased={selected.purchased ? "yes" : "no"} data-dragging="no" style={{ "--prestige": RARITY_COLORS[tier - 1][0], "--prestige-soft": RARITY_COLORS[tier - 1][1] } as CSSProperties} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchCancel}>
       <div className={styles.prestigeBackdrop} />
       {data.items.map((item, itemIndex) => {
@@ -581,8 +620,8 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
       })}
       <div className={styles.panelStack}>
         <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
-        <div className={`${styles.characterPanel} ${selectedAwake ? devStyles.awakePanel : ""}`} data-tier={tier}>
-          {selectedAwake && <AwakePanelCorners />}
+        <div className={`${styles.characterPanel} ${selectedAwake ? `${devStyles.awakePanel} ${devStyles.ornate}` : ""}`} data-tier={tier}>
+          {selectedAwake && <OrnateCorners />}
           <div className={styles.panelFx} aria-hidden="true">
             <BowIcon className={styles.fxBow} />
             <SparkleIcon className={`${styles.fxSpark} ${styles.fxSparkA}`} />
@@ -608,6 +647,11 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
           {dev && devInfo && selected.purchased && <KittyDevExtras item={selected} info={devInfo} balance={balance} onSnapshot={dev.onSnapshot} />}
           <button type="button" className={`${styles.actionButton} ${styles.kittyUpgradeButton} ${!selected.purchased ? styles.buyButton : ""} ${selectedAwake ? devStyles.awakeButton : ""}`} disabled={!selected.unlocked || busyItemId === selected.definition.id || (selected.purchased && !quoteFor(selected, purchaseMode))} onClick={() => {
             if (selected.purchased) {
+              if (dev) {
+                lastUpgradeAt.current = Date.now();
+                void buyUpgrades(selected.definition.id, purchaseMode).then((applied) => { if (applied) triggerUpgradeFeedback(); });
+                return;
+              }
               triggerUpgradeFeedback();
               void buyUpgrades(selected.definition.id, purchaseMode);
               return;
@@ -626,6 +670,8 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
           </> : <span className={styles.btnText}>Compre a personagem anterior</span>}</button>
         </div>
       </div>
+      {dev && selected.purchased && <KittyModeBubble value={purchaseMode} onChange={onPurchaseModeChange} awake={selectedAwake} />}
+      {dev && stoneGain && <StoneGainBurst key={stoneGain.id} amount={stoneGain.amount} />}
       {bursts.map((burst) => <span key={burst.id} className={`${styles.clickBurst} ${styles.carouselBurst}`} data-rush={burst.rushMultiplier} style={{ left: burst.left, top: burst.top }}><GameStatIcon type="money" />+{formatIdleNumber(burst.reward)}{burst.multiplier > 1 && <small>x{burst.multiplier}</small>}</span>)}
     </div>
   </section>;
@@ -641,6 +687,10 @@ const OBJECTIVE_ART: Record<string, string> = {
   kittyBoosts: "/idle/events/production2.webp",
   kittyBestCombo: "/idle/events/click2.webp",
   kittyMilestones: "/idle/events/click5.webp",
+  // missões experimentais (somente DEV)
+  kittyDevTravels: "/idle/islands/island-1.webp",
+  kittyDevItems: "/idle/events/click2.webp",
+  kittyDevStars: "/idle/dev/pedra-estelar.webp",
 };
 
 function ObjectiveArt({ metric }: { metric: string }) {
@@ -747,7 +797,7 @@ function Achievements({ data, snapshot }: { data: IdleModeSnapshot; snapshot: Id
   const earned = data.achievements.filter((item) => item.completedAt).reduce((sum, item) => sum + item.reward, 0);
   const itemById = useMemo(() => new Map(data.items.map((item) => [item.definition.id, item])), [data.items]);
   return <section className={styles.content}><div className={styles.achievementStats}><div className={styles.stat}><span>Concluídas</span><strong>{complete}</strong></div><div className={styles.stat}><span>Em andamento</span><strong>{data.achievements.length - complete}</strong></div><div className={styles.stat}><span>Moedas ganhas</span><strong>{earned}</strong></div></div>
-    <h2 className={styles.sectionTitle}>Conquistas permanentes<small>Completadas uma única vez neste modo.</small></h2><div className={styles.achievementList}>{data.achievements.map((achievement) => <AchievementRow key={achievement.id} {...achievement} completed={Boolean(achievement.completedAt)} asset={achievement.iconItemId ? itemById.get(achievement.iconItemId)?.definition.asset : undefined} />)}</div>
+    <h2 className={styles.sectionTitle}>Conquistas permanentes<small>Completadas uma única vez neste modo.</small></h2><div className={styles.achievementList}>{data.achievements.map((achievement) => <AchievementRow key={achievement.id} {...achievement} completed={Boolean(achievement.completedAt)} asset={achievement.iconAsset ?? (achievement.iconItemId ? itemById.get(achievement.iconItemId)?.definition.asset : undefined)} />)}</div>
     <h2 className={styles.sectionTitle}>Objetivos diários<small>Renovam todos os dias no horário de Brasília.</small></h2><div className={styles.achievementList}>{snapshot.objectives.daily.map((objective) => <AchievementRow key={objective.id} {...objective} completed={Boolean(objective.completedAt)} />)}</div>
     <h2 className={styles.sectionTitle}>Objetivos semanais<small>Metas maiores para construir juntos.</small></h2><div className={styles.achievementList}>{snapshot.objectives.weekly.map((objective) => <AchievementRow key={objective.id} {...objective} completed={Boolean(objective.completedAt)} />)}</div>
   </section>;

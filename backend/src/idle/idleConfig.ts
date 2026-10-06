@@ -42,14 +42,20 @@ export interface AchievementDefinition {
     | { type: "level"; target: number }
     | { type: "clicks"; target: number }
     | { type: "relicsOwned" }
-    | { type: "ownAll" };
+    | { type: "ownAll" }
+    /** Conquistas das mecânicas experimentais (somente ambiente DEV; ver kittyDevQuests.ts). */
+    | { type: "devStat"; stat: "stonesEarned" | "stars" | "constellations" | "awakened" | "clickItems" | "stoneItems" | "itemsMaxed"; target: number };
+  /** Ícone próprio (quando não é o sprite de um personagem). */
+  iconAsset?: string;
 }
 
 export type RenewableObjectiveMetric =
   | "farmEntries" | "kittyEntries" | "upgrades" | "earnings" | "minigames"
   // Métricas exclusivas do Mundo da Hello Kitty (missões sorteadas).
   | "kittyUpgrades" | "kittyEarnings" | "kittyClicks" | "kittyEvents"
-  | "kittyBoosts" | "kittyBestCombo" | "kittyMilestones" | "kittyDays";
+  | "kittyBoosts" | "kittyBestCombo" | "kittyMilestones" | "kittyDays"
+  // Métricas das missões experimentais (somente DEV).
+  | "kittyDevTravels" | "kittyDevItems" | "kittyDevStars";
 
 export interface RenewableObjectiveDefinition {
   id: string;

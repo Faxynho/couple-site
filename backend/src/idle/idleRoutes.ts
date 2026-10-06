@@ -217,6 +217,13 @@ idleRouter.post("/kitty-dev/awaken", (req, res) => {
   res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
 });
 
+idleRouter.post("/kitty-dev/skin", (req, res) => {
+  const characterId = kittyDevCharacterBody(req, res);
+  if (!characterId) return;
+  const result = idleDevStore.setKittySkin(characterId, Boolean((req.body as { awake?: unknown }).awake));
+  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
+});
+
 idleRouter.post("/kitty-dev/world", (req, res) => {
   const body = req.body as { by?: unknown; world?: unknown };
   if (!requireAndre(body.by, res)) return;

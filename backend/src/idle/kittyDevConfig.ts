@@ -14,8 +14,8 @@
  *  - As pedras chegam cedo (~80 na 1ª semana, vindas dos níveis baixos) e depois só pelos níveis altos; por isso cada
  *    nível de estrela exige também um NÍVEL MÍNIMO do personagem (constellationLevelRequirement), calibrado pelo nível
  *    em que cada personagem "estaciona" na simulação (~90−2·i nos 17 primeiros, ~24 nos 7 últimos).
- *  - Custo total de TODAS as constelações ≈ 550 pedras; o suprimento total de pedras em ~1 ano é ≈ 280 sem o item
- *    estelar e ≈ 600 com ele → fechar tudo leva de 10 a 18 meses (nem 15 dias, nem 2 anos).
+ *  - Custo total de TODAS as constelações ≈ 390 pedras. Pela simulação (PROJECAO-DE-PROGRESSO.md) fechar as 24 leva
+ *    ~14 meses para quem joga bastante e ~18–24 meses para quem joga menos (nem 15 dias, nem 4 anos).
  *  - Despertar: preço e multiplicador pensados para a Hello Kitty valer ~+15–20% da produção total por volta do dia
  *    90–150, pagando-se em ~5 dias (veja AWAKENING_DEFINITIONS). Os próximos personagens precisam de calibragem própria.
  */
@@ -73,7 +73,7 @@ export function constellationLevelRequirement(index: number, level: number): num
   return Math.max(10, Math.round(characterReferenceLevel(index) * fraction));
 }
 
-const CONSTELLATION_BASE_COSTS = [2, 3, 4, 5, 6] as const; // 20 pedras por constelação no 1º personagem
+const CONSTELLATION_BASE_COSTS = [2, 2, 3, 3, 4] as const; // 14 pedras por constelação no 1º personagem
 
 /** Pedras necessárias para comprar o nível `level` (1–5) da constelação do personagem `index`. */
 export function constellationCost(index: number, level: number): number {
@@ -201,6 +201,8 @@ export interface KittyDevCharacterState {
   clickItem: number;
   stoneItem: number;
   awakened: boolean;
+  /** Skin exibida depois de despertar: true = despertada, false = visual normal (os efeitos continuam). */
+  skinAwake: boolean;
   /** Quantos marcos de 10 níveis já pagaram pedras. */
   stoneClaimed: number;
   /** Fração de pedra acumulada pelo bônus do item (a pedra só é creditada inteira). */
@@ -216,7 +218,7 @@ export interface KittyDevState {
 }
 
 export function emptyKittyDevCharacter(): KittyDevCharacterState {
-  return { stars: 0, clickItem: 0, stoneItem: 0, awakened: false, stoneClaimed: 0, stoneFraction: 0 };
+  return { stars: 0, clickItem: 0, stoneItem: 0, awakened: false, skinAwake: true, stoneClaimed: 0, stoneFraction: 0 };
 }
 
 export function emptyKittyDev(): KittyDevState {
@@ -250,6 +252,7 @@ export function sanitizeKittyDev(value: unknown): KittyDevState {
       clickItem: boundedInt(saved.clickItem, CLICK_ITEM_MAX_LEVEL),
       stoneItem: boundedInt(saved.stoneItem, STONE_ITEM_MAX_LEVEL),
       awakened: Boolean(saved.awakened) && Boolean(awakeningFor(item.id)) && boundedInt(saved.stars, KITTY_STAR_MAX) >= KITTY_STAR_MAX,
+      skinAwake: (saved as KittyDevCharacterState).skinAwake !== false,
       stoneClaimed: boundedInt(saved.stoneClaimed, 1_000),
       stoneFraction: Number.isFinite(fraction) ? Math.max(0, Math.min(.999, fraction)) : 0,
     };

@@ -2,20 +2,95 @@
 
 import Image from "next/image";
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, LockKeyhole, Star } from "lucide-react";
+import { ArrowLeft, Check, Crown, LayoutGrid, LockKeyhole, Sparkles, X } from "lucide-react";
 import { kittyDevBuyConstellation } from "@/lib/idleApi";
-import { IdleModeSnapshot, IdleSnapshot } from "@/lib/idleTypes";
+import { IdleItemSnapshot, IdleModeSnapshot, IdleSnapshot, KittyDevCharacterSnapshot, KittyDevSnapshot } from "@/lib/idleTypes";
 import { formatIdleNumber } from "@/lib/formatIdleNumber";
 import { playSoundEffect } from "@/lib/sound";
 import { GoldSparkle } from "./KittyDevIcons";
-import { STONE_ICON, charactersOfWorld, constellationShape, spriteFor } from "./kittyDevHelpers";
+import { constellationShape, linkLevel, starPolygon } from "./constellationShapes";
+import { STONE_ICON, charactersOfWorld, spriteFor } from "./kittyDevHelpers";
 import styles from "./KittyDev.module.css";
 
-function starPoints(cx: number, cy: number, outer: number) {
-  return Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? outer * .45 : outer; const a = (-90 + i * 36) * Math.PI / 180; return `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`; }).join(" ");
+const PARTICLES = Array.from({ length: 16 }, (_, index) => ({ angle: index * 22.5 + (index % 2 ? 6 : 0), distance: 26 + (index % 4) * 9, size: .5 + (index % 3) * .28, delay: (index % 5) * .02 }));
+const FIREWORKS = [[18, 26], [78, 20], [50, 12], [24, 62], [82, 58], [50, 74], [12, 44], [90, 40]] as const;
+const CONFETTI = Array.from({ length: 22 }, (_, index) => ({ x: (index * 37) % 100, delay: (index % 11) * .22, duration: 2.6 + (index % 5) * .35, size: .5 + (index % 4) * .18 }));
+
+function Particles({ x, y }: { x: number; y: number }) {
+  return <span className={styles.cstBurstWrap} style={{ left: `${x}%`, top: `${y}%` }} aria-hidden="true">
+    <i className={styles.cstShock} />
+    {PARTICLES.map((particle, index) => <GoldSparkle key={index} className={styles.cstParticle} style={{ "--a": `${particle.angle}deg`, "--r": `${particle.distance}px`, "--s": `${particle.size}rem`, "--d": `${particle.delay}s` } as CSSProperties} />)}
+  </span>;
 }
 
-/** Tela de constelações do mundo: uma constelação de 5 estrelas por personagem, evoluída com Pedras Estelares. */
+/** Desenho de uma constelação (usado na tela principal em tamanho grande e no álbum em miniatura). */
+function ConstellationArt({ index, stars, mini = false, fresh }: { index: number; stars: number; mini?: boolean; fresh?: number }) {
+  const shape = constellationShape(index);
+  return <>
+    {shape.links.map(([a, b]) => {
+      const level = linkLevel([a, b]);
+      const on = level <= stars;
+      const [x1, y1] = shape.nodes[a - 1]; const [x2, y2] = shape.nodes[b - 1];
+      return <line key={`${a}-${b}`} className={`${styles.cstLine} ${on ? styles.cstLineOn : ""} ${on && fresh === level ? styles.cstLineDraw : ""} ${mini ? styles.cstLineMini : ""}`} x1={x1} y1={y1} x2={x2} y2={y2} />;
+    })}
+    {shape.nodes.map(([x, y], i) => {
+      const level = i + 1;
+      const on = level <= stars;
+      return <polygon key={level} className={`${styles.cstNodeStar} ${on ? styles.cstNodeLit : styles.cstNodeDim} ${on && fresh === level ? styles.cstNodePop : ""} ${mini ? styles.cstNodeMini : ""}`} points={starPolygon(x, y, mini ? 8 : 6.4)} strokeLinejoin="round" style={{ "--i": i } as CSSProperties} />;
+    })}
+  </>;
+}
+
+function Album({ items, kd, current, onClose, onPick }: { items: IdleItemSnapshot[]; kd: KittyDevSnapshot; current: string; onClose: () => void; onPick: (id: string) => void }) {
+  const done = items.filter((item) => (kd.characters[item.definition.id]?.stars ?? 0) >= 5).length;
+  return <div className={styles.album} role="dialog" aria-label="Todas as constelações">
+    <div className={styles.albumTop}>
+      <button type="button" className={styles.roundBtn} onClick={onClose} aria-label="Fechar álbum"><X size={22} strokeWidth={3.2} /></button>
+      <div className={styles.cstTitle}><small>Álbum</small><h2>Constelações</h2></div>
+      <span className={styles.albumCount}><Crown size={14} aria-hidden="true" />{done}/{items.length}</span>
+    </div>
+    <div className={styles.albumGrid}>
+      {items.map((item) => {
+        const info = kd.characters[item.definition.id];
+        const complete = info.stars >= 5;
+        return <button key={item.definition.id} type="button" className={`${styles.albumCard} ${complete ? styles.albumCardDone : ""} ${item.purchased ? "" : styles.albumCardLocked} ${item.definition.id === current ? styles.albumCardCurrent : ""}`} onClick={() => onPick(item.definition.id)} aria-label={`${item.definition.name}: ${info.stars} de 5 estrelas`}>
+          <span className={styles.albumArt}>
+            <span className={styles.albumChar}><Image src={spriteFor(item, kd).src} alt="" fill sizes="96px" /></span>
+            <svg className={styles.albumSvg} viewBox="0 0 100 100" aria-hidden="true"><ConstellationArt index={info.index} stars={item.purchased ? info.stars : 0} mini /></svg>
+            {!item.purchased && <LockKeyhole className={styles.albumLock} size={20} aria-hidden="true" />}
+            {complete && <Crown className={styles.albumCrown} size={16} aria-hidden="true" />}
+          </span>
+          <span className={styles.albumName}>{item.definition.name}</span>
+        </button>;
+      })}
+    </div>
+  </div>;
+}
+
+function CompleteCelebration({ item, info, kd, onClose }: { item: IdleItemSnapshot; info: KittyDevCharacterSnapshot; kd: KittyDevSnapshot; onClose: () => void }) {
+  useEffect(() => {
+    const timer = window.setTimeout(onClose, 5_600);
+    return () => window.clearTimeout(timer);
+  }, [onClose]);
+  return <div className={styles.complete} role="dialog" aria-label={`Constelação de ${item.definition.name} completa`} onClick={onClose}>
+    <span className={styles.completeRays} aria-hidden="true" />
+    {FIREWORKS.map(([x, y], index) => <span key={index} className={styles.firework} style={{ left: `${x}%`, top: `${y}%`, "--delay": `${.25 + index * .38}s`, "--hue": index % 3 } as CSSProperties} aria-hidden="true">
+      {Array.from({ length: 12 }, (_, spark) => <i key={spark} style={{ "--a": `${spark * 30}deg` } as CSSProperties} />)}
+    </span>)}
+    <span className={styles.confetti} aria-hidden="true">{CONFETTI.map((piece, index) => <GoldSparkle key={index} style={{ left: `${piece.x}%`, "--delay": `${piece.delay}s`, "--dur": `${piece.duration}s`, "--s": `${piece.size}rem` } as CSSProperties} />)}</span>
+    <div className={styles.completeBody}>
+      <div className={styles.completeArt}>
+        <span className={styles.completeChar}><Image src={spriteFor(item, kd).src} alt="" fill sizes="60vw" /></span>
+        <svg viewBox="0 0 100 100" aria-hidden="true"><ConstellationArt index={info.index} stars={5} /></svg>
+      </div>
+      <p className={styles.completeTitle}>Constelação completa!</p>
+      <p className={styles.completeName}>{item.definition.name}</p>
+      {info.awakening && !info.awakening.awakened && <p className={styles.completeHint}><Sparkles size={14} aria-hidden="true" /> Despertar liberado</p>}
+    </div>
+  </div>;
+}
+
+/** Tela de constelações do mundo: um desenho de 5 estrelas por personagem, evoluído com Pedras Estelares. */
 export default function KittyConstellation({ data, world, worldName, onClose, onSnapshot }: {
   data: IdleModeSnapshot; world: number; worldName: string; onClose: () => void; onSnapshot: (snapshot: IdleSnapshot) => void;
 }) {
@@ -25,9 +100,12 @@ export default function KittyConstellation({ data, world, worldName, onClose, on
   const [pickedLevel, setPickedLevel] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [burst, setBurst] = useState<{ key: number; x: number; y: number } | null>(null);
+  const [burst, setBurst] = useState<{ key: number; level: number } | null>(null);
   const [fresh, setFresh] = useState<{ key: number; level: number } | null>(null);
-  const [banner, setBanner] = useState<string | null>(null);
+  const [flash, setFlash] = useState(0);
+  const [floating, setFloating] = useState<{ key: number; text: string; x: number; y: number } | null>(null);
+  const [complete, setComplete] = useState<string | null>(null);
+  const [album, setAlbum] = useState(false);
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
 
@@ -37,118 +115,98 @@ export default function KittyConstellation({ data, world, worldName, onClose, on
   if (!item || !info) return <div className={styles.cst}><div className={styles.cstTop}><button type="button" className={styles.roundBtn} onClick={onClose} aria-label="Voltar"><ArrowLeft size={24} strokeWidth={3.4} /></button></div><p className={styles.cstEmpty}>Nenhum personagem neste mundo ainda.</p></div>;
 
   const shape = constellationShape(info.index);
-  const nodes = shape.nodes;
   const nextLevel = info.stars < 5 ? info.stars + 1 : null;
   const shownLevel = pickedLevel ?? nextLevel ?? 5;
-  const sprite = spriteFor(item, kd);
   const requirement = nextLevel ? info.starRequirements[nextLevel - 1] : 0;
   const levelOk = item.level >= requirement;
-  const canBuy = Boolean(item.purchased && nextLevel && info.nextStarCost !== null && kd.stones >= info.nextStarCost && levelOk && !busy);
-  const stonesMissing = info.nextStarCost !== null ? Math.max(0, info.nextStarCost - kd.stones) : 0;
+  const enoughStones = info.nextStarCost !== null && kd.stones >= info.nextStarCost;
+  const canBuy = Boolean(item.purchased && nextLevel && enoughStones && levelOk && !busy);
+  const sprite = spriteFor(item, kd);
+  const later = (callback: () => void, ms: number) => timers.current.push(window.setTimeout(callback, ms));
 
   const buy = async () => {
     if (!canBuy || !nextLevel) return;
     setBusy(true); setError(null);
     try {
-      const next = await kittyDevBuyConstellation(item.definition.id);
-      onSnapshot(next);
-      playSoundEffect("idleStar");
-      const [x, y] = nodes[nextLevel - 1];
-      setBurst({ key: Date.now(), x, y });
-      setFresh({ key: Date.now(), level: nextLevel });
-      setPickedLevel(null);
-      timers.current.push(window.setTimeout(() => setBurst(null), 950));
+      const bonus = info.starBonuses[nextLevel - 1];
+      onSnapshot(await kittyDevBuyConstellation(item.definition.id));
+      const key = Date.now();
+      const [x, y] = shape.nodes[nextLevel - 1];
+      setBurst({ key, level: nextLevel }); setFresh({ key, level: nextLevel }); setFlash(key); setPickedLevel(null);
+      setFloating({ key, text: bonus, x, y });
+      later(() => setBurst(null), 1_100);
+      later(() => setFloating(null), 1_700);
       if (nextLevel === 5) {
-        setBanner(item.definition.id === "hello-kitty" ? "Constelação completa! Despertar liberado na aba Melhorias" : "Constelação completa!");
-        timers.current.push(window.setTimeout(() => setBanner(null), 3_600));
-        playSoundEffect("idleAchievement");
-      }
+        playSoundEffect("idleAwaken");
+        later(() => setComplete(item.definition.id), 950);
+      } else playSoundEffect("idleStar");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível evoluir agora.");
     } finally { setBusy(false); }
   };
 
-  const unlockedNodes = (level: number) => level <= info.stars;
-  const link = (a: number, b: number, on: boolean, draw: boolean) => {
-    const [x1, y1] = nodes[a]; const [x2, y2] = nodes[b];
-    return <line key={`${a}-${b}`} className={`${styles.cstLine} ${on ? styles.cstLineOn : ""} ${draw ? styles.cstLineDraw : ""}`} x1={x1} y1={y1} x2={x2} y2={y2} />;
-  };
+  const chip = (() => {
+    if (!item.purchased) return "Desbloqueie o personagem";
+    return info.starBonuses[shownLevel - 1];
+  })();
+  const chipDone = shownLevel <= info.stars;
 
   return <div className={styles.cst} role="dialog" aria-label={`Constelações de ${worldName}`}>
+    <span className={styles.cstNebula} aria-hidden="true" />
     <span className={styles.cstTwinkle} aria-hidden="true" />
+    {[0, 1, 2].map((index) => <span key={index} className={styles.shootingStar} style={{ "--delay": `${index * 3.2 + 1}s`, "--top": `${12 + index * 17}%` } as CSSProperties} aria-hidden="true" />)}
+    {flash > 0 && <span key={flash} className={styles.cstFlash} aria-hidden="true" />}
     <div className={styles.cstTop}>
       <button type="button" className={styles.roundBtn} onClick={onClose} aria-label="Voltar para o mundo"><ArrowLeft size={24} strokeWidth={3.4} /></button>
-      <div className={styles.cstTitle}><small>Constelações</small><h2>{worldName}</h2></div>
-      <div className={styles.stonePill} aria-label={`${kd.stones} Pedras Estelares`}><Image src={STONE_ICON} alt="" width={64} height={64} />{formatIdleNumber(kd.stones)}</div>
+      <div className={styles.cstTitle}><h2>{worldName}</h2></div>
+      <div className={styles.stonePill} aria-label={`${kd.stones} Pedras Estelares`}><Image src={STONE_ICON} alt="" width={64} height={64} /><span>{formatIdleNumber(kd.stones)}</span></div>
     </div>
     <div className={styles.cstTabs} role="tablist" aria-label="Personagens do mundo">
       {roster.map((entry) => {
         const entryInfo = kd.characters[entry.definition.id];
         const on = entry.definition.id === item.definition.id;
         return <button key={entry.definition.id} type="button" role="tab" aria-selected={on} aria-label={`${entry.definition.name}: ${entryInfo.stars} de 5 estrelas`}
-          className={`${styles.cstTab} ${on ? styles.cstTabOn : ""} ${entry.purchased ? "" : styles.cstTabLocked}`} onClick={() => { setSelectedId(entry.definition.id); setPickedLevel(null); setError(null); }}>
+          className={`${styles.cstTab} ${on ? styles.cstTabOn : ""} ${entry.purchased ? "" : styles.cstTabLocked} ${entryInfo.stars >= 5 ? styles.cstTabDone : ""}`} onClick={() => { setSelectedId(entry.definition.id); setPickedLevel(null); setError(null); }}>
           <span className={styles.cstTabArt}><Image src={spriteFor(entry, kd).src} alt="" fill sizes="64px" /></span>
           {!entry.purchased && <LockKeyhole className={styles.cstTabLockIcon} size={18} aria-hidden="true" />}
-          <span className={styles.cstTabStars} aria-hidden="true">{Array.from({ length: 5 }, (_, index) => <Star key={index} size={9} fill={index < entryInfo.stars ? "#ffd45a" : "rgba(190,175,255,.35)"} strokeWidth={0} />)}</span>
+          <span className={styles.cstTabDots} aria-hidden="true">{Array.from({ length: 5 }, (_, index) => <i key={index} data-on={index < entryInfo.stars ? "yes" : "no"} />)}</span>
         </button>;
       })}
     </div>
     <div className={styles.cstStage}>
-      <div className={styles.cstHero}>
-        <div className={styles.cstPortrait}><Image src={sprite.src} alt={item.definition.name} fill sizes="90px" /></div>
-        <div className={styles.cstHeroText}>
-          <h3>{item.definition.name}</h3>
-          <p>{item.purchased
-            ? <>Nível <b>{item.level}</b> · próxima pedra no nível <b>{info.nextMilestoneLevel}</b> (+<b>{formatIdleNumber(info.stoneYieldEffective)}</b>)</>
-            : "Desbloqueie este personagem para evoluir a constelação."}</p>
-          <p>Bônus ativos: <b>x{info.productionMultiplier.toFixed(2)}</b> produção · <b>x{info.clickMultiplier.toFixed(2)}</b> clique</p>
-        </div>
-      </div>
-      <div className={styles.cstCanvasWrap}>
-        <svg className={styles.cstCanvas} viewBox="0 0 100 100" role="group" aria-label={`Constelação de ${item.definition.name}`}>
-          {nodes.slice(1).map((_, index) => link(index, index + 1, unlockedNodes(index + 2), fresh?.level === index + 2))}
-          {shape.loop && link(4, 0, unlockedNodes(5), fresh?.level === 5)}
-          {nodes.map(([x, y], index) => {
-            const level = index + 1;
-            const on = unlockedNodes(level);
+      <div key={item.definition.id} className={styles.cstArena}>
+        <span className={styles.cstHalo} aria-hidden="true" />
+        <span className={`${styles.cstChar} ${item.purchased ? "" : styles.cstCharLocked}`}><Image src={sprite.src} alt={item.definition.name} fill sizes="70vw" priority /></span>
+        <svg className={styles.cstCanvas} viewBox="0 0 100 100" role="group" aria-label={`Constelação ${shape.name} de ${item.definition.name}`}>
+          <ConstellationArt index={info.index} stars={info.stars} fresh={fresh?.level} />
+          {shape.nodes.map(([x, y], i) => {
+            const level = i + 1;
             const next = level === nextLevel && item.purchased;
-            return <g key={level} role="button" tabIndex={0} aria-label={`Estrela ${level}: ${on ? "desbloqueada" : next ? "disponível" : "bloqueada"}`}
-              className={`${styles.cstNode} ${on ? styles.cstNodeOn : next ? styles.cstNodeNext : styles.cstNodeOff} ${shownLevel === level ? styles.cstNodeSel : ""}`}
+            return <g key={level} role="button" tabIndex={0} aria-label={`Estrela ${level}: ${level <= info.stars ? "acesa" : next ? "próxima" : "apagada"}`} className={`${styles.cstNode} ${shownLevel === level ? styles.cstNodeSel : ""}`}
               onClick={() => setPickedLevel(level)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPickedLevel(level); } }}>
-              <circle cx={x} cy={y} r="9" fill="transparent" />
-              <circle className={styles.cstNodeRing} cx={x} cy={y} r="7.2" />
-              <polygon className={styles.cstNodeStar} points={starPoints(x, y, 5.6)} strokeLinejoin="round" />
-              <text className={styles.cstNodeNum} x={x} y={y + 9.8}>{level}</text>
+              <circle cx={x} cy={y} r="10" fill="transparent" />
+              {next && <><circle className={styles.cstNextRing} cx={x} cy={y} r="8" /><circle className={`${styles.cstNextRing} ${styles.cstNextRingB}`} cx={x} cy={y} r="8" /></>}
+              {shownLevel === level && <circle className={styles.cstSelRing} cx={x} cy={y} r="9" />}
             </g>;
           })}
         </svg>
-        {burst && <GoldSparkle key={burst.key} className={styles.cstBurst} style={{ left: `${burst.x}%`, top: `${burst.y}%` } as CSSProperties} aria-hidden="true" />}
-        {banner && <p className={styles.cstToast} role="status">{banner}</p>}
-      </div>
-      <div className={styles.cstPanel}>
-        <div className={styles.cstLevels}>
-          {Array.from({ length: 5 }, (_, index) => {
-            const level = index + 1;
-            const done = level <= info.stars;
-            return <button key={level} type="button" onClick={() => setPickedLevel(level)} aria-pressed={shownLevel === level}
-              className={`${styles.cstLevel} ${done ? styles.cstLevelDone : ""} ${level === nextLevel ? styles.cstLevelNext : ""} ${shownLevel === level ? styles.cstLevelSel : ""}`}>
-              <Star fill="currentColor" strokeWidth={0} aria-hidden="true" />
-              <span>Nível {level} · {info.starBonuses[index]}<small style={{ display: "block", opacity: .75, fontSize: ".58rem" }}>{done || item.level >= info.starRequirements[index] ? "Requisito cumprido" : `Requer personagem no nível ${info.starRequirements[index]}`}</small></span>
-              <span className={styles.cstCostTag}>{done ? <Check size={14} strokeWidth={3.4} aria-label="Concluído" /> : <><Image src={STONE_ICON} alt="" width={32} height={32} />{info.starCosts[index]}</>}</span>
-            </button>;
-          })}
-        </div>
-        {nextLevel
-          ? <button type="button" className={styles.cstBuy} disabled={!canBuy} onClick={() => void buy()}>
-              {!item.purchased ? "Personagem bloqueado" : <>
-                <span>Evoluir para o nível {nextLevel}</span><Image src={STONE_ICON} alt="" width={64} height={64} /><span>{info.nextStarCost}</span>
-              </>}
-            </button>
-          : <p className={styles.cstDone}>Constelação completa!{info.awakening && !info.awakening.awakened ? " Despertar liberado na aba Melhorias." : ""}</p>}
-        {nextLevel && item.purchased && !levelOk && <p style={{ marginTop: ".4rem", color: "#ffd9a0", fontSize: ".68rem", fontWeight: 850, textAlign: "center" }}>Suba {item.definition.name} até o nível {requirement} para evoluir (agora {item.level})</p>}
-        {nextLevel && item.purchased && levelOk && stonesMissing > 0 && <p style={{ marginTop: ".4rem", color: "#cdbfff", fontSize: ".66rem", fontWeight: 800, textAlign: "center" }}>Faltam {formatIdleNumber(stonesMissing)} Pedras Estelares · cada 10 níveis de personagem rendem pedras</p>}
-        {error && <p role="alert" style={{ marginTop: ".4rem", color: "#ffb3c8", fontSize: ".72rem", fontWeight: 850, textAlign: "center" }}>{error}</p>}
+        {burst && <Particles key={`burst-${burst.key}`} x={shape.nodes[burst.level - 1][0]} y={shape.nodes[burst.level - 1][1]} />}
+        {floating && <span key={`float-${floating.key}`} className={styles.cstFloat} style={{ left: `${floating.x}%`, top: `${floating.y}%` }} aria-hidden="true">{floating.text}</span>}
       </div>
     </div>
+    <div className={styles.cstBottom}>
+      <p className={`${styles.cstChip} ${chipDone ? styles.cstChipDone : ""}`}>{chipDone ? <Check size={14} strokeWidth={3.6} aria-hidden="true" /> : <Sparkles size={14} aria-hidden="true" />}<span>{chip}</span></p>
+      {nextLevel
+        ? <button type="button" className={`${styles.cstBuy} ${canBuy ? styles.cstBuyReady : ""}`} disabled={!canBuy} onClick={() => void buy()}>
+            {!item.purchased ? <><LockKeyhole size={18} aria-hidden="true" /><span>Bloqueado</span></>
+              : !levelOk ? <><LockKeyhole size={18} aria-hidden="true" /><span>Requer nível {requirement}</span></>
+              : <><span>Evoluir</span><Image src={STONE_ICON} alt="" width={64} height={64} /><span>{info.nextStarCost}</span></>}
+          </button>
+        : <p className={styles.cstDone}><Crown size={18} aria-hidden="true" />Completa!</p>}
+      {error && <p role="alert" className={styles.cstError}>{error}</p>}
+      <button type="button" className={styles.albumBtn} onClick={() => setAlbum(true)} aria-label="Ver todas as constelações"><LayoutGrid size={18} aria-hidden="true" /><span>Ver todas</span></button>
+    </div>
+    {album && <Album items={data.items} kd={kd} current={item.definition.id} onClose={() => setAlbum(false)} onPick={(id) => { if (roster.some((entry) => entry.definition.id === id)) { setSelectedId(id); setPickedLevel(null); setAlbum(false); } }} />}
+    {complete && <CompleteCelebration item={roster.find((entry) => entry.definition.id === complete) ?? item} info={kd.characters[complete] ?? info} kd={kd} onClose={() => setComplete(null)} />}
   </div>;
 }

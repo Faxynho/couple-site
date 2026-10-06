@@ -36,7 +36,7 @@ function devCharacter(index: number, level: number, stars = 0): KittyDevCharacte
     starBonuses: ["+25% de valor por clique", "+15% de produção", "+40% de valor por clique", "+25% de produção", "+50% de produção e +25% por clique"],
     clickItem: item(`Item de clique ${index}`, 0, 8), stoneItem: item(`Item estelar ${index}`, 0, 5),
     stoneYield: 1, stoneYieldEffective: 1, nextMilestoneLevel: (Math.floor(level / 10) + 1) * 10, productionMultiplier: 1, clickMultiplier: 1,
-    awakening: index === 0 ? { cost: 2e18, multiplier: 1000, asset: "/idle/characters/awake/awake-hello-kitty.webp", awakened: false, unlocked: stars >= 5 } : null,
+    awakening: index === 0 ? { cost: 2e18, multiplier: 1000, asset: "/idle/characters/awake/awake-hello-kitty.webp", awakened: false, unlocked: stars >= 5, skinAwake: true } : null,
   };
 }
 
@@ -99,6 +99,7 @@ describe("Mundo da Hello Kitty — mecânicas experimentais (DEV)", () => {
     render(<IdleModeScreen mode="kitty" environment="dev" />);
     expect(screen.getByRole("heading", { name: "Prado Encantado" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Escolher outro mundo" }));
+    act(() => { vi.advanceTimersByTime(900); });
     expect(screen.getByRole("region", { name: "Seleção de ilhas" })).toBeInTheDocument();
     expect(kittyDevSetWorld).toHaveBeenCalledWith(null);
   });
@@ -118,8 +119,8 @@ describe("Mundo da Hello Kitty — mecânicas experimentais (DEV)", () => {
     expect(within(dialog).getAllByRole("tab")).toHaveLength(4);
     expect(within(dialog).getByLabelText("7 Pedras Estelares")).toBeInTheDocument();
     expect(within(dialog).getAllByRole("button", { name: /Estrela \d/ })).toHaveLength(5);
-    expect(within(dialog).getByText(/Suba Hello Kitty até o nível 31/)).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: /Evoluir para o nível 1/ })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: /Requer nível 31/ })).toBeDisabled();
+    expect(within(dialog).queryByText(/Faltam/)).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Voltar para o mundo" }));
     expect(screen.queryByRole("dialog", { name: /Constelações/ })).not.toBeInTheDocument();
   });
@@ -137,6 +138,82 @@ describe("Mundo da Hello Kitty — mecânicas experimentais (DEV)", () => {
     expect(screen.getByRole("button", { name: /Despertar/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Item de clique 0/ }));
     expect(screen.getByRole("dialog", { name: "Item de clique 0" })).toBeInTheDocument();
+  });
+
+  it("DEV: o título do mundo não repete 'Mundo da Hello Kitty'", () => {
+    currentSnapshot = makeSnapshot("dev", 3, 0);
+    render(<IdleModeScreen mode="kitty" environment="dev" />);
+    expect(screen.getByRole("heading", { name: "Sala dos Abraços" })).toBeInTheDocument();
+    expect(screen.queryByText("Mundo da Hello Kitty")).not.toBeInTheDocument();
+  });
+
+  it("DEV: sair do mundo toca a animação de saída antes de mostrar as ilhas", () => {
+    currentSnapshot = makeSnapshot("dev", 3, 0);
+    const { container } = render(<IdleModeScreen mode="kitty" environment="dev" />);
+    fireEvent.click(screen.getByRole("button", { name: "Escolher outro mundo" }));
+    expect(screen.queryByRole("region", { name: "Seleção de ilhas" })).not.toBeInTheDocument();
+    expect(container.querySelector('[class*="worldLeave"]')).not.toBeNull();
+    act(() => { vi.advanceTimersByTime(900); });
+    expect(screen.getByRole("region", { name: "Seleção de ilhas" })).toBeInTheDocument();
+    expect(kittyDevSetWorld).toHaveBeenCalledWith(null);
+  });
+
+  it("DEV: tela de ilhas mostra saldo e produção ao lado do botão de voltar", () => {
+    currentSnapshot = makeSnapshot("dev", 3);
+    const { container } = render(<IdleModeScreen mode="kitty" environment="dev" />);
+    const header = container.querySelector("header");
+    expect(header).not.toBeNull();
+    expect(within(header as HTMLElement).getByRole("button", { name: "Voltar" })).toBeInTheDocument();
+    expect(within(header as HTMLElement).getByText("Saldo")).toBeInTheDocument();
+    expect(within(header as HTMLElement).getByText("Produção")).toBeInTheDocument();
+  });
+
+  it("DEV: arco de estrelas no lugar do seletor; x1/x10/Máx. vira um círculo que alterna", () => {
+    currentSnapshot = makeSnapshot("dev", 3, 0, 3);
+    render(<IdleModeScreen mode="kitty" environment="dev" />);
+    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
+    expect(screen.getByRole("img", { name: "3 de 5 estrelas" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "x10" })).not.toBeInTheDocument();
+    const bubble = screen.getByRole("button", { name: /Quantidade de níveis: 1/ });
+    expect(bubble).toHaveTextContent("x1");
+    fireEvent.click(bubble);
+    expect(screen.getByRole("button", { name: /Quantidade de níveis: 10/ })).toHaveTextContent("x10");
+  });
+
+  it("DEV: itens ficam só como ícones; o botão de skin só aparece depois de despertar", () => {
+    currentSnapshot = makeSnapshot("dev", 3, 0, 5);
+    const view = render(<IdleModeScreen mode="kitty" environment="dev" />);
+    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
+    const click = screen.getByRole("button", { name: /Item de clique 0: bloqueado/ });
+    expect(click).toHaveTextContent("");
+    expect(screen.queryByRole("button", { name: /skin/i })).not.toBeInTheDocument();
+    const info = currentSnapshot.modes.kitty.kittyDev!.characters["hello-kitty"];
+    info.awakening = { ...info.awakening!, awakened: true, skinAwake: true };
+    view.rerender(<IdleModeScreen mode="kitty" environment="dev" />);
+    expect(screen.getByRole("button", { name: "Usar a skin normal" })).toBeInTheDocument();
+    expect(screen.queryByText(/Despertada · produção/)).not.toBeInTheDocument();
+  });
+
+  it("DEV: skin normal usa o sprite do personagem, e a despertada o sprite despertado", () => {
+    currentSnapshot = makeSnapshot("dev", 3, 0, 5);
+    const info = currentSnapshot.modes.kitty.kittyDev!.characters["hello-kitty"];
+    info.awakening = { ...info.awakening!, awakened: true, skinAwake: true };
+    const view = render(<IdleModeScreen mode="kitty" environment="dev" />);
+    expect(screen.getAllByRole("img").some((img) => img.getAttribute("data-src")?.includes("awake-hello-kitty"))).toBe(true);
+    info.awakening = { ...info.awakening!, skinAwake: false };
+    view.rerender(<IdleModeScreen mode="kitty" environment="dev" />);
+    expect(screen.getAllByRole("img").some((img) => img.getAttribute("data-src")?.includes("awake-hello-kitty"))).toBe(false);
+  });
+
+  it("DEV: álbum mostra todas as constelações e fecha", () => {
+    currentSnapshot = makeSnapshot("dev", 3, 0);
+    render(<IdleModeScreen mode="kitty" environment="dev" />);
+    fireEvent.click(screen.getByRole("button", { name: "Abrir constelações deste mundo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver todas as constelações" }));
+    const album = screen.getByRole("dialog", { name: "Todas as constelações" });
+    expect(within(album).getAllByRole("button", { name: /de 5 estrelas/ })).toHaveLength(24);
+    fireEvent.click(within(album).getByRole("button", { name: "Fechar álbum" }));
+    expect(screen.queryByRole("dialog", { name: "Todas as constelações" })).not.toBeInTheDocument();
   });
 
   it("MODO NORMAL: nada muda — sem seleção de ilhas, sem constelações, com troca de cenário e menu antigo", () => {

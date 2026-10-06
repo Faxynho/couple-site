@@ -1,0 +1,71 @@
+/**
+ * Conquistas e missões das mecânicas experimentais do Mundo da Hello Kitty (SOMENTE ambiente DEV).
+ * O IdleStore só consulta estas listas quando `environment === "dev"`.
+ *
+ * Regras de design:
+ *  - Conquistas são permanentes e feitas uma única vez: as recompensas (moedas globais) sobem com a dificuldade,
+ *    na mesma escala das conquistas atuais da Hello Kitty (50 → 1.500).
+ *  - Missões renováveis NUNCA podem ficar impossíveis: cada uma tem uma regra de disponibilidade (kittyDevQuestAvailable
+ *    no IdleStore) e só entra no sorteio quando ainda existe algo a fazer. As de "viagem" funcionam sempre.
+ */
+import type { AchievementDefinition, KittyObjectiveDefinition } from "./idleConfig";
+
+const STONE = "/idle/dev/pedra-estelar.webp";
+const CLICK = "/idle/events/click2.webp";
+const WORLD = "/idle/islands/island-1.webp";
+
+type DevStat = Extract<AchievementDefinition["condition"], { type: "devStat" }>["stat"];
+
+function devAchievement(id: string, title: string, description: string, reward: number, stat: DevStat, target: number, iconAsset: string, iconItemId?: string): AchievementDefinition {
+  return { id, mode: "kitty", title, description, reward, iconAsset, ...(iconItemId ? { iconItemId } : {}), condition: { type: "devStat", stat, target } };
+}
+
+export const KITTY_DEV_ACHIEVEMENTS: AchievementDefinition[] = [
+  // ----- Pedras Estelares ganhas (a cada 10 níveis de personagem) -----
+  devAchievement("kitty-dev-stone-1", "Primeira pedrinha", "Ganhe 1 Pedra Estelar", 20, "stonesEarned", 1, STONE),
+  devAchievement("kitty-dev-stone-50", "Bolso brilhante", "Ganhe 50 Pedras Estelares", 90, "stonesEarned", 50, STONE),
+  devAchievement("kitty-dev-stone-150", "Chuva de pedras", "Ganhe 150 Pedras Estelares", 260, "stonesEarned", 150, STONE),
+  devAchievement("kitty-dev-stone-300", "Mina estelar", "Ganhe 300 Pedras Estelares", 600, "stonesEarned", 300, STONE),
+  devAchievement("kitty-dev-stone-550", "Galáxia no bolso", "Ganhe 550 Pedras Estelares", 1_200, "stonesEarned", 550, STONE),
+  // ----- Estrelas (soma dos níveis de todas as constelações) -----
+  devAchievement("kitty-dev-star-1", "Primeira estrela", "Acenda 1 estrela", 40, "stars", 1, STONE),
+  devAchievement("kitty-dev-star-10", "Céu começando", "Acenda 10 estrelas", 150, "stars", 10, STONE),
+  devAchievement("kitty-dev-star-30", "Noite estrelada", "Acenda 30 estrelas", 400, "stars", 30, STONE),
+  devAchievement("kitty-dev-star-60", "Via Láctea", "Acenda 60 estrelas", 800, "stars", 60, STONE),
+  devAchievement("kitty-dev-star-120", "Universo completo", "Acenda as 120 estrelas de todos os personagens", 2_000, "stars", 120, STONE),
+  // ----- Constelações completas -----
+  devAchievement("kitty-dev-const-1", "Desenhando o céu", "Complete 1 constelação", 120, "constellations", 1, STONE),
+  devAchievement("kitty-dev-const-6", "Pequeno atlas", "Complete 6 constelações", 450, "constellations", 6, STONE),
+  devAchievement("kitty-dev-const-12", "Astrônoma fofa", "Complete 12 constelações", 900, "constellations", 12, STONE),
+  devAchievement("kitty-dev-const-24", "Mestra das constelações", "Complete as 24 constelações", 2_400, "constellations", 24, STONE),
+  // ----- Despertar -----
+  devAchievement("kitty-dev-awake-1", "Despertar da Kitty", "Desperte a Hello Kitty", 500, "awakened", 1, "/idle/characters/awake/awake-hello-kitty.webp"),
+  // ----- Itens exclusivos -----
+  devAchievement("kitty-dev-click-item-1", "Mãozinha de ouro", "Compre 1 item de clique", 40, "clickItems", 1, CLICK),
+  devAchievement("kitty-dev-click-item-6", "Coleção de cliques", "Compre 6 itens de clique", 180, "clickItems", 6, CLICK),
+  devAchievement("kitty-dev-click-item-24", "Cliques por todos", "Compre os 24 itens de clique", 900, "clickItems", 24, CLICK),
+  devAchievement("kitty-dev-stone-item-1", "Faro estelar", "Compre 1 item estelar", 50, "stoneItems", 1, STONE),
+  devAchievement("kitty-dev-stone-item-6", "Caçadora de pedras", "Compre 6 itens estelares", 220, "stoneItems", 6, STONE),
+  devAchievement("kitty-dev-stone-item-24", "Tesouro completo", "Compre os 24 itens estelares", 1_000, "stoneItems", 24, STONE),
+  devAchievement("kitty-dev-item-max-1", "No máximo!", "Deixe 1 item no nível máximo", 150, "itemsMaxed", 1, CLICK),
+  devAchievement("kitty-dev-item-max-12", "Itens lendários", "Deixe 12 itens no nível máximo", 700, "itemsMaxed", 12, CLICK),
+  devAchievement("kitty-dev-item-max-48", "Perfeição absoluta", "Deixe os 48 itens no nível máximo", 3_000, "itemsMaxed", 48, CLICK),
+];
+
+export function kittyDevAchievementById(id: string): AchievementDefinition | undefined {
+  return KITTY_DEV_ACHIEVEMENTS.find((item) => item.id === id);
+}
+
+export const KITTY_DEV_OBJECTIVES: KittyObjectiveDefinition[] = [
+  // Diárias (rápidas)
+  { id: "kitty-dev-daily-travel", group: "travel", period: "daily", title: "Passeio pelas ilhas", description: "Viaje entre as ilhas 3 vezes", metric: "kittyDevTravels", target: 3, reward: 8 },
+  { id: "kitty-dev-daily-item", group: "devitem", period: "daily", title: "Brilho de item", description: "Compre ou melhore 1 item de personagem", metric: "kittyDevItems", target: 1, reward: 15 },
+  // Semanais (um pouco mais difíceis)
+  { id: "kitty-dev-weekly-travel", group: "travel", period: "weekly", title: "Exploradora de ilhas", description: "Viaje entre as ilhas 15 vezes", metric: "kittyDevTravels", target: 15, reward: 35 },
+  { id: "kitty-dev-weekly-items", group: "devitem", period: "weekly", title: "Colecionadora de itens", description: "Compre ou melhore 4 itens de personagem", metric: "kittyDevItems", target: 4, reward: 60 },
+  { id: "kitty-dev-weekly-star", group: "devstar", period: "weekly", title: "Noite estrelada", description: "Evolua 1 estrela de constelação", metric: "kittyDevStars", target: 1, reward: 70 },
+];
+
+export function kittyDevObjectiveById(id: string): KittyObjectiveDefinition | undefined {
+  return KITTY_DEV_OBJECTIVES.find((item) => item.id === id);
+}
