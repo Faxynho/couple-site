@@ -173,10 +173,10 @@ export const AWAKE_SPRITES: Record<string, string> = {
   "hello-kitty": "/idle/characters/awake/awake-hello-kitty.webp",
   "dear-daniel": "/idle/characters/awake/awake-dear-daniel.webp",
   "my-melody": "/idle/characters/awake/awake-my-melody.webp",
-  "mimmy": "/idle/characters/v2/awake-mimmy.webp", // TODO: trocar por "/idle/characters/awake/awake-mimmy.webp"
-  "cinnamoroll": "/idle/characters/v2/awake-cinnamoroll.webp", // TODO: trocar por "/idle/characters/awake/awake-cinnamoroll.webp"
-  "pompompurin": "/idle/characters/v2/awake-pompompurin6.webp", // TODO: trocar por "/idle/characters/awake/awake-pompompurin.webp"
-  "cinnamoroll-blue-bow": "/idle/characters/v2/awake-cinnamoroll-blue-bow.webp", // TODO: trocar por "/idle/characters/awake/awake-cinnamoroll-blue-bow.webp"
+  "mimmy": "/idle/characters/awake/awake-mimmy.webp", // TODO: trocar por "/idle/characters/awake/awake-mimmy.webp"
+  "cinnamoroll": "/idle/characters/awake/awake-cinnamoroll.webp", // TODO: trocar por "/idle/characters/awake/awake-cinnamoroll.webp"
+  "pompompurin": "/idle/characters/awake/awake-pompompurin6.webp", // TODO: trocar por "/idle/characters/awake/awake-pompompurin.webp"
+  "cinnamoroll-blue-bow": "/idle/characters/awake/awake-cinnamoroll-blue-bow.webp", // TODO: trocar por "/idle/characters/awake/awake-cinnamoroll-blue-bow.webp"
   "pochacco": "/idle/characters/v2/p08.webp", // TODO: trocar por "/idle/characters/awake/awake-pochacco.webp"
   "tiny-chum": "/idle/characters/v2/p09.webp", // TODO: trocar por "/idle/characters/awake/awake-tiny-chum.webp"
   "keroppi": "/idle/characters/v2/p10.webp", // TODO: trocar por "/idle/characters/awake/awake-keroppi.webp"
