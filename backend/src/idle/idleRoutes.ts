@@ -167,7 +167,7 @@ idleRouter.post("/dev/action", (req, res) => {
   if (action === "kittyDev") {
     const kittyAction = String(body.kittyAction);
     const characterId = typeof body.characterId === "string" && body.characterId.length <= 80 ? body.characterId : "all";
-    if (["addStones", "setStones", "maxStars", "resetStars", "maxItems", "resetItems", "resetAll"].includes(kittyAction)) {
+    if (["addStones", "setStones", "maxStars", "resetStars", "maxItems", "resetItems", "resetAll", "setDays", "resetDays"].includes(kittyAction)) {
       res.json({ ok: true, snapshot: store.devKittyAction(kittyAction as Parameters<typeof store.devKittyAction>[0], characterId, Number(body.amount) || 0) });
       return;
     }

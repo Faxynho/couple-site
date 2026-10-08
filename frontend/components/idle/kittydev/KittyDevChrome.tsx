@@ -63,7 +63,7 @@ export function KittyDevHud({ variant, worldName, relicAsset, relicName, balance
 
 const TABS: Array<{ id: IdleTab; label: string; icon: typeof NavHomeIcon }> = [
   { id: "home", label: "Início", icon: NavHomeIcon },
-  { id: "upgrades", label: "Melhorias", icon: NavUpgradeIcon },
+  { id: "upgrades", label: "Personagens", icon: NavUpgradeIcon },
   { id: "relics", label: "Relíquias", icon: NavRelicIcon },
   { id: "achievements", label: "Conquistas", icon: TrophyIcon },
   { id: "statistics", label: "Estatísticas", icon: NavStatsIcon },

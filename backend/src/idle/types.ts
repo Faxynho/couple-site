@@ -192,13 +192,15 @@ export interface KittyDevCharacterSnapshot {
   /** Multiplicadores combinados (estrelas + despertar) já embutidos em `production` do item. */
   productionMultiplier: number;
   clickMultiplier: number;
-  awakening: { cost: number; multiplier: number; asset: string; awakened: boolean; unlocked: boolean; skinAwake: boolean } | null;
+  awakening: { cost: number; bonus: number; asset: string; hasOwnSprite: boolean; awakened: boolean; unlocked: boolean; lockedReason: string | null; skinAwake: boolean } | null;
 }
 
 export interface KittyDevSnapshot {
   stones: number;
   totalStones: number;
   lastWorld: number | null;
+  /** Dias jogados neste mundo (tempo real + simulações de produção offline). */
+  days: number;
   characters: Record<string, KittyDevCharacterSnapshot>;
 }
 

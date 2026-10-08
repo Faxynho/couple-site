@@ -36,7 +36,7 @@ function devCharacter(index: number, level: number, stars = 0): KittyDevCharacte
     starBonuses: ["+25% de valor por clique", "+15% de produção", "+40% de valor por clique", "+25% de produção", "+50% de produção e +25% por clique"],
     clickItem: item(`Item de clique ${index}`, 0, 8), stoneItem: item(`Item estelar ${index}`, 0, 5),
     stoneYield: 1, stoneYieldEffective: 1, nextMilestoneLevel: (Math.floor(level / 10) + 1) * 10, productionMultiplier: 1, clickMultiplier: 1,
-    awakening: index === 0 ? { cost: 2e18, multiplier: 1000, asset: "/idle/characters/awake/awake-hello-kitty.webp", awakened: false, unlocked: stars >= 5, skinAwake: true } : null,
+    awakening: index === 0 ? { cost: 2e18, bonus: 5e10, asset: "/idle/characters/awake/awake-hello-kitty.webp", hasOwnSprite: true, awakened: false, unlocked: stars >= 5, lockedReason: null, skinAwake: true } : null,
   };
 }
 
@@ -128,7 +128,7 @@ describe("Mundo da Hello Kitty — mecânicas experimentais (DEV)", () => {
   it("DEV: na aba Melhorias aparecem estrelas e os dois itens bloqueados; Despertar só com 5 estrelas", () => {
     currentSnapshot = makeSnapshot("dev", 3, 0, 2);
     const view = render(<IdleModeScreen mode="kitty" environment="dev" />);
-    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
+    fireEvent.click(screen.getByRole("button", { name: "Personagens" }));
     expect(screen.getByRole("img", { name: "2 de 5 estrelas" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Item de clique 0: bloqueado/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Item estelar 0: bloqueado/ })).toBeInTheDocument();
@@ -171,7 +171,7 @@ describe("Mundo da Hello Kitty — mecânicas experimentais (DEV)", () => {
   it("DEV: arco de estrelas no lugar do seletor; x1/x10/Máx. vira um círculo que alterna", () => {
     currentSnapshot = makeSnapshot("dev", 3, 0, 3);
     render(<IdleModeScreen mode="kitty" environment="dev" />);
-    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
+    fireEvent.click(screen.getByRole("button", { name: "Personagens" }));
     expect(screen.getByRole("img", { name: "3 de 5 estrelas" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "x10" })).not.toBeInTheDocument();
     const bubble = screen.getByRole("button", { name: /Quantidade de níveis: 1/ });
@@ -183,7 +183,7 @@ describe("Mundo da Hello Kitty — mecânicas experimentais (DEV)", () => {
   it("DEV: itens ficam só como ícones; o botão de skin só aparece depois de despertar", () => {
     currentSnapshot = makeSnapshot("dev", 3, 0, 5);
     const view = render(<IdleModeScreen mode="kitty" environment="dev" />);
-    fireEvent.click(screen.getByRole("button", { name: "Melhorias" }));
+    fireEvent.click(screen.getByRole("button", { name: "Personagens" }));
     const click = screen.getByRole("button", { name: /Item de clique 0: bloqueado/ });
     expect(click).toHaveTextContent("");
     expect(screen.queryByRole("button", { name: /skin/i })).not.toBeInTheDocument();
@@ -214,6 +214,60 @@ describe("Mundo da Hello Kitty — mecânicas experimentais (DEV)", () => {
     expect(within(album).getAllByRole("button", { name: /de 5 estrelas/ })).toHaveLength(24);
     fireEvent.click(within(album).getByRole("button", { name: "Fechar álbum" }));
     expect(screen.queryByRole("dialog", { name: "Todas as constelações" })).not.toBeInTheDocument();
+  });
+
+  it("DEV: o menu chama a aba de Personagens (e o modo normal continua Melhorias)", () => {
+    currentSnapshot = makeSnapshot("dev", 3, 0);
+    render(<IdleModeScreen mode="kitty" environment="dev" />);
+    expect(screen.getByRole("button", { name: "Personagens" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Melhorias" })).not.toBeInTheDocument();
+  });
+
+  it("DEV: no modo Máx. sem saldo ainda mostra o mínimo para upar", () => {
+    currentSnapshot = makeSnapshot("dev", 3, 0);
+    const kitty = currentSnapshot.modes.kitty;
+    kitty.items[0].upgradeQuotes = { one: null, ten: null, max: null } as never;
+    kitty.items[0].nextCost = 1234;
+    render(<IdleModeScreen mode="kitty" environment="dev" />);
+    fireEvent.click(screen.getByRole("button", { name: "Personagens" }));
+    expect(screen.getByText("Saldo insuficiente")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Quantidade de níveis: 1/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Quantidade de níveis: 10/ }));
+    expect(screen.getByRole("button", { name: /Quantidade de níveis: máximo/ })).toHaveTextContent("Máx");
+    expect(screen.queryByText("Saldo insuficiente")).not.toBeInTheDocument();
+    expect(screen.getByText("Melhorar x1")).toBeInTheDocument();
+    expect(screen.getByText("1,2K")).toBeInTheDocument();
+  });
+
+  it("DEV: despertar aparece com 5 estrelas, mas fica travado até o elenco completo / despertar anterior", () => {
+    currentSnapshot = makeSnapshot("dev", 3, 0, 5);
+    const info = currentSnapshot.modes.kitty.kittyDev!.characters["hello-kitty"];
+    info.awakening = { ...info.awakening!, unlocked: false, lockedReason: "Desbloqueie todos os personagens" };
+    render(<IdleModeScreen mode="kitty" environment="dev" />);
+    fireEvent.click(screen.getByRole("button", { name: "Personagens" }));
+    expect(screen.getByRole("button", { name: /Despertar/ })).toBeDisabled();
+    expect(screen.getByText("Desbloqueie todos os personagens")).toBeInTheDocument();
+  });
+
+  it("DEV: com a skin normal os efeitos de despertado continuam, só o sprite muda", () => {
+    currentSnapshot = makeSnapshot("dev", 3, 0, 5);
+    const info = currentSnapshot.modes.kitty.kittyDev!.characters["hello-kitty"];
+    info.awakening = { ...info.awakening!, awakened: true, skinAwake: false };
+    const { container } = render(<IdleModeScreen mode="kitty" environment="dev" />);
+    fireEvent.click(screen.getByRole("button", { name: "Personagens" }));
+    expect(screen.getAllByRole("img").some((img) => img.getAttribute("data-src")?.includes("awake-hello-kitty"))).toBe(false);
+    expect(container.querySelector('[class*="aura"]')).not.toBeNull();
+    expect(container.querySelector('[class*="awakePanel"]')).not.toBeNull();
+  });
+
+  it("DEV: personagem sem sprite despertado próprio usa o sprite normal mas tem as mesmas telas", () => {
+    currentSnapshot = makeSnapshot("dev", 6, 0);
+    const info = currentSnapshot.modes.kitty.kittyDev!.characters["dear-daniel"];
+    info.awakening = { cost: 1e19, bonus: 1e12, asset: "/idle/characters/v2/p02.webp", hasOwnSprite: false, awakened: true, unlocked: true, lockedReason: null, skinAwake: true };
+    render(<IdleModeScreen mode="kitty" environment="dev" />);
+    const images = screen.getAllByRole("img").map((img) => img.getAttribute("data-src"));
+    expect(images.some((src) => src?.includes("/awake/awake-dear-daniel"))).toBe(false);
+    expect(images.some((src) => src?.includes("p02"))).toBe(true);
   });
 
   it("MODO NORMAL: nada muda — sem seleção de ilhas, sem constelações, com troca de cenário e menu antigo", () => {

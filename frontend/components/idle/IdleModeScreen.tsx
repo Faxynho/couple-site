@@ -321,9 +321,9 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem, acc
         const localIndex = item.definition.unlockOrder - (scene === 0 ? 0 : scene === 1 ? 4 : 8);
         const position = mode === "farm" ? FARM_POSITIONS[scene][localIndex] : KITTY_CHARACTER_PLACEMENTS[item.definition.id];
         if (!position) return null;
-        const sprite = dev ? spriteFor(item, kittyDev) : { src: item.definition.asset, awake: false };
+        const sprite = dev ? spriteFor(item, kittyDev) : { src: item.definition.asset, awake: false, styled: false };
         return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : styles.character} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}>
-          <Image className={sprite.awake ? `${devStyles.awakeImg} ${devStyles.awakeImgHome}` : undefined} src={sprite.src} alt={item.definition.name} fill sizes="42vw" />
+          <Image className={sprite.styled ? `${devStyles.awakeImg} ${devStyles.awakeImgHome}` : undefined} src={sprite.src} alt={item.definition.name} fill sizes="42vw" />
           {sprite.awake && <AwakeEffects />}
         </button>;
       })}
@@ -462,6 +462,8 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const selected = data.items[index];
   const devInfo = dev ? dev.kittyDev.characters[selected.definition.id] : undefined;
   const selectedAwake = Boolean(devInfo?.awakening?.awakened);
+  // DEV: no modo Máx. sem saldo mostramos o mínimo para upar (1 nível) em vez de esconder o preço.
+  const shownQuote: { count: number; totalCost: number } | null = quoteFor(selected, purchaseMode) ?? (dev && purchaseMode === "max" && selected.purchased ? { count: 1, totalCost: selected.nextCost } : null);
   const prestige = selected.definition.unlockOrder;
   const tier = rarityTier(prestige);
   const particleCount = selected.purchased
@@ -616,7 +618,7 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
         const offset = itemIndex - index;
         const visible = Math.abs(offset) <= 1;
         if (!visible) return null;
-        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} data-upgrade-character={offset === 0 ? item.definition.id : undefined} {...(offset === 0 && item.purchased ? { role: "button", tabIndex: 0, "aria-label": `Coletar com ${item.definition.name}`, onClick: (event: MouseEvent<HTMLDivElement>) => void tapCharacter(event.clientX, event.clientY, event.currentTarget), onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); void tapCharacter(0, 0, event.currentTarget); } } } : {})} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}>{(() => { const sprite = dev ? spriteFor(item, dev.kittyDev) : { src: item.definition.asset, awake: false }; return <><Image className={sprite.awake ? devStyles.awakeImg : undefined} src={sprite.src} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{sprite.awake && offset === 0 && <AwakeEffects />}</>; })()}{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}{offset === 0 && <span ref={upgradeFlashRef} className={styles.upgradeFlash} aria-hidden="true" />}</div>;
+        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} data-upgrade-character={offset === 0 ? item.definition.id : undefined} {...(offset === 0 && item.purchased ? { role: "button", tabIndex: 0, "aria-label": `Coletar com ${item.definition.name}`, onClick: (event: MouseEvent<HTMLDivElement>) => void tapCharacter(event.clientX, event.clientY, event.currentTarget), onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); void tapCharacter(0, 0, event.currentTarget); } } } : {})} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}>{(() => { const sprite = dev ? spriteFor(item, dev.kittyDev) : { src: item.definition.asset, awake: false, styled: false }; return <><Image className={sprite.styled ? devStyles.awakeImg : undefined} src={sprite.src} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{sprite.awake && offset === 0 && <AwakeEffects />}</>; })()}{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}{offset === 0 && <span ref={upgradeFlashRef} className={styles.upgradeFlash} aria-hidden="true" />}</div>;
       })}
       <div className={styles.panelStack}>
         <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>
@@ -657,11 +659,11 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
               return;
             }
             void act(selected.definition.id, "buy");
-          }}>{selected.purchased ? quoteFor(selected, purchaseMode) ? <>
+          }}>{selected.purchased ? shownQuote ? <>
             <ArrowBigUp className={styles.btnArrow} size={22} fill="currentColor" strokeWidth={1.6} aria-hidden="true" />
-            <span className={styles.btnText}>Melhorar x{quoteFor(selected, purchaseMode)!.count}</span>
+            <span className={styles.btnText}>Melhorar x{shownQuote.count}</span>
             <span className={styles.btnDivider} aria-hidden="true" />
-            <span className={styles.btnCost}><GameStatIcon type="money" /><span>{formatIdleNumber(quoteFor(selected, purchaseMode)!.totalCost)}</span></span>
+            <span className={styles.btnCost}><GameStatIcon type="money" /><span>{formatIdleNumber(shownQuote.totalCost)}</span></span>
             {(pendingUpgrades[selected.definition.id] ?? 0) > 0 && <span className={styles.pendingBadge}>+{pendingUpgrades[selected.definition.id]}</span>}
           </> : <span className={styles.btnText}>Saldo insuficiente</span> : busyItemId === selected.definition.id ? <span className={styles.btnText}>Comprando…</span> : selected.unlocked ? <>
             <span className={styles.btnText}>Comprar</span>

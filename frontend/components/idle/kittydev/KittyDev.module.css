@@ -420,3 +420,80 @@
 @media (prefers-reduced-motion: reduce) {
   .cstNebula, .shootingStar, .cstHalo, .cstChar, .cstLineOn, .cstNodeLit, .cstNextRing, .cstSelRing, .completeRays, .firework i, .confetti > *, .completeChar, .itemRays, .itemHeroArt, .stonePill img, .arcStarLit, .railBtnReady { animation: none; }
 }
+
+
+/* =====================================================================
+   3ª rodada
+   ===================================================================== */
+/* relíquias da tela inicial maiores */
+.relicSlot { top: calc(env(safe-area-inset-top) + 3.55rem); width: 3.7rem; height: 3.7rem; }
+
+/* pedra ganha ao completar 10 níveis: só o sprite e o valor (sem fundo), como o saldo */
+.stoneGain { gap: .2rem; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.stoneGain img { width: 3.8rem; height: 3.8rem; margin: -.5rem 0; filter: drop-shadow(0 0 8px rgba(190,170,255,.95)) drop-shadow(0 2px 3px rgba(40,20,110,.6)); }
+.stoneGain b { font-size: 2rem; color: #fff; text-shadow: 0 2px 0 rgba(60,30,140,.85), 0 0 12px rgba(190,170,255,.95), 0 0 3px rgba(40,20,110,.9); -webkit-text-stroke: .5px rgba(60,30,140,.6); }
+.stoneGainGlow { inset: -1rem -1.4rem; opacity: .7; }
+
+/* arco de estrelas: maiores, mais juntas e em destaque (a do meio é a maior) */
+.arcSlot { height: 3.3rem; margin-bottom: -.7rem; }
+.starArc { width: 12.5rem; filter: drop-shadow(0 3px 5px rgba(120,50,20,.35)); }
+.arcStar[data-slot="0"] { --x: 12; --y: 1.35rem; --size: 2.1rem; }
+.arcStar[data-slot="1"] { --x: 31; --y: .62rem; --size: 2.6rem; }
+.arcStar[data-slot="2"] { --x: 50; --y: -.15rem; --size: 3.6rem; }
+.arcStar[data-slot="3"] { --x: 69; --y: .62rem; --size: 2.6rem; }
+.arcStar[data-slot="4"] { --x: 88; --y: 1.35rem; --size: 2.1rem; }
+.arcStarLit svg { filter: drop-shadow(0 0 7px rgba(255,214,90,1)) drop-shadow(0 0 14px rgba(255,170,40,.55)); }
+
+/* menu inferior: a moldura dourada fica ATRÁS dos botões */
+.nav.ornate::before { z-index: 1; }
+.nav.ornate::after { z-index: 1; }
+.nav.ornate .ornateCorners { z-index: 2; }
+.nav.ornate .navBtn { z-index: 4; }
+
+/* pedra estelar maior na tela de constelações */
+.stonePill { height: 3.3rem; padding: .1rem 1rem .1rem .15rem; font-size: 1.25rem; }
+.stonePill img { width: 3.7rem; height: 3.7rem; margin: -.2rem 0; filter: drop-shadow(0 0 8px rgba(255,255,255,.85)); }
+.cstBuy img { width: 2.5rem; height: 2.5rem; padding: 0; background: none; box-shadow: none; filter: drop-shadow(0 0 6px rgba(120,90,255,.9)) drop-shadow(0 1px 2px rgba(40,20,110,.6)); }
+.cstBuyReady img { animation: kdFloat2 2.2s ease-in-out infinite; }
+
+/* linha entre estrelas acesas: contínua, com luz correndo no sentido do traçado */
+.cstLineSolid { fill: none; stroke: #ffd96a; stroke-width: 1.15; stroke-linecap: round; filter: drop-shadow(0 0 2.6px #ffc83a); }
+.cstLineSolidMini { stroke-width: 3; filter: none; }
+.cstLineDraw { stroke-dasharray: 100; stroke-dashoffset: 100; animation: kdLineDraw2 .9s ease-out forwards; }
+.cstLineFlow { fill: none; stroke: #fffbe6; stroke-width: .75; stroke-linecap: round; stroke-dasharray: 5 23; filter: drop-shadow(0 0 2.2px #fff); animation: kdFlow2 1.7s linear infinite; }
+.cstLineFlowLate { opacity: 0; animation: kdFlow2 1.7s linear infinite, kdAppear .3s 1s forwards; }
+.cstLineOn { animation: none; }
+
+/* constelações mais vivas */
+.cstAurora { position: absolute; inset: -10% -30% 40% -30%; pointer-events: none; background: linear-gradient(100deg,transparent 10%,rgba(120,255,214,.0) 25%,rgba(130,255,220,.26) 38%,rgba(190,140,255,.3) 52%,rgba(255,130,200,.2) 66%,transparent 80%); filter: blur(22px); opacity: .85; transform-origin: 50% 100%; animation: kdAurora 11s ease-in-out infinite alternate; }
+.cstAuroraB { inset: 30% -30% -10% -30%; opacity: .6; animation-duration: 15s; animation-direction: alternate-reverse; background: linear-gradient(80deg,transparent 15%,rgba(255,140,210,.22) 40%,rgba(120,170,255,.28) 58%,transparent 82%); }
+.cstStarsFar, .cstStarsNear { position: absolute; inset: -20% 0; pointer-events: none; background-repeat: repeat; }
+.cstStarsFar { background-image: radial-gradient(circle,rgba(255,255,255,.9) 0 1px,transparent 1.6px), radial-gradient(circle,rgba(220,210,255,.8) 0 1px,transparent 1.6px); background-size: 90px 110px, 140px 90px; background-position: 0 0, 40px 60px; opacity: .55; animation: kdDriftFar 60s linear infinite; }
+.cstStarsNear { background-image: radial-gradient(circle,rgba(255,244,200,1) 0 1.4px,transparent 2.2px), radial-gradient(circle,rgba(255,200,240,.9) 0 1.3px,transparent 2px); background-size: 170px 150px, 230px 200px; background-position: 20px 30px, 100px 90px; opacity: .8; animation: kdDriftNear 38s linear infinite, kdTwinkleBg 3s ease-in-out infinite alternate; }
+.cstOrb { position: absolute; z-index: 1; bottom: -2rem; width: var(--s); height: var(--s); border-radius: 50%; pointer-events: none; background: radial-gradient(circle,#fff6c8 0,rgba(255,214,120,.8) 40%,transparent 72%); box-shadow: 0 0 10px rgba(255,220,130,.8); opacity: 0; animation: kdOrbRise var(--d) ease-in var(--dl) infinite; }
+.cstOrb:nth-child(3n) { background: radial-gradient(circle,#ffe6f7 0,rgba(255,150,210,.8) 40%,transparent 72%); box-shadow: 0 0 10px rgba(255,150,210,.8); }
+.cstOrb:nth-child(4n) { background: radial-gradient(circle,#e6f4ff 0,rgba(140,190,255,.8) 40%,transparent 72%); box-shadow: 0 0 10px rgba(140,190,255,.8); }
+.cstRing { position: absolute; inset: 1%; border-radius: 50%; pointer-events: none; border: 1.5px dashed rgba(220,200,255,.28); animation: kdSpin 40s linear infinite; }
+.cstRingB { inset: 9%; border-style: dotted; border-color: rgba(255,214,140,.3); animation-duration: 26s; animation-direction: reverse; }
+.cstCanvas { animation: kdBreathe 7s ease-in-out infinite; }
+.cstNodeGlow { r: 6.2px; fill: rgba(255,214,110,.2); transform-box: fill-box; transform-origin: center; animation: kdGlowPulse 2.8s ease-in-out calc(var(--i) * .35s) infinite; }
+.cstTwinkleDot { fill: #fff; opacity: 0; animation: kdDotTwinkle 2.4s ease-in-out calc(var(--i) * .5s) infinite; }
+.cstOrbit { fill: #fff3b0; filter: drop-shadow(0 0 2px #ffe38a); animation: kdSpin 2.6s linear infinite; }
+.cstChar { animation: kdFloat2 6s ease-in-out infinite, kdCharGlow 5s ease-in-out infinite; }
+.cstTabOn { animation: kdTabBob 2.4s ease-in-out infinite; }
+
+@keyframes kdLineDraw2 { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes kdFlow2 { to { stroke-dashoffset: -28; } }
+@keyframes kdAppear { to { opacity: 1; } }
+@keyframes kdAurora { 0% { transform: translateX(-8%) skewX(-8deg) scaleY(.9); opacity: .55; } 100% { transform: translateX(8%) skewX(8deg) scaleY(1.1); opacity: .95; } }
+@keyframes kdDriftFar { to { transform: translateY(110px); } }
+@keyframes kdDriftNear { to { transform: translateY(150px); } }
+@keyframes kdOrbRise { 0% { opacity: 0; transform: translate(0,0) scale(.6); } 12% { opacity: 1; } 55% { transform: translate(14px,-55vh) scale(1); } 90% { opacity: .9; } 100% { opacity: 0; transform: translate(-10px,-108vh) scale(.5); } }
+@keyframes kdBreathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.025); } }
+@keyframes kdGlowPulse { 0%,100% { transform: scale(.9); opacity: .55; } 50% { transform: scale(1.5); opacity: 1; } }
+@keyframes kdDotTwinkle { 0%,70%,100% { opacity: 0; transform: scale(.4); } 85% { opacity: 1; transform: scale(1.6); } }
+@keyframes kdCharGlow { 0%,100% { opacity: .3; } 50% { opacity: .42; } }
+@keyframes kdTabBob { 0%,100% { transform: translateY(-2px) scale(1.1); } 50% { transform: translateY(-5px) scale(1.12); } }
+@media (prefers-reduced-motion: reduce) {
+  .cstAurora, .cstStarsFar, .cstStarsNear, .cstOrb, .cstRing, .cstCanvas, .cstNodeGlow, .cstTwinkleDot, .cstOrbit, .cstLineFlow, .cstTabOn { animation: none; }
+}

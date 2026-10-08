@@ -570,9 +570,13 @@ export class IdleStore {
   private itemProduction(mode: IdleModeId, definition: (typeof IDLE_CATALOG)[IdleModeId][number], level: number): number {
     const base = itemProduction(definition, level);
     if (mode !== "kitty") return base;
-    const relics = base * this.relicMultiplier(`kitty-scene-${definition.scene + 1}`) * this.relicMultiplier("kitty-all");
-    // DEV: estrelas da constelação e despertar. No ambiente real o multiplicador é sempre 1 (conta não executada).
-    return this.environment === "dev" ? relics * this.kittyDevProductionMultiplier(definition.id) : relics;
+    const sceneRelic = this.relicMultiplier(`kitty-scene-${definition.scene + 1}`);
+    const allRelic = this.relicMultiplier("kitty-all");
+    // Ambiente real: exatamente a conta original.
+    if (this.environment !== "dev") return base * sceneRelic * allRelic;
+    // DEV: estrelas da constelação multiplicam e o despertar soma um bônus FIXO (como um personagem 25, 26…);
+    // os dois ainda são multiplicados pelas relíquias.
+    return (base * this.kittyDevProductionMultiplier(definition.id) + this.kittyDevAwakeningBonus(definition.id)) * sceneRelic * allRelic;
   }
 
   private productionMultiplier(mode: IdleModeId, now: number): number {
@@ -1150,7 +1154,9 @@ export class IdleStore {
 
   simulateOffline(mode: IdleModeId, elapsedMs: number): IdleSnapshot {
     const state = this.data.modes[mode];
-    state.lastSettledAt = Math.max(0, this.now() - Math.min(OFFLINE_CAP_MS, Math.max(0, elapsedMs)));
+    const credited = Math.min(OFFLINE_CAP_MS, Math.max(0, elapsedMs));
+    state.lastSettledAt = Math.max(0, this.now() - credited);
+    if (mode === "kitty") { const dev = this.kittyDevState(); if (dev) dev.simulatedMs += credited; }
     return this.enterMode(mode);
   }
   /** DEV-only: simula exatamente o período informado, sem alterar o teto de 8h do save real. */
@@ -1158,6 +1164,7 @@ export class IdleStore {
     const elapsed = Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs) : 0;
     const state = this.data.modes[mode];
     state.lastSettledAt = Math.max(0, this.now() - elapsed);
+    if (mode === "kitty") { const dev = this.kittyDevState(); if (dev) dev.simulatedMs += elapsed; }
     return this.enterModeWithOfflineCap(mode, elapsed);
   }
 
@@ -1170,6 +1177,7 @@ export class IdleStore {
     if (this.environment !== "dev") return null;
     const kitty = this.data.modes.kitty;
     if (!kitty.dev) kitty.dev = emptyKittyDev();
+    if (!kitty.dev.startedAt) kitty.dev.startedAt = this.now();
     return kitty.dev;
   }
 
@@ -1183,8 +1191,28 @@ export class IdleStore {
   private kittyDevProductionMultiplier(characterId: string): number {
     const saved = this.data.modes.kitty.dev?.characters[characterId];
     if (!saved) return 1;
-    const awakening = saved.awakened ? awakeningFor(characterId) : null;
-    return constellationProductionMultiplier(saved.stars) * (awakening?.multiplier ?? 1);
+    return constellationProductionMultiplier(saved.stars);
+  }
+
+  /** Bônus fixo de produção do despertar (0 se o personagem ainda não despertou). */
+  private kittyDevAwakeningBonus(characterId: string): number {
+    const saved = this.data.modes.kitty.dev?.characters[characterId];
+    if (!saved?.awakened) return 0;
+    return awakeningFor(characterId)?.bonus ?? 0;
+  }
+
+  /** Regras para despertar: todos os personagens desbloqueados, 5 estrelas e o despertar anterior feito. */
+  private kittyDevAwakeningStatus(index: number): { unlocked: boolean; lockedReason: string | null } {
+    const dev = this.kittyDevState();
+    const stars = dev?.characters[IDLE_CATALOG.kitty[index].id]?.stars ?? 0;
+    if (stars < KITTY_STAR_MAX) return { unlocked: false, lockedReason: null };
+    const items = this.data.modes.kitty.items;
+    if (!IDLE_CATALOG.kitty.every((item) => items[item.id]?.purchased)) return { unlocked: false, lockedReason: "Desbloqueie todos os personagens" };
+    if (index > 0) {
+      const previous = IDLE_CATALOG.kitty[index - 1];
+      if (!dev?.characters[previous.id]?.awakened) return { unlocked: false, lockedReason: `Desperte ${previous.name} primeiro` };
+    }
+    return { unlocked: true, lockedReason: null };
   }
 
   private kittyDevClickMultiplier(characterId: string): number {
@@ -1214,6 +1242,13 @@ export class IdleStore {
       changed = true;
     });
     return changed;
+  }
+
+  /** Dias jogados neste mundo: tempo real desde o início do contador + o que foi simulado nos botões offline. */
+  private kittyDevDays(): number {
+    const dev = this.kittyDevState();
+    if (!dev) return 0;
+    return Math.max(0, (this.now() - dev.startedAt + dev.simulatedMs) / 86_400_000);
   }
 
   private kittyDevItemSnapshot(index: number, kind: "click" | "stone", saved: KittyDevCharacterState): KittyDevCharacterSnapshot["clickItem"] {
@@ -1257,11 +1292,11 @@ export class IdleStore {
         productionMultiplier: this.kittyDevProductionMultiplier(definition.id),
         clickMultiplier: this.kittyDevClickMultiplier(definition.id),
         awakening: awakening
-          ? { cost: awakening.cost, multiplier: awakening.multiplier, asset: awakening.asset, awakened: saved.awakened, unlocked: saved.stars >= KITTY_STAR_MAX, skinAwake: saved.skinAwake }
+          ? { cost: awakening.cost, bonus: awakening.bonus, asset: awakening.asset, hasOwnSprite: awakening.hasOwnSprite, awakened: saved.awakened, ...this.kittyDevAwakeningStatus(index), skinAwake: saved.skinAwake }
           : null,
       };
     });
-    return { stones: dev.stones, totalStones: dev.totalStones, lastWorld: dev.lastWorld, characters };
+    return { stones: dev.stones, totalStones: dev.totalStones, lastWorld: dev.lastWorld, days: this.kittyDevDays(), characters };
   }
 
   /** Prepara uma ação DEV da Hello Kitty: valida o ambiente, liquida a produção e devolve o helper de falha. */
@@ -1320,9 +1355,11 @@ export class IdleStore {
     const ctx = this.kittyDevAction(characterId);
     if (ctx.error || !ctx.character) return ctx.fail(ctx.error ?? "Personagem não encontrado.");
     const awakening = awakeningFor(characterId);
-    if (!awakening) return ctx.fail("O despertar deste personagem chega em breve.");
+    if (!awakening) return ctx.fail("O despertar deste personagem não está disponível.");
     if (ctx.character.awakened) return ctx.fail("Este personagem já despertou.");
     if (ctx.character.stars < KITTY_STAR_MAX) return ctx.fail("Complete a constelação (5 estrelas) para despertar.");
+    const status = this.kittyDevAwakeningStatus(awakening.index);
+    if (!status.unlocked) return ctx.fail(`${status.lockedReason}.`);
     const state = this.data.modes.kitty;
     if (state.balance < awakening.cost) return ctx.fail("Dinheiro interno insuficiente.");
     state.balance = safeMoney(state.balance - awakening.cost);
@@ -1391,14 +1428,16 @@ export class IdleStore {
   }
 
   /** Ferramentas de teste das mecânicas novas (aba DEV). */
-  devKittyAction(action: "addStones" | "setStones" | "maxStars" | "resetStars" | "maxItems" | "resetItems" | "resetAll", characterId: string | "all", amount = 0): IdleSnapshot {
+  devKittyAction(action: "addStones" | "setStones" | "maxStars" | "resetStars" | "maxItems" | "resetItems" | "resetAll" | "setDays" | "resetDays", characterId: string | "all", amount = 0): IdleSnapshot {
     const now = this.now();
     const dev = this.kittyDevState();
     if (!dev) return this.buildSnapshot(null);
     const ids = characterId === "all" ? IDLE_CATALOG.kitty.map((item) => item.id) : [characterId];
     if (action === "addStones") { const add = Math.max(0, Math.floor(amount)); dev.stones += add; dev.totalStones += add; }
     else if (action === "setStones") { dev.stones = Math.max(0, Math.floor(amount)); dev.totalStones = Math.max(dev.totalStones, dev.stones); }
-    else if (action === "resetAll") { this.data.modes.kitty.dev = emptyKittyDev(); }
+    else if (action === "setDays") { dev.simulatedMs = Math.max(0, Math.max(0, Number(amount) || 0) * 86_400_000 - (this.now() - dev.startedAt)); }
+    else if (action === "resetDays") { dev.startedAt = this.now(); dev.simulatedMs = 0; }
+    else if (action === "resetAll") { this.data.modes.kitty.dev = { ...emptyKittyDev(), startedAt: dev.startedAt, simulatedMs: dev.simulatedMs }; }
     else for (const id of ids) {
       const saved = this.kittyDevCharacter(id);
       if (!saved) continue;
