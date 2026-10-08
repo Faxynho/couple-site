@@ -188,6 +188,8 @@ test("DEV: conquistas de pedra, estrela, constelação, despertar e itens são c
   store.buyKittyItem("hello-kitty", "stone");
   assert.ok(kittyAchievement(store, "kitty-dev-click-item-1").completedAt);
   assert.ok(kittyAchievement(store, "kitty-dev-stone-item-1").completedAt);
+  unlockEveryone(store);
+  store.devItemAction("kitty", "hello-kitty", "setLevel", 90);
   assert.equal(store.awakenKittyCharacter("hello-kitty").ok, true);
   assert.ok(kittyAchievement(store, "kitty-dev-awake-1").completedAt);
   assert.equal(kittyAchievement(store, "kitty-dev-awake-1").progress, 1);
@@ -223,11 +225,15 @@ test("DEV: conquistas e progresso das missões novas sobrevivem a reiniciar o se
 // ---------------------------------------------------------------------------
 // Skin do personagem despertado
 // ---------------------------------------------------------------------------
+function unlockEveryone(store) {
+  for (const definition of IDLE_CATALOG.kitty) store.devItemAction("kitty", definition.id, "setLevel", 1);
+}
 function awakened() {
   const { store } = makeStore("dev");
+  unlockEveryone(store);
   store.devItemAction("kitty", "hello-kitty", "setLevel", 90);
   store.devKittyAction("maxStars", "hello-kitty");
-  store.changeBalance("kitty", "set", 1e30);
+  store.changeBalance("kitty", "set", 1e300);
   assert.equal(store.awakenKittyCharacter("hello-kitty").ok, true);
   return store;
 }
@@ -264,9 +270,10 @@ test("skin: a escolha é salva no JSON do ambiente DEV", async () => {
     const file = join(dir, "idle-dev.json");
     const first = new IdleStore(true, () => MONDAY, file, "dev");
     await first.ready();
+    for (const definition of IDLE_CATALOG.kitty) first.devItemAction("kitty", definition.id, "setLevel", 1);
     first.devItemAction("kitty", "hello-kitty", "setLevel", 90);
     first.devKittyAction("maxStars", "hello-kitty");
-    first.changeBalance("kitty", "set", 1e30);
+    first.changeBalance("kitty", "set", 1e300);
     first.awakenKittyCharacter("hello-kitty");
     first.setKittySkin("hello-kitty", false);
     await new Promise((resolve) => setTimeout(resolve, 900));

@@ -134,16 +134,18 @@ test("constelação: compra níveis em ordem, gasta pedras e aplica os bônus de
   snapshot = first.snapshot;
   assert.equal(snapshot.modes.kitty.kittyDev.stones, stonesBefore - cost1);
   assert.equal(snapshot.modes.kitty.kittyDev.characters["hello-kitty"].stars, 1);
-  // nível 1: +25% clique, produção igual
-  assert.ok(Math.abs(snapshot.modes.kitty.items[0].production - base) < 1e-9);
+  // nível 1: +25% clique e a produção sobe pelo bônus do nível (valores em CONSTELLATION_BONUSES)
+  const b1 = config.CONSTELLATION_BONUSES[0];
+  const b2 = config.CONSTELLATION_BONUSES[1];
+  assert.ok(Math.abs(snapshot.modes.kitty.items[0].production - base * b1.production) < base * 1e-9);
   const click1 = (() => { return snapshot.modes.kitty.kittyDev.characters["hello-kitty"].clickMultiplier; })();
-  assert.ok(Math.abs(click1 - 1.25) < 1e-9);
+  assert.ok(Math.abs(click1 - b1.click) < 1e-9);
   assert.ok(baseClick > 0);
 
-  // nível 2: +15% produção
+  // nível 2: o bônus de produção do nível se acumula
   const second = store.buyKittyConstellation("hello-kitty");
   assert.equal(second.ok, true);
-  assert.ok(Math.abs(second.snapshot.modes.kitty.items[0].production - base * 1.15) < 1e-6);
+  assert.ok(Math.abs(second.snapshot.modes.kitty.items[0].production - base * b1.production * b2.production) < base * 1e-9);
 });
 
 test("constelação: completa com 5 estrelas, bloqueia o 6º nível e valida saldo de pedras", () => {
@@ -277,49 +279,171 @@ test("itens: preços crescem com o personagem e com o nível", () => {
 // ---------------------------------------------------------------------------
 // Despertar
 // ---------------------------------------------------------------------------
-test("despertar: exige 5 estrelas e dinheiro, multiplica produção e clique da Hello Kitty", () => {
+/** Desbloqueia os 24 personagens (o despertar exige o elenco completo). */
+function unlockAll(store, level = 1) {
+  for (const definition of IDLE_CATALOG.kitty) store.devItemAction("kitty", definition.id, "setLevel", level);
+}
+
+test("despertar: exige elenco completo, 5 estrelas e dinheiro e soma um bônus FIXO de produção", () => {
   const store = devStore();
   unlock(store, 1, 90);
-  store.changeBalance("kitty", "set", 1e30);
+  store.changeBalance("kitty", "set", 1e40);
   const early = store.awakenKittyCharacter("hello-kitty");
   assert.equal(early.ok, false);
   assert.match(early.error, /constelação/);
 
   store.devKittyAction("setStones", "all", 1000);
   for (let level = 1; level <= 5; level += 1) assert.equal(store.buyKittyConstellation("hello-kitty").ok, true);
-  const before = store.getSnapshot().modes.kitty;
-  const beforeProduction = before.items[0].production;
+  const incomplete = store.awakenKittyCharacter("hello-kitty");
+  assert.equal(incomplete.ok, false);
+  assert.match(incomplete.error, /todos os personagens/);
 
-  store.changeBalance("kitty", "set", config.AWAKENING_DEFINITIONS["hello-kitty"].cost * 0.5);
+  unlockAll(store);
+  store.devItemAction("kitty", "hello-kitty", "setLevel", 90);
+  const beforeProduction = store.getSnapshot().modes.kitty.items[0].production;
+  const definition = config.AWAKENING_DEFINITIONS["hello-kitty"];
+
+  store.changeBalance("kitty", "set", definition.cost * 0.5);
   const poor = store.awakenKittyCharacter("hello-kitty");
   assert.equal(poor.ok, false);
   assert.match(poor.error, /insuficiente/);
 
-  store.changeBalance("kitty", "set", 1e30);
+  store.changeBalance("kitty", "set", 1e40);
   const awake = store.awakenKittyCharacter("hello-kitty");
   assert.equal(awake.ok, true);
   const state = awake.snapshot.modes.kitty;
   assert.equal(state.kittyDev.characters["hello-kitty"].awakening.awakened, true);
-  assert.ok(Math.abs(state.items[0].production / beforeProduction - config.AWAKENING_DEFINITIONS["hello-kitty"].multiplier) < 1e-3);
-  assert.equal(config.AWAKENING_DEFINITIONS["hello-kitty"].multiplier, 1000);
-  assert.equal(state.balance, 1e30 - config.AWAKENING_DEFINITIONS["hello-kitty"].cost);
+  // bônus fixo multiplicado pelas relíquias (nível 0 => x1)
+  assert.ok(Math.abs(state.items[0].production - (beforeProduction + definition.bonus)) < definition.bonus * 1e-9);
+  assert.equal(state.balance, 1e40 - definition.cost);
+  // subir de nível NÃO multiplica o bônus: ele continua somando só o valor fixo
+  store.devItemAction("kitty", "hello-kitty", "setLevel", 120);
+  const bigger = store.getSnapshot().modes.kitty.items[0].production;
+  const plain = require("../dist/idle/idleConfig.js").itemProduction(IDLE_CATALOG.kitty[0], 120) * config.constellationProductionMultiplier(5);
+  assert.ok(Math.abs(bigger - (plain + definition.bonus)) < (plain + definition.bonus) * 1e-9);
 
   const again = store.awakenKittyCharacter("hello-kitty");
   assert.equal(again.ok, false);
   assert.match(again.error, /já despertou/);
 });
 
-test("despertar: personagens sem sprite despertado ainda não podem despertar", () => {
+test("despertar: todos os 24 personagens têm despertar, em sequência, com custo e bônus crescentes", () => {
+  assert.equal(Object.keys(config.AWAKENING_DEFINITIONS).length, 24);
+  assert.equal(config.AWAKENING_COSTS.length, 24);
+  assert.equal(config.AWAKENING_BONUSES.length, 24);
+  for (let i = 1; i < 24; i += 1) {
+    assert.ok(config.AWAKENING_COSTS[i] > config.AWAKENING_COSTS[i - 1], `custo ${i + 1} > ${i}`);
+    assert.ok(config.AWAKENING_BONUSES[i] > config.AWAKENING_BONUSES[i - 1], `bônus ${i + 1} > ${i}`);
+  }
   const store = devStore();
-  unlock(store, 4, 1);
-  store.devKittyAction("addStones", "all", 1000);
+  unlockAll(store, 1);
+  store.devKittyAction("maxStars", "all");
+  store.changeBalance("kitty", "set", 1e300);
+  // não dá para pular: o 2º exige o 1º
+  const skip = store.awakenKittyCharacter("dear-daniel");
+  assert.equal(skip.ok, false);
+  assert.match(skip.error, /Desperte Hello Kitty primeiro/);
+  for (const definition of IDLE_CATALOG.kitty) {
+    const result = store.awakenKittyCharacter(definition.id);
+    assert.equal(result.ok, true, `${definition.id}: ${result.error}`);
+  }
+  const info = store.getSnapshot().modes.kitty.kittyDev.characters;
+  assert.equal(Object.values(info).every((entry) => entry.awakening.awakened), true);
+});
+
+test("despertar: cada personagem tem uma entrada própria de sprite despertado (P2 e P3 já usam o arquivo novo)", () => {
+  const sprites = config.AWAKE_SPRITES;
+  assert.equal(Object.keys(sprites).length, 24);
+  assert.equal(sprites["hello-kitty"], "/idle/characters/awake/awake-hello-kitty.webp");
+  assert.equal(sprites["dear-daniel"], "/idle/characters/awake/awake-dear-daniel.webp");
+  assert.equal(sprites["my-melody"], "/idle/characters/awake/awake-my-melody.webp");
+  for (const definition of IDLE_CATALOG.kitty) {
+    const awakening = config.AWAKENING_DEFINITIONS[definition.id];
+    assert.equal(awakening.asset, sprites[definition.id]);
+    assert.equal(awakening.hasOwnSprite, sprites[definition.id].includes("/awake/"));
+  }
+  // enquanto não há arte própria, a entrada aponta para o sprite normal (sem conflito com a skin normal)
+  assert.equal(sprites["kuromi"], IDLE_CATALOG.kitty.find((item) => item.id === "kuromi").asset);
+  assert.equal(config.AWAKENING_DEFINITIONS["kuromi"].hasOwnSprite, false);
+  assert.equal(config.AWAKENING_DEFINITIONS["hello-kitty"].hasOwnSprite, true);
+});
+
+test("despertar: o snapshot explica o que falta para despertar (elenco completo / despertar anterior)", () => {
+  const store = devStore();
+  unlock(store, 3, 1);
   store.devKittyAction("maxStars", "dear-daniel");
-  store.changeBalance("kitty", "set", 1e40);
-  const result = store.awakenKittyCharacter("dear-daniel");
-  assert.equal(result.ok, false);
-  assert.match(result.error, /em breve/);
-  assert.equal(store.getSnapshot().modes.kitty.kittyDev.characters["dear-kitty"], undefined);
-  assert.equal(store.getSnapshot().modes.kitty.kittyDev.characters["dear-daniel"].awakening, null);
+  let info = store.getSnapshot().modes.kitty.kittyDev.characters["dear-daniel"].awakening;
+  assert.equal(info.unlocked, false);
+  assert.match(info.lockedReason, /todos os personagens/);
+  unlockAll(store);
+  info = store.getSnapshot().modes.kitty.kittyDev.characters["dear-daniel"].awakening;
+  assert.match(info.lockedReason, /Desperte Hello Kitty primeiro/);
+  store.devKittyAction("maxStars", "hello-kitty");
+  store.changeBalance("kitty", "set", 1e300);
+  store.awakenKittyCharacter("hello-kitty");
+  info = store.getSnapshot().modes.kitty.kittyDev.characters["dear-daniel"].awakening;
+  assert.equal(info.unlocked, true);
+  assert.equal(info.lockedReason, null);
+});
+
+// ---------------------------------------------------------------------------
+// Dias jogados (ferramenta DEV)
+// ---------------------------------------------------------------------------
+test("dias jogados: contam o tempo real e as simulações offline somam ao contador", () => {
+  let now = T0;
+  const store = devStore(() => now);
+  assert.equal(store.getSnapshot().modes.kitty.kittyDev.days, 0);
+  now += 6 * 3_600_000;
+  assert.ok(Math.abs(store.getSnapshot().modes.kitty.kittyDev.days - 0.25) < 1e-9, "6 h reais = 0,25 dia");
+  // 12 simulações de 2 h somam 1 dia
+  for (let i = 0; i < 12; i += 1) store.simulateDevOffline("kitty", 2 * 3_600_000);
+  const days = store.getSnapshot().modes.kitty.kittyDev.days;
+  assert.ok(Math.abs(days - 1.25) < 1e-9, `days=${days}`);
+  // simulação de 16 h
+  store.simulateDevOffline("kitty", 16 * 3_600_000);
+  assert.ok(Math.abs(store.getSnapshot().modes.kitty.kittyDev.days - (1.25 + 16 / 24)) < 1e-9);
+});
+
+test("dias jogados: a simulação padrão respeita o teto de 8 h e só conta o que foi creditado", () => {
+  const store = devStore();
+  store.simulateOffline("kitty", 16 * 3_600_000);
+  assert.ok(Math.abs(store.getSnapshot().modes.kitty.kittyDev.days - 8 / 24) < 1e-9);
+});
+
+test("dias jogados: definir, zerar contador e resetar o mundo", () => {
+  let now = T0;
+  const store = devStore(() => now);
+  store.devKittyAction("setDays", "all", 12);
+  assert.ok(Math.abs(store.getSnapshot().modes.kitty.kittyDev.days - 12) < 1e-9);
+  now += 86_400_000;
+  assert.ok(Math.abs(store.getSnapshot().modes.kitty.kittyDev.days - 13) < 1e-9);
+  store.devKittyAction("resetAll", "all");
+  assert.ok(Math.abs(store.getSnapshot().modes.kitty.kittyDev.days - 13) < 1e-9, "zerar as mecânicas não zera o contador");
+  store.devKittyAction("resetDays", "all");
+  assert.ok(store.getSnapshot().modes.kitty.kittyDev.days < 1e-9);
+  store.devKittyAction("setDays", "all", 5);
+  store.resetMode("kitty");
+  assert.ok(store.getSnapshot().modes.kitty.kittyDev.days < 1e-9, "resetar o mundo zera os dias");
+});
+
+test("dias jogados: sobrevivem a reiniciar o servidor e o modo real não tem contador", async () => {
+  const real = realStore();
+  assert.equal(real.getSnapshot().modes.kitty.kittyDev, undefined);
+  real.simulateDevOffline("kitty", 3_600_000);
+  assert.equal(real.getSnapshot().modes.kitty.kittyDev, undefined);
+  const dir = await mkdtemp(join(tmpdir(), "idle-dev-days-"));
+  try {
+    const file = join(dir, "idle-dev.json");
+    const first = new IdleStore(true, () => T0, file, "dev");
+    await first.ready();
+    first.devKittyAction("setDays", "all", 7);
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    const second = new IdleStore(true, () => T0, file, "dev");
+    await second.ready();
+    assert.ok(Math.abs(second.getSnapshot().modes.kitty.kittyDev.days - 7) < 1e-6);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 // ---------------------------------------------------------------------------

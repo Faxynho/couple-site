@@ -23,21 +23,33 @@ function Particles({ x, y }: { x: number; y: number }) {
   </span>;
 }
 
-/** Desenho de uma constelação (usado na tela principal em tamanho grande e no álbum em miniatura). */
+/** Brilhinhos que sobem pela tela (vaga-lumes do espaço). */
+const ORBS = Array.from({ length: 14 }, (_, index) => ({ x: (index * 53 + 11) % 100, size: .35 + (index % 4) * .18, duration: 9 + (index % 5) * 2.3, delay: -(index * 1.7) }));
+
+/** Desenho de uma constelação (usado na tela principal em tamanho grande e no álbum/celebração em miniatura). */
 function ConstellationArt({ index, stars, mini = false, fresh }: { index: number; stars: number; mini?: boolean; fresh?: number }) {
   const shape = constellationShape(index);
   return <>
-    {shape.links.map(([a, b]) => {
+    {!mini && shape.nodes.map(([x, y], i) => i < stars && <circle key={`glow-${i}`} className={styles.cstNodeGlow} cx={x} cy={y} r="6.2" style={{ "--i": i } as CSSProperties} />)}
+    {shape.links.map(([first, second]) => {
+      // a luz sempre corre da estrela mais antiga para a mais nova
+      const [a, b] = first < second ? [first, second] : [second, first];
       const level = linkLevel([a, b]);
       const on = level <= stars;
       const [x1, y1] = shape.nodes[a - 1]; const [x2, y2] = shape.nodes[b - 1];
-      return <line key={`${a}-${b}`} className={`${styles.cstLine} ${on ? styles.cstLineOn : ""} ${on && fresh === level ? styles.cstLineDraw : ""} ${mini ? styles.cstLineMini : ""}`} x1={x1} y1={y1} x2={x2} y2={y2} />;
+      if (!on) return <line key={`${a}-${b}`} className={`${styles.cstLine} ${mini ? styles.cstLineMini : ""}`} x1={x1} y1={y1} x2={x2} y2={y2} />;
+      const drawing = fresh === level;
+      return <g key={`${a}-${b}`}>
+        <line className={`${styles.cstLineSolid} ${mini ? styles.cstLineSolidMini : ""} ${drawing ? styles.cstLineDraw : ""}`} pathLength={100} x1={x1} y1={y1} x2={x2} y2={y2} />
+        {!mini && <line className={`${styles.cstLineFlow} ${drawing ? styles.cstLineFlowLate : ""}`} pathLength={100} x1={x1} y1={y1} x2={x2} y2={y2} />}
+      </g>;
     })}
     {shape.nodes.map(([x, y], i) => {
       const level = i + 1;
       const on = level <= stars;
       return <polygon key={level} className={`${styles.cstNodeStar} ${on ? styles.cstNodeLit : styles.cstNodeDim} ${on && fresh === level ? styles.cstNodePop : ""} ${mini ? styles.cstNodeMini : ""}`} points={starPolygon(x, y, mini ? 8 : 6.4)} strokeLinejoin="round" style={{ "--i": i } as CSSProperties} />;
     })}
+    {!mini && shape.nodes.map(([x, y], i) => i < stars && <circle key={`tw-${i}`} className={styles.cstTwinkleDot} cx={x + 5.2} cy={y - 5.2} r=".7" style={{ "--i": i } as CSSProperties} />)}
   </>;
 }
 
@@ -153,8 +165,13 @@ export default function KittyConstellation({ data, world, worldName, onClose, on
 
   return <div className={styles.cst} role="dialog" aria-label={`Constelações de ${worldName}`}>
     <span className={styles.cstNebula} aria-hidden="true" />
+    <span className={`${styles.cstAurora}`} aria-hidden="true" />
+    <span className={`${styles.cstAurora} ${styles.cstAuroraB}`} aria-hidden="true" />
+    <span className={styles.cstStarsFar} aria-hidden="true" />
+    <span className={styles.cstStarsNear} aria-hidden="true" />
     <span className={styles.cstTwinkle} aria-hidden="true" />
-    {[0, 1, 2].map((index) => <span key={index} className={styles.shootingStar} style={{ "--delay": `${index * 3.2 + 1}s`, "--top": `${12 + index * 17}%` } as CSSProperties} aria-hidden="true" />)}
+    {ORBS.map((orb, index) => <i key={index} className={styles.cstOrb} style={{ left: `${orb.x}%`, "--s": `${orb.size}rem`, "--d": `${orb.duration}s`, "--dl": `${orb.delay}s` } as CSSProperties} aria-hidden="true" />)}
+    {[0, 1, 2, 3].map((index) => <span key={index} className={styles.shootingStar} style={{ "--delay": `${index * 2.6 + 1}s`, "--top": `${8 + index * 15}%` } as CSSProperties} aria-hidden="true" />)}
     {flash > 0 && <span key={flash} className={styles.cstFlash} aria-hidden="true" />}
     <div className={styles.cstTop}>
       <button type="button" className={styles.roundBtn} onClick={onClose} aria-label="Voltar para o mundo"><ArrowLeft size={24} strokeWidth={3.4} /></button>
@@ -176,6 +193,8 @@ export default function KittyConstellation({ data, world, worldName, onClose, on
     <div className={styles.cstStage}>
       <div key={item.definition.id} className={styles.cstArena}>
         <span className={styles.cstHalo} aria-hidden="true" />
+        <span className={styles.cstRing} aria-hidden="true" />
+        <span className={`${styles.cstRing} ${styles.cstRingB}`} aria-hidden="true" />
         <span className={`${styles.cstChar} ${item.purchased ? "" : styles.cstCharLocked}`}><Image src={sprite.src} alt={item.definition.name} fill sizes="70vw" priority /></span>
         <svg className={styles.cstCanvas} viewBox="0 0 100 100" role="group" aria-label={`Constelação ${shape.name} de ${item.definition.name}`}>
           <ConstellationArt index={info.index} stars={info.stars} fresh={fresh?.level} />
@@ -185,7 +204,10 @@ export default function KittyConstellation({ data, world, worldName, onClose, on
             return <g key={level} role="button" tabIndex={0} aria-label={`Estrela ${level}: ${level <= info.stars ? "acesa" : next ? "próxima" : "apagada"}`} className={`${styles.cstNode} ${shownLevel === level ? styles.cstNodeSel : ""}`}
               onClick={() => setPickedLevel(level)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPickedLevel(level); } }}>
               <circle cx={x} cy={y} r="10" fill="transparent" />
-              {next && <><circle className={styles.cstNextRing} cx={x} cy={y} r="8" /><circle className={`${styles.cstNextRing} ${styles.cstNextRingB}`} cx={x} cy={y} r="8" /></>}
+              {next && <>
+                <circle className={styles.cstNextRing} cx={x} cy={y} r="8" /><circle className={`${styles.cstNextRing} ${styles.cstNextRingB}`} cx={x} cy={y} r="8" />
+                <g className={styles.cstOrbit} style={{ transformOrigin: `${x}px ${y}px` }}><circle cx={x + 9.5} cy={y} r="1.1" /><circle cx={x - 9.5} cy={y} r=".7" /></g>
+              </>}
               {shownLevel === level && <circle className={styles.cstSelRing} cx={x} cy={y} r="9" />}
             </g>;
           })}

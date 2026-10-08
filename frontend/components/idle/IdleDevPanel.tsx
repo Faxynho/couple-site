@@ -42,6 +42,14 @@ export default function IdleDevPanel({ mode, data, onSnapshot }: { mode: IdleMod
         <input aria-label="Nível DEV" value={level} onChange={(event) => setLevel(event.target.value)} type="number" min="1" max="10000" />
         <div className={styles.devButtonGrid}><button onClick={() => void run({ action: "item", mode, itemId, itemAction: "unlock" })}>Desbloquear</button><button onClick={() => void run({ action: "item", mode, itemId, itemAction: "setLevel", level: Number(level) })}>Definir nível</button><button onClick={() => void run({ action: "item", mode, itemId, itemAction: "resetLevels" }, "Resetar os níveis selecionados no DEV?")}>Resetar níveis</button><button className={styles.devDanger} onClick={() => void run({ action: "item", mode, itemId, itemAction: "lock" }, "Bloquear novamente os itens selecionados no DEV?")}>Bloquear</button></div>
       </article>
+      {mode === "kitty" && data.kittyDev && <article className={styles.devSection} aria-label="Dias jogados neste mundo">
+        <h3>Dias jogados neste mundo</h3>
+        <p className={styles.devNote}><strong style={{ fontSize: "1.6rem" }}>{(data.kittyDev.days ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong> dias · conta o tempo real e soma as simulações (12 × 2h = 1 dia). Zera junto com o reset do mundo.</p>
+        <div className={styles.devButtonGrid}>
+          <button onClick={() => void run({ action: "kittyDev", kittyAction: "setDays", characterId: "all", amount: Number(amount) || 0 })}>Definir dias</button>
+          <button className={styles.devDanger} onClick={() => void run({ action: "kittyDev", kittyAction: "resetDays", characterId: "all" }, "Zerar o contador de dias jogados?")}>Zerar contador</button>
+        </div>
+      </article>}
       {mode === "kitty" && data.kittyDev && <article className={styles.devSection}>
         <h3>Estrelas, itens e Pedras Estelares</h3>
         <p>Pedras: <strong>{data.kittyDev.stones}</strong> · usa o personagem selecionado em Itens e níveis</p>

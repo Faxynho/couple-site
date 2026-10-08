@@ -53,19 +53,20 @@ export interface ConstellationBonus {
 
 /** Bônus individuais de cada nível (os efeitos se acumulam). */
 export const CONSTELLATION_BONUSES: ConstellationBonus[] = [
-  { click: 1.25, production: 1, label: "+25% de valor por clique" },
-  { click: 1, production: 1.15, label: "+15% de produção" },
-  { click: 1.4, production: 1, label: "+40% de valor por clique" },
-  { click: 1, production: 1.25, label: "+25% de produção" },
-  { click: 1.25, production: 1.5, label: "+50% de produção e +25% por clique" },
+  { click: 1.25, production: 1.75, label: "+75% de produção e +25% por clique" },
+  { click: 1, production: 2.0, label: "+100% de produção" },
+  { click: 1.4, production: 2.4, label: "+140% de produção e +40% por clique" },
+  { click: 1, production: 2.8, label: "+180% de produção" },
+  { click: 1.6, production: 3.8, label: "+280% de produção e +60% por clique" },
 ];
 
 /** Nível de referência em que o personagem `index` "estaciona" na curva atual do jogo. */
 export function characterReferenceLevel(index: number): number {
+  if (index === 0) return 100; // a Hello Kitty já começa alta (nível ~60) e tem a constelação mais longa
   return index < 17 ? 90 - 2 * index : 24;
 }
 
-const LEVEL_REQUIREMENT_FRACTION = [0.35, 0.45, 0.55, 0.65, 0.75] as const;
+export const LEVEL_REQUIREMENT_FRACTION: number[] = [0.35, 0.47, 0.58, 0.68, 0.76];
 
 /** Nível mínimo do personagem para comprar o nível `level` (1–5) da constelação dele. */
 export function constellationLevelRequirement(index: number, level: number): number {
@@ -162,31 +163,75 @@ export const KITTY_ITEM_NAMES: Array<{ click: string; stone: string }> = [
 // ---------------------------------------------------------------------------
 // Despertar
 // ---------------------------------------------------------------------------
+/**
+ * Sprites do personagem DESPERTADO. Para liberar o visual despertado de um personagem basta trocar o caminho da
+ * linha dele pelo arquivo novo (ex.: "/idle/characters/awake/awake-kuromi.webp"). Enquanto o arquivo não existe, a
+ * linha aponta para o sprite normal: o despertar já funciona (produção, aura, brilhos, moldura), só sem a roupa nova.
+ * Esta tabela é separada do sprite normal (IDLE_CATALOG), então nunca conflita com a skin normal.
+ */
+export const AWAKE_SPRITES: Record<string, string> = {
+  "hello-kitty": "/idle/characters/awake/awake-hello-kitty.webp",
+  "dear-daniel": "/idle/characters/awake/awake-dear-daniel.webp",
+  "my-melody": "/idle/characters/awake/awake-my-melody.webp",
+  "mimmy": "/idle/characters/v2/p04.webp", // TODO: trocar por "/idle/characters/awake/awake-mimmy.webp"
+  "cinnamoroll": "/idle/characters/v2/p05.webp", // TODO: trocar por "/idle/characters/awake/awake-cinnamoroll.webp"
+  "pompompurin": "/idle/characters/v2/p06.webp", // TODO: trocar por "/idle/characters/awake/awake-pompompurin.webp"
+  "cinnamoroll-blue-bow": "/idle/characters/v2/p07.webp", // TODO: trocar por "/idle/characters/awake/awake-cinnamoroll-blue-bow.webp"
+  "pochacco": "/idle/characters/v2/p08.webp", // TODO: trocar por "/idle/characters/awake/awake-pochacco.webp"
+  "tiny-chum": "/idle/characters/v2/p09.webp", // TODO: trocar por "/idle/characters/awake/awake-tiny-chum.webp"
+  "keroppi": "/idle/characters/v2/p10.webp", // TODO: trocar por "/idle/characters/awake/awake-keroppi.webp"
+  "tuxedosam": "/idle/characters/v2/p11.webp", // TODO: trocar por "/idle/characters/awake/awake-tuxedosam.webp"
+  "mocha": "/idle/characters/v2/p12.webp", // TODO: trocar por "/idle/characters/awake/awake-mocha.webp"
+  "baku": "/idle/characters/v2/p13.webp", // TODO: trocar por "/idle/characters/awake/awake-baku.webp"
+  "badtz-maru": "/idle/characters/v2/p14.webp", // TODO: trocar por "/idle/characters/awake/awake-badtz-maru.webp"
+  "chococat": "/idle/characters/v2/p15.webp", // TODO: trocar por "/idle/characters/awake/awake-chococat.webp"
+  "kuromi": "/idle/characters/v2/p16.webp", // TODO: trocar por "/idle/characters/awake/awake-kuromi.webp"
+  "my-sweet-piano": "/idle/characters/v2/p17.webp", // TODO: trocar por "/idle/characters/awake/awake-my-sweet-piano.webp"
+  "charmmy-kitty": "/idle/characters/v2/p18.webp", // TODO: trocar por "/idle/characters/awake/awake-charmmy-kitty.webp"
+  "hello-kitty-angel": "/idle/characters/v2/p19.webp", // TODO: trocar por "/idle/characters/awake/awake-hello-kitty-angel.webp"
+  "kuromi-angel": "/idle/characters/v2/p20.webp", // TODO: trocar por "/idle/characters/awake/awake-kuromi-angel.webp"
+  "my-melody-dark-angel": "/idle/characters/v2/p21.webp", // TODO: trocar por "/idle/characters/awake/awake-my-melody-dark-angel.webp"
+  "hello-kitty-gala": "/idle/characters/v2/p22.webp", // TODO: trocar por "/idle/characters/awake/awake-hello-kitty-gala.webp"
+  "kuromi-celestial": "/idle/characters/v2/p23.webp", // TODO: trocar por "/idle/characters/awake/awake-kuromi-celestial.webp"
+  "little-twin-stars": "/idle/characters/v2/p24.webp", // TODO: trocar por "/idle/characters/awake/awake-little-twin-stars.webp"
+};
+
+/** Quando o caminho está em /awake/ o personagem tem sprite despertado próprio. */
+export function hasOwnAwakeSprite(characterId: string): boolean {
+  return (AWAKE_SPRITES[characterId] ?? "").includes("/awake/");
+}
+
 export interface AwakeningDefinition {
-  /** Sprite do personagem despertado (já existente no projeto). */
+  /** Posição do despertar na sequência (0 = Hello Kitty). */
+  index: number;
+  /** Sprite do personagem despertado (veja AWAKE_SPRITES). */
   asset: string;
-  /** Multiplicador de produção (e, por consequência, do clique) do personagem despertado. */
-  multiplier: number;
+  hasOwnSprite: boolean;
+  /** Bônus FIXO de produção por segundo que o despertar soma ao personagem (antes das relíquias). */
+  bonus: number;
   /** Preço em dinheiro interno. */
   cost: number;
 }
 
 /**
- * Personagens com despertar liberado. Por ora só a Hello Kitty (único sprite despertado pronto).
- * Para liberar outro personagem basta incluir o id aqui com o sprite, o multiplicador e o preço.
- *
- * Hello Kitty: ×1000 e preço de 2 Qi (2e18). A Hello Kitty é o personagem mais barato (2·2,7^0 de produção base),
- * então um multiplicador pequeno seria invisível: na simulação ela rende ~2,4e9/s no dia 120 contra ~2,7e13/s totais.
- * Com ×1000 (e as estrelas ×2,16) ela passa a render ~+19% da produção total nessa época e o preço se paga em
- * ~5 dias — endgame, mas com retorno claro. Pontos de teste: dia 60 ≈ +8%, dia 180 ≈ +10% (teto da curva atual).
+ * Série de despertares. Cada despertar funciona como um "personagem 25, 26, 27…": soma um bônus de produção fixo
+ * (não explode quando o personagem sobe de nível) e custa mais que o anterior. As tabelas abaixo foram calibradas
+ * pelo simulador para o ritmo de referência (save no P18, ~2B/s):
+ *   P24 em ~35 dias, 1º despertar ~12 dias depois e depois um a cada ~10 dias, subindo até ~22 no último.
+ * Para recalibrar depois de mudar qualquer valor do jogo:  cd backend && npx tsx tools/kittyDevFit.ts
  */
-export const AWAKENING_DEFINITIONS: Record<string, AwakeningDefinition> = {
-  "hello-kitty": {
-    asset: "/idle/characters/awake/awake-hello-kitty.webp",
-    multiplier: 1000,
-    cost: 2e18,
-  },
-};
+export const AWAKENING_COSTS: number[] = [1.88e+17, 3.86e+17, 9.22e+17, 1.95e+18, 5.55e+18, 7.2e+18, 4.57e+20, 1.71e+21, 4.47e+21, 9.70e+21, 1.84e+22, 4.34e+22, 8.90e+22, 1.79e+23, 3.53e+23, 6.80e+23, 1.28e+24, 2.37e+24, 4.28e+24, 7.56e+24, 1.30e+25, 2.19e+25, 3.59e+25, 5.73e+25];
+export const AWAKENING_BONUSES: number[] = [5.76e+10, 1.34e+11, 3.08e+11, 7.09e+11, 1.62e+12, 4.75e+13, 1.69e+14, 3.74e+14, 7.67e+14, 1.54e+15, 3.06e+15, 5.90e+15, 1.12e+16, 2.06e+16, 3.73e+16, 6.59e+16, 1.14e+17, 1.92e+17, 3.15e+17, 5.04e+17, 7.85e+17, 1.19e+18, 1.75e+18, 3.12e+18];
+
+export const AWAKENING_DEFINITIONS: Record<string, AwakeningDefinition> = Object.fromEntries(
+  IDLE_CATALOG.kitty.map((item, index) => [item.id, {
+    index,
+    asset: AWAKE_SPRITES[item.id] ?? item.asset,
+    hasOwnSprite: hasOwnAwakeSprite(item.id),
+    bonus: AWAKENING_BONUSES[index] ?? 0,
+    cost: AWAKENING_COSTS[index] ?? Infinity,
+  }]),
+);
 
 export function awakeningFor(characterId: string): AwakeningDefinition | null {
   return AWAKENING_DEFINITIONS[characterId] ?? null;
@@ -214,6 +259,10 @@ export interface KittyDevState {
   totalStones: number;
   /** Índice (0–6) do último mundo/ilha aberto; null = nenhum (mostra a seleção de ilhas). */
   lastWorld: number | null;
+  /** Quando o contador de dias jogados começou (0 = ainda não iniciado; começa no primeiro acesso). */
+  startedAt: number;
+  /** Tempo simulado pelos botões de simulação offline do modo DEV (soma ao tempo real). */
+  simulatedMs: number;
   characters: Record<string, KittyDevCharacterState>;
 }
 
@@ -226,6 +275,8 @@ export function emptyKittyDev(): KittyDevState {
     stones: 0,
     totalStones: 0,
     lastWorld: null,
+    startedAt: 0,
+    simulatedMs: 0,
     characters: Object.fromEntries(IDLE_CATALOG.kitty.map((item) => [item.id, emptyKittyDevCharacter()])),
   };
 }
@@ -243,6 +294,10 @@ export function sanitizeKittyDev(value: unknown): KittyDevState {
   base.totalStones = Math.max(base.stones, boundedInt(input.totalStones, 1e9));
   const world = Number(input.lastWorld);
   base.lastWorld = input.lastWorld !== null && Number.isInteger(world) && world >= 0 && world < 7 ? world : null;
+  const startedAt = Number(input.startedAt);
+  const simulatedMs = Number(input.simulatedMs);
+  base.startedAt = Number.isFinite(startedAt) && startedAt > 0 ? startedAt : 0;
+  base.simulatedMs = Number.isFinite(simulatedMs) && simulatedMs > 0 ? Math.min(simulatedMs, 1e13) : 0;
   for (const item of IDLE_CATALOG.kitty) {
     const saved = input.characters?.[item.id];
     if (!saved || typeof saved !== "object") continue;

@@ -168,7 +168,7 @@ function AwakenCelebration({ info, name, onClose }: { info: KittyDevCharacterSna
         <Image className={styles.awakeImg} src={info.awakening!.asset} alt={name} fill sizes="86vw" style={{ objectFit: "contain" }} />
       </div>
       <p style={{ marginTop: ".4rem", color: "#ffe9a8", fontFamily: "var(--font-display),sans-serif", fontSize: "1.55rem", fontWeight: 950, textShadow: "0 0 14px rgba(255,214,110,.9)" }}>{name} despertou!</p>
-      <p style={{ marginTop: ".15rem", fontSize: ".9rem", fontWeight: 850 }}>Produção x{info.awakening!.multiplier}</p>
+      <p style={{ marginTop: ".15rem", fontSize: ".95rem", fontWeight: 850 }}>+{formatIdleNumber(info.awakening!.bonus)}/s de produção</p>
       <small style={{ display: "block", marginTop: ".7rem", opacity: .8 }}>Toque para continuar</small>
     </div>
   </div></Portal>;
@@ -182,7 +182,8 @@ export default function KittyDevExtras({ item, info, balance, onSnapshot }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const awakening = info.awakening;
-  const canAwaken = Boolean(awakening && awakening.unlocked && !awakening.awakened);
+  // O botão aparece com 5 estrelas; fica desabilitado enquanto faltar elenco completo, o despertar anterior ou dinheiro.
+  const showAwaken = Boolean(awakening && info.stars >= 5 && !awakening.awakened);
 
   const awaken = async () => {
     if (!awakening || busy) return;
@@ -197,11 +198,11 @@ export default function KittyDevExtras({ item, info, balance, onSnapshot }: {
   };
 
   return <>
-    {canAwaken && awakening && <button type="button" className={styles.awakenBtn} disabled={busy || balance < awakening.cost} onClick={() => void awaken()}>
+    {showAwaken && awakening && <button type="button" className={styles.awakenBtn} disabled={busy || !awakening.unlocked || balance < awakening.cost} onClick={() => void awaken()}>
       <Sparkles size={18} aria-hidden="true" /><span>Despertar</span>
       <span className={styles.awakenCost}><Image src="/idle/icons/game-money.webp" alt="" width={48} height={48} />{formatIdleNumber(awakening.cost)}</span>
     </button>}
-    {info.stars >= 5 && !awakening && <span className={styles.awakenSoon}>Constelação completa · despertar em breve</span>}
+    {showAwaken && awakening?.lockedReason && <span className={styles.awakenSoon}>{awakening.lockedReason}</span>}
     {error && <span className={styles.awakenSoon} role="alert" style={{ color: "#c0306a" }}>{error}</span>}
     {celebrate && awakening?.awakened && <AwakenCelebration info={info} name={item.definition.name} onClose={() => setCelebrate(false)} />}
   </>;

@@ -39,7 +39,10 @@ export const KITTY_DEV_ACHIEVEMENTS: AchievementDefinition[] = [
   devAchievement("kitty-dev-const-12", "Astrônoma fofa", "Complete 12 constelações", 900, "constellations", 12, STONE),
   devAchievement("kitty-dev-const-24", "Mestra das constelações", "Complete as 24 constelações", 2_400, "constellations", 24, STONE),
   // ----- Despertar -----
-  devAchievement("kitty-dev-awake-1", "Despertar da Kitty", "Desperte a Hello Kitty", 500, "awakened", 1, "/idle/characters/awake/awake-hello-kitty.webp"),
+  devAchievement("kitty-dev-awake-1", "Primeiro despertar", "Desperte o primeiro personagem", 500, "awakened", 1, "/idle/characters/awake/awake-hello-kitty.webp"),
+  devAchievement("kitty-dev-awake-6", "Turma acordando", "Desperte 6 personagens", 900, "awakened", 6, "/idle/characters/awake/awake-dear-daniel.webp"),
+  devAchievement("kitty-dev-awake-12", "Meio caminho brilhante", "Desperte 12 personagens", 2_000, "awakened", 12, "/idle/characters/awake/awake-my-melody.webp"),
+  devAchievement("kitty-dev-awake-24", "Todos despertos", "Desperte os 24 personagens", 5_000, "awakened", 24, "/idle/characters/awake/awake-hello-kitty.webp"),
   // ----- Itens exclusivos -----
   devAchievement("kitty-dev-click-item-1", "Mãozinha de ouro", "Compre 1 item de clique", 40, "clickItems", 1, CLICK),
   devAchievement("kitty-dev-click-item-6", "Coleção de cliques", "Compre 6 itens de clique", 180, "clickItems", 6, CLICK),
