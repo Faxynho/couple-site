@@ -175,7 +175,7 @@ export const AWAKE_SPRITES: Record<string, string> = {
   "my-melody": "/idle/characters/awake/awake-my-melody.webp",
   "mimmy": "/idle/characters/awake/awake-mimmy.webp", // TODO: trocar por "/idle/characters/awake/awake-mimmy.webp"
   "cinnamoroll": "/idle/characters/awake/awake-cinnamoroll.webp", // TODO: trocar por "/idle/characters/awake/awake-cinnamoroll.webp"
-  "pompompurin": "/idle/characters/awake/awake-pompompurin6.webp", // TODO: trocar por "/idle/characters/awake/awake-pompompurin.webp"
+  "pompompurin": "/idle/characters/awake/awake-pompompurin.webp", // TODO: trocar por "/idle/characters/awake/awake-pompompurin.webp"
   "cinnamoroll-blue-bow": "/idle/characters/awake/awake-cinnamoroll-blue-bow.webp", // TODO: trocar por "/idle/characters/awake/awake-cinnamoroll-blue-bow.webp"
   "pochacco": "/idle/characters/v2/p08.webp", // TODO: trocar por "/idle/characters/awake/awake-pochacco.webp"
   "tiny-chum": "/idle/characters/v2/p09.webp", // TODO: trocar por "/idle/characters/awake/awake-tiny-chum.webp"
