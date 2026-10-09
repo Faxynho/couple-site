@@ -15,14 +15,14 @@ import IdleEventLayer from "./IdleEventLayer";
 import IdleDevPanel from "./IdleDevPanel";
 import { BowIcon, CalendarCheckIcon, CalendarHeartIcon, CalendarStarIcon, ControllerIcon, HeartIcon, MedalIcon, SparkleIcon, TrophyIcon } from "./KittyIcons";
 import styles from "./IdleGame.module.css";
-// Mecânicas experimentais — usadas SOMENTE quando environment === "dev" no Mundo da Hello Kitty.
+// Constelações, itens, despertar e seleção de ilhas do Mundo da Hello Kitty.
 import devStyles from "./kittydev/KittyDev.module.css";
 import KittyConstellation from "./kittydev/KittyConstellation";
 import { KittyConstellationButton, KittyDevHud, KittyDevNav, KittyModeBubble } from "./kittydev/KittyDevChrome";
-import KittyDevExtras, { AwakeEffects, KittyItemRail, KittySkinToggle, KittyStarArc, OrnateCorners, StoneGainBurst } from "./kittydev/KittyDevExtras";
+import KittyDevExtras, { AwakeEffects, KittyItemRail, KittySkinToggle, KittyStarArc, OrnateCorners, SkinSwapFx, StoneGainBurst } from "./kittydev/KittyDevExtras";
 import KittyWorldMap from "./kittydev/KittyWorldMap";
-import { WORLDS_BG, spriteFor } from "./kittydev/kittyDevHelpers";
-import { kittyDevSetWorld } from "@/lib/idleApi";
+import { WORLDS_BG, awakeHomeTransform, spriteFor } from "./kittydev/kittyDevHelpers";
+import { kittyDevSetWorld, setKittyApiContext } from "@/lib/idleApi";
 
 const SCENE_BACKGROUNDS: Record<IdleModeId, string[]> = {
   farm: ["/idle/backgrounds/farm.webp", "/idle/backgrounds/farm-2.webp", "/idle/backgrounds/farm-3.webp"],
@@ -129,9 +129,13 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
   const click10HomeActive = tab === "home" && (data?.clickBoost?.visualMultiplier ?? data?.clickBoost?.multiplier ?? 1) === 10;
   const farm = mode === "farm";
   const modeTitle = farm ? "Fazendinha" : "Mundo da Hello Kitty";
-  // ----- Ambiente DEV (Hello Kitty): seleção de ilhas, constelações e despertar -----
-  const dev = environment === "dev" && !farm;
+  // ----- Mundo da Hello Kitty: seleção de ilhas, constelações, itens e despertar (jogo normal e DEV) -----
+  // Só liga a interface nova se o servidor mandou os dados dela; sem eles o jogo cai na interface anterior, que continua funcionando.
+  const isDevEnvironment = environment === "dev";
+  const dev = !farm && Boolean(data?.kittyDev);
   const kittyDev = dev ? data?.kittyDev : undefined;
+  useEffect(() => { if (accountId) setKittyApiContext(accountId, environment); }, [accountId, environment]);
+  const homePath = isDevEnvironment ? "/cantinho/dev" : "/cantinho";
   const [world, setWorld] = useState<number | null | undefined>(undefined);
   const [constellationOpen, setConstellationOpen] = useState(false);
   const [arrive, setArrive] = useState(false);
@@ -217,16 +221,16 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
   if (!snapshot || !data) return <main className={styles.page}><div className={styles.loading}>{error ?? `Carregando ${modeTitle}…`}</div></main>;
 
   return (
-    <main className={`${styles.page} ${farm ? styles.farmTheme : styles.kittyTheme} ${environment === "dev" ? styles.devEnvironment : ""} ${dev ? devStyles.kd : ""} ${selectedAwake ? devStyles.awakeTheme : ""} ${data.productionBoost && data.productionBoost.expiresAt > Date.now() ? styles.productionBoostActive : ""} ${click10HomeActive ? styles.click10Active : ""}`}>
+    <main className={`${styles.page} ${farm ? styles.farmTheme : styles.kittyTheme} ${isDevEnvironment ? styles.devEnvironment : ""} ${dev ? devStyles.kd : ""} ${constellationOpen ? devStyles.underCst : ""} ${selectedAwake ? devStyles.awakeTheme : ""} ${data.productionBoost && data.productionBoost.expiresAt > Date.now() ? styles.productionBoostActive : ""} ${click10HomeActive ? styles.click10Active : ""}`}>
       <div className={styles.background} key={background} style={{ backgroundImage: `url(${background})` }} aria-hidden="true" />
       <div className={styles.sceneShade} aria-hidden="true" />
       {dev && tab === "home"
-        ? <KittyDevHud variant={activeWorld === null ? "map" : "world"} worldName={sceneName} relicAsset={activeSceneRelic?.definition.asset} relicName={activeSceneRelic?.definition.name} balance={displayedBalance} production={data.effectiveProduction} activity={accountId ? data.clickActivity?.[accountId] : undefined} showCombo={data.items.some((item) => item.purchased && item.definition.scene === sceneIndex)} rush={click10HomeActive} onBack={() => router.push("/cantinho/dev")} onWorlds={leaveWorld} />
+        ? <KittyDevHud variant={activeWorld === null ? "map" : "world"} worldName={sceneName} relicAsset={activeSceneRelic?.definition.asset} relicName={activeSceneRelic?.definition.name} balance={displayedBalance} production={data.effectiveProduction} activity={accountId ? data.clickActivity?.[accountId] : undefined} showCombo={data.items.some((item) => item.purchased && item.definition.scene === sceneIndex)} rush={click10HomeActive} onBack={() => router.push(homePath)} onWorlds={leaveWorld} />
         : !farm && tab === "upgrades" && data.items[kittyIndex]
-        ? <IdleHeader className={selectedAwake ? `${devStyles.ornate}` : undefined} decoration={selectedAwake ? <OrnateCorners /> : undefined} title={data.items[kittyIndex].definition.name} subtitle="" coins={snapshot.globalCoins} balance={displayedBalance} badge={<KittyLevelBadge item={data.items[kittyIndex]} awake={selectedAwake} />} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />
-        : <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "relics" ? "Relíquias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "relics" ? "Pequenos encantos, grandes descobertas" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(environment === "dev" ? "/cantinho/dev" : "/cantinho")} />}
+        ? <IdleHeader className={selectedAwake ? `${devStyles.ornate}` : undefined} decoration={selectedAwake ? <OrnateCorners /> : undefined} title={data.items[kittyIndex].definition.name} subtitle="" coins={snapshot.globalCoins} balance={displayedBalance} badge={<KittyLevelBadge item={data.items[kittyIndex]} awake={selectedAwake} />} onBack={() => router.push(homePath)} />
+        : <IdleHeader title={tab === "home" ? sceneName : tab === "upgrades" ? "Melhorias" : tab === "relics" ? "Relíquias" : tab === "achievements" ? "Conquistas" : tab === "statistics" ? "Estatísticas" : "Ferramentas DEV"} subtitle={tab === "home" ? modeTitle : tab === "upgrades" ? "Compre e evolua para render mais" : tab === "relics" ? "Pequenos encantos, grandes descobertas" : tab === "statistics" ? "Seu progresso em detalhes" : tab === "dev" ? "Ambiente isolado de testes" : "Complete objetivos e ganhe recompensas"} coins={snapshot.globalCoins} onBack={() => router.push(homePath)} />}
       {activeSceneRelic && !dev && <span className={styles.sceneRelicBadge} title={activeSceneRelic.definition.name} aria-label={`Relíquia ${activeSceneRelic.definition.name} · nível ${activeSceneRelic.level}`}><Image src={activeSceneRelic.definition.asset} alt="" width={60} height={60} sizes="58px" /></span>}
-      {environment === "dev" && <span className={`${styles.devBadge} ${dev && tab === "home" ? devStyles.devBadgeDock : ""}`}>MODO DEV</span>}
+      {isDevEnvironment && <span className={`${styles.devBadge} ${dev && tab === "home" ? devStyles.devBadgeDock : ""}`}>MODO DEV</span>}
 
       {leaving && <div className={devStyles.leaveVeil} aria-hidden="true" />}
       {tab === "home" && (dev && activeWorld === null
@@ -249,7 +253,7 @@ export default function IdleModeScreen({ mode, environment = "real" }: { mode: I
       {showOfflineReward && snapshot.offlineReward?.mode === mode && <div className={styles.toast}>Enquanto vocês estavam fora: +{formatIdleNumber(snapshot.offlineReward.amount)}</div>}
       {error && <p className={styles.error} role="alert"><span>!</span>{error}</p>}
       {activeCelebration && <CelebrationPopup celebration={activeCelebration} onClose={() => setCelebrations((current) => current.slice(1))} />}
-      {dev ? <KittyDevNav active={tab} onChange={setTab} rush={click10HomeActive} ornate={selectedAwake} /> : <IdleBottomNav active={tab} onChange={setTab} dev={environment === "dev"} kitty={!farm} />}
+      {dev ? <KittyDevNav active={tab} onChange={setTab} rush={click10HomeActive} ornate={selectedAwake} showDevTab={isDevEnvironment} /> : <IdleBottomNav active={tab} onChange={setTab} dev={isDevEnvironment} kitty={!farm} />}
     </main>
   );
 }
@@ -323,7 +327,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem, acc
         if (!position) return null;
         const sprite = dev ? spriteFor(item, kittyDev) : { src: item.definition.asset, awake: false, styled: false };
         return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : styles.character} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}>
-          <Image className={sprite.styled ? `${devStyles.awakeImg} ${devStyles.awakeImgHome}` : undefined} src={sprite.src} alt={item.definition.name} fill sizes="42vw" />
+          <Image className={sprite.styled ? `${devStyles.awakeImg} ${devStyles.awakeImgHome}` : undefined} style={sprite.styled ? ({ "--awake-fit": awakeHomeTransform(item.definition.id) } as CSSProperties) : undefined} src={sprite.src} alt={item.definition.name} fill sizes="42vw" />
           {sprite.awake && <AwakeEffects />}
         </button>;
       })}
@@ -462,6 +466,20 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
   const selected = data.items[index];
   const devInfo = dev ? dev.kittyDev.characters[selected.definition.id] : undefined;
   const selectedAwake = Boolean(devInfo?.awakening?.awakened);
+  // Animação ao trocar entre a skin normal e a despertada (só quando é o MESMO personagem que mudou de skin).
+  const skinKey = devInfo?.awakening?.awakened ? `${selected.definition.id}:${devInfo.awakening.skinAwake ? "awake" : "normal"}` : null;
+  const previousSkinKey = useRef<string | null>(skinKey);
+  const skinTimer = useRef<number | null>(null);
+  const [skinFx, setSkinFx] = useState(0);
+  useEffect(() => {
+    const before = previousSkinKey.current;
+    previousSkinKey.current = skinKey;
+    if (!before || !skinKey || before === skinKey || before.split(":")[0] !== skinKey.split(":")[0]) return;
+    setSkinFx(Date.now());
+    if (skinTimer.current) window.clearTimeout(skinTimer.current);
+    skinTimer.current = window.setTimeout(() => setSkinFx(0), 950);
+  }, [skinKey]);
+  useEffect(() => () => { if (skinTimer.current) window.clearTimeout(skinTimer.current); }, []);
   // DEV: no modo Máx. sem saldo mostramos o mínimo para upar (1 nível) em vez de esconder o preço.
   const shownQuote: { count: number; totalCost: number } | null = quoteFor(selected, purchaseMode) ?? (dev && purchaseMode === "max" && selected.purchased ? { count: 1, totalCost: selected.nextCost } : null);
   const prestige = selected.definition.unlockOrder;
@@ -618,7 +636,7 @@ function KittyCarousel({ data, balance, busyItemId, pendingUpgrades, act, buyUpg
         const offset = itemIndex - index;
         const visible = Math.abs(offset) <= 1;
         if (!visible) return null;
-        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} data-upgrade-character={offset === 0 ? item.definition.id : undefined} {...(offset === 0 && item.purchased ? { role: "button", tabIndex: 0, "aria-label": `Coletar com ${item.definition.name}`, onClick: (event: MouseEvent<HTMLDivElement>) => void tapCharacter(event.clientX, event.clientY, event.currentTarget), onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); void tapCharacter(0, 0, event.currentTarget); } } } : {})} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}>{(() => { const sprite = dev ? spriteFor(item, dev.kittyDev) : { src: item.definition.asset, awake: false, styled: false }; return <><Image className={sprite.styled ? devStyles.awakeImg : undefined} src={sprite.src} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{sprite.awake && offset === 0 && <AwakeEffects />}</>; })()}{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}{offset === 0 && <span ref={upgradeFlashRef} className={styles.upgradeFlash} aria-hidden="true" />}</div>;
+        return <div key={item.definition.id} className={`${styles.carouselCharacter} ${offset === 0 ? styles.carouselSelected : ""} ${!item.purchased ? styles.carouselLocked : ""}`} data-upgrade-character={offset === 0 ? item.definition.id : undefined} {...(offset === 0 && item.purchased ? { role: "button", tabIndex: 0, "aria-label": `Coletar com ${item.definition.name}`, onClick: (event: MouseEvent<HTMLDivElement>) => void tapCharacter(event.clientX, event.clientY, event.currentTarget), onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); void tapCharacter(0, 0, event.currentTarget); } } } : {})} style={{ left: `${50 + offset * 104}%`, opacity: visible ? (offset === 0 ? 1 : .48) : 0, transform: `translate3d(calc(-50% + ${offset === 0 ? "var(--drag-main, 0px)" : "var(--drag-side, 0px)"}), 0, 0) scale(${offset === 0 ? 1 : .59})`, pointerEvents: offset === 0 ? "auto" : "none", "--locked-brightness": lockedBrightness(item.definition.unlockOrder, furthestPurchased) } as CSSProperties}>{(() => { const sprite = dev ? spriteFor(item, dev.kittyDev) : { src: item.definition.asset, awake: false, styled: false }; return <span className={`${devStyles.skinStage} ${offset === 0 && skinFx ? devStyles.skinSwap : ""}`}><Image className={sprite.styled ? devStyles.awakeImg : undefined} src={sprite.src} alt={item.definition.name} fill sizes="78vw" priority={itemIndex === 0} />{sprite.awake && offset === 0 && <AwakeEffects />}{offset === 0 && skinFx > 0 && <SkinSwapFx key={skinFx} />}</span>; })()}{!item.purchased && <LockKeyhole className={styles.carouselLockIcon} size={28} aria-hidden="true" />}{offset === 0 && <span ref={upgradeFlashRef} className={styles.upgradeFlash} aria-hidden="true" />}</div>;
       })}
       <div className={styles.panelStack}>
         <div className={styles.carouselDots}>{data.items.map((item, dot) => <button key={item.definition.id} type="button" aria-label={`Ver ${item.definition.name}`} className={dot === index ? styles.carouselDotActive : ""} onClick={() => setIndex(dot)} />)}</div>

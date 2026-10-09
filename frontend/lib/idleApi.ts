@@ -100,12 +100,20 @@ export async function resetIdle(target: "global" | IdleModeId, by: AccountId): P
 }
 
 // ---------------------------------------------------------------------------
-// Mecânicas experimentais do Mundo da Hello Kitty (somente ambiente DEV / conta André)
+// Constelações, itens, despertar e ilhas do Mundo da Hello Kitty (jogo normal e ambiente DEV)
 // ---------------------------------------------------------------------------
+let kittyApiContext: { accountId: AccountId; environment: GameEnvironment } | null = null;
+
+/** A tela do jogo informa quem está jogando e em qual save (normal ou DEV); as chamadas abaixo usam isso. */
+export function setKittyApiContext(accountId: AccountId, environment: GameEnvironment) {
+  kittyApiContext = { accountId, environment };
+}
+
 async function kittyDevPost(path: string, payload: Record<string, unknown>): Promise<IdleSnapshot> {
+  if (!kittyApiContext) throw new Error("Selecione a conta André ou Flávia para jogar.");
   return parse<IdleSnapshot>(await fetch(`${API_BASE}/api/idle/kitty-dev/${path}`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...payload, by: "andre" }),
+    body: JSON.stringify({ ...payload, by: kittyApiContext.accountId, environment: kittyApiContext.environment }),
   }));
 }
 
@@ -114,3 +122,5 @@ export const kittyDevBuyItem = (characterId: string, kind: "click" | "stone") =>
 export const kittyDevAwaken = (characterId: string) => kittyDevPost("awaken", { characterId });
 export const kittyDevSetWorld = (world: number | null) => kittyDevPost("world", { world });
 export const kittyDevSetSkin = (characterId: string, awake: boolean) => kittyDevPost("skin", { characterId, awake });
+/** Avisa o servidor que a tela de constelações foi aberta (missão "Observatório estelar"). */
+export const kittyDevVisitSky = () => kittyDevPost("sky", {});

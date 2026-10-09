@@ -1,12 +1,12 @@
 /**
- * Conquistas e missões das mecânicas experimentais do Mundo da Hello Kitty (SOMENTE ambiente DEV).
- * O IdleStore só consulta estas listas quando `environment === "dev"`.
+ * Conquistas e missões de Pedras Estelares, estrelas, constelações, despertar e itens do Mundo da Hello Kitty.
  *
  * Regras de design:
  *  - Conquistas são permanentes e feitas uma única vez: as recompensas (moedas globais) sobem com a dificuldade,
  *    na mesma escala das conquistas atuais da Hello Kitty (50 → 1.500).
  *  - Missões renováveis NUNCA podem ficar impossíveis: cada uma tem uma regra de disponibilidade (kittyDevQuestAvailable
- *    no IdleStore) e só entra no sorteio quando ainda existe algo a fazer. As de "viagem" funcionam sempre.
+ *    no IdleStore) e só entra no sorteio quando ainda existe algo a fazer. As de "viagem" e a de "observatório" funcionam sempre.
+ *  - Todo dia sai pelo menos 1 missão do grupo "devstone" (Pedra Estelar): a de "observatório" é o último recurso e nunca falta.
  */
 import type { AchievementDefinition, KittyObjectiveDefinition } from "./idleConfig";
 
@@ -59,11 +59,19 @@ export function kittyDevAchievementById(id: string): AchievementDefinition | und
   return KITTY_DEV_ACHIEVEMENTS.find((item) => item.id === id);
 }
 
+/** Grupo de missões de Pedra Estelar: o sorteio diário sempre inclui uma delas. */
+export const KITTY_DEV_REQUIRED_DAILY_GROUP = "devstone";
+
 export const KITTY_DEV_OBJECTIVES: KittyObjectiveDefinition[] = [
   // Diárias (rápidas)
   { id: "kitty-dev-daily-travel", group: "travel", period: "daily", title: "Passeio pelas ilhas", description: "Viaje entre as ilhas 3 vezes", metric: "kittyDevTravels", target: 3, reward: 8 },
   { id: "kitty-dev-daily-item", group: "devitem", period: "daily", title: "Brilho de item", description: "Compre ou melhore 1 item de personagem", metric: "kittyDevItems", target: 1, reward: 15 },
+  // Pedra Estelar (uma delas sempre aparece nas diárias)
+  { id: "kitty-dev-daily-stone", group: "devstone", period: "daily", title: "Garimpo estelar", description: "Ganhe 1 Pedra Estelar", metric: "kittyDevStones", target: 1, reward: 20 },
+  { id: "kitty-dev-daily-star", group: "devstone", period: "daily", title: "Pedra no céu", description: "Use Pedras Estelares para acender 1 estrela", metric: "kittyDevStars", target: 1, reward: 25 },
+  { id: "kitty-dev-daily-sky", group: "devstone", period: "daily", title: "Observatório estelar", description: "Visite as constelações e confira suas Pedras Estelares", metric: "kittyDevSky", target: 1, reward: 10 },
   // Semanais (um pouco mais difíceis)
+  { id: "kitty-dev-weekly-stone", group: "devstone", period: "weekly", title: "Mineradora de estrelas", description: "Ganhe 3 Pedras Estelares", metric: "kittyDevStones", target: 3, reward: 50 },
   { id: "kitty-dev-weekly-travel", group: "travel", period: "weekly", title: "Exploradora de ilhas", description: "Viaje entre as ilhas 15 vezes", metric: "kittyDevTravels", target: 15, reward: 35 },
   { id: "kitty-dev-weekly-items", group: "devitem", period: "weekly", title: "Colecionadora de itens", description: "Compre ou melhore 4 itens de personagem", metric: "kittyDevItems", target: 4, reward: 60 },
   { id: "kitty-dev-weekly-star", group: "devstar", period: "weekly", title: "Noite estrelada", description: "Evolua 1 estrela de constelação", metric: "kittyDevStars", target: 1, reward: 70 },

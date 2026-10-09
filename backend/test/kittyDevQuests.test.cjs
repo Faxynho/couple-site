@@ -34,26 +34,61 @@ const force = (store, daily, weekly) => {
 };
 
 // ---------------------------------------------------------------------------
-// Modo normal intacto
+// Jogo normal: missões e conquistas novas valem também no save real
 // ---------------------------------------------------------------------------
-test("modo real: missões e conquistas experimentais nunca aparecem", () => {
+test("jogo normal: as conquistas novas aparecem e as missões novas entram no sorteio", () => {
+  const seen = new Set();
   for (let seed = 1; seed <= 80; seed += 1) {
     const { store } = makeStore("real", seed);
     const snapshot = store.getSnapshot();
-    const ids = [...snapshot.kittyObjectives.daily, ...snapshot.kittyObjectives.weekly].map((item) => item.id);
-    assert.equal(ids.some((id) => id.startsWith("kitty-dev-")), false);
-    assert.equal(snapshot.modes.kitty.achievements.some((item) => item.id.startsWith("kitty-dev-")), false);
+    assert.equal(snapshot.modes.kitty.achievements.some((item) => item.id.startsWith("kitty-dev-")), true);
+    [...snapshot.kittyObjectives.daily, ...snapshot.kittyObjectives.weekly].forEach((item) => { if (item.id.startsWith("kitty-dev-")) seen.add(item.id); });
   }
-  const { store } = makeStore("real");
-  const progress = store.data.objectives.daily.progress;
-  assert.equal(Object.keys(progress).some((key) => key.startsWith("kittyDev")), false);
+  assert.ok(seen.has("kitty-dev-daily-travel") && seen.has("kitty-dev-weekly-travel"), [...seen].join(","));
 });
 
-test("modo real: viagens/itens/estrelas não geram progresso nem conquistas", () => {
+test("jogo normal: viagens e itens geram progresso de missão", () => {
   const { store } = makeStore("real");
   store.setKittyLastWorld(0);
-  store.buyKittyItem("hello-kitty", "click");
-  assert.equal(Object.keys(store.data.objectives.daily.progress).some((key) => key.startsWith("kittyDev")), false);
+  assert.equal(store.data.objectives.daily.progress.kittyDevTravels, 1);
+});
+
+test("pelo menos 1 missão de Pedra Estelar por dia, em qualquer situação do save", () => {
+  const situations = [
+    ["save novo", () => undefined],
+    ["só a Hello Kitty nível 1", (store) => store.devItemAction("kitty", "hello-kitty", "setLevel", 1)],
+    ["nível 59 (a 1 nível do marco)", (store) => store.devItemAction("kitty", "hello-kitty", "setLevel", 59)],
+    ["muito avançado", (store) => { for (const definition of IDLE_CATALOG.kitty) store.devItemAction("kitty", definition.id, "setLevel", 80); store.changeBalance("kitty", "set", 1e60); }],
+    ["tudo completo", (store) => { for (const definition of IDLE_CATALOG.kitty) store.devItemAction("kitty", definition.id, "setLevel", 100); store.devKittyAction("maxStars", "all"); store.devKittyAction("maxItems", "all"); store.changeBalance("kitty", "set", 1e300); }],
+  ];
+  for (const environment of ["real", "dev"]) {
+    for (const [label, setup] of situations) {
+      for (let seed = 1; seed <= 40; seed += 1) {
+        const { store, clock } = makeStore(environment, seed);
+        setup(store);
+        for (let day = 0; day < 10; day += 1) {
+          clock.now += 86_400_000;
+          const daily = store.getSnapshot().kittyObjectives.daily;
+          assert.equal(daily.length, KITTY_DAILY_OBJECTIVE_COUNT, `${environment}/${label}/${seed}/dia ${day}`);
+          const stoneQuests = daily.filter((item) => ["kitty-dev-daily-stone", "kitty-dev-daily-star", "kitty-dev-daily-sky"].includes(item.id));
+          assert.equal(stoneQuests.length, 1, `${environment}/${label}/seed ${seed}/dia ${day}: deve haver exatamente 1 missão de pedra estelar (${daily.map((item) => item.id).join(", ")})`);
+        }
+      }
+    }
+  }
+});
+
+test("missão de Pedra Estelar: 'ganhe 1 pedra' conta quando um marco de 10 níveis é alcançado, 'observatório' conta a visita", () => {
+  const { store } = makeStore("real", 1);
+  store.devItemAction("kitty", "hello-kitty", "setLevel", 59);
+  store.data.objectives.daily.kitty = { ids: ["kitty-dev-daily-stone", "kitty-dev-daily-sky"], targets: {} };
+  store.data.objectives.daily.progress.kittyDevStones = 0;
+  store.devItemAction("kitty", "hello-kitty", "setLevel", 60);
+  const stone = () => store.getSnapshot().kittyObjectives.daily.find((item) => item.id === "kitty-dev-daily-stone");
+  assert.equal(stone().progress, 1);
+  assert.ok(stone().completedAt);
+  assert.equal(store.visitKittySky().ok, true);
+  assert.ok(store.getSnapshot().kittyObjectives.daily.find((item) => item.id === "kitty-dev-daily-sky").completedAt);
 });
 
 // ---------------------------------------------------------------------------
@@ -257,11 +292,11 @@ test("skin: só dá para trocar depois de despertar; troca só o visual e manté
   assert.equal(info().awakening.skinAwake, true);
 });
 
-test("skin: modo real recusa e não altera nada", () => {
+test("skin: só personagem despertado troca de skin (jogo normal também)", () => {
   const { store } = makeStore("real");
   const result = store.setKittySkin("hello-kitty", false);
   assert.equal(result.ok, false);
-  assert.match(result.error, /ambiente DEV/);
+  assert.match(result.error, /Desbloqueie/);
 });
 
 test("skin: a escolha é salva no JSON do ambiente DEV", async () => {

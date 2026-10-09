@@ -46,3 +46,24 @@ export function charactersOfWorld(items: IdleItemSnapshot[], world: number): Idl
 
 /** Ordem em que as 5 estrelas aparecem no arco: esquerda, direita, esquerda, direita e, por último, o centro. */
 export const STAR_SLOT_OF_LEVEL = [0, 4, 1, 3, 2] as const; // nível 1→slot 0 (esq.), 2→4 (dir.), 3→1, 4→3, 5→2 (meio)
+
+/**
+ * Ajuste do sprite DESPERTADO na aba inicial do mundo para que ele apareça do MESMO tamanho (e no mesmo "chão") que o sprite normal.
+ * Os sprites despertados têm margens diferentes, então cada personagem tem o seu valor. A Hello Kitty usa o ajuste padrão do CSS.
+ * Valores gerados por `python3 scripts/measure_awake_sprites.py` (rode de novo ao trocar/adicionar um sprite em /idle/characters/awake/).
+ * x e y em % do quadro do personagem.
+ */
+export const AWAKE_HOME_FIT: Record<string, { scale: number; x: number; y: number }> = {
+  "dear-daniel": { scale: 0.902, x: 0.7, y: 4.6 },
+  "my-melody": { scale: 0.813, x: 1.8, y: 5.7 },
+  "mimmy": { scale: 0.943, x: -1.7, y: 3.0 },
+  "cinnamoroll": { scale: 0.784, x: -0.1, y: -3.8 },
+  "pompompurin": { scale: 0.862, x: -0.3, y: -0.1 },
+  "cinnamoroll-blue-bow": { scale: 0.992, x: 0.2, y: -2.6 },
+};
+
+/** Transform CSS do sprite despertado na aba inicial (undefined = usa o padrão do CSS, que é o da Hello Kitty). */
+export function awakeHomeTransform(characterId: string): string | undefined {
+  const fit = AWAKE_HOME_FIT[characterId];
+  return fit ? `translate(${fit.x}%, ${fit.y}%) scale(${fit.scale})` : undefined;
+}
