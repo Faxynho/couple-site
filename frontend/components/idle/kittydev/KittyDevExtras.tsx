@@ -21,6 +21,15 @@ export function AwakeEffects() {
   </>;
 }
 
+/** Efeito da troca de skin: clarão dourado, anel de choque e brilhos que saem do personagem (só transform/opacity). */
+export function SkinSwapFx() {
+  return <span className={styles.skinFx} aria-hidden="true">
+    <i className={styles.skinFlash} />
+    <i className={styles.skinShock} />
+    {Array.from({ length: 10 }, (_, index) => <GoldSparkle key={index} className={styles.skinSpark} style={{ "--a": `${index * 36}deg`, "--d": `${(index % 3) * .05}s` } as CSSProperties} />)}
+  </span>;
+}
+
 /** Moldura ornamentada dourada (cantos desenhados + duas linhas), igual à da imagem de referência. */
 export function OrnateCorners({ compact = false }: { compact?: boolean }) {
   return <span className={`${styles.ornateCorners} ${compact ? styles.ornateCornersCompact : ""}`} aria-hidden="true">
@@ -198,11 +207,10 @@ export default function KittyDevExtras({ item, info, balance, onSnapshot }: {
   };
 
   return <>
-    {showAwaken && awakening && <button type="button" className={styles.awakenBtn} disabled={busy || !awakening.unlocked || balance < awakening.cost} onClick={() => void awaken()}>
+    {showAwaken && awakening && <button type="button" className={styles.awakenBtn} disabled={busy || !awakening.unlocked || balance < awakening.cost} title={awakening.lockedReason ?? undefined} aria-description={awakening.lockedReason ?? undefined} onClick={() => void awaken()}>
       <Sparkles size={18} aria-hidden="true" /><span>Despertar</span>
       <span className={styles.awakenCost}><Image src="/idle/icons/game-money.webp" alt="" width={48} height={48} />{formatIdleNumber(awakening.cost)}</span>
     </button>}
-    {showAwaken && awakening?.lockedReason && <span className={styles.awakenSoon}>{awakening.lockedReason}</span>}
     {error && <span className={styles.awakenSoon} role="alert" style={{ color: "#c0306a" }}>{error}</span>}
     {celebrate && awakening?.awakened && <AwakenCelebration info={info} name={item.definition.name} onClose={() => setCelebrate(false)} />}
   </>;

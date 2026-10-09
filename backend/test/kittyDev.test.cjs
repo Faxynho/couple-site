@@ -22,41 +22,44 @@ function unlock(store, count, level = 1) {
 }
 
 // ---------------------------------------------------------------------------
-// O modo normal NÃO pode mudar
+// Jogo normal: recebe as mecânicas novas sem mudar a conta original
 // ---------------------------------------------------------------------------
-test("modo real: snapshot não expõe nada das mecânicas DEV e a produção é a original", () => {
+test("jogo normal: tem as mecânicas novas e, sem estrelas/despertar, a produção é exatamente a original", () => {
   const store = realStore();
   store.devItemAction("kitty", "hello-kitty", "setLevel", 30);
   const snapshot = store.getSnapshot();
   assert.equal(snapshot.environment, "real");
-  assert.equal(snapshot.modes.kitty.kittyDev, undefined);
+  assert.ok(snapshot.modes.kitty.kittyDev, "o snapshot do jogo normal traz as constelações");
+  assert.equal(Object.keys(snapshot.modes.kitty.kittyDev.characters).length, 24);
   // produção do nível 30 sem multiplicadores: 2 * 1.27^29 (relíquias ainda no nível 0 => x1)
   assert.ok(Math.abs(snapshot.modes.kitty.items[0].production - 2 * Math.pow(1.27, 29)) < 1e-6);
-  assert.equal(JSON.stringify(snapshot).includes("kittyDev"), false);
-  assert.equal(JSON.stringify(snapshot).includes("starCosts"), false);
+  assert.equal(snapshot.modes.kitty.kittyDev.characters["hello-kitty"].productionMultiplier, 1);
+  assert.equal(snapshot.modes.kitty.kittyDev.characters["hello-kitty"].clickMultiplier, 1);
 });
 
-test("modo real: métodos DEV recusam executar e não alteram o save", () => {
+test("jogo normal: constelações, itens, despertar e ilhas funcionam e salvam no save real", () => {
   const store = realStore();
-  unlock(store, 1, 40);
-  const before = store.getSnapshot();
-  for (const result of [
-    store.buyKittyConstellation("hello-kitty"),
-    store.buyKittyItem("hello-kitty", "click"),
-    store.awakenKittyCharacter("hello-kitty"),
-    store.setKittyLastWorld(2),
-  ]) {
-    assert.equal(result.ok, false);
-    assert.match(result.error, /ambiente DEV/);
-  }
-  store.devKittyAction("addStones", "all", 999);
-  const after = store.getSnapshot();
-  assert.equal(after.modes.kitty.kittyDev, undefined);
-  assert.equal(after.modes.kitty.balance, before.modes.kitty.balance);
-  assert.equal(after.modes.kitty.totalProduction, before.modes.kitty.totalProduction);
+  unlock(store, 1, 60);
+  const level = store.getSnapshot().modes.kitty.kittyDev;
+  assert.equal(level.stones, 6, "nível 60 da Hello Kitty = 6 pedras");
+  assert.equal(store.buyKittyConstellation("hello-kitty").ok, true);
+  assert.equal(store.getSnapshot().modes.kitty.kittyDev.characters["hello-kitty"].stars, 1);
+  store.changeBalance("kitty", "set", 1e30);
+  assert.equal(store.buyKittyItem("hello-kitty", "click").ok, true);
+  assert.equal(store.setKittyLastWorld(0).ok, true);
+  assert.equal(store.getSnapshot().modes.kitty.kittyDev.lastWorld, 0);
+  assert.equal(store.awakenKittyCharacter("hello-kitty").ok, false, "ainda sem as 5 estrelas / elenco completo");
 });
 
-test("modo real: o JSON salvo nunca recebe o campo dev", async () => {
+test("jogo normal: o ambiente DEV continua separado (nada do DEV vaza para o save real)", () => {
+  const real = realStore();
+  const dev = devStore();
+  dev.devKittyAction("addStones", "all", 500);
+  assert.equal(dev.getSnapshot().modes.kitty.kittyDev.stones, 500);
+  assert.equal(real.getSnapshot().modes.kitty.kittyDev.stones, 0);
+});
+
+test("jogo normal: o JSON salvo recebe o campo dev uma única vez e as pedras não são pagas de novo", async () => {
   const dir = await mkdtemp(join(tmpdir(), "idle-real-"));
   try {
     const file = join(dir, "idle.json");
@@ -66,7 +69,68 @@ test("modo real: o JSON salvo nunca recebe o campo dev", async () => {
     store.enterMode("kitty");
     await new Promise((resolve) => setTimeout(resolve, 900));
     const saved = JSON.parse(await readFile(file, "utf-8"));
-    assert.equal("dev" in saved.modes.kitty, false);
+    assert.equal("dev" in saved.modes.kitty, true);
+    assert.equal(saved.modes.kitty.dev.stones, 2);
+    const again = new IdleStore(true, () => T0, file, "real");
+    await again.ready();
+    again.enterMode("kitty");
+    assert.equal(again.getSnapshot().modes.kitty.kittyDev.stones, 2, "reabrir o jogo não paga as pedras duas vezes");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("atualização do jogo: um save antigo recebe pedras e conquistas equivalentes ao progresso, com backup e sem mexer no resto", async () => {
+  const { writeFile, readdir } = require("node:fs/promises");
+  const dir = await mkdtemp(join(tmpdir(), "idle-migrate-"));
+  try {
+    const file = join(dir, "idle.json");
+    // 1) monta um save "antigo" (sem o campo dev), do jeito que o jogo gravava antes da atualização
+    const old = new IdleStore(true, () => T0, file, "real");
+    await old.ready();
+    old.devItemAction("kitty", "hello-kitty", "setLevel", 50);
+    old.devItemAction("kitty", "dear-daniel", "setLevel", 25);
+    old.changeBalance("kitty", "set", 123456);
+    old.enterMode("kitty");
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    const raw = JSON.parse(await readFile(file, "utf-8"));
+    delete raw.modes.kitty.dev;
+    for (const id of Object.keys(raw.modes.kitty.unlockedAchievements)) if (id.startsWith("kitty-dev-")) delete raw.modes.kitty.unlockedAchievements[id];
+    for (const period of [raw.objectives.daily, raw.objectives.weekly]) for (const key of Object.keys(period.progress)) if (key.startsWith("kittyDev")) delete period.progress[key];
+    const coinsBefore = raw.globalCoins;
+    const before = JSON.stringify({ items: raw.modes.kitty.items, balance: raw.modes.kitty.balance });
+    await writeFile(file, JSON.stringify(raw), "utf-8");
+
+    // 2) abre o jogo atualizado
+    const updated = new IdleStore(true, () => T0, file, "real");
+    await updated.ready();
+    const snapshot = updated.getSnapshot();
+    const kd = snapshot.modes.kitty.kittyDev;
+    // Hello Kitty nível 50 = 5 pedras; Dear Daniel nível 25 = 2 marcos (1 pedra cada nos primeiros personagens) => 7
+    assert.equal(kd.totalStones, 7);
+    assert.equal(kd.stones, 7);
+    assert.equal(kd.characters["hello-kitty"].stars, 0);
+    // conquistas de pedras estelares já cumpridas
+    const achievements = Object.fromEntries(snapshot.modes.kitty.achievements.map((item) => [item.id, item]));
+    assert.ok(achievements["kitty-dev-stone-1"].completedAt, "conquista 'ganhe 1 pedra estelar'");
+    assert.equal(achievements["kitty-dev-stone-50"].completedAt, null);
+    assert.ok(snapshot.globalCoins >= coinsBefore + 20, "recompensa da conquista creditada");
+    // o resto do save fica igual
+    const current = updated.data.modes.kitty;
+    assert.equal(JSON.stringify({ items: current.items, balance: current.balance }), before);
+    // backup do save antigo (uma única vez)
+    const files = await readdir(dir);
+    assert.ok(files.some((name) => name.endsWith(".antes-das-constelacoes.bak")), files.join(","));
+
+    // 3) reabrir não paga nada de novo
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    const coinsAfter = updated.getSnapshot().globalCoins;
+    const again = new IdleStore(true, () => T0, file, "real");
+    await again.ready();
+    assert.equal(again.getSnapshot().modes.kitty.kittyDev.totalStones, 7);
+    assert.equal(again.getSnapshot().globalCoins, coinsAfter);
+    // a missão "ganhe 1 pedra" não é completada pelas pedras atrasadas da migração
+    assert.equal(again.data.objectives.daily.progress.kittyDevStones ?? 0, 0);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -426,11 +490,7 @@ test("dias jogados: definir, zerar contador e resetar o mundo", () => {
   assert.ok(store.getSnapshot().modes.kitty.kittyDev.days < 1e-9, "resetar o mundo zera os dias");
 });
 
-test("dias jogados: sobrevivem a reiniciar o servidor e o modo real não tem contador", async () => {
-  const real = realStore();
-  assert.equal(real.getSnapshot().modes.kitty.kittyDev, undefined);
-  real.simulateDevOffline("kitty", 3_600_000);
-  assert.equal(real.getSnapshot().modes.kitty.kittyDev, undefined);
+test("dias jogados: sobrevivem a reiniciar o servidor", async () => {
   const dir = await mkdtemp(join(tmpdir(), "idle-dev-days-"));
   try {
     const file = join(dir, "idle-dev.json");

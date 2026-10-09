@@ -33,7 +33,7 @@ import {
   scaledObjectiveTarget,
 } from "./idleConfig";
 import { ObjectivePeriodName, pickKittyObjectives } from "./kittyObjectives";
-import { KITTY_DEV_ACHIEVEMENTS, KITTY_DEV_OBJECTIVES, kittyDevAchievementById, kittyDevObjectiveById } from "./kittyDevQuests";
+import { KITTY_DEV_ACHIEVEMENTS, KITTY_DEV_OBJECTIVES, KITTY_DEV_REQUIRED_DAILY_GROUP, kittyDevAchievementById, kittyDevObjectiveById } from "./kittyDevQuests";
 import {
   CLICK_ITEM_MAX_LEVEL,
   CONSTELLATION_BONUSES,
@@ -101,7 +101,7 @@ function objectiveById(id: string) {
   return kittyObjectiveById(id) ?? kittyDevObjectiveById(id);
 }
 
-const DEV_METRICS: DevObjectiveMetric[] = ["kittyDevTravels", "kittyDevItems", "kittyDevStars"];
+const DEV_METRICS: DevObjectiveMetric[] = ["kittyDevTravels", "kittyDevItems", "kittyDevStars", "kittyDevStones", "kittyDevSky"];
 
 function safeMoney(value: number): number {
   if (!Number.isFinite(value)) return MAX_IDLE_MONEY;
@@ -456,7 +456,8 @@ export class IdleStore {
     if (!this.shouldPersist) return;
     try {
       await fs.mkdir(path.dirname(this.dataFile), { recursive: true });
-      const parsed = JSON.parse(await fs.readFile(this.dataFile, "utf-8")) as Partial<IdleStoredData>;
+      const rawSave = await fs.readFile(this.dataFile, "utf-8");
+      const parsed = JSON.parse(rawSave) as Partial<IdleStoredData>;
       const now = this.now();
       const base = emptyData(now);
       const schemaVersion = safeCount(parsed.schemaVersion);
@@ -485,13 +486,36 @@ export class IdleStore {
             : [],
         updatedAt: Number.isFinite(parsed.updatedAt) ? Number(parsed.updatedAt) : now,
       };
-      // Mecânicas experimentais: o save real nunca recebe este campo.
-      if (this.environment === "dev") this.data.modes.kitty.dev = sanitizeKittyDev(parsed.modes?.kitty?.dev);
-      if (this.ensureKittySelections(now) || schemaVersion < CURRENT_SCHEMA_VERSION) this.scheduleSave();
+      // Constelações, itens e despertar do Mundo da Hello Kitty (agora também no jogo normal).
+      const firstKittyUpdate = !parsed.modes?.kitty?.dev;
+      this.data.modes.kitty.dev = sanitizeKittyDev(parsed.modes?.kitty?.dev);
+      // Primeira vez com as mecânicas novas: guarda uma cópia do save e credita o que o progresso atual já merece.
+      if (firstKittyUpdate && rawSave) await this.backupBeforeKittyUpdate(rawSave);
+      const migrated = this.migrateKittyMechanics(now);
+      if (this.ensureKittySelections(now) || migrated || firstKittyUpdate || schemaVersion < CURRENT_SCHEMA_VERSION) this.scheduleSave();
     } catch {
       this.data = emptyData(this.now());
       this.ensureKittySelections(this.now());
     }
+  }
+
+  /** Cópia de segurança (uma única vez) do save antes de ele receber os dados das mecânicas novas. */
+  private async backupBeforeKittyUpdate(rawSave: string) {
+    const backup = `${this.dataFile}.antes-das-constelacoes.bak`;
+    try {
+      await fs.writeFile(backup, rawSave, { encoding: "utf-8", flag: "wx" });
+    } catch { /* já existe (ou não foi possível gravar): o jogo segue normalmente */ }
+  }
+
+  /**
+   * Atualização do jogo: quem já tinha progresso recebe, na primeira vez, as Pedras Estelares dos níveis que já
+   * alcançou e as conquistas novas que já cumpriu. É idempotente (pedras já pagas ficam marcadas em `stoneClaimed`)
+   * e não conta como progresso de missão. Devolve true se algo mudou.
+   */
+  private migrateKittyMechanics(now: number): boolean {
+    let changed = this.evaluateKittyDevStones(false);
+    if (this.evaluateAchievements("kitty", now)) changed = true;
+    return changed;
   }
 
   private scheduleSave() {
@@ -541,7 +565,9 @@ export class IdleStore {
       if (period.kitty) continue;
       const ids = pickKittyObjectives(name, name === "daily" ? KITTY_DAILY_OBJECTIVE_COUNT : KITTY_WEEKLY_OBJECTIVE_COUNT, {
         random: this.random, previousIds: previous[name], daysLeft: periodWindow(now, name).daysLeft,
-        ...(this.environment === "dev" ? { pool: [...KITTY_OBJECTIVE_POOL, ...KITTY_DEV_OBJECTIVES.filter((item) => this.kittyDevQuestAvailable(item.id))] } : {}),
+        pool: [...KITTY_OBJECTIVE_POOL, ...KITTY_DEV_OBJECTIVES.filter((item) => this.kittyDevQuestAvailable(item.id))],
+        // pelo menos 1 missão de Pedra Estelar por dia
+        ...(name === "daily" ? { requiredGroup: KITTY_DEV_REQUIRED_DAILY_GROUP } : {}),
       });
       const production = this.totalProduction("kitty");
       period.kitty = {
@@ -572,10 +598,8 @@ export class IdleStore {
     if (mode !== "kitty") return base;
     const sceneRelic = this.relicMultiplier(`kitty-scene-${definition.scene + 1}`);
     const allRelic = this.relicMultiplier("kitty-all");
-    // Ambiente real: exatamente a conta original.
-    if (this.environment !== "dev") return base * sceneRelic * allRelic;
-    // DEV: estrelas da constelação multiplicam e o despertar soma um bônus FIXO (como um personagem 25, 26…);
-    // os dois ainda são multiplicados pelas relíquias.
+    // Estrelas da constelação multiplicam e o despertar soma um bônus FIXO (como um personagem 25, 26…);
+    // os dois ainda são multiplicados pelas relíquias. Sem estrelas nem despertar a conta é a original.
     return (base * this.kittyDevProductionMultiplier(definition.id) + this.kittyDevAwakeningBonus(definition.id)) * sceneRelic * allRelic;
   }
 
@@ -648,10 +672,10 @@ export class IdleStore {
     if (raised) this.evaluateObjectives(now);
   }
 
-  /** Conquistas efetivas do modo: no ambiente DEV a Hello Kitty ganha as conquistas das mecânicas experimentais. */
+  /** Conquistas efetivas do modo: a Hello Kitty inclui as conquistas de pedras, estrelas, constelações, despertar e itens. */
   private achievementList(mode: IdleModeId): AchievementDefinition[] {
     const base = ACHIEVEMENTS.filter((item) => item.mode === mode);
-    return mode === "kitty" && this.environment === "dev" ? [...base, ...KITTY_DEV_ACHIEVEMENTS] : base;
+    return mode === "kitty" ? [...base, ...KITTY_DEV_ACHIEVEMENTS] : base;
   }
 
   private kittyDevStat(stat: "stonesEarned" | "stars" | "constellations" | "awakened" | "clickItems" | "stoneItems" | "itemsMaxed"): number {
@@ -689,8 +713,8 @@ export class IdleStore {
 
   private evaluateAchievements(mode: IdleModeId, now: number): boolean {
     let changed = false;
-    // DEV: marcos de 10 níveis pagam Pedras Estelares (idempotente).
-    if (mode === "kitty" && this.environment === "dev" && this.evaluateKittyDevStones()) changed = true;
+    // Marcos de 10 níveis pagam Pedras Estelares (idempotente).
+    if (mode === "kitty" && this.evaluateKittyDevStones()) changed = true;
     const state = this.data.modes[mode];
     for (const achievement of this.achievementList(mode)) {
       if (state.unlockedAchievements[achievement.id]) continue;
@@ -831,7 +855,7 @@ export class IdleStore {
             unlocked: Boolean(state.items[IDLE_CATALOG.kitty[relic.unlockOrder].id]?.purchased) };
         }),
         clickActivity: { ...state.clickActivity },
-        ...(this.environment === "dev" ? { kittyDev: this.kittyDevSnapshot() } : {}),
+        kittyDev: this.kittyDevSnapshot(),
       } : {}),
       achievements: this.achievementList(mode).map((achievement) => {
         const status = this.achievementProgress(mode, achievement.id);
@@ -1024,7 +1048,7 @@ export class IdleStore {
         bestStreak: Math.max(previous?.bestStreak ?? 0, streak), milestoneCount: (previous?.milestoneCount ?? 0) + (milestone ? 1 : 0) };
     }
     const multiplier = this.clickMultiplier(mode, now) * comboMultiplier * (mode === "kitty" ? this.relicMultiplier("kitty-click") : 1)
-      * (mode === "kitty" && this.environment === "dev" ? this.kittyDevClickMultiplier(itemId) : 1);
+      * (mode === "kitty" ? this.kittyDevClickMultiplier(itemId) : 1);
     const baseClick = mode === "kitty" ? Math.max(1, Math.floor(this.itemProduction(mode, definition, owned.level) * .55)) : itemClickReward(definition, owned.level);
     const reward = safeMoney(baseClick * multiplier);
     state.totalClicks += 1;
@@ -1133,7 +1157,7 @@ export class IdleStore {
       if (action === "setLevel") { owned.purchased = true; owned.level = Math.max(1, Math.min(10_000, Math.floor(level ?? 1))); owned.purchasedAt ??= now; }
       if (action === "resetLevels" && owned.purchased) owned.level = 1;
     }
-    if (mode === "kitty" && this.environment === "dev") this.evaluateKittyDevStones();
+    if (mode === "kitty") this.evaluateKittyDevStones();
     this.touch(now);
     return this.buildSnapshot(null);
   }
@@ -1173,8 +1197,7 @@ export class IdleStore {
   // Mecânicas experimentais do Mundo da Hello Kitty (SOMENTE ambiente DEV)
   // ---------------------------------------------------------------------------
 
-  private kittyDevState(): KittyDevState | null {
-    if (this.environment !== "dev") return null;
+  private kittyDevState(): KittyDevState {
     const kitty = this.data.modes.kitty;
     if (!kitty.dev) kitty.dev = emptyKittyDev();
     if (!kitty.dev.startedAt) kitty.dev.startedAt = this.now();
@@ -1221,11 +1244,14 @@ export class IdleStore {
     return constellationClickMultiplier(saved.stars) * clickItemMultiplier(saved.clickItem);
   }
 
-  /** Paga as Pedras Estelares dos marcos de 10 níveis ainda não creditados. Retorna true se algo mudou. */
-  private evaluateKittyDevStones(): boolean {
+  /**
+   * Paga as Pedras Estelares dos marcos de 10 níveis ainda não creditados. Retorna true se algo mudou.
+   * `countForQuests` = false na migração do save (pedras atrasadas não contam como progresso de missão).
+   */
+  private evaluateKittyDevStones(countForQuests = true): boolean {
     const dev = this.kittyDevState();
-    if (!dev) return false;
     let changed = false;
+    let earned = 0;
     IDLE_CATALOG.kitty.forEach((definition, index) => {
       const owned = this.data.modes.kitty.items[definition.id];
       if (!owned?.purchased) return;
@@ -1239,8 +1265,10 @@ export class IdleStore {
       saved.stoneClaimed = milestones;
       dev.stones += whole;
       dev.totalStones += whole;
+      earned += whole;
       changed = true;
     });
+    if (earned > 0 && countForQuests) this.addMetric("kittyDevStones", earned, this.now());
     return changed;
   }
 
@@ -1308,7 +1336,6 @@ export class IdleStore {
       if (settled.amount > 0) this.touch(now);
       return { ok: false as const, error, snapshot: this.buildSnapshot(null) };
     };
-    if (this.environment !== "dev") return { now, fail, error: "Disponível apenas no ambiente DEV.", character: null, index: -1 };
     if (characterId === null) return { now, fail, error: null, character: null, index: -1 };
     const index = IDLE_CATALOG.kitty.findIndex((item) => item.id === characterId);
     if (index < 0) return { now, fail, error: "Personagem não encontrado.", character: null, index };
@@ -1388,11 +1415,11 @@ export class IdleStore {
    */
   kittyDevQuestAvailable(id: string): boolean {
     const definition = kittyDevObjectiveById(id);
-    const dev = this.data.modes.kitty.dev;
-    if (!definition || !dev) return false;
+    if (!definition) return false;
+    const dev = this.kittyDevState();
     const production = this.totalProduction("kitty");
     const owned = IDLE_CATALOG.kitty.map((item, index) => ({ item, index, saved: dev.characters[item.id], state: this.data.modes.kitty.items[item.id] })).filter((entry) => entry.state?.purchased && entry.saved);
-    if (definition.metric === "kittyDevTravels") return true;
+    if (definition.metric === "kittyDevTravels" || definition.metric === "kittyDevSky") return true;
     if (definition.metric === "kittyDevItems") {
       const costs = owned.flatMap(({ index, saved }) => [
         saved.clickItem < CLICK_ITEM_MAX_LEVEL ? clickItemCost(index, saved.clickItem + 1) : Infinity,
@@ -1407,7 +1434,28 @@ export class IdleStore {
         && state.level >= constellationLevelRequirement(index, saved.stars + 1)
         && dev.stones >= constellationCost(index, saved.stars + 1));
     }
+    if (definition.metric === "kittyDevStones") {
+      // só entra se algum personagem está a poucos níveis do próximo marco de 10: o que falta custa até 6 h (diária) / 12 h (semanal)
+      // de produção, contando o dinheiro que já temos.
+      const budget = this.data.modes.kitty.balance + production * (definition.period === "daily" ? 6 : 12) * 3_600;
+      const cheapest = owned.reduce((best, { item, state }) => {
+        const target = (Math.floor(state.level / STONE_MILESTONE_EVERY_LEVELS) + 1) * STONE_MILESTONE_EVERY_LEVELS;
+        let cost = 0;
+        for (let level = state.level; level < target && cost <= budget; level += 1) cost += itemUpgradeCost(item, level);
+        return Math.min(best, cost);
+      }, Infinity);
+      return production > 0 && cheapest <= budget;
+    }
     return false;
+  }
+
+  /** Visita à tela de constelações (alimenta a missão "Observatório estelar"). */
+  visitKittySky() {
+    const ctx = this.kittyDevAction(null);
+    if (ctx.error) return ctx.fail(ctx.error);
+    this.addMetric("kittyDevSky", 1, ctx.now);
+    this.touch(ctx.now);
+    return { ok: true as const, snapshot: this.buildSnapshot(null) };
   }
 
   /** Guarda a última ilha aberta para que a aba inicial volte nela (null = voltar à seleção de ilhas). */

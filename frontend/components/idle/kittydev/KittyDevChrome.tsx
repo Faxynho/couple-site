@@ -11,7 +11,7 @@ import { TrophyIcon } from "../KittyIcons";
 import { OrnateCorners } from "./KittyDevExtras";
 import styles from "./KittyDev.module.css";
 
-/** HUD superior do ambiente DEV (voltar, título do mundo, botão de ilhas, saldo/produção e combo). */
+/** HUD superior do Mundo da Hello Kitty (voltar, título do mundo, botão de ilhas, saldo/produção e combo). */
 export function KittyDevHud({ variant, worldName, relicAsset, relicName, balance, production, activity, showCombo, rush, onBack, onWorlds }: {
   variant: "world" | "map";
   worldName: string;
@@ -69,8 +69,8 @@ const TABS: Array<{ id: IdleTab; label: string; icon: typeof NavHomeIcon }> = [
   { id: "statistics", label: "Estatísticas", icon: NavStatsIcon },
 ];
 
-/** Menu inferior redesenhado (somente DEV). Mantém os mesmos IDs de aba do menu original. */
-export function KittyDevNav({ active, onChange, rush, ornate = false }: { active: IdleTab; onChange: (tab: IdleTab) => void; rush: boolean; ornate?: boolean }) {
+/** Menu inferior redesenhado do Mundo da Hello Kitty. A aba DEV só aparece no ambiente de testes. */
+export function KittyDevNav({ active, onChange, rush, ornate = false, showDevTab = false }: { active: IdleTab; onChange: (tab: IdleTab) => void; rush: boolean; ornate?: boolean; showDevTab?: boolean }) {
   return <nav className={`${styles.nav} ${rush ? styles.navRush : ""} ${ornate ? styles.ornate : ""}`} aria-label="Navegação do jogo idle">
     {ornate && <OrnateCorners compact />}
     {TABS.map((tab) => {
@@ -81,10 +81,10 @@ export function KittyDevNav({ active, onChange, rush, ornate = false }: { active
         <span className={styles.navLabel}>{tab.label}</span>
       </button>;
     })}
-    <button type="button" className={`${styles.navBtn} ${active === "dev" ? styles.navBtnActive : ""}`} onClick={() => onChange("dev")} aria-current={active === "dev" ? "page" : undefined}>
+    {showDevTab && <button type="button" className={`${styles.navBtn} ${active === "dev" ? styles.navBtnActive : ""}`} onClick={() => onChange("dev")} aria-current={active === "dev" ? "page" : undefined}>
       <span className={styles.navTile}><FlaskConical size={22} color="#7a45a8" /></span>
       <span className={styles.navLabel}>DEV</span>
-    </button>
+    </button>}
   </nav>;
 }
 

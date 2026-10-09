@@ -54,8 +54,8 @@ export type RenewableObjectiveMetric =
   // Métricas exclusivas do Mundo da Hello Kitty (missões sorteadas).
   | "kittyUpgrades" | "kittyEarnings" | "kittyClicks" | "kittyEvents"
   | "kittyBoosts" | "kittyBestCombo" | "kittyMilestones" | "kittyDays"
-  // Métricas das missões experimentais (somente DEV).
-  | "kittyDevTravels" | "kittyDevItems" | "kittyDevStars";
+  // Métricas das missões de viagem, itens, estrelas e Pedras Estelares.
+  | "kittyDevTravels" | "kittyDevItems" | "kittyDevStars" | "kittyDevStones" | "kittyDevSky";
 
 export interface RenewableObjectiveDefinition {
   id: string;

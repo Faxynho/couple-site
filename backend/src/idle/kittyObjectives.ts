@@ -20,12 +20,13 @@ function weightedPick<T>(entries: Array<{ value: T; weight: number }>, random: (
  * Sorteia `count` missões do pool para o período.
  * - no máximo uma missão por grupo (as 4 diárias / 3 semanais nunca são "parecidas");
  * - grupos e missões que apareceram no período anterior têm menos chance de repetir;
- * - missões com `minDaysLeft` só entram se ainda houver dias suficientes no período.
+ * - missões com `minDaysLeft` só entram se ainda houver dias suficientes no período;
+ * - `requiredGroup`: se esse grupo tiver alguma missão elegível, ele é sorteado primeiro e nunca fica de fora.
  */
 export function pickKittyObjectives(
   period: ObjectivePeriodName,
   count: number,
-  options: { random?: () => number; previousIds?: readonly string[]; daysLeft?: number; pool?: readonly KittyObjectiveDefinition[] } = {},
+  options: { random?: () => number; previousIds?: readonly string[]; daysLeft?: number; pool?: readonly KittyObjectiveDefinition[]; requiredGroup?: string } = {},
 ): string[] {
   const random = options.random ?? Math.random;
   const previous = new Set(options.previousIds ?? []);
@@ -42,10 +43,15 @@ export function pickKittyObjectives(
   }));
 
   const chosen: string[] = [];
-  while (chosen.length < count && groups.length > 0) {
-    const [{ value }] = groups.splice(weightedPick(groups, random), 1);
+  const pickFrom = (value: { items: KittyObjectiveDefinition[] }) => {
     const candidates = value.items.map((item) => ({ value: item, weight: previous.has(item.id) ? REPEAT_WEIGHT : FRESH_WEIGHT }));
     chosen.push(candidates[weightedPick(candidates, random)].value.id);
+  };
+  const required = options.requiredGroup ? groups.findIndex((entry) => entry.value.group === options.requiredGroup) : -1;
+  if (required >= 0 && count > 0) pickFrom(groups.splice(required, 1)[0].value);
+  while (chosen.length < count && groups.length > 0) {
+    const [{ value }] = groups.splice(weightedPick(groups, random), 1);
+    pickFrom(value);
   }
   return chosen;
 }

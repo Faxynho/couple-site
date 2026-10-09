@@ -6,6 +6,7 @@ const { join } = require("node:path");
 
 const { IdleStore } = require("../dist/idle/IdleStore.js");
 const { pickKittyObjectives } = require("../dist/idle/kittyObjectives.js");
+const { kittyDevObjectiveById } = require("../dist/idle/kittyDevQuests.js");
 const {
   KITTY_OBJECTIVE_POOL,
   KITTY_DAILY_OBJECTIVE_COUNT,
@@ -49,7 +50,7 @@ test("o Mundo da Hello Kitty mostra 4 diárias e 3 semanais de grupos diferentes
     assert.equal(weekly.length, KITTY_WEEKLY_OBJECTIVE_COUNT);
     for (const [list, period] of [[daily, "daily"], [weekly, "weekly"]]) {
       assert.equal(new Set(list.map((item) => item.id)).size, list.length);
-      const groups = list.map((item) => kittyObjectiveById(item.id).group);
+      const groups = list.map((item) => (kittyObjectiveById(item.id) ?? kittyDevObjectiveById(item.id)).group);
       assert.equal(new Set(groups).size, groups.length, `grupos repetidos (${period}, seed ${seed})`);
       assert.ok(list.every((item) => item.period === period));
       assert.ok(list.every((item) => item.periodEndsAt > MONDAY));

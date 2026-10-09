@@ -113,8 +113,8 @@ export type ObjectiveMetric =
   | "kittyMilestones"
   | "kittyDays";
 
-/** Métricas das missões experimentais; só aparecem no save do ambiente DEV. */
-export type DevObjectiveMetric = "kittyDevTravels" | "kittyDevItems" | "kittyDevStars";
+/** Métricas das missões de viagem, itens, estrelas e Pedras Estelares do Mundo da Hello Kitty. */
+export type DevObjectiveMetric = "kittyDevTravels" | "kittyDevItems" | "kittyDevStars" | "kittyDevStones" | "kittyDevSky";
 
 /** Missões sorteadas do Mundo da Hello Kitty para o período (e metas calculadas na hora do sorteio). */
 export interface KittyPeriodSelection {

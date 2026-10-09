@@ -246,7 +246,7 @@ describe("Mundo da Hello Kitty — mecânicas experimentais (DEV)", () => {
     render(<IdleModeScreen mode="kitty" environment="dev" />);
     fireEvent.click(screen.getByRole("button", { name: "Personagens" }));
     expect(screen.getByRole("button", { name: /Despertar/ })).toBeDisabled();
-    expect(screen.getByText("Desbloqueie todos os personagens")).toBeInTheDocument();
+    expect(screen.queryByText("Desbloqueie todos os personagens")).not.toBeInTheDocument();
   });
 
   it("DEV: com a skin normal os efeitos de despertado continuam, só o sprite muda", () => {
@@ -270,7 +270,7 @@ describe("Mundo da Hello Kitty — mecânicas experimentais (DEV)", () => {
     expect(images.some((src) => src?.includes("p02"))).toBe(true);
   });
 
-  it("MODO NORMAL: nada muda — sem seleção de ilhas, sem constelações, com troca de cenário e menu antigo", () => {
+  it("MODO NORMAL (save sem kittyDev, ex.: servidor antigo): nada muda — sem seleção de ilhas, sem constelações, com troca de cenário e menu antigo", () => {
     currentSnapshot = makeSnapshot("real", 3);
     render(<IdleModeScreen mode="kitty" />);
     expect(screen.queryByRole("region", { name: "Seleção de ilhas" })).not.toBeInTheDocument();
@@ -283,10 +283,10 @@ describe("Mundo da Hello Kitty — mecânicas experimentais (DEV)", () => {
     expect(screen.queryByRole("button", { name: /Despertar/ })).not.toBeInTheDocument();
   });
 
-  it("MODO NORMAL: mesmo com campo kittyDev presente por engano, a UI nova não aparece", () => {
+  it("MODO NORMAL: com o campo kittyDev (jogo atualizado) a seleção de ilhas e as novidades aparecem também no jogo normal", () => {
     currentSnapshot = makeSnapshot("dev", 3);
     render(<IdleModeScreen mode="kitty" environment="real" />);
-    expect(screen.queryByRole("region", { name: "Seleção de ilhas" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Próximo cenário" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Seleção de ilhas" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Próximo cenário" })).not.toBeInTheDocument();
   });
 });

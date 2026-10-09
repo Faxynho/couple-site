@@ -181,56 +181,71 @@ idleRouter.post("/dev/action", (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Mecânicas experimentais do Mundo da Hello Kitty — SOMENTE ambiente DEV e conta André.
-// Estas rotas nunca tocam o save real: usam sempre o idleDevStore.
+// Constelações, itens, despertar e ilhas do Mundo da Hello Kitty.
+// Valem para o jogo normal (conta André ou Flávia, save real) e para o ambiente DEV (só André, save de testes):
+// o corpo da requisição traz `environment` ("real" por padrão) e a rota usa o save correspondente.
 // ---------------------------------------------------------------------------
-function kittyDevCharacterBody(req: import("express").Request, res: import("express").Response): string | null {
-  const body = req.body as { by?: unknown; characterId?: unknown };
-  if (!requireAndre(body.by, res)) return null;
-  if (typeof body.characterId !== "string" || body.characterId.length > 80) {
+function kittyContext(req: import("express").Request, res: import("express").Response): { store: ReturnType<typeof storeFor>; body: Record<string, unknown> } | null {
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  if (!requireAccount(body.by, res)) return null;
+  const environment = resolveEnvironment(body.environment, body.by, res);
+  if (!environment) return null;
+  return { store: storeFor(environment), body };
+}
+
+function kittyCharacterContext(req: import("express").Request, res: import("express").Response) {
+  const context = kittyContext(req, res);
+  if (!context) return null;
+  const characterId = context.body.characterId;
+  if (typeof characterId !== "string" || characterId.length > 80) {
     res.status(400).json({ error: "Personagem inválido." });
     return null;
   }
-  return body.characterId;
+  return { store: context.store, body: context.body, characterId };
+}
+
+function sendKittyResult(res: import("express").Response, result: { ok: true; snapshot: unknown } | { ok: false; error: string; snapshot: unknown }) {
+  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
 }
 
 idleRouter.post("/kitty-dev/constellation", (req, res) => {
-  const characterId = kittyDevCharacterBody(req, res);
-  if (!characterId) return;
-  const result = idleDevStore.buyKittyConstellation(characterId);
-  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
+  const context = kittyCharacterContext(req, res);
+  if (!context) return;
+  sendKittyResult(res, context.store.buyKittyConstellation(context.characterId));
 });
 
 idleRouter.post("/kitty-dev/item", (req, res) => {
-  const characterId = kittyDevCharacterBody(req, res);
-  if (!characterId) return;
-  const kind = (req.body as { kind?: unknown }).kind;
+  const context = kittyCharacterContext(req, res);
+  if (!context) return;
+  const kind = context.body.kind;
   if (kind !== "click" && kind !== "stone") { res.status(400).json({ error: "Item inválido." }); return; }
-  const result = idleDevStore.buyKittyItem(characterId, kind);
-  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
+  sendKittyResult(res, context.store.buyKittyItem(context.characterId, kind));
 });
 
 idleRouter.post("/kitty-dev/awaken", (req, res) => {
-  const characterId = kittyDevCharacterBody(req, res);
-  if (!characterId) return;
-  const result = idleDevStore.awakenKittyCharacter(characterId);
-  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
+  const context = kittyCharacterContext(req, res);
+  if (!context) return;
+  sendKittyResult(res, context.store.awakenKittyCharacter(context.characterId));
 });
 
 idleRouter.post("/kitty-dev/skin", (req, res) => {
-  const characterId = kittyDevCharacterBody(req, res);
-  if (!characterId) return;
-  const result = idleDevStore.setKittySkin(characterId, Boolean((req.body as { awake?: unknown }).awake));
-  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
+  const context = kittyCharacterContext(req, res);
+  if (!context) return;
+  sendKittyResult(res, context.store.setKittySkin(context.characterId, Boolean(context.body.awake)));
 });
 
 idleRouter.post("/kitty-dev/world", (req, res) => {
-  const body = req.body as { by?: unknown; world?: unknown };
-  if (!requireAndre(body.by, res)) return;
-  const world = body.world === null ? null : Number(body.world);
+  const context = kittyContext(req, res);
+  if (!context) return;
+  const world = context.body.world === null ? null : Number(context.body.world);
   if (world !== null && !Number.isInteger(world)) { res.status(400).json({ error: "Ilha inválida." }); return; }
-  const result = idleDevStore.setKittyLastWorld(world);
-  res.status(result.ok ? 200 : 409).json(result.ok ? result.snapshot : result);
+  sendKittyResult(res, context.store.setKittyLastWorld(world));
+});
+
+idleRouter.post("/kitty-dev/sky", (req, res) => {
+  const context = kittyContext(req, res);
+  if (!context) return;
+  sendKittyResult(res, context.store.visitKittySky());
 });
 
 // Compatibilidade com os controles administrativos atuais: estes endpoints
