@@ -13,6 +13,8 @@ import type { AchievementDefinition, KittyObjectiveDefinition } from "./idleConf
 const STONE = "/idle/dev/pedra-estelar.webp";
 const CLICK = "/idle/events/click2.webp";
 const WORLD = "/idle/islands/island-1.webp";
+const CRYSTAL = "/idle/dev/cst/cst-crystal.webp";
+const CONST_ICON = "/idle/dev/cst/cst-icon.webp";
 
 type DevStat = Extract<AchievementDefinition["condition"], { type: "devStat" }>["stat"];
 
@@ -28,16 +30,16 @@ export const KITTY_DEV_ACHIEVEMENTS: AchievementDefinition[] = [
   devAchievement("kitty-dev-stone-300", "Mina estelar", "Ganhe 300 Pedras Estelares", 600, "stonesEarned", 300, STONE),
   devAchievement("kitty-dev-stone-550", "Galáxia no bolso", "Ganhe 550 Pedras Estelares", 1_200, "stonesEarned", 550, STONE),
   // ----- Estrelas (soma dos níveis de todas as constelações) -----
-  devAchievement("kitty-dev-star-1", "Primeira estrela", "Acenda 1 estrela", 40, "stars", 1, STONE),
-  devAchievement("kitty-dev-star-10", "Céu começando", "Acenda 10 estrelas", 150, "stars", 10, STONE),
-  devAchievement("kitty-dev-star-30", "Noite estrelada", "Acenda 30 estrelas", 400, "stars", 30, STONE),
-  devAchievement("kitty-dev-star-60", "Via Láctea", "Acenda 60 estrelas", 800, "stars", 60, STONE),
-  devAchievement("kitty-dev-star-120", "Universo completo", "Acenda as 120 estrelas de todos os personagens", 2_000, "stars", 120, STONE),
+  devAchievement("kitty-dev-star-1", "Primeira estrela", "Acenda 1 estrela", 40, "stars", 1, CRYSTAL),
+  devAchievement("kitty-dev-star-10", "Céu começando", "Acenda 10 estrelas", 150, "stars", 10, CRYSTAL),
+  devAchievement("kitty-dev-star-30", "Noite estrelada", "Acenda 30 estrelas", 400, "stars", 30, CRYSTAL),
+  devAchievement("kitty-dev-star-60", "Via Láctea", "Acenda 60 estrelas", 800, "stars", 60, CRYSTAL),
+  devAchievement("kitty-dev-star-120", "Universo completo", "Acenda as 120 estrelas de todos os personagens", 2_000, "stars", 120, CRYSTAL),
   // ----- Constelações completas -----
-  devAchievement("kitty-dev-const-1", "Desenhando o céu", "Complete 1 constelação", 120, "constellations", 1, STONE),
-  devAchievement("kitty-dev-const-6", "Pequeno atlas", "Complete 6 constelações", 450, "constellations", 6, STONE),
-  devAchievement("kitty-dev-const-12", "Astrônoma fofa", "Complete 12 constelações", 900, "constellations", 12, STONE),
-  devAchievement("kitty-dev-const-24", "Mestra das constelações", "Complete as 24 constelações", 2_400, "constellations", 24, STONE),
+  devAchievement("kitty-dev-const-1", "Desenhando o céu", "Complete 1 constelação", 120, "constellations", 1, CONST_ICON),
+  devAchievement("kitty-dev-const-6", "Pequeno atlas", "Complete 6 constelações", 450, "constellations", 6, CONST_ICON),
+  devAchievement("kitty-dev-const-12", "Astrônoma fofa", "Complete 12 constelações", 900, "constellations", 12, CONST_ICON),
+  devAchievement("kitty-dev-const-24", "Mestra das constelações", "Complete as 24 constelações", 2_400, "constellations", 24, CONST_ICON),
   // ----- Despertar -----
   devAchievement("kitty-dev-awake-1", "Primeiro despertar", "Desperte o primeiro personagem", 500, "awakened", 1, "/idle/characters/awake/awake-hello-kitty.webp"),
   devAchievement("kitty-dev-awake-6", "Turma acordando", "Desperte 6 personagens", 900, "awakened", 6, "/idle/characters/awake/awake-dear-daniel.webp"),
