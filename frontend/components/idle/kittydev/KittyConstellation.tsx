@@ -36,6 +36,8 @@ const CstBackdrop = memo(function CstBackdrop() {
     <span className={styles.cloudDrift} aria-hidden="true" />
     {TWINKLES.map((twinkle, index) => <GoldSparkle key={index} className={styles.twinkle} style={{ "--x": `${twinkle.x}%`, "--y": `${twinkle.y}%`, "--s": `${twinkle.size}rem`, "--d": `${twinkle.duration}s`, "--dl": `${twinkle.delay}s` } as CSSProperties} />)}
     <span className={styles.shooting} aria-hidden="true" />
+    <span className={styles.shooting} style={{ "--top": "34%", "--dur": "13s", "--dl": "7s" } as CSSProperties} aria-hidden="true" />
+    <span className={styles.shooting} style={{ "--top": "6%", "--dur": "9.5s", "--dl": "11s" } as CSSProperties} aria-hidden="true" />
   </>;
 });
 
