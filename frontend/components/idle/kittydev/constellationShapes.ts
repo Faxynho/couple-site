@@ -54,3 +54,15 @@ export function starPolygon(cx: number, cy: number, outer: number, inner = outer
     return `${(cx + radius * Math.cos(angle)).toFixed(2)},${(cy + radius * Math.sin(angle)).toFixed(2)}`;
   }).join(" ");
 }
+
+/**
+ * Posição de cada estrela NA TELA: o desenho (0–100) é levemente comprimido para dentro do quadro, assim as estrelas
+ * das pontas (e o anel ornamentado em volta delas) nunca encostam na borda do celular.
+ */
+export function placeNode([x, y]: [number, number]): [number, number] {
+  return [12 + x * .76, 11 + y * .78];
+}
+
+export function placedNodes(index: number): Array<[number, number]> {
+  return constellationShape(index).nodes.map(placeNode);
+}

@@ -9,6 +9,8 @@ import styles from "./KittyDev.module.css";
 
 const RATIO = 1672 / 941; // altura / largura da imagem de fundo
 const TRAVEL_MS = 950;
+/** Meia altura da caixa da ilha, em % da altura do mapa, para cada 1% de largura (720/672 da arte; mapa 941/1672). */
+const ISLAND_HALF_HEIGHT = (672 / 720) / (1672 / 941) / 2;
 
 function Flower({ n }: { n: number }) {
   return <span className={styles.islandBadge} aria-hidden="true">
@@ -70,7 +72,9 @@ export default function KittyWorldMap({ names, unlocked, current, lockedHint, on
         <svg className={styles.mapPaths} viewBox={`0 0 100 ${100 * RATIO}`} aria-hidden="true">
           {ISLAND_LAYOUT.slice(0, -1).map((from, index) => {
             const to = ISLAND_LAYOUT[index + 1];
-            const x1 = from.x, y1 = from.y * RATIO + 4, x2 = to.x, y2 = to.y * RATIO - 2;
+            // a trilha termina na borda de cima da ilha; a última (bem maior) recebe a trilha mais comprida
+            const big = to.w > 50;
+            const x1 = from.x, y1 = from.y * RATIO + 4, x2 = to.x, y2 = big ? (to.y - to.w * ISLAND_HALF_HEIGHT * .66) * RATIO : to.y * RATIO - 2;
             const cx = (x1 + x2) / 2 + (index % 2 === 0 ? -5 : 5), cy = (y1 + y2) / 2 + 6;
             const locked = !unlocked[index + 1];
             const mx = .25 * x1 + .5 * cx + .25 * x2, my = .25 * y1 + .5 * cy + .25 * y2;

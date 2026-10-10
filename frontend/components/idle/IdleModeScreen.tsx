@@ -19,9 +19,9 @@ import styles from "./IdleGame.module.css";
 import devStyles from "./kittydev/KittyDev.module.css";
 import KittyConstellation from "./kittydev/KittyConstellation";
 import { KittyConstellationButton, KittyDevHud, KittyDevNav, KittyModeBubble } from "./kittydev/KittyDevChrome";
-import KittyDevExtras, { AwakeEffects, KittyItemRail, KittySkinToggle, KittyStarArc, OrnateCorners, SkinSwapFx, StoneGainBurst } from "./kittydev/KittyDevExtras";
+import KittyDevExtras, { AwakeEffects, KittyItemRail, KittySkinToggle, KittyStarArc, HomeSprite, OrnateCorners, SkinSwapFx, StoneGainBurst } from "./kittydev/KittyDevExtras";
 import KittyWorldMap from "./kittydev/KittyWorldMap";
-import { WORLDS_BG, awakeHomeTransform, spriteFor } from "./kittydev/kittyDevHelpers";
+import { WORLDS_BG, spriteFor } from "./kittydev/kittyDevHelpers";
 import { kittyDevSetWorld, setKittyApiContext } from "@/lib/idleApi";
 
 const SCENE_BACKGROUNDS: Record<IdleModeId, string[]> = {
@@ -327,8 +327,7 @@ function HomeScene({ mode, data, balance, scene, onSceneChange, onClickItem, acc
         if (!position) return null;
         const sprite = dev ? spriteFor(item, kittyDev) : { src: item.definition.asset, awake: false, styled: false };
         return <button type="button" key={item.definition.id} className={mode === "farm" ? styles.producer : styles.character} style={{ ...position, animationDelay: `${item.definition.unlockOrder * -.31}s` }} onClick={(event) => void addBurst(event, item)} aria-label={`Coletar com ${item.definition.name}`}>
-          <Image className={sprite.styled ? `${devStyles.awakeImg} ${devStyles.awakeImgHome}` : undefined} style={sprite.styled ? ({ "--awake-fit": awakeHomeTransform(item.definition.id) } as CSSProperties) : undefined} src={sprite.src} alt={item.definition.name} fill sizes="42vw" />
-          {sprite.awake && <AwakeEffects />}
+          {dev ? <HomeSprite name={item.definition.name} normalSrc={item.definition.asset} sprite={sprite} /> : <Image src={sprite.src} alt={item.definition.name} fill sizes="42vw" />}
         </button>;
       })}
       {bursts.map((burst) => <span key={burst.id} className={styles.clickBurst} data-rush={burst.rushMultiplier} style={{ left: burst.left, top: burst.top }}><GameStatIcon type="money" />+{formatIdleNumber(burst.reward)}{burst.multiplier > 1 && <small>x{burst.multiplier}</small>}</span>)}
