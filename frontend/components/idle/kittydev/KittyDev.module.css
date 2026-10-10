@@ -80,7 +80,7 @@
 /* ------------------------------------------------------------ mapa de ilhas */
 .map { position: absolute; z-index: 5; inset: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: calc(env(safe-area-inset-top) + 8.7rem) 0 calc(env(safe-area-inset-bottom) + 6.2rem); scrollbar-width: none; }
 .map::-webkit-scrollbar { display: none; }
-.mapStage { position: relative; width: min(100%, 31rem); margin: 0 auto; aspect-ratio: 941 / 1672; }
+.mapStage { position: relative; width: min(100%, 31rem); margin: 0 auto 7.5rem; aspect-ratio: 941 / 1672; }
 .mapPaths { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 .pathDots { fill: none; stroke: rgba(255,255,255,.95); stroke-width: .75; stroke-dasharray: .1 1.9; stroke-linecap: round; filter: drop-shadow(0 0 .5px rgba(240,120,170,.9)); }
 .pathDotsLocked { stroke: rgba(255,255,255,.55); }

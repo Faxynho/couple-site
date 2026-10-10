@@ -806,7 +806,7 @@ function KittyAchievements({ data, snapshot }: { data: IdleModeSnapshot; snapsho
         <div><h2>Conquistas Permanentes</h2><p>Complete uma única vez e ganhe para sempre!</p></div>
         <span className={styles.permanentCount}>{complete}/{data.achievements.length}</span>
       </div>
-      <div className={styles.permanentGrid}>{data.achievements.map((achievement) => <PermanentCard key={achievement.id} achievement={achievement} asset={achievement.iconItemId ? itemById.get(achievement.iconItemId)?.definition.asset : undefined} />)}</div>
+      <div className={styles.permanentGrid}>{data.achievements.map((achievement) => <PermanentCard key={achievement.id} achievement={achievement} asset={achievement.iconItemId ? itemById.get(achievement.iconItemId)?.definition.asset : achievement.iconAsset} />)}</div>
     </section>
   </section>;
 }
