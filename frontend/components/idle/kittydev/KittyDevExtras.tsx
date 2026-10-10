@@ -9,14 +9,16 @@ import { kittyDevAwaken, kittyDevBuyItem, kittyDevSetSkin } from "@/lib/idleApi"
 import { IdleItemSnapshot, IdleSnapshot, KittyDevCharacterSnapshot, KittyDevItemSnapshot } from "@/lib/idleTypes";
 import { playSoundEffect } from "@/lib/sound";
 import { GoldSparkle, OrnateCorner, ShinyStar } from "./KittyDevIcons";
-import { AWAKE_AURA, CLICK_ICON, STAR_SLOT_OF_LEVEL, STONE_ICON } from "./kittyDevHelpers";
+import { AWAKE_AURA, CLICK_ICON, STAR_SLOT_OF_LEVEL, STONE_ICON, SpriteChoice } from "./kittyDevHelpers";
+import { useAwakeFit, useBodyCenter } from "./useAwakeFit";
+import { AwakenCinematic } from "./KittyCelebrations";
 import styles from "./KittyDev.module.css";
 
 /** Auras e brilhos que ficam atrás/ao redor do personagem despertado. */
-export function AwakeEffects() {
+export function AwakeEffects({ center }: { center?: { x: number; y: number } }) {
   const sparks: Array<[number, number, number, number, number]> = [[8, 18, .9, 2.4, 0], [86, 14, .75, 2.8, -.8], [14, 62, .7, 3, -1.4], [90, 58, 1, 2.2, -.4], [48, 4, .8, 2.6, -1.9], [30, 88, .65, 3.1, -.9], [74, 84, .8, 2.5, -1.6]];
   return <>
-    <span className={styles.aura} aria-hidden="true" style={{ backgroundImage: `url(${AWAKE_AURA})` }} />
+    <span className={styles.aura} aria-hidden="true" style={{ backgroundImage: `url(${AWAKE_AURA})`, ...(center ? ({ "--cx": center.x, "--cy": center.y } as CSSProperties) : {}) }} />
     <span className={styles.awakeSparks} aria-hidden="true">{sparks.map(([x, y, s, d, dl], index) => <i key={index} style={{ "--x": x, "--y": y, "--s": `${s}rem`, "--d": `${d}s`, "--dl": `${dl}s` } as CSSProperties}><GoldSparkle width="100%" height="100%" /></i>)}</span>
   </>;
 }
@@ -28,6 +30,22 @@ export function SkinSwapFx() {
     <i className={styles.skinShock} />
     {Array.from({ length: 10 }, (_, index) => <GoldSparkle key={index} className={styles.skinSpark} style={{ "--a": `${index * 36}deg`, "--d": `${(index % 3) * .05}s` } as CSSProperties} />)}
   </span>;
+}
+
+/**
+ * Sprite de um personagem na tela inicial do mundo. O sprite despertado é medido e ajustado automaticamente para ter o
+ * MESMO tamanho e a MESMA posição do normal (vale para qualquer sprite novo), e a aura fica centrada no corpo do personagem.
+ */
+export function HomeSprite({ name, normalSrc, sprite }: { name: string; normalSrc: string; sprite: SpriteChoice }) {
+  const fit = useAwakeFit(normalSrc, sprite.styled ? sprite.src : null);
+  const bodyCenter = useBodyCenter(normalSrc, sprite.awake);
+  const center = sprite.styled && fit ? { x: fit.centerX, y: fit.centerY } : bodyCenter;
+  const ready = !sprite.styled || fit !== undefined;
+  return <>
+    <Image className={sprite.styled ? `${styles.awakeImg} ${styles.awakeImgHome}` : undefined} src={sprite.src} alt={name} fill sizes="42vw"
+      style={sprite.styled ? ({ "--awake-fit": fit?.transform ?? "none", opacity: ready ? 1 : 0 } as CSSProperties) : undefined} />
+    {sprite.awake && <AwakeEffects center={center} />}
+  </>;
 }
 
 /** Moldura ornamentada dourada (cantos desenhados + duas linhas), igual à da imagem de referência. */
@@ -165,24 +183,6 @@ export function StoneGainBurst({ amount }: { amount: number }) {
   </span>;
 }
 
-function AwakenCelebration({ info, name, onClose }: { info: KittyDevCharacterSnapshot; name: string; onClose: () => void }) {
-  useEffect(() => {
-    const timer = window.setTimeout(onClose, 4_800);
-    return () => window.clearTimeout(timer);
-  }, [onClose]);
-  return <Portal><div className={styles.sheetOverlay} role="dialog" aria-label={`${name} despertou`} onClick={onClose} style={{ alignItems: "center", background: "radial-gradient(circle at 50% 42%,rgba(255,214,120,.55),rgba(60,10,50,.78))" }}>
-    <div style={{ position: "relative", width: "min(86vw,22rem)", textAlign: "center", color: "#fff" }}>
-      <div style={{ position: "relative", width: "100%", aspectRatio: "1" }}>
-        <AwakeEffects />
-        <Image className={styles.awakeImg} src={info.awakening!.asset} alt={name} fill sizes="86vw" style={{ objectFit: "contain" }} />
-      </div>
-      <p style={{ marginTop: ".4rem", color: "#ffe9a8", fontFamily: "var(--font-display),sans-serif", fontSize: "1.55rem", fontWeight: 950, textShadow: "0 0 14px rgba(255,214,110,.9)" }}>{name} despertou!</p>
-      <p style={{ marginTop: ".15rem", fontSize: ".95rem", fontWeight: 850 }}>+{formatIdleNumber(info.awakening!.bonus)}/s de produção</p>
-      <small style={{ display: "block", marginTop: ".7rem", opacity: .8 }}>Toque para continuar</small>
-    </div>
-  </div></Portal>;
-}
-
 /** Botão de despertar (dentro do painel do personagem) e a celebração. */
 export default function KittyDevExtras({ item, info, balance, onSnapshot }: {
   item: IdleItemSnapshot; info: KittyDevCharacterSnapshot; balance: number; onSnapshot: (snapshot: IdleSnapshot) => void;
@@ -199,7 +199,6 @@ export default function KittyDevExtras({ item, info, balance, onSnapshot }: {
     setBusy(true); setError(null);
     try {
       onSnapshot(await kittyDevAwaken(info.id));
-      playSoundEffect("idleAwaken");
       setCelebrate(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível despertar agora.");
@@ -212,6 +211,6 @@ export default function KittyDevExtras({ item, info, balance, onSnapshot }: {
       <span className={styles.awakenCost}><Image src="/idle/icons/game-money.webp" alt="" width={48} height={48} />{formatIdleNumber(awakening.cost)}</span>
     </button>}
     {error && <span className={styles.awakenSoon} role="alert" style={{ color: "#c0306a" }}>{error}</span>}
-    {celebrate && awakening?.awakened && <AwakenCelebration info={info} name={item.definition.name} onClose={() => setCelebrate(false)} />}
+    {celebrate && awakening?.awakened && <AwakenCinematic name={item.definition.name} normalSrc={item.definition.asset} awakeSrc={awakening.asset} bonus={awakening.bonus} onClose={() => setCelebrate(false)} />}
   </>;
 }
