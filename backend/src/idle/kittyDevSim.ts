@@ -1,3 +1,4 @@
+// NOME LEGADO: este arquivo faz parte do jogo normal E do DEV (não é experimental). Ver CLAUDE.md e experimental.ts.
 /**
  * Simulador de progressão do Mundo da Hello Kitty (modo DEV).
  * Uso:  cd backend && npx tsx src/idle/kittyDevSim.ts [fator] [dias]

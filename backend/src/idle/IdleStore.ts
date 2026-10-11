@@ -33,6 +33,7 @@ import {
   scaledObjectiveTarget,
 } from "./idleConfig";
 import { ObjectivePeriodName, pickKittyObjectives } from "./kittyObjectives";
+import { experimentalFeaturesFor, isExperimentalEnabled } from "./experimental";
 import { KITTY_DEV_ACHIEVEMENTS, KITTY_DEV_OBJECTIVES, KITTY_DEV_REQUIRED_DAILY_GROUP, kittyDevAchievementById, kittyDevObjectiveById } from "./kittyDevQuests";
 import {
   CLICK_ITEM_MAX_LEVEL,
@@ -892,6 +893,7 @@ export class IdleStore {
       revision: this.data.revision,
       environment: this.environment,
       areaName: this.environment === "dev" ? `${IDLE_AREA_NAME} DEV` : IDLE_AREA_NAME,
+      experimentalFeatures: experimentalFeaturesFor(this.environment),
       globalCoins: this.data.globalCoins,
       globalLifetimeEarned: this.data.globalLifetimeEarned,
       purchasedPetDecorations: [...this.data.purchasedPetDecorations],
@@ -1193,8 +1195,14 @@ export class IdleStore {
   }
 
 
+  /** true só no DEV e só para recursos registrados em experimental.ts; use para proteger código "só DEV". */
+  protected experimental(feature: string): boolean {
+    return isExperimentalEnabled(feature, this.environment);
+  }
+
   // ---------------------------------------------------------------------------
-  // Mecânicas experimentais do Mundo da Hello Kitty (SOMENTE ambiente DEV)
+  // Mecânicas da Hello Kitty (constelações, estrelas, despertar, Pedra Estelar, ilhas).
+  // O nome "kittyDev" é LEGADO: elas já valem no jogo normal e no DEV (não são experimentais).
   // ---------------------------------------------------------------------------
 
   private kittyDevState(): KittyDevState {

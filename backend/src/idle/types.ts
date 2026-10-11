@@ -239,6 +239,8 @@ export interface RenewableObjectiveSnapshot extends RenewableObjectiveDefinition
 export interface IdleSnapshot {
   revision: number;
   environment: GameEnvironment;
+  /** Recursos experimentais ligados neste ambiente (experimental.ts). Sempre vazio no jogo normal. */
+  experimentalFeatures: string[];
   areaName: string;
   globalCoins: number;
   globalLifetimeEarned: number;

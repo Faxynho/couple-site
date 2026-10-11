@@ -1,3 +1,4 @@
+// NOME LEGADO: este arquivo faz parte do jogo normal E do DEV (não é experimental). Ver CLAUDE.md e experimental.ts.
 /**
  * Conquistas e missões de Pedras Estelares, estrelas, constelações, despertar e itens do Mundo da Hello Kitty.
  *

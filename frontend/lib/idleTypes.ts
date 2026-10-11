@@ -72,7 +72,7 @@ export interface RenewableObjectiveSnapshot {
   periodEndsAt?: number;
 }
 export interface IdleSnapshot {
-  revision: number; environment: GameEnvironment; areaName: string; globalCoins: number; globalLifetimeEarned: number;
+  revision: number; environment: GameEnvironment; experimentalFeatures?: string[]; areaName: string; globalCoins: number; globalLifetimeEarned: number;
   purchasedPetDecorations: string[]; updatedAt: number;
   offlineReward: { mode: IdleModeId; amount: number; elapsedMs: number } | null;
   modes: Record<IdleModeId, IdleModeSnapshot>;

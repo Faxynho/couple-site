@@ -1,3 +1,4 @@
+// NOME LEGADO: este arquivo faz parte do jogo normal E do DEV (não é experimental). Ver CLAUDE.md e experimental.ts.
 /**
  * Mecânicas EXPERIMENTAIS do Mundo da Hello Kitty — existem somente no ambiente DEV (conta "andre").
  * Nada aqui é importado pelo fluxo do jogo real: o IdleStore só consulta estas funções quando
