@@ -4,8 +4,16 @@ import catalog from "./catalog.json";
 export type PetId = "nix" | "max";
 export type DecorCategory = "Parede" | "Chão" | "Móveis" | "Brinquedos" | "Estrutura";
 
+/** The two decoration lines of the room shop. Both share the same slots, so one replaces the other. */
+export type DecorCollection = "feminine" | "masculine";
+export const DECOR_COLLECTIONS: readonly { id: DecorCollection; label: string }[] = [
+  { id: "feminine", label: "Feminino" },
+  { id: "masculine", label: "Masculino" },
+];
+
 export interface Decoration {
   id: string;
+  collection: DecorCollection;
   name: string;
   asset: string;
   category: DecorCategory;

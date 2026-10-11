@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Armchair, BedDouble, Bone, ChevronDown, CircleDot, Crown, Grid3X3,
-  Heart, Paintbrush, PawPrint, Shirt, Square, ToyBrick, Coins, Layers3,
-  Utensils, FlaskConical, LockKeyhole, RotateCcw, type LucideIcon,
+  Flower2, Heart, Paintbrush, PawPrint, Shirt, Square, ToyBrick, Coins, Layers3,
+  Utensils, FlaskConical, LockKeyhole, RotateCcw, ChevronLeft, type LucideIcon,
 } from "lucide-react";
 import type { PetDefinition } from "../config";
 import type { PetCareSnapshot } from "@/lib/petApi";
 import type { PetFood } from "../food";
 import PetFoodShelf from "./PetFoodShelf";
-import { PET_ROOM_DECORATIONS, type Decoration, type PetRoomSlots } from "../petRoomDecorations";
+import { DECOR_COLLECTIONS, PET_ROOM_DECORATIONS, type DecorCollection, type Decoration, type PetRoomSlots } from "../petRoomDecorations";
 import PetItemGrid, { type PetItemPreview } from "./PetItemGrid";
 import styles from "../PetRoom.module.css";
 
@@ -36,6 +36,12 @@ const ROOM_FILTERS: readonly { label: string; icon: LucideIcon }[] = [
   { label: "Brinquedos", icon: ToyBrick },
   { label: "Estrutura", icon: Layers3 },
 ];
+
+const COLLECTION_ICONS: Record<DecorCollection, LucideIcon> = { feminine: Flower2, masculine: Bone };
+const COLLECTION_PREVIEWS: Record<DecorCollection, string> = {
+  feminine: "/images/pets/room/decor/bed-heart.webp",
+  masculine: "/images/pets/room/decor/blue-star-dog-bed.webp",
+};
 
 const DEV_AFFECTION_PRESETS = [
   { value: 0, label: "Zerado" },
@@ -67,14 +73,17 @@ function FilterStrip({
   options,
   selected,
   onSelect,
+  leading,
 }: {
   label: string;
   options: readonly { label: string; icon: LucideIcon }[];
   selected: string;
   onSelect: (value: string) => void;
+  leading?: ReactNode;
 }) {
   return (
     <div className={styles.filterStrip} role="group" aria-label={label}>
+      {leading}
       {options.map(({ label: name, icon: Icon }) => (
         <button
           type="button"
@@ -123,6 +132,8 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
   const [activeTab, setActiveTab] = useState<TabId>("care");
   const [styleFilter, setStyleFilter] = useState("Roupas");
   const [roomFilter, setRoomFilter] = useState("Todos");
+  // null = the "Feminino / Masculino" choice that comes before the catalog.
+  const [roomCollection, setRoomCollection] = useState<DecorCollection | null>(null);
   const [roomExpanded, setRoomExpanded] = useState(false);
   const [devAmount, setDevAmount] = useState("500");
   const [devDecorationId, setDevDecorationId] = useState(PET_ROOM_DECORATIONS[0].id);
@@ -152,6 +163,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
             tabIndex={activeTab === "room" && roomExpanded ? -1 : undefined}
             className={`${styles.tab} ${activeTab === id ? styles.tabActive : ""}`}
             onClick={() => {
+              if (id === "room" && activeTab !== "room") setRoomCollection(null);
               setActiveTab(id);
               setRoomExpanded(false);
             }}
@@ -221,24 +233,47 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
             {activeTab === "style" && (
               <FilterStrip label="Categorias de visual" options={STYLE_FILTERS} selected={styleFilter} onSelect={setStyleFilter} />
             )}
-            {activeTab === "room" && (
-              <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter} />
+            {activeTab === "room" && roomCollection && (
+              <FilterStrip label="Categorias de decoração" options={ROOM_FILTERS} selected={roomFilter} onSelect={setRoomFilter}
+                leading={
+                  <button type="button" className={styles.collectionBack} aria-label="Trocar coleção de decorações"
+                    onClick={() => { setRoomCollection(null); setRoomExpanded(false); }}>
+                    <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
+                    <span>{DECOR_COLLECTIONS.find((value) => value.id === roomCollection)?.label}</span>
+                  </button>
+                } />
             )}
             {activeTab === "play" && (
               <p className={styles.drawerHint}>Para os momentos de brincadeira</p>
             )}
             <div
               className={styles.drawerScroll}
-              key={activeTab === "style" ? styleFilter : activeTab === "room" ? roomFilter : activeTab}
+              key={activeTab === "style" ? styleFilter : activeTab === "room" ? `${roomCollection}-${roomFilter}` : activeTab}
               onScroll={(event) => {
                 if (activeTab === "room" && !roomExpanded && event.currentTarget.scrollTop > 6) {
                   setRoomExpanded(true);
                 }
               }}
             >
-              {activeTab === "room" ? (
+              {activeTab === "room" && !roomCollection ? (
+                <div className={styles.collectionChoice} role="group" aria-label="Coleção de decorações">
+                  {DECOR_COLLECTIONS.map(({ id, label }) => {
+                    const Icon = COLLECTION_ICONS[id];
+                    const count = PET_ROOM_DECORATIONS.filter((item) => item.collection === id).length;
+                    return (
+                      <button type="button" key={id} className={`${styles.collectionCard} ${id === "masculine" ? styles.collectionMasculine : ""}`}
+                        onClick={() => { setRoomCollection(id); setRoomFilter("Todos"); }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={COLLECTION_PREVIEWS[id]} alt="" loading="lazy" decoding="async" />
+                        <span className={styles.collectionTitle}><Icon size={17} strokeWidth={1.9} aria-hidden="true" />{label}</span>
+                        <span className={styles.collectionCount}>{count} decorações</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : activeTab === "room" ? (
                 <div className={styles.decorGrid}>
-                  {PET_ROOM_DECORATIONS.filter((item) => roomFilter === "Todos" || item.category === roomFilter)
+                  {PET_ROOM_DECORATIONS.filter((item) => item.collection === roomCollection && (roomFilter === "Todos" || item.category === roomFilter))
                     .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name, "pt-BR"))
                     .map((item) => {
                     const selected = slots[item.slot] === item.id;
@@ -273,7 +308,7 @@ export default function PetRoomDrawer({ pet, slots, ready, error, onToggle, onBu
                 <button onClick={() => onDevAction({ action: "balance", operation: "set", amount: Number(devAmount) || 0 })}>Definir</button>
                 <button className={styles.petDevDanger} onClick={() => window.confirm("Zerar somente a moeda global DEV?") && onDevAction({ action: "balance", operation: "zero" })}>Zerar moeda</button>
               </div>
-              <label>Decoração DEV<select value={devDecorationId} onChange={(event) => setDevDecorationId(event.target.value)}>{PET_ROOM_DECORATIONS.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
+              <label>Decoração DEV<select value={devDecorationId} onChange={(event) => setDevDecorationId(event.target.value)}>{DECOR_COLLECTIONS.map(({ id, label }) => <optgroup label={label} key={id}>{PET_ROOM_DECORATIONS.filter((item) => item.collection === id).map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</optgroup>)}</select></label>
               <div>
                 <button onClick={() => onDevAction({ action: "decoration", decorationId: devDecorationId, owned: true })}>Desbloquear uma</button>
                 <button className={styles.petDevDanger} onClick={() => window.confirm("Bloquear esta decoração DEV e removê-la dos quartos DEV?") && onDevAction({ action: "decoration", decorationId: devDecorationId, owned: false })}>Bloquear uma</button>

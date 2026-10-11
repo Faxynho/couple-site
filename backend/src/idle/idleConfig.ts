@@ -165,9 +165,9 @@ export const KITTY_CHARACTER_SEQUENCE = [
     18: 650_000_000_000_000, // P19 Hello Kitty anjo: 650 trilhões
     19: 2_000_000_000_000_000, // P20 Kuromi anjo: 2 quadrilhões
     20: 6_000_000_000_000_000, // P21 My Melody anjo noturno: 6 quadrilhões
-    21: 15_000_000_000_000_000, // P22 Hello Kitty de gala: 15 quadrilhões
-    22: 35_000_000_000_000_000, // P23 Kuromi celestial: 35 quadrilhões
-    23: 75_000_000_000_000_000, // P24 Little Twin Stars: 75 quadrilhões
+    21: 35_000_000_000_000_000, // P22 Hello Kitty de gala: 35 quadrilhões
+    22: 75_000_000_000_000_000, // P23 Kuromi celestial: 75 quadrilhões
+    23: 150_000_000_000_000_000, // P24 Little Twin Stars: 150 quadrilhões
   };
 
 function kittyCharacter(index: number): IdleItemDefinition {
