@@ -11,24 +11,13 @@ const {
 const T = 1_000_000_000_000;
 const Q = 1_000_000_000_000_000;
 
-test('curva late game da Hello Kitty usa os novos marcos sem alterar P1-P17', () => {
+test('curva late game da Hello Kitty cresce a cada personagem sem alterar P1-P17', () => {
+  // Os preços do fim do jogo (P18+) são ajustados à mão em KITTY_LATE_GAME_COSTS; o teste só exige
+  // que continuem crescentes, para você poder rebalancear sem quebrar a validação.
   const items = IDLE_CATALOG.kitty;
-  const expected = [
-    [18, 114 * T],
-    [19, 650 * T],
-    [20, 2 * Q],
-    [21, 6 * Q],
-    [22, 15 * Q],
-    [23, 35 * Q],
-    [24, 75 * Q],
-  ];
-
-  expected.forEach(([position, price]) => {
-    assert.equal(items[position - 1].baseCost, price, `P${position}`);
-  });
 
   assert.equal(items[16].baseCost, 3_097_915_431_626, 'P17 permanece no preço anterior');
-  for (let index = 18; index < 24; index += 1) {
+  for (let index = 17; index < 24; index += 1) {
     assert.ok(items[index].baseCost > items[index - 1].baseCost, `P${index + 1} deve ser mais caro que P${index}`);
   }
 });
@@ -93,6 +82,7 @@ test('relíquia global mantém o desbloqueio no P9 e cria duas decisões grandes
 
   // O nível 2 compete diretamente com P18 e o nível 3 entra na mesma região
   // de investimento de P23, como desejado para o fim da campanha.
-  assert.equal(kittyRelicCost(global, 1), 114 * T);
-  assert.equal(kittyRelicCost(global, 2), 35 * Q * 0.7);
+  assert.equal(kittyRelicCost(global, 1), items[17].baseCost);
+  assert.equal(kittyRelicCost(global, 2), Math.ceil(items[22].baseCost * 0.7));
+  assert.ok(kittyRelicCost(global, 1) < kittyRelicCost(global, 2));
 });

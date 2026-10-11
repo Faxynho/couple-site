@@ -8,6 +8,12 @@ const { IdleStore } = require("../dist/idle/IdleStore.js");
 const { PET_DECORATION_IDS, PET_DECORATION_PRICES, PET_DECORATION_TOTAL_PRICE, LEGACY_PET_DECORATION_IDS } = require("../dist/pets/petEconomy.js");
 const { PersistentDuoStore } = require("../dist/rooms/persistentDuo.js");
 
+// Soma dos preços iniciais dos 24 personagens da Hello Kitty (com folga), lida da configuração atual.
+function allKittyCharactersCost() {
+  const { IDLE_CATALOG } = require("../dist/idle/idleConfig.js");
+  return IDLE_CATALOG.kitty.reduce((sum, item) => sum + item.baseCost, 0) * 2;
+}
+
 test("estado inicial começa vazio e permite comprar o primeiro item nos dois modos", () => {
   let now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
@@ -92,7 +98,7 @@ test("cada produtor e personagem possui e conclui sua conquista de desbloqueio",
   const now = Date.parse("2026-09-26T12:00:00-03:00");
   const store = new IdleStore(false, () => now);
   store.addTestFunds("farm", 1e13);
-  store.addTestFunds("kitty", 2e17); // comprar os 24 personagens custa ~1,34e17
+  store.addTestFunds("kitty", allKittyCharactersCost()); // sempre cobre a compra dos 24, mesmo se os custos mudarem
   let snapshot = store.getSnapshot();
   for (const item of snapshot.modes.farm.items) assert.equal(store.act("farm", item.definition.id, "buy").ok, true);
   for (const item of snapshot.modes.kitty.items) assert.equal(store.act("kitty", item.definition.id, "buy").ok, true);
@@ -257,8 +263,8 @@ test("Castelo desbloqueia com P9 e cobra uma curva exclusiva alinhada aos mundos
   // A relíquia global usa uma tabela fixa de custos (GLOBAL_RELIC_COSTS), não mais múltiplos do custo dos personagens.
   const expectedGlobalCosts = [
     Math.ceil(IDLE_CATALOG.kitty[8].baseCost * 6),
-    114_000_000_000_000,
-    24_500_000_000_000_000,
+    IDLE_CATALOG.kitty[17].baseCost,
+    Math.ceil(IDLE_CATALOG.kitty[22].baseCost * 0.7),
   ];
   assert.equal(global.baseCost, expectedGlobalCosts[0]);
   assert.deepEqual([0, 1, 2].map((level) => kittyRelicCost(global, level)), expectedGlobalCosts);
@@ -592,7 +598,7 @@ test("24 personagens, sete cenas e raridades oficiais preservam a Fazendinha", (
 
 test("desbloquear P24 ativa a cena final, a conquista individual e a final", () => {
   const store = new IdleStore(false, () => Date.parse("2026-09-27T12:00:00-03:00"));
-  store.addTestFunds("kitty", 2e17); // comprar os 24 personagens custa ~1,34e17
+  store.addTestFunds("kitty", allKittyCharactersCost()); // sempre cobre a compra dos 24, mesmo se os custos mudarem
   for (const item of store.getSnapshot().modes.kitty.items) assert.equal(store.act("kitty", item.definition.id, "buy").ok, true);
   const kitty = store.getSnapshot().modes.kitty;
   assert.ok(kitty.scenes.every((scene) => scene.unlocked));
