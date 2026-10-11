@@ -17,7 +17,7 @@ import type { IdleStore } from "../idle/IdleStore";
  *
  * Referência de balanceamento (moedas globais): um minigame concluído em
  * dupla paga de 8 a 34, os objetivos diários somam ~45, os semanais ~150, e
- * as decorações dos pets custam de 80 a 3.800 (mediana 700).
+ * as decorações dos pets custam de 80 a 3.800 (mediana 750).
  */
 export const PROFILE_BORDER_PRICES: Readonly<Record<string, number>> = {
   "laco-rosa": 150,

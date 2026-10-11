@@ -12,6 +12,7 @@ test("aba Quarto mostra a arte real e alterna o estado visual ao tocar", () => {
   const commonProps = { ready: true, error: "", onToggle, onBuy, coins: 500, purchased, environment: "real" as const, onDevAction: vi.fn() };
   const view = render(<PetRoomDrawer pet={PETS[0]} slots={{}} {...commonProps} />);
   fireEvent.click(screen.getByRole("tab", { name: "Quarto" }));
+  fireEvent.click(screen.getByRole("button", { name: /Feminino/ }));
 
   const heart = screen.getByRole("button", { name: "Colocar Quadro coração" });
   expect(heart.getAttribute("aria-pressed")).toBe("false");
@@ -34,6 +35,7 @@ test("decoração não comprada mostra preço e aciona compra em vez de equipar"
   const onBuy = vi.fn();
   render(<PetRoomDrawer pet={PETS[0]} slots={{}} ready error="" onToggle={onToggle} onBuy={onBuy} coins={79} purchased={[]} environment="real" onDevAction={vi.fn()} />);
   fireEvent.click(screen.getByRole("tab", { name: "Quarto" }));
+  fireEvent.click(screen.getByRole("button", { name: /Feminino/ }));
   const bone = screen.getByRole("button", { name: "Comprar Ossinho por 80 moedas globais" });
   expect(bone.textContent).toContain("80");
   fireEvent.click(bone);

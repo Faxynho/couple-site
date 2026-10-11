@@ -302,6 +302,16 @@
   transition: background .2s, color .2s;
 }
 .filterActive { border-color: #be8c99; color: #753f56; background: #f2d6dc; }
+.collectionBack { display: inline-flex; flex: none; align-items: center; gap: 2px; min-height: 34px; padding: 0 11px 0 7px; border: 1px solid #b77f98; border-radius: 999px; color: #fff; background: #a96b87; font-size: 13px; font-weight: 800; cursor: pointer; }
+.collectionBack:focus-visible { outline: 2px solid #ac6888; outline-offset: 2px; }
+.collectionChoice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: min(100%, 460px); margin: 0 auto; padding-top: 4px; }
+.collectionCard { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 150px; padding: 12px 8px; border: 2px solid #e3b6c4; border-radius: 20px; color: #7d4560; background: linear-gradient(160deg, #fff1f4, #f8d9e3); box-shadow: 0 5px 14px rgba(133, 78, 98, .13); cursor: pointer; }
+.collectionMasculine { border-color: #9db8dc; color: #35557f; background: linear-gradient(160deg, #eef5ff, #cfe0f5); box-shadow: 0 5px 14px rgba(53, 85, 127, .14); }
+.collectionCard:active { transform: scale(.97); }
+.collectionCard:focus-visible { outline: 2px solid #ac6888; outline-offset: 2px; }
+.collectionCard img { width: 104px; height: 62px; object-fit: contain; filter: drop-shadow(0 3px 3px rgba(60, 50, 70, .18)); }
+.collectionTitle { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-display), sans-serif; font-size: 17px; font-weight: 800; }
+.collectionCount { font-size: 11px; font-weight: 700; opacity: .72; }
 .decorGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: min(100%, 720px); margin: 0 auto; }
 .decorCard { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 120px; padding: 8px 3px; border: 1px solid #e0c8bc; border-radius: 15px; color: #715366; background: #f9ece4; transition: background .18s, border-color .18s, transform .18s; }
 .decorCard:active { transform: scale(.96); }
@@ -575,3 +585,6 @@
 }
 @media (prefers-reduced-motion: reduce) { .careFill { transition: none; } }
 
+
+:global(html.dark) .collectionCard { border-color: #8a5d73; color: #f1d7e2; background: linear-gradient(160deg, #4a3345, #3a2a39); box-shadow: none; }
+:global(html.dark) .collectionMasculine { border-color: #5b78a3; color: #d6e5fa; background: linear-gradient(160deg, #2f3f5a, #263349); }
